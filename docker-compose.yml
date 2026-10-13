@@ -1,0 +1,14 @@
+services:
+  mockhub:
+    image: abhaypratap/mockhub:latest
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      MOCKHUB_PUBLIC_URL: http://localhost:8080
+    volumes:
+      - mockhub-data:/data
+    restart: unless-stopped
+
+volumes:
+  mockhub-data:

@@ -127,8 +127,8 @@ Ticked as each item is implemented and verified.
 - [x] Stub editor template gallery (REST + SOAP snippets)
 
 ### Phase 7 — Ops
-- [ ] Dockerfile (multi-stage, jlink JRE, distroless, non-root, /data volume)
-- [ ] docker-compose for local use
-- [ ] GitHub Actions: test, build, push multi-arch to Docker Hub
-- [ ] AWS: CloudFormation for ECS Fargate + EFS + ALB, docs
-- [ ] README with quick start
+- [x] Dockerfile (multi-stage, jlink JRE, distroless, non-root, /data volume)
+- [x] docker-compose for local use
+- [x] GitHub Actions: test, build, push multi-arch to Docker Hub
+- [x] AWS: CloudFormation for ECS Fargate + EFS + ALB, docs
+- [x] README with quick start

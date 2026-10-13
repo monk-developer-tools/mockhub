@@ -1,0 +1,8 @@
+.git
+.gradle
+.idea
+build
+mockhub-data
+ui/node_modules
+ui/dist
+**/*.tsbuildinfo
