@@ -1,11 +1,11 @@
 # Deploying MockHub to AWS ECS
 
-The template `deploy/aws/mockhub-ecs.yaml` creates:
+The Terraform module in `deploy/terraform` creates:
 
 | Resource | Why |
 |---|---|
 | ECS cluster + Fargate service (1 task, ARM64) | runs `abhaypratap/mockhub` |
-| EFS file system + access point (uid 65532), encrypted, backups on | `/data`, so projects and stubs survive restarts, redeploys and task replacement. Kept if the stack is deleted. |
+| EFS file system + access point (uid 65532), encrypted, backups on | `/data`, so projects and stubs survive restarts, redeploys and task replacement. Protected from `terraform destroy`. |
 | Application Load Balancer, target group on `/__admin/health` | one URL for the UI, the API and every project's mocks |
 | Optional HTTPS listener with HTTP→HTTPS redirect | pass an ACM certificate |
 | Security groups | ALB ← your CIDR; task ← ALB only; EFS ← task only |
@@ -14,7 +14,7 @@ The template `deploy/aws/mockhub-ecs.yaml` creates:
 ## Before you start
 
 - A VPC with at least two private subnets in different AZs, able to pull from Docker Hub (NAT gateway). If it can't,
-  mirror the image to ECR and pass that URI as `Image`.
+  mirror the image to ECR and pass that URI as `image`.
 - Two subnets for the load balancer: private for an `internal` ALB (the default, for test environments), public for
   `internet-facing`.
 - Optional: an ACM certificate for your hostname, e.g. `mocks.acme.internal`.
@@ -31,31 +31,77 @@ Keep the returned ARN. Passwords can be stored as `sha256:<hex>` instead of plai
 ## 2. Deploy
 
 ```bash
-aws cloudformation deploy \
-  --stack-name mockhub \
-  --template-file deploy/aws/mockhub-ecs.yaml \
-  --capabilities CAPABILITY_IAM \
-  --parameter-overrides \
-      VpcId=vpc-0123 \
-      LoadBalancerSubnets=subnet-a,subnet-b \
-      ServiceSubnets=subnet-c,subnet-d \
-      LoadBalancerScheme=internal \
-      AllowedCidr=10.0.0.0/8 \
-      Image=abhaypratap/mockhub:1.0.0 \
-      CertificateArn=arn:aws:acm:eu-west-1:123456789012:certificate/... \
-      PublicUrl=https://mocks.acme.internal \
-      UsersSecretArn=arn:aws:secretsmanager:eu-west-1:123456789012:secret:mockhub/users-AbCdEf
-
-aws cloudformation describe-stacks --stack-name mockhub --query "Stacks[0].Outputs"
+cd deploy/terraform
+cp terraform.tfvars.example terraform.tfvars   # fill in VPC, subnets, certificate, secret
+terraform init
+terraform plan
+terraform apply
+terraform output url
 ```
 
-Point a DNS record (e.g. `mocks.acme.internal`) at `LoadBalancerDnsName`.
+Point a DNS record (e.g. `mocks.acme.internal`) at `load_balancer_dns_name`. For Route 53, use an alias record with
+`load_balancer_zone_id`.
+
+Use a remote backend for shared state, e.g. add a `backend.tf`:
+
+```hcl
+terraform {
+  backend "s3" {
+    bucket         = "acme-terraform-state"
+    key            = "mockhub/terraform.tfstate"
+    region         = "eu-west-1"
+    dynamodb_table = "terraform-locks"
+    encrypt        = true
+  }
+}
+```
+
+The directory can also be used as a module:
+
+```hcl
+module "mockhub" {
+  source = "git::https://github.com/monk-developer-tools/mockhub.git//deploy/terraform?ref=v1.0.0"
+
+  region                   = "eu-west-1"
+  vpc_id                   = module.vpc.vpc_id
+  load_balancer_subnet_ids = module.vpc.private_subnets
+  service_subnet_ids       = module.vpc.private_subnets
+  image                    = "abhaypratap/mockhub:1.0.0"
+}
+```
+
+(When used as a module, remove the `provider "aws"` block from `versions.tf` or pass providers explicitly.)
+
+## Variables
+
+| Variable | Default | |
+|---|---|---|
+| `region` | | AWS region |
+| `vpc_id`, `load_balancer_subnet_ids`, `service_subnet_ids` | | Network placement |
+| `internal` | `true` | Internal or internet-facing ALB |
+| `allowed_cidrs` | `["10.0.0.0/8"]` | Who may reach the ALB |
+| `image` | `abhaypratap/mockhub:latest` | Pin a version in real environments |
+| `certificate_arn` | `null` | Enables HTTPS and the HTTP→HTTPS redirect |
+| `public_url` | `null` | Sets `MOCKHUB_PUBLIC_URL` |
+| `users_secret_arn` | `null` | Sets `MOCKHUB_USERS` from Secrets Manager |
+| `cpu`, `memory` | `512`, `1024` | Task size |
+| `cpu_architecture` | `ARM64` | `ARM64` (Graviton) or `X86_64` |
+| `extra_environment` | `{}` | e.g. `{ WIREMOCK_OPTIONS = "--async-response-enabled true" }` |
 
 ## 3. Upgrade
 
-Deploy again with a new `Image` tag. The service stops the old task before starting the new one
-(`MinimumHealthyPercent: 0`), so two tasks never write to `/data` at the same time. Expect a few seconds of
-downtime. A failed deployment rolls back automatically.
+Change `image` and run `terraform apply`. The service stops the old task before starting the new one
+(`deployment_minimum_healthy_percent = 0`), so two tasks never write to `/data` at the same time. Expect a few
+seconds of downtime. A failed deployment rolls back automatically.
+
+## Testing the module
+
+```bash
+cd deploy/terraform
+terraform init -backend=false
+terraform validate
+terraform test        # runs against a mocked AWS provider, no credentials needed
+```
 
 ## Using it from services in the test environment
 
@@ -69,7 +115,7 @@ CRM_SOAP_ENDPOINT=https://mocks.acme.internal/legacy-crm/ws/customers
 ## Single sign-on instead of passwords
 
 To use your identity provider (Okta, Azure AD, Cognito), add an `authenticate-oidc` action to the HTTPS listener
-rule for `/__admin/*` and leave `UsersSecretArn` empty. Mocks stay open because they're outside `/__admin`.
+rule (an `aws_lb_listener_rule`) for `/__admin/*` and leave `users_secret_arn` unset. Mocks stay open because they're outside `/__admin`.
 
 ## Backups
 

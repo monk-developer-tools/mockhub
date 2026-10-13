@@ -53,9 +53,25 @@ jobs:
           name: mockhub-jar
           path: build/libs/mockhub.jar
 
+  terraform:
+    name: Terraform
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: deploy/terraform
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.8
+      - run: terraform fmt -check -recursive
+      - run: terraform init -backend=false -input=false
+      - run: terraform validate
+      - run: terraform test
+
   docker:
     name: Publish Docker image
-    needs: test
+    needs: [test, terraform]
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:

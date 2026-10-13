@@ -130,5 +130,15 @@ Ticked as each item is implemented and verified.
 - [x] Dockerfile (multi-stage, jlink JRE, distroless, non-root, /data volume)
 - [x] docker-compose for local use
 - [x] GitHub Actions: test, build, push multi-arch to Docker Hub
-- [x] AWS: CloudFormation for ECS Fargate + EFS + ALB, docs
+- [x] ~~AWS: CloudFormation~~ replaced by Terraform (phase 8)
 - [x] README with quick start
+
+### Phase 8 — Terraform for AWS ECS
+- [x] Terraform root module (`deploy/terraform`): ECS Fargate, EFS + access point, ALB (+HTTPS), IAM, logs, security groups
+- [x] `terraform validate` + tfvars example, remove CloudFormation, update docs
+
+### Phase 9 — Product website (mockhub.devops-monk.com)
+- [ ] Static site in `website/` (landing, features, SOAP, exports, deploy, docs quick start)
+- [ ] Inspect VPS read-only (nginx sites, ports, certbot) — do not touch existing apps or Postgres
+- [ ] Add one nginx server block + TLS (certbot), `nginx -t` before reload
+- [ ] Deploy script `website/deploy.sh` (rsync), verify https://mockhub.devops-monk.com

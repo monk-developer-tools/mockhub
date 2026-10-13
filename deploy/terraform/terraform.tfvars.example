@@ -1,0 +1,17 @@
+region = "eu-west-1"
+
+vpc_id                   = "vpc-0123456789abcdef0"
+load_balancer_subnet_ids = ["subnet-aaa", "subnet-bbb"]
+service_subnet_ids       = ["subnet-ccc", "subnet-ddd"]
+
+internal      = true
+allowed_cidrs = ["10.0.0.0/8"]
+
+image            = "abhaypratap/mockhub:1.0.0"
+certificate_arn  = "arn:aws:acm:eu-west-1:123456789012:certificate/00000000-0000-0000-0000-000000000000"
+public_url       = "https://mocks.example.com"
+users_secret_arn = "arn:aws:secretsmanager:eu-west-1:123456789012:secret:mockhub/users-AbCdEf"
+
+tags = {
+  Team = "platform"
+}

@@ -112,8 +112,12 @@ curl -X POST "$MOCKHUB/__admin/mockhub/api/projects/$PROJECT/import/openapi" --d
 
 ## Deploying to AWS ECS
 
-`deploy/aws/mockhub-ecs.yaml` is a CloudFormation template for Fargate (ARM64), an EFS volume for `/data`, and an
-ALB with optional HTTPS. See [docs/DEPLOYMENT-AWS.md](docs/DEPLOYMENT-AWS.md).
+`deploy/terraform` is a tested Terraform module for Fargate (ARM64 or x86), an EFS volume for `/data`, and an ALB
+with optional HTTPS. See [docs/DEPLOYMENT-AWS.md](docs/DEPLOYMENT-AWS.md).
+
+```bash
+cd deploy/terraform && cp terraform.tfvars.example terraform.tfvars && terraform init && terraform apply
+```
 
 ## Development
 
