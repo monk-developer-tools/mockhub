@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Docs — MockHub</title>
+  <meta name="description" content="How to run MockHub, create REST and SOAP mocks, export to Postman and Bruno, automate it from CI and deploy it.">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/css/site.css">
+</head>
+<body>
+  <a class="skip" href="#content">Skip to content</a>
+  <header class="nav">
+    <div class="wrap">
+      <a class="brand" href="/"><img src="/assets/img/logo.svg" alt="" width="26" height="26"> MockHub</a>
+      <button class="nav-toggle" aria-label="Menu" aria-expanded="false" aria-controls="nav-links">
+        <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 6h14M3 14h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </button>
+      <nav class="nav-links" id="nav-links" aria-label="Main">
+        <a href="/#features">Features</a>
+        <a href="/docs/">Docs</a>
+        <a href="https://github.com/monk-developer-tools/mockhub">GitHub</a>
+        <a class="pill" href="/__admin/mockhub/ui/">Live demo</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="wrap docs">
+    <aside aria-label="Docs navigation">
+      <h4>Getting started</h4>
+      <a href="#quick-start">Quick start</a>
+      <a href="#concepts">Concepts</a>
+      <a href="#first-stub">Your first stub</a>
+      <h4>Mocking</h4>
+      <a href="#matching">Request matching</a>
+      <a href="#templating">Templating</a>
+      <a href="#scenarios">Scenarios</a>
+      <a href="#faults">Delays &amp; faults</a>
+      <a href="#soap">SOAP &amp; WSDL</a>
+      <a href="#proxy">Proxy &amp; record</a>
+      <h4>Working with teams</h4>
+      <a href="#import">Import</a>
+      <a href="#export">Postman &amp; Bruno</a>
+      <a href="#requests">Request log</a>
+      <a href="#auth">Sign-in &amp; roles</a>
+      <h4>Operations</h4>
+      <a href="#config">Configuration</a>
+      <a href="#api">API &amp; CI</a>
+      <a href="#deploy">Deployment</a>
+      <a href="#persistence">Persistence &amp; backup</a>
+      <a href="#limits">Limits</a>
+    </aside>
+
+    <article class="prose" id="content">
+      <h1>MockHub documentation</h1>
+      <p class="lede">Everything you need to run MockHub, mock REST and SOAP services, share them with your team, and run it in production test environments.</p>
+
+      <h2 id="quick-start">Quick start</h2>
+      <div class="code"><pre>docker run -p 8080:8080 -v mockhub-data:/data abhaypratap/mockhub</pre></div>
+      <p>Open <code>http://localhost:8080/__admin/mockhub/ui/</code>. Go to <strong>Examples</strong>, install <em>Petstore — REST basics</em>, then call it:</p>
+      <div class="code"><pre>curl http://localhost:8080/example-petstore/pets/42
+<span class="c">{"id":"42","name":"Pet 42","status":"available"}</span></pre></div>
+      <p>Want to look around first? The <a href="/__admin/mockhub/ui/">live demo</a> runs the examples. Sign in as <code>demo</code> / <code>demo</code> (read-only), and call the mocks directly:</p>
+      <div class="code"><pre>curl https://mockhub.devops-monk.com/example-petstore/pets?status=sold</pre></div>
+
+      <h2 id="concepts">Concepts</h2>
+      <table>
+        <thead><tr><th>Term</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td>Project</td><td>The mocks of one service. It owns a <strong>base path</strong> such as <code>/payment-service</code>, so its mock URL is <code>https://your-host/payment-service</code>.</td></tr>
+          <tr><td>Stub</td><td>A rule: when a request matches, send this response. Stubs are plain <a href="https://wiremock.org/docs/stubbing/">WireMock stub mappings</a>, edited relative to the project's base path.</td></tr>
+          <tr><td>Priority</td><td>When several stubs match, the lowest number wins (1 is highest, the default is 5). Use it for "specific case first, generic fallback last".</td></tr>
+          <tr><td>Scenario</td><td>A named state machine that lets the same request get different answers over time.</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="first-stub">Your first stub</h2>
+      <p>Create a project, open it, and choose <strong>REST stub</strong>. Set the method and path, then the response status and body, and save. Click <strong>Send</strong> in the <em>Try it</em> panel to call it.</p>
+      <p>The form covers the common cases. Switch to <strong>JSON</strong> for anything else WireMock supports. This is the same stub as JSON, as sent through the API:</p>
+      <div class="code"><pre>{
+  <span class="s">"name"</span>: <span class="s">"Get payment"</span>,
+  <span class="s">"request"</span>: { <span class="s">"method"</span>: <span class="s">"GET"</span>, <span class="s">"urlPathTemplate"</span>: <span class="s">"/payments/{id}"</span> },
+  <span class="s">"response"</span>: {
+    <span class="s">"status"</span>: <span class="v">200</span>,
+    <span class="s">"headers"</span>: { <span class="s">"Content-Type"</span>: <span class="s">"application/json"</span> },
+    <span class="s">"jsonBody"</span>: { <span class="s">"id"</span>: <span class="s">"{{request.path.id}}"</span>, <span class="s">"status"</span>: <span class="s">"PAID"</span> },
+    <span class="s">"transformers"</span>: [<span class="s">"response-template"</span>]
+  }
+}</pre></div>
+      <p>Not sure where to start? The <strong>template gallery</strong> button in the stub list has ready-made patterns for common cases.</p>
+
+      <h2 id="matching">Request matching</h2>
+      <table>
+        <thead><tr><th>URL match</th><th>Example</th><th>Matches</th></tr></thead>
+        <tbody>
+          <tr><td>Path equals</td><td><code>/pets</code></td><td><code>/pets</code>, <code>/pets?any=query</code></td></tr>
+          <tr><td>Path and query equal</td><td><code>/pets?status=sold</code></td><td>exactly that URL</td></tr>
+          <tr><td>Path template</td><td><code>/pets/{id}</code></td><td><code>/pets/7</code>, and exposes <code>request.path.id</code></td></tr>
+          <tr><td>Path matches regex</td><td><code>/pets/[0-9]+</code></td><td>numeric ids only</td></tr>
+          <tr><td>Any URL</td><td></td><td>anything under the project's base path</td></tr>
+        </tbody>
+      </table>
+      <p>Add conditions on query parameters, headers, cookies and the body. Every condition must match. Body matchers include <em>JSON equals</em> (optionally ignoring extra fields and array order), <em>JSONPath</em> (for example <code>$[?(@.amount &gt; 1000)]</code>), <em>XML equals</em>, <em>XPath</em>, <em>contains</em> and <em>regex</em>.</p>
+
+      <h2 id="templating">Templating</h2>
+      <p>Turn on <strong>Response templating</strong> to build responses from the request:</p>
+      <table>
+        <thead><tr><th>Helper</th><th>Gives</th></tr></thead>
+        <tbody>
+          <tr><td><code>{{request.path.id}}</code></td><td>a path-template variable</td></tr>
+          <tr><td><code>{{request.query.page}}</code></td><td>a query parameter</td></tr>
+          <tr><td><code>{{request.headers.X-Tenant}}</code></td><td>a header</td></tr>
+          <tr><td><code>{{jsonPath request.body '$.email'}}</code></td><td>a value from a JSON body</td></tr>
+          <tr><td><code>{{xPath request.body '//id/text()'}}</code></td><td>a value from an XML/SOAP body</td></tr>
+          <tr><td><code>{{randomValue type='UUID'}}</code></td><td>a random UUID (also <code>ALPHANUMERIC</code>, <code>NUMERIC</code>…)</td></tr>
+          <tr><td><code>{{randomInt lower=1 upper=100}}</code></td><td>a random number</td></tr>
+          <tr><td><code>{{now offset='7 days' format='yyyy-MM-dd'}}</code></td><td>dates</td></tr>
+          <tr><td><code>{{#if …}} {{#eq a 'b'}} {{#each …}}</code></td><td>conditionals and loops</td></tr>
+        </tbody>
+      </table>
+      <p>See the <a href="https://wiremock.org/docs/response-templating/">WireMock templating reference</a> for the full list.</p>
+
+      <h2 id="scenarios">Scenarios</h2>
+      <p>Give stubs the same <strong>scenario name</strong>. Each stub answers only in its <em>required state</em> and can move the scenario to a <em>new state</em>. Every scenario starts in <code>Started</code>. Reset or jump between states from the project's <strong>Scenarios</strong> tab. The <em>Shopping cart</em> example shows a complete flow.</p>
+
+      <h2 id="faults">Delays &amp; faults</h2>
+      <ul>
+        <li><strong>Fixed</strong>: always wait N ms.</li>
+        <li><strong>Random range</strong>: uniform between two values.</li>
+        <li><strong>Realistic</strong>: log-normal latency around a median, with a long tail.</li>
+        <li><strong>Trickle</strong>: send the body in chunks over a period of time.</li>
+        <li><strong>Faults</strong>: connection reset, empty response, malformed chunk, or random data then close.</li>
+      </ul>
+      <p>A global delay for every response is on the <strong>Server</strong> page.</p>
+
+      <h2 id="soap">SOAP &amp; WSDL</h2>
+      <p>Choose <strong>SOAP stub</strong>, or switch an existing stub's service type to SOAP. Enter the operation element (the first element inside <code>soap:Body</code>, such as <code>GetCustomer</code>) and MockHub matches it for you. Add XPath conditions to answer differently per field value:</p>
+      <div class="code"><pre>{ <span class="s">"matchesXPath"</span>: { <span class="s">"expression"</span>: <span class="s">"//*[local-name()='customerId']/text()"</span>, <span class="s">"equalTo"</span>: <span class="s">"42"</span> } }</pre></div>
+      <p><strong>Import → WSDL</strong> creates, for the service's SOAP binding:</p>
+      <ul>
+        <li>one stub per operation, with request and response envelopes generated from the XSD (including enums, attributes and nested types)</li>
+        <li><code>GET &lt;endpoint&gt;?wsdl</code>, serving the WSDL with <code>soap:address</code> rewritten to the mock</li>
+        <li>a low-priority SOAP fault for operations without a mock</li>
+      </ul>
+
+      <h2 id="proxy">Proxy &amp; record</h2>
+      <p>Set a stub's response to <strong>Proxy</strong> to forward matching requests to a real service. A low-priority "any URL" proxy stub lets you mock a few endpoints and pass everything else through. The project's base path is removed before forwarding.</p>
+      <p><strong>Server → Record from a real service</strong> forwards traffic to a target and saves every answer as a stub in the project you choose.</p>
+
+      <h2 id="import">Import</h2>
+      <table>
+        <thead><tr><th>Format</th><th>What you get</th></tr></thead>
+        <tbody>
+          <tr><td>OpenAPI 3 / Swagger 2 (JSON or YAML)</td><td>One stub per operation. The response uses the spec's example, or sample data generated from the schema. Optionally strip a prefix such as <code>/api/v1</code>.</td></tr>
+          <tr><td>WSDL 1.1</td><td>See <a href="#soap">SOAP &amp; WSDL</a>.</td></tr>
+          <tr><td>WireMock mappings</td><td>A <code>{"mappings": [...]}</code> file, an array, or one stub. Exports from another project are re-rooted automatically.</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="export">Postman &amp; Bruno</h2>
+      <p>On a project's <strong>Import &amp; export</strong> tab:</p>
+      <ul>
+        <li><strong>Postman</strong>: a v2.1 collection grouped into folders, with a <code>baseUrl</code> variable and a status test per request. Import it from Postman's <em>Import</em> dialog.</li>
+        <li><strong>Bruno</strong>: a zip containing a collection folder of <code>.bru</code> files and a <em>MockHub</em> environment. Unzip it and use <em>Open Collection</em>.</li>
+        <li><strong>WireMock</strong>: plain mappings for any WireMock server.</li>
+      </ul>
+      <p>Request bodies come from each stub's matchers, or from the <em>Example request body</em> you set in the editor. Change <code>baseUrl</code> to run the same collection against the real service.</p>
+
+      <h2 id="requests">Request log</h2>
+      <p>The <strong>Requests</strong> tab updates live. Filter to <em>Unmatched</em> to find missing stubs. Click a request to see headers and bodies, the closest stubs and how near they came, and a button that creates a stub from that request.</p>
+
+      <h2 id="auth">Sign-in &amp; roles</h2>
+      <p>Sign-in is off until you set <code>MOCKHUB_USERS</code>. Mock endpoints are never protected; only the UI and the admin API are.</p>
+      <div class="code"><pre>MOCKHUB_USERS="lead:s3cret:admin,qa:qa-pass:editor,dev:sha256:9f86d0…:viewer"</pre></div>
+      <table>
+        <thead><tr><th>Role</th><th>Can</th></tr></thead>
+        <tbody>
+          <tr><td>viewer</td><td>read everything and download exports</td></tr>
+          <tr><td>editor</td><td>also create, edit and delete projects and stubs, import, record</td></tr>
+          <tr><td>admin</td><td>also global settings, restore, and reset or shutdown through the native API</td></tr>
+        </tbody>
+      </table>
+      <div class="callout">For single sign-on, put MockHub behind your identity-aware proxy or an ALB with OIDC authentication on <code>/__admin/*</code>.</div>
+
+      <h2 id="config">Configuration</h2>
+      <table>
+        <thead><tr><th>Variable</th><th>Default</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td><code>PORT</code></td><td><code>8080</code></td><td>Port for UI, API and mocks</td></tr>
+          <tr><td><code>MOCKHUB_DATA_DIR</code></td><td><code>/data</code></td><td>Where projects and stubs are stored</td></tr>
+          <tr><td><code>MOCKHUB_PUBLIC_URL</code></td><td>from the request</td><td>Public URL used in exports</td></tr>
+          <tr><td><code>MOCKHUB_USERS</code></td><td>empty</td><td>Enables sign-in, see above</td></tr>
+          <tr><td><code>MOCKHUB_JOURNAL_MAX_ENTRIES</code></td><td><code>5000</code></td><td>Requests kept in the log</td></tr>
+          <tr><td><code>MOCKHUB_STUB_CORS</code></td><td><code>true</code></td><td>CORS headers on mock responses</td></tr>
+          <tr><td><code>WIREMOCK_OPTIONS</code></td><td>empty</td><td>Any extra <a href="https://wiremock.org/docs/standalone/java-jar/">WireMock flag</a></td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="api">API &amp; CI</h2>
+      <p>Everything in the UI is available over HTTP at <code>/__admin/mockhub/api</code>. With sign-in on, send HTTP Basic credentials. The native WireMock API stays available at <code>/__admin</code>.</p>
+      <div class="code"><pre><span class="c"># create a project</span>
+curl -X POST $HUB/__admin/mockhub/api/projects -d '{"name":"Orders","slug":"orders"}'
+
+<span class="c"># load stubs from your OpenAPI spec before the test run</span>
+curl -X POST $HUB/__admin/mockhub/api/projects/$ID/import/openapi --data-binary @openapi.yaml
+
+<span class="c"># add one stub (paths are relative to the project)</span>
+curl -X POST $HUB/__admin/mockhub/api/projects/$ID/stubs \
+  -d '{"request":{"method":"GET","url":"/health"},"response":{"status":200}}'
+
+<span class="c"># download the Postman collection</span>
+curl -OJ $HUB/__admin/mockhub/api/projects/$ID/export/postman
+
+<span class="c"># check which calls your service made, and which didn't match</span>
+curl "$HUB/__admin/mockhub/api/projects/$ID/requests?unmatched=true"</pre></div>
+      <table>
+        <thead><tr><th>Endpoint</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td><code>GET|POST /projects</code></td><td>list, create</td></tr>
+          <tr><td><code>GET|PUT|DELETE /projects/{id}</code></td><td>read, update, delete (with its stubs)</td></tr>
+          <tr><td><code>GET|POST /projects/{id}/stubs</code></td><td>list, create</td></tr>
+          <tr><td><code>GET|PUT|DELETE /projects/{id}/stubs/{stubId}</code></td><td>read, update, delete</td></tr>
+          <tr><td><code>POST …/stubs/{stubId}/clone?target=</code>, <code>…/move?target=</code></td><td>copy or move a stub</td></tr>
+          <tr><td><code>GET|DELETE /projects/{id}/requests</code></td><td>request log</td></tr>
+          <tr><td><code>GET /projects/{id}/export/{postman|bruno|wiremock}</code></td><td>exports</td></tr>
+          <tr><td><code>POST /projects/{id}/import/{openapi|wsdl|wiremock}</code></td><td>imports</td></tr>
+          <tr><td><code>GET /examples</code>, <code>POST /examples/{id}/install</code></td><td>built-in examples</td></tr>
+          <tr><td><code>GET /backup</code>, <code>POST /restore</code></td><td>everything as one file</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="deploy">Deployment</h2>
+      <h3>Docker Compose</h3>
+      <div class="code"><pre><span class="k">services</span>:
+  <span class="n">mockhub</span>:
+    <span class="k">image</span>: abhaypratap/mockhub
+    <span class="k">ports</span>: [<span class="s">"8080:8080"</span>]
+    <span class="k">environment</span>:
+      <span class="n">MOCKHUB_PUBLIC_URL</span>: https://mocks.acme.internal
+    <span class="k">volumes</span>: [<span class="s">"mockhub-data:/data"</span>]
+<span class="k">volumes</span>:
+  <span class="n">mockhub-data</span>:</pre></div>
+      <h3>AWS ECS with Terraform</h3>
+      <p>The repository's <code>deploy/terraform</code> module creates a Fargate service, an encrypted EFS volume for <code>/data</code>, an Application Load Balancer with optional HTTPS, and the IAM and security groups around them.</p>
+      <div class="code"><pre>cd deploy/terraform
+cp terraform.tfvars.example terraform.tfvars
+terraform init &amp;&amp; terraform apply</pre></div>
+      <h3>Behind nginx on a VM</h3>
+      <div class="code"><pre><span class="k">location</span> / {
+  <span class="k">proxy_pass</span>         http://127.0.0.1:8095;
+  <span class="k">proxy_set_header</span>   Host $host;
+  <span class="k">proxy_set_header</span>   X-Forwarded-Proto $scheme;
+  <span class="k">proxy_read_timeout</span> 120s;
+}</pre></div>
+
+      <h2 id="persistence">Persistence &amp; backup</h2>
+      <p>Stubs live in <code>/data/mappings</code> as WireMock JSON files. Projects live in <code>/data/mockhub/projects.json</code>, and response files in <code>/data/__files</code>. Back up the volume, or use <strong>Server → Download backup</strong> for a single JSON file you can restore into any MockHub.</p>
+
+      <h2 id="limits">Limits</h2>
+      <ul>
+        <li>Run one instance per data directory. WireMock keeps stubs in memory and reads the files only at startup.</li>
+        <li>Scenario states and the request log are in memory and reset on restart.</li>
+        <li>Project base paths can't collide with each other or with <code>/__admin</code>.</li>
+      </ul>
+    </article>
+  </div>
+
+  <footer>
+    <div class="wrap">
+      <span>MockHub is built on WireMock. Not affiliated with WireMock Inc.</span>
+      <nav aria-label="Footer">
+        <a href="/">Home</a>
+        <a href="https://github.com/monk-developer-tools/mockhub">GitHub</a>
+        <a href="https://hub.docker.com/r/abhaypratap/mockhub">Docker Hub</a>
+        <a href="/__admin/mockhub/ui/">Live demo</a>
+      </nav>
+    </div>
+  </footer>
+  <script src="/assets/js/site.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MockHub — Mock servers for your whole team</title>
+  <meta name="description" content="Self-hosted mock server for REST and SOAP built on WireMock. Projects with their own URLs, a web UI, Postman and Bruno export, persistent mocks, one Docker image.">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+  <meta property="og:title" content="MockHub — Mock servers for your whole team">
+  <meta property="og:description" content="REST and SOAP mocks with a web UI, Postman and Bruno export, and one Docker image.">
+  <meta property="og:image" content="https://mockhub.devops-monk.com/assets/img/editor.png">
+  <meta property="og:url" content="https://mockhub.devops-monk.com/">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/css/site.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="nav">
+    <div class="wrap">
+      <a class="brand" href="/"><img src="/assets/img/logo.svg" alt="" width="26" height="26"> MockHub</a>
+      <button class="nav-toggle" aria-label="Menu" aria-expanded="false" aria-controls="nav-links">
+        <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 6h14M3 14h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </button>
+      <nav class="nav-links" id="nav-links" aria-label="Main">
+        <a href="#features">Features</a>
+        <a href="#soap">SOAP</a>
+        <a href="#export">Postman &amp; Bruno</a>
+        <a href="#deploy">Deploy</a>
+        <a href="/docs/">Docs</a>
+        <a href="https://github.com/monk-developer-tools/mockhub">GitHub</a>
+        <a class="pill" href="/__admin/mockhub/ui/">Live demo</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero" style="padding-bottom:0">
+      <div class="wrap">
+        <p class="eyebrow">MockHub</p>
+        <h1>Every dependency. Mocked in minutes.</h1>
+        <p class="lede">A self-hosted mock server for REST and SOAP that the whole team can use. Give each service its own URL, edit stubs in a real UI, and hand developers a Postman or Bruno collection that already works.</p>
+        <div class="ctas">
+          <a class="btn primary" href="/docs/#quick-start">Get started</a>
+          <a class="btn secondary" href="/__admin/mockhub/ui/">Open the live demo</a>
+        </div>
+        <div class="install">
+          <div class="code"><pre><span class="c">$</span> docker run -p 8080:8080 -v mockhub-data:/data abhaypratap/mockhub</pre></div>
+        </div>
+      </div>
+      <div class="product-shot">
+        <div class="window-bar"><span></span><span></span><span></span><div class="address">mockhub.devops-monk.com</div></div>
+        <img src="/assets/img/editor.png" alt="The MockHub stub editor showing the Petstore example: a list of routes on the left and the editor for GET /pets/{id} on the right" width="2000" height="1250">
+      </div>
+    </section>
+
+    <section id="features" class="alt">
+      <div class="wrap">
+        <div class="section-head reveal">
+          <h2>Built on WireMock. Made for teams.</h2>
+          <p>Everything WireMock can do, organised into projects, editable by anyone, and safe across restarts.</p>
+        </div>
+        <div class="bento">
+          <div class="tile span-4 reveal">
+            <h3>One URL per service.</h3>
+            <p>Each project lives under its own base path. Point your service's config at it, and leave the real dependency out of your test environment.</p>
+            <div class="routes" aria-label="Example stubs">
+              <div class="route"><span class="jack get">GET</span><span class="path">/payment-service/payments/{id}</span><span class="wire"></span><span class="plug s2">200</span></div>
+              <div class="route"><span class="jack post">POST</span><span class="path">/payment-service/refunds</span><span class="wire"></span><span class="plug s2">201</span></div>
+              <div class="route"><span class="jack post">POST</span><span class="path">/legacy-crm/ws/customers</span><span class="wire"></span><span class="plug s5">500</span></div>
+              <div class="route"><span class="jack delete">DELETE</span><span class="path">/orders/items/{id}</span><span class="wire"></span><span class="plug s4">401</span></div>
+            </div>
+          </div>
+          <div class="tile span-2 reveal">
+            <span class="big">0</span>
+            <h3>Lost mocks after a restart.</h3>
+            <p>Every stub is written to disk, including ones created through the native WireMock API. Mount a volume and redeploy with confidence.</p>
+          </div>
+          <div class="tile span-2 reveal">
+            <h3>Dynamic responses.</h3>
+            <p>Echo path variables, read the JSON body, generate IDs and dates with Handlebars templating.</p>
+            <div class="code" data-nocopy><pre>{ <span class="s">"id"</span>: <span class="v">"{{request.path.id}}"</span>,
+  <span class="s">"at"</span>: <span class="v">"{{now}}"</span> }</pre></div>
+          </div>
+          <div class="tile span-2 reveal">
+            <h3>Stateful flows.</h3>
+            <p>Scenarios let the same call answer differently as state changes: empty cart, item added, checked out.</p>
+          </div>
+          <div class="tile span-2 reveal">
+            <h3>Chaos on demand.</h3>
+            <p>Delays, random latency, dropped connections and 503s to prove your timeouts and retries actually work.</p>
+          </div>
+          <div class="tile span-3 reveal">
+            <h3>Try it without leaving the editor.</h3>
+            <p>Send a real request to the stub you're editing and see status, headers, body and timing. A live request log shows every call, with the closest stub for anything that didn't match.</p>
+          </div>
+          <div class="tile span-3 reveal">
+            <h3>Start from contracts.</h3>
+            <p>Import an OpenAPI or Swagger spec, a WSDL, or existing WireMock mappings, and get working stubs with realistic sample data in one step.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="soap">
+      <div class="wrap split">
+        <div class="reveal">
+          <h2>SOAP is a first-class citizen.</h2>
+          <p>Drop in a WSDL and MockHub creates one stub per operation, with request and response envelopes generated from the schema.</p>
+          <ul class="checks">
+            <li>Matches on the operation inside <code>soap:Body</code>, or on any field value with XPath</li>
+            <li>SOAP 1.1 and 1.2, envelope and fault helpers</li>
+            <li><code>?wsdl</code> served with its address pointing at the mock</li>
+            <li>A clear SOAP fault for operations you haven't mocked yet</li>
+          </ul>
+        </div>
+        <div class="shot reveal"><img src="/assets/img/soap.png" alt="Editing a SOAP stub that matches Add requests where a is 2 and b is 3" loading="lazy" width="2000" height="1250"></div>
+      </div>
+    </section>
+
+    <section id="export" class="dark">
+      <div class="wrap">
+        <div class="section-head reveal">
+          <h2>Your mocks, in their favourite client.</h2>
+          <p>Export any project as a Postman collection or a Bruno collection. Every request is ready to send, with a status check included. One <code>baseUrl</code> variable switches between the mock and the real service.</p>
+        </div>
+        <div class="bento">
+          <div class="tile span-3 reveal" style="background:#161618">
+            <h3>Postman</h3>
+            <p>Collection v2.1, grouped into folders, path variables filled in, and a test that checks the expected status.</p>
+            <div class="code" data-nocopy><pre><span class="k">pm</span>.test(<span class="s">"Status is 201"</span>, () =&gt;
+  pm.response.to.have.status(<span class="v">201</span>));</pre></div>
+          </div>
+          <div class="tile span-3 reveal" style="background:#161618">
+            <h3>Bruno</h3>
+            <p>A zip of plain <code>.bru</code> files with a MockHub environment. Unzip it, open the collection, and commit it next to your code.</p>
+            <div class="code" data-nocopy><pre><span class="k">post</span> {
+  url: <span class="v">{{baseUrl}}</span>/pets
+  body: json
+}
+<span class="k">assert</span> { res.status: eq <span class="v">201</span> }</pre></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="alt">
+      <div class="wrap">
+        <div class="section-head reveal">
+          <h2>From zero to mocked in three steps.</h2>
+        </div>
+        <div class="steps">
+          <div class="step reveal">
+            <h3>Run it</h3>
+            <p>One container, one port. Data goes to <code>/data</code>.</p>
+            <div class="code"><pre>docker run -p 8080:8080 \
+  -v mockhub-data:/data \
+  abhaypratap/mockhub</pre></div>
+          </div>
+          <div class="step reveal">
+            <h3>Create a project</h3>
+            <p>In the UI, or straight from your CI pipeline.</p>
+            <div class="code"><pre>curl -X POST localhost:8080/__admin/mockhub/api/projects \
+  -d '{"name":"Payment service"}'</pre></div>
+          </div>
+          <div class="step reveal">
+            <h3>Point your service at it</h3>
+            <p>Swap the dependency's URL for the project's mock URL.</p>
+            <div class="code"><pre>PAYMENT_API_URL=http://mockhub:8080/payment-service</pre></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="deploy">
+      <div class="wrap narrow center">
+        <div class="section-head reveal" style="margin-bottom:36px">
+          <h2>Runs wherever your tests do.</h2>
+          <p>A single JAR in a 115&nbsp;MB distroless image for amd64 and arm64. It runs as non-root, is configured through environment variables, and has a built-in health check.</p>
+        </div>
+        <div class="reveal">
+          <div class="tabs" role="tablist" aria-label="Deployment options">
+            <button role="tab" id="t-docker" aria-controls="p-docker" aria-selected="true">Docker</button>
+            <button role="tab" id="t-compose" aria-controls="p-compose" aria-selected="false" tabindex="-1">Compose</button>
+            <button role="tab" id="t-tf" aria-controls="p-tf" aria-selected="false" tabindex="-1">AWS ECS · Terraform</button>
+            <button role="tab" id="t-jar" aria-controls="p-jar" aria-selected="false" tabindex="-1">Plain Java</button>
+          </div>
+          <div class="tab-panel" role="tabpanel" id="p-docker" aria-labelledby="t-docker">
+            <div class="code"><pre>docker run -d --name mockhub -p 8080:8080 \
+  -v mockhub-data:/data \
+  -e MOCKHUB_PUBLIC_URL=https://mocks.acme.internal \
+  -e MOCKHUB_USERS="lead:s3cret:admin,qa:qa-pass:editor" \
+  abhaypratap/mockhub</pre></div>
+          </div>
+          <div class="tab-panel" role="tabpanel" id="p-compose" aria-labelledby="t-compose" hidden>
+            <div class="code"><pre><span class="k">services</span>:
+  <span class="n">mockhub</span>:
+    <span class="k">image</span>: abhaypratap/mockhub
+    <span class="k">ports</span>: [<span class="s">"8080:8080"</span>]
+    <span class="k">volumes</span>: [<span class="s">"mockhub-data:/data"</span>]
+    <span class="k">restart</span>: unless-stopped
+<span class="k">volumes</span>:
+  <span class="n">mockhub-data</span>:</pre></div>
+          </div>
+          <div class="tab-panel" role="tabpanel" id="p-tf" aria-labelledby="t-tf" hidden>
+            <div class="code"><pre><span class="k">module</span> <span class="s">"mockhub"</span> {
+  <span class="n">source</span> = <span class="s">"git::https://github.com/monk-developer-tools/mockhub.git//deploy/terraform"</span>
+
+  <span class="n">region</span>                   = <span class="s">"eu-west-1"</span>
+  <span class="n">vpc_id</span>                   = module.vpc.vpc_id
+  <span class="n">load_balancer_subnet_ids</span> = module.vpc.private_subnets
+  <span class="n">service_subnet_ids</span>       = module.vpc.private_subnets
+  <span class="n">certificate_arn</span>          = aws_acm_certificate.mocks.arn
+}</pre></div>
+            <p style="color:var(--muted);font-size:15px">Fargate, EFS-backed persistence, an ALB with HTTPS, and IAM, all covered by <code>terraform test</code>.</p>
+          </div>
+          <div class="tab-panel" role="tabpanel" id="p-jar" aria-labelledby="t-jar" hidden>
+            <div class="code"><pre>MOCKHUB_DATA_DIR=./mockhub-data java -jar mockhub.jar</pre></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="alt">
+      <div class="wrap split">
+        <div class="shot reveal"><img src="/assets/img/requests.png" alt="The request log showing matched and unmatched requests with response codes" loading="lazy" width="2000" height="1056"></div>
+        <div class="reveal">
+          <h2>Learn by example.</h2>
+          <p>Five ready-made projects install with one click: REST basics, response templating, a stateful shopping cart, faults and delays, and a SOAP service generated from a WSDL. Every stub explains the technique it uses.</p>
+          <p><a class="link-arrow" href="/__admin/mockhub/ui/examples">Browse them in the live demo</a></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta-band">
+      <div class="wrap">
+        <h2>Stop waiting on other teams' services.</h2>
+        <p>Free, self-hosted, and running in under a minute.</p>
+        <div class="ctas" style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap">
+          <a class="btn primary" href="/docs/#quick-start">Read the quick start</a>
+          <a class="btn secondary" href="https://github.com/monk-developer-tools/mockhub">View on GitHub</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <span>MockHub is built on WireMock. Not affiliated with WireMock Inc.</span>
+      <nav aria-label="Footer">
+        <a href="/docs/">Docs</a>
+        <a href="https://github.com/monk-developer-tools/mockhub">GitHub</a>
+        <a href="https://hub.docker.com/r/abhaypratap/mockhub">Docker Hub</a>
+        <a href="/__admin/mockhub/ui/">Live demo</a>
+      </nav>
+    </div>
+  </footer>
+  <script src="/assets/js/site.js" defer></script>
+</body>
+</html>
