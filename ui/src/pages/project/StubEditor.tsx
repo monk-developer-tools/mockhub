@@ -1,4 +1,4 @@
-import { AlertTriangle, Copy, FolderInput, Save, Trash2 } from 'lucide-react';
+import { AlertTriangle, Copy, FolderInput, Lock, Save, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useHotkeys } from '../../state/hotkeys';
 import { api } from '../../api/client';
@@ -92,6 +92,7 @@ export function StubEditor({ project, projects, stub, isNew, canEdit, onSaved, o
   useEffect(() => onDirtyChange(dirty), [dirty, onDirtyChange]);
 
   const update = (patch: Partial<StubForm>) => {
+    if (!canEdit) return;
     setForm((f) => ({ ...f, ...patch }));
     setDirty(true);
   };
@@ -265,7 +266,12 @@ export function StubEditor({ project, projects, stub, isNew, canEdit, onSaved, o
           />
         </div>
       ) : (
-        <fieldset disabled={readOnly} style={{ border: 0, margin: 0, padding: 0, minWidth: 0 }}>
+        <fieldset disabled={readOnly} className="editor-form" style={{ border: 0, margin: 0, padding: 0, minWidth: 0 }}>
+          {readOnly && (
+            <p className="readonly-note" role="note">
+              <Lock size={14} /> Read-only. Your account can view this stub but not change it. Sign in as an editor to edit it.
+            </p>
+          )}
           <div className="section">
             <div className="grid two">
               <label className="field">

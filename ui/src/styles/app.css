@@ -505,6 +505,30 @@ textarea:focus {
   border-left: 1px solid var(--line-strong);
 }
 
+.segmented button:disabled {
+  cursor: not-allowed;
+}
+
+.editor-form:disabled .segmented button:not([aria-pressed='true']),
+.editor-form:disabled input,
+.editor-form:disabled select,
+.editor-form:disabled textarea {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.readonly-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-s);
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
 .segmented button[aria-pressed='true'] {
   background: var(--ink);
   color: var(--paper);
