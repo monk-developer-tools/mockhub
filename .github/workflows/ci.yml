@@ -110,6 +110,7 @@ jobs:
 
       - name: Update Docker Hub description
         if: github.ref == 'refs/heads/main'
+        continue-on-error: true
         uses: peter-evans/dockerhub-description@v4
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
