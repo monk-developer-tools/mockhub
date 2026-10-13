@@ -13,6 +13,7 @@ public final class Config {
   public final boolean stubCors;
   public final List<AuthUser> users;
   public final List<String> extraWireMockArgs;
+  public final String loginNote;
 
   public Config(Map<String, String> env) {
     this.port = Integer.parseInt(env.getOrDefault("PORT", "8080"));
@@ -22,6 +23,7 @@ public final class Config {
     this.stubCors = Boolean.parseBoolean(env.getOrDefault("MOCKHUB_STUB_CORS", "true"));
     this.users = AuthUser.parseAll(env.getOrDefault("MOCKHUB_USERS", ""));
     this.extraWireMockArgs = splitArgs(env.getOrDefault("WIREMOCK_OPTIONS", ""));
+    this.loginNote = env.getOrDefault("MOCKHUB_LOGIN_NOTE", "");
   }
 
   private static String trimTrailingSlash(String s) {

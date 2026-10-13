@@ -64,7 +64,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
         new PersistenceListener(),
         auth,
         new MockHubAdminExtension(List.of(
-            new SystemController(auth, urls, dataDir, config.journalMaxEntries),
+            new SystemController(auth, urls, dataDir, config.journalMaxEntries, config.loginNote),
             new ProjectController(projects, views),
             new ExampleController(examples, new ExampleInstaller(examples, projects, stubs, importers), views),
             new StubController(stubs),

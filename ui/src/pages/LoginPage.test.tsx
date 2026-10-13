@@ -10,6 +10,7 @@ const signIn = (username: string, password: string) => {
   return outcome();
 };
 vi.mock('../state/AppContext', () => ({ useApp: () => ({ signIn }) }));
+vi.mock('../api/client', () => ({ api: { authInfo: () => Promise.resolve({ authEnabled: true, loginNote: 'Sign in as demo / demo' }) } }));
 
 const { LoginPage } = await import('./LoginPage');
 
@@ -34,6 +35,14 @@ describe('LoginPage', () => {
 
     // Then
     expect(calls).toEqual([['qa', 'secret']]);
+  });
+
+  it('shows the server\'s sign-in note', async () => {
+    // When
+    renderWithShell(<LoginPage />);
+
+    // Then
+    expect(await screen.findByText('Sign in as demo / demo')).toBeInTheDocument();
   });
 
   it('explains a failed sign in', async () => {

@@ -13,12 +13,14 @@ public final class SystemController implements ApiController {
   private final BaseUrls urls;
   private final String dataDir;
   private final int journalMaxEntries;
+  private final String loginNote;
 
-  public SystemController(AuthFilter auth, BaseUrls urls, String dataDir, int journalMaxEntries) {
+  public SystemController(AuthFilter auth, BaseUrls urls, String dataDir, int journalMaxEntries, String loginNote) {
     this.auth = auth;
     this.urls = urls;
     this.dataDir = dataDir;
     this.journalMaxEntries = journalMaxEntries;
+    this.loginNote = loginNote;
   }
 
   @Override
@@ -33,7 +35,7 @@ public final class SystemController implements ApiController {
       info.put("journalMaxEntries", journalMaxEntries);
       return info;
     });
-    r.get("/auth/info", ctx -> Jsons.object().put("authEnabled", auth.enabled()));
+    r.get("/auth/info", ctx -> Jsons.object().put("authEnabled", auth.enabled()).put("loginNote", loginNote));
     r.post("/auth/login", ctx -> {
       if (!auth.enabled()) return Jsons.object().put("username", "anonymous").put("role", "admin");
       var user = auth.authenticate(ctx.request.getHeader("Authorization"))

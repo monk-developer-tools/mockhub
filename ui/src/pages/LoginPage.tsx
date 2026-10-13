@@ -1,4 +1,5 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
+import { api } from '../api/client';
 import { Logo } from '../components/Logo';
 import { useApp } from '../state/AppContext';
 
@@ -8,6 +9,11 @@ export function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState('');
+
+  useEffect(() => {
+    api.authInfo().then((info) => setNote(info.loginNote ?? '')).catch(() => setNote(''));
+  }, []);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -36,6 +42,7 @@ export function LoginPage() {
           <span>Password</span>
           <input type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
         </label>
+        {note && <div className="callout">{note}</div>}
         {error && <div className="callout danger" role="alert">{error}</div>}
         <button className="btn primary" type="submit" disabled={busy}>
           {busy ? 'Signing in…' : 'Sign in'}

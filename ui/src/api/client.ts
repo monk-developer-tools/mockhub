@@ -87,7 +87,7 @@ async function download(path: string) {
 
 export const api = {
   info: () => request<ServerInfo>(`${API}/info`),
-  authInfo: () => request<{ authEnabled: boolean }>(`${API}/auth/info`),
+  authInfo: () => request<{ authEnabled: boolean; loginNote?: string }>(`${API}/auth/info`),
   login: (token: string) => request<Session>(`${API}/auth/login`, { method: 'POST' }, token),
 
   projects: () => request<Project[]>(`${API}/projects`),

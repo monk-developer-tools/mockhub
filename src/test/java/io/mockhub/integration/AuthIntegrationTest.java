@@ -19,7 +19,7 @@ class AuthIntegrationTest {
 
   @BeforeEach
   void start() {
-    server = MockHubServer.start(data, Map.of("MOCKHUB_USERS", "admin:pw:admin,qa:pw:viewer"));
+    server = MockHubServer.start(data, Map.of("MOCKHUB_USERS", "admin:pw:admin,qa:pw:viewer", "MOCKHUB_LOGIN_NOTE", "Use demo / demo"));
   }
 
   @AfterEach
@@ -34,6 +34,7 @@ class AuthIntegrationTest {
     assertThat(anonymous.get("/__admin/mappings").status()).isEqualTo(401);
     assertThat(anonymous.get("/__admin/health").status()).isEqualTo(200);
     assertThat(anonymous.get(API + "/auth/info").json().get("authEnabled").asBoolean()).isTrue();
+    assertThat(anonymous.get(API + "/auth/info").json().get("loginNote").asText()).isEqualTo("Use demo / demo");
     assertThat(anonymous.get("/__admin/mockhub/ui/").status()).isEqualTo(200);
     assertThat(anonymous.get("/anything").status()).isEqualTo(404);
   }

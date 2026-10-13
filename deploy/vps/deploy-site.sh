@@ -4,5 +4,6 @@ set -euo pipefail
 
 HOST=${HOST:-root@168.231.79.163}
 
-rsync -az --delete --chmod=D755,F644 website/ "$HOST:/var/www/mockhub/"
+rsync -rltz --delete --no-owner --no-group website/ "$HOST:/var/www/mockhub/"
+ssh "$HOST" 'find /var/www/mockhub -type d -exec chmod 755 {} + && find /var/www/mockhub -type f -exec chmod 644 {} +'
 echo "Website published to $HOST:/var/www/mockhub"
