@@ -138,7 +138,7 @@ Ticked as each item is implemented and verified.
 - [x] `terraform validate` + tfvars example, remove CloudFormation, update docs
 
 ### Phase 9 — Product website (mockhub.devops-monk.com)
-- [ ] Static site in `website/` (landing, features, SOAP, exports, deploy, docs quick start)
-- [ ] Inspect VPS read-only (nginx sites, ports, certbot) — do not touch existing apps or Postgres
-- [ ] Add one nginx server block + TLS (certbot), `nginx -t` before reload
-- [ ] Deploy script `website/deploy.sh` (rsync), verify https://mockhub.devops-monk.com
+- [x] Static site in `website/` (landing, features, SOAP, exports, deploy, docs quick start)
+- [x] Inspect VPS read-only (nginx sites, ports, certbot) — do not touch existing apps or Postgres
+- [x] Add one nginx server block + TLS (certbot), `nginx -t` before reload
+- [x] Deploy script `website/deploy.sh` (rsync), verify https://mockhub.devops-monk.com
