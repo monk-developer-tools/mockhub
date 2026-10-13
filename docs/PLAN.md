@@ -121,8 +121,8 @@ Ticked as each item is implemented and verified.
 - [ ] All-stubs view incl. stubs not in a project, assign to project
 
 ### Phase 6b — Built-in examples
-- [ ] Example catalog bundled in the JAR (REST basics, templating, scenarios/stateful flow, faults & delays, SOAP calculator from WSDL)
-- [ ] API: list examples, install one as a project
+- [x] Example catalog bundled in the JAR (REST basics, templating, scenarios/stateful flow, faults & delays, SOAP calculator from WSDL)
+- [x] API: list examples, install one as a project
 - [ ] UI: "Explore examples" on the dashboard and empty states, one-click install
 - [ ] Stub editor template gallery (REST + SOAP snippets)
 

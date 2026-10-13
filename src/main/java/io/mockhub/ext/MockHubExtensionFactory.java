@@ -7,7 +7,11 @@ import io.mockhub.Config;
 import io.mockhub.controller.BackupController;
 import io.mockhub.controller.BaseUrls;
 import io.mockhub.controller.ImportExportController;
+import io.mockhub.controller.ExampleController;
 import io.mockhub.controller.ProjectController;
+import io.mockhub.controller.ProjectViews;
+import io.mockhub.example.ExampleCatalog;
+import io.mockhub.example.ExampleInstaller;
 import io.mockhub.controller.RequestLogController;
 import io.mockhub.controller.StubController;
 import io.mockhub.controller.SystemController;
@@ -53,12 +57,16 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     ExporterRegistry exporters = new ExporterRegistry(List.of(new PostmanExporter(), new BrunoExporter(), new WireMockMappingsExporter()));
     ImporterRegistry importers = new ImporterRegistry(List.of(new WireMockJsonImporter(), new WsdlStubImporter(), new OpenApiImporter()));
 
+    ProjectViews views = new ProjectViews(stubs, requestLog, urls);
+    ExampleCatalog examples = ExampleCatalog.fromClasspath();
+
     return List.of(
         new PersistenceListener(),
         auth,
         new MockHubAdminExtension(List.of(
             new SystemController(auth, urls, dataDir, config.journalMaxEntries),
-            new ProjectController(projects, stubs, requestLog, urls),
+            new ProjectController(projects, views),
+            new ExampleController(examples, new ExampleInstaller(examples, projects, stubs, importers), views),
             new StubController(stubs),
             new RequestLogController(requestLog),
             new ImportExportController(projects, stubs, exporters, importers, urls),

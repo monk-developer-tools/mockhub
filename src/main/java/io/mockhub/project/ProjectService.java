@@ -80,6 +80,12 @@ public final class ProjectService {
     return projects.size();
   }
 
+  public String availableSlug(String preferred) {
+    String candidate = preferred;
+    for (int i = 2; repository.findBySlug(candidate).isPresent(); i++) candidate = preferred + "-" + i;
+    return candidate;
+  }
+
   void validateSlug(String slug, String selfId) {
     if (!SLUG.matcher(slug).matches()) {
       throw ApiException.badRequest("Base path must be lowercase letters, digits and dashes (e.g. payment-service)");

@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wsdl:definitions xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+                  xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+                  xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                  xmlns:tns="http://example.com/calculator"
+                  targetNamespace="http://example.com/calculator">
+  <wsdl:types>
+    <xs:schema targetNamespace="http://example.com/calculator" elementFormDefault="qualified">
+      <xs:element name="Add">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="a" type="xs:int"/>
+            <xs:element name="b" type="xs:int"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="AddResponse">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="result" type="xs:int"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="GetHistory">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="user" type="tns:User"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="GetHistoryResponse">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="entry" type="tns:Entry" maxOccurs="unbounded"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+      <xs:complexType name="User">
+        <xs:sequence>
+          <xs:element name="id" type="xs:long"/>
+          <xs:element name="status" type="tns:Status"/>
+        </xs:sequence>
+        <xs:attribute name="region" type="xs:string"/>
+      </xs:complexType>
+      <xs:complexType name="Entry">
+        <xs:sequence>
+          <xs:element name="expression" type="xs:string"/>
+          <xs:element name="at" type="xs:dateTime"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:simpleType name="Status">
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="ACTIVE"/>
+          <xs:enumeration value="BLOCKED"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:schema>
+  </wsdl:types>
+  <wsdl:message name="AddRequest"><wsdl:part name="parameters" element="tns:Add"/></wsdl:message>
+  <wsdl:message name="AddResponse"><wsdl:part name="parameters" element="tns:AddResponse"/></wsdl:message>
+  <wsdl:message name="GetHistoryRequest"><wsdl:part name="parameters" element="tns:GetHistory"/></wsdl:message>
+  <wsdl:message name="GetHistoryResponse"><wsdl:part name="parameters" element="tns:GetHistoryResponse"/></wsdl:message>
+  <wsdl:portType name="CalculatorPort">
+    <wsdl:operation name="Add">
+      <wsdl:input message="tns:AddRequest"/>
+      <wsdl:output message="tns:AddResponse"/>
+    </wsdl:operation>
+    <wsdl:operation name="GetHistory">
+      <wsdl:input message="tns:GetHistoryRequest"/>
+      <wsdl:output message="tns:GetHistoryResponse"/>
+    </wsdl:operation>
+  </wsdl:portType>
+  <wsdl:binding name="CalculatorBinding" type="tns:CalculatorPort">
+    <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+    <wsdl:operation name="Add">
+      <soap:operation soapAction="http://example.com/calculator/Add"/>
+      <wsdl:input><soap:body use="literal"/></wsdl:input>
+      <wsdl:output><soap:body use="literal"/></wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetHistory">
+      <soap:operation soapAction="http://example.com/calculator/GetHistory"/>
+      <wsdl:input><soap:body use="literal"/></wsdl:input>
+      <wsdl:output><soap:body use="literal"/></wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:service name="CalculatorService">
+    <wsdl:port name="CalculatorPort" binding="tns:CalculatorBinding">
+      <soap:address location="http://legacy.example.com/ws/calculator"/>
+    </wsdl:port>
+  </wsdl:service>
+</wsdl:definitions>

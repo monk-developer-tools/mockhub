@@ -1,0 +1,70 @@
+{
+  "stubs": [
+    {
+      "name": "Slow — fixed 3s delay",
+      "request": { "method": "GET", "urlPath": "/slow" },
+      "response": { "status": 200, "fixedDelayMilliseconds": 3000, "jsonBody": { "ok": true } },
+      "metadata": { "mockhub": { "description": "Always waits 3 seconds. Use it to test client timeouts." } }
+    },
+    {
+      "name": "Jittery — random latency",
+      "request": { "method": "GET", "urlPath": "/jittery" },
+      "response": {
+        "status": 200,
+        "delayDistribution": { "type": "lognormal", "median": 200, "sigma": 0.6 },
+        "jsonBody": { "ok": true }
+      },
+      "metadata": { "mockhub": { "description": "Realistic latency: log-normal around 200 ms with a long tail." } }
+    },
+    {
+      "name": "Trickle — slow chunked body",
+      "request": { "method": "GET", "urlPath": "/trickle" },
+      "response": {
+        "status": 200,
+        "body": "This response arrives in 5 chunks over 2 seconds.",
+        "chunkedDribbleDelay": { "numberOfChunks": 5, "totalDuration": 2000 }
+      }
+    },
+    {
+      "name": "Connection reset",
+      "request": { "method": "GET", "urlPath": "/reset" },
+      "response": { "fault": "CONNECTION_RESET_BY_PEER" },
+      "metadata": { "mockhub": { "description": "The server drops the connection." } }
+    },
+    {
+      "name": "Garbage response",
+      "request": { "method": "GET", "urlPath": "/garbage" },
+      "response": { "fault": "RANDOM_DATA_THEN_CLOSE" }
+    },
+    {
+      "name": "Empty response",
+      "request": { "method": "GET", "urlPath": "/empty" },
+      "response": { "fault": "EMPTY_RESPONSE" }
+    },
+    {
+      "name": "Rate limited (429)",
+      "request": { "method": "GET", "urlPath": "/rate-limited" },
+      "response": {
+        "status": 429,
+        "headers": { "Retry-After": "5", "Content-Type": "application/json" },
+        "jsonBody": { "error": "too many requests" }
+      }
+    },
+    {
+      "name": "Flaky — fails once, then succeeds",
+      "scenarioName": "Flaky",
+      "requiredScenarioState": "Started",
+      "newScenarioState": "Recovered",
+      "request": { "method": "GET", "urlPath": "/flaky" },
+      "response": { "status": 503, "headers": { "Retry-After": "1" }, "jsonBody": { "error": "temporarily unavailable" } },
+      "metadata": { "mockhub": { "description": "First call 503, next calls 200 — ideal for testing retry logic." } }
+    },
+    {
+      "name": "Flaky — recovered",
+      "scenarioName": "Flaky",
+      "requiredScenarioState": "Recovered",
+      "request": { "method": "GET", "urlPath": "/flaky" },
+      "response": { "status": 200, "jsonBody": { "ok": true } }
+    }
+  ]
+}

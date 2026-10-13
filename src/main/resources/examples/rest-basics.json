@@ -1,0 +1,112 @@
+{
+  "stubs": [
+    {
+      "name": "List pets",
+      "priority": 5,
+      "request": { "method": "GET", "urlPath": "/pets" },
+      "response": {
+        "status": 200,
+        "headers": { "Content-Type": "application/json" },
+        "jsonBody": [
+          { "id": 1, "name": "Fido", "type": "dog", "status": "available" },
+          { "id": 2, "name": "Tom", "type": "cat", "status": "sold" }
+        ]
+      },
+      "metadata": { "mockhub": { "description": "Simplest stub: exact path match, static JSON body." } }
+    },
+    {
+      "name": "List pets filtered by status",
+      "priority": 1,
+      "request": {
+        "method": "GET",
+        "urlPath": "/pets",
+        "queryParameters": { "status": { "equalTo": "sold" } }
+      },
+      "response": {
+        "status": 200,
+        "headers": { "Content-Type": "application/json" },
+        "jsonBody": [ { "id": 2, "name": "Tom", "type": "cat", "status": "sold" } ]
+      },
+      "metadata": { "mockhub": { "description": "Same path as 'List pets' but higher priority (1) and a query matcher: ?status=sold wins over the generic stub." } }
+    },
+    {
+      "name": "Get pet by id",
+      "request": { "method": "GET", "urlPathTemplate": "/pets/{id}" },
+      "response": {
+        "status": 200,
+        "headers": { "Content-Type": "application/json" },
+        "jsonBody": { "id": "{{request.path.id}}", "name": "Pet {{request.path.id}}", "status": "available" },
+        "transformers": ["response-template"]
+      },
+      "metadata": { "mockhub": { "description": "Path template with a variable, echoed back via response templating." } }
+    },
+    {
+      "name": "Get pet 404",
+      "priority": 1,
+      "request": { "method": "GET", "urlPath": "/pets/999" },
+      "response": {
+        "status": 404,
+        "headers": { "Content-Type": "application/json" },
+        "jsonBody": { "error": "Pet 999 not found" }
+      },
+      "metadata": { "mockhub": { "description": "A specific id answered with an error. Priority 1 beats the path template." } }
+    },
+    {
+      "name": "Create pet",
+      "request": {
+        "method": "POST",
+        "urlPath": "/pets",
+        "headers": { "Content-Type": { "contains": "application/json" } },
+        "bodyPatterns": [ { "matchesJsonPath": "$.name" }, { "matchesJsonPath": "$[?(@.type in ['dog','cat','bird'])]" } ]
+      },
+      "response": {
+        "status": 201,
+        "headers": { "Content-Type": "application/json", "Location": "/pets/42" },
+        "jsonBody": { "id": 42, "name": "{{jsonPath request.body '$.name'}}", "type": "{{jsonPath request.body '$.type'}}" },
+        "transformers": ["response-template"]
+      },
+      "metadata": {
+        "mockhub": {
+          "description": "JSON body matching with JSONPath; the response reuses fields from the request.",
+          "sampleRequest": { "body": "{\n  \"name\": \"Rex\",\n  \"type\": \"dog\"\n}" }
+        }
+      }
+    },
+    {
+      "name": "Create pet — validation error",
+      "priority": 9,
+      "request": { "method": "POST", "urlPath": "/pets" },
+      "response": {
+        "status": 400,
+        "headers": { "Content-Type": "application/json" },
+        "jsonBody": { "error": "name and type (dog|cat|bird) are required" }
+      },
+      "metadata": { "mockhub": { "description": "Low-priority catch-all: any POST that didn't match 'Create pet' gets a 400." } }
+    },
+    {
+      "name": "Delete pet (requires token)",
+      "request": {
+        "method": "DELETE",
+        "urlPathTemplate": "/pets/{id}",
+        "headers": { "Authorization": { "matches": "Bearer .+" } }
+      },
+      "response": { "status": 204 },
+      "metadata": {
+        "mockhub": {
+          "description": "Header matching: only requests with a Bearer token are accepted.",
+          "sampleRequest": { "headers": { "Authorization": "Bearer demo-token" } }
+        }
+      }
+    },
+    {
+      "name": "Delete pet — unauthorized",
+      "priority": 9,
+      "request": { "method": "DELETE", "urlPathTemplate": "/pets/{id}" },
+      "response": {
+        "status": 401,
+        "headers": { "Content-Type": "application/json", "WWW-Authenticate": "Bearer" },
+        "jsonBody": { "error": "missing token" }
+      }
+    }
+  ]
+}

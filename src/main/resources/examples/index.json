@@ -1,0 +1,42 @@
+[
+  {
+    "id": "rest-basics",
+    "name": "Petstore — REST basics",
+    "slug": "example-petstore",
+    "description": "CRUD endpoints showing URL, path-template, query, header and JSON body matching, priorities and status codes.",
+    "tags": ["REST", "Matching", "Beginner"],
+    "file": "rest-basics.json"
+  },
+  {
+    "id": "templating",
+    "name": "Dynamic responses — templating",
+    "slug": "example-templating",
+    "description": "Responses built from the request with Handlebars: echo path, query, headers and JSON body, random data, dates and conditionals.",
+    "tags": ["REST", "Templating"],
+    "file": "templating.json"
+  },
+  {
+    "id": "stateful-cart",
+    "name": "Shopping cart — stateful scenarios",
+    "slug": "example-cart",
+    "description": "A cart that changes state across calls using WireMock scenarios: empty → item added → checked out.",
+    "tags": ["REST", "Scenarios", "Stateful"],
+    "file": "stateful-cart.json"
+  },
+  {
+    "id": "chaos",
+    "name": "Resilience testing — faults & delays",
+    "slug": "example-chaos",
+    "description": "Slow responses, random latency, dropped connections, malformed responses, 429/503 with Retry-After. Test your timeouts and retries.",
+    "tags": ["REST", "Faults", "Delays"],
+    "file": "chaos.json"
+  },
+  {
+    "id": "soap-calculator",
+    "name": "Calculator — SOAP from WSDL",
+    "slug": "example-soap",
+    "description": "Generated from a WSDL: one stub per operation, the ?wsdl endpoint and a fault for unknown operations. Plus a hand-written stub matching on XPath values.",
+    "tags": ["SOAP", "WSDL", "XPath"],
+    "file": "soap-calculator.json"
+  }
+]

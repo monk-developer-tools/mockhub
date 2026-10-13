@@ -1,0 +1,56 @@
+{
+  "stubs": [
+    {
+      "name": "1. Get cart — empty",
+      "scenarioName": "Cart",
+      "requiredScenarioState": "Started",
+      "request": { "method": "GET", "urlPath": "/cart" },
+      "response": { "status": 200, "headers": { "Content-Type": "application/json" }, "jsonBody": { "items": [], "total": 0 } },
+      "metadata": { "mockhub": { "folder": "Cart flow", "description": "Initial state of the 'Cart' scenario." } }
+    },
+    {
+      "name": "2. Add item",
+      "scenarioName": "Cart",
+      "requiredScenarioState": "Started",
+      "newScenarioState": "Item added",
+      "request": { "method": "POST", "urlPath": "/cart/items" },
+      "response": { "status": 201, "headers": { "Content-Type": "application/json" }, "jsonBody": { "added": "book", "count": 1 } },
+      "metadata": {
+        "mockhub": {
+          "folder": "Cart flow",
+          "description": "Moves the scenario to 'Item added'.",
+          "sampleRequest": { "body": "{\n  \"sku\": \"book\"\n}" }
+        }
+      }
+    },
+    {
+      "name": "3. Get cart — with item",
+      "scenarioName": "Cart",
+      "requiredScenarioState": "Item added",
+      "request": { "method": "GET", "urlPath": "/cart" },
+      "response": {
+        "status": 200,
+        "headers": { "Content-Type": "application/json" },
+        "jsonBody": { "items": [ { "sku": "book", "price": 12.5 } ], "total": 12.5 }
+      },
+      "metadata": { "mockhub": { "folder": "Cart flow", "description": "Same URL as step 1, different answer because the state changed." } }
+    },
+    {
+      "name": "4. Checkout",
+      "scenarioName": "Cart",
+      "requiredScenarioState": "Item added",
+      "newScenarioState": "Checked out",
+      "request": { "method": "POST", "urlPath": "/cart/checkout" },
+      "response": { "status": 200, "headers": { "Content-Type": "application/json" }, "jsonBody": { "orderId": "ORD-1001", "status": "PLACED" } },
+      "metadata": { "mockhub": { "folder": "Cart flow" } }
+    },
+    {
+      "name": "5. Get cart — after checkout",
+      "scenarioName": "Cart",
+      "requiredScenarioState": "Checked out",
+      "request": { "method": "GET", "urlPath": "/cart" },
+      "response": { "status": 410, "headers": { "Content-Type": "application/json" }, "jsonBody": { "error": "cart closed" } },
+      "metadata": { "mockhub": { "folder": "Cart flow", "description": "Reset the scenario from the Scenarios tab to start over." } }
+    }
+  ]
+}

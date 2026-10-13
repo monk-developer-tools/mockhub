@@ -1,0 +1,63 @@
+{
+  "stubs": [
+    {
+      "name": "Echo request",
+      "request": { "method": "ANY", "urlPathPattern": "/echo/.*" },
+      "response": {
+        "status": 200,
+        "headers": { "Content-Type": "application/json" },
+        "body": "{\n  \"method\": \"{{request.method}}\",\n  \"path\": \"{{request.path}}\",\n  \"query\": \"{{request.query.q}}\",\n  \"userAgent\": \"{{request.headers.User-Agent}}\",\n  \"body\": {{#if request.body}}{{{request.body}}}{{else}}null{{/if}}\n}",
+        "transformers": ["response-template"]
+      },
+      "metadata": {
+        "mockhub": {
+          "description": "Returns what it received: method, path, query param q, a header and the raw body.",
+          "sampleRequest": { "path": "/echo/hello", "query": { "q": "search" } }
+        }
+      }
+    },
+    {
+      "name": "Random user",
+      "request": { "method": "GET", "urlPath": "/users/random" },
+      "response": {
+        "status": 200,
+        "headers": { "Content-Type": "application/json" },
+        "body": "{\n  \"id\": \"{{randomValue type='UUID'}}\",\n  \"code\": \"{{randomValue length=8 type='ALPHANUMERIC' uppercase=true}}\",\n  \"age\": {{randomInt lower=18 upper=90}},\n  \"createdAt\": \"{{now}}\",\n  \"expiresAt\": \"{{now offset='30 days' format='yyyy-MM-dd'}}\"\n}",
+        "transformers": ["response-template"]
+      },
+      "metadata": { "mockhub": { "description": "Random values and dates, different on every call." } }
+    },
+    {
+      "name": "Price quote from JSON body",
+      "request": { "method": "POST", "urlPath": "/quotes" },
+      "response": {
+        "status": 200,
+        "headers": { "Content-Type": "application/json" },
+        "body": "{\n  \"sku\": \"{{jsonPath request.body '$.sku'}}\",\n  \"quantity\": {{jsonPath request.body '$.quantity'}},\n  \"tier\": \"{{#gt (jsonPath request.body '$.quantity') 10}}bulk{{else}}standard{{/gt}}\",\n  \"items\": [{{#each (jsonPath request.body '$.tags') as |tag|}}\"{{tag}}\"{{#unless @last}}, {{/unless}}{{/each}}]\n}",
+        "transformers": ["response-template"]
+      },
+      "metadata": {
+        "mockhub": {
+          "description": "Reads the JSON body with jsonPath, uses a conditional and loops over an array.",
+          "sampleRequest": { "body": "{\n  \"sku\": \"ABC-1\",\n  \"quantity\": 12,\n  \"tags\": [\"red\", \"xl\"]\n}" }
+        }
+      }
+    },
+    {
+      "name": "Greeting by header",
+      "request": { "method": "GET", "urlPath": "/greeting" },
+      "response": {
+        "status": 200,
+        "headers": { "Content-Type": "text/plain" },
+        "body": "{{#eq request.headers.Accept-Language 'de'}}Hallo{{else}}Hello{{/eq}}, {{request.query.name}}!",
+        "transformers": ["response-template"]
+      },
+      "metadata": {
+        "mockhub": {
+          "description": "Branches on a header value.",
+          "sampleRequest": { "query": { "name": "Ada" }, "headers": { "Accept-Language": "de" } }
+        }
+      }
+    }
+  ]
+}
