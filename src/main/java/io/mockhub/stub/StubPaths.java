@@ -1,0 +1,88 @@
+package io.mockhub.stub;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
+public final class StubPaths {
+  private static final String[] LITERAL_FIELDS = {"url", "urlPath", "urlPathTemplate"};
+  private static final String[] REGEX_FIELDS = {"urlPattern", "urlPathPattern"};
+
+  private StubPaths() {}
+
+  public static void toAbsolute(ObjectNode stub, String basePath) {
+    ObjectNode request = request(stub);
+    boolean hasUrl = false;
+    for (String f : LITERAL_FIELDS) {
+      if (request.hasNonNull(f)) {
+        request.put(f, joinLiteral(basePath, request.get(f).asText()));
+        hasUrl = true;
+      }
+    }
+    for (String f : REGEX_FIELDS) {
+      if (request.hasNonNull(f)) {
+        request.put(f, joinRegex(basePath, request.get(f).asText()));
+        hasUrl = true;
+      }
+    }
+    if (!hasUrl) {
+      request.put("urlPattern", basePath + "(/.*)?");
+    }
+  }
+
+  public static void toRelative(ObjectNode stub, String basePath) {
+    ObjectNode request = request(stub);
+    if (request.path("urlPattern").asText("").equals(basePath + "(/.*)?")) {
+      request.remove("urlPattern");
+      return;
+    }
+    for (String f : LITERAL_FIELDS) {
+      if (request.hasNonNull(f)) request.put(f, stripLiteral(basePath, request.get(f).asText()));
+    }
+    for (String f : REGEX_FIELDS) {
+      if (request.hasNonNull(f)) request.put(f, stripRegex(basePath, request.get(f).asText()));
+    }
+  }
+
+  public static String displayUrl(JsonNode request) {
+    for (String f : LITERAL_FIELDS) {
+      if (request.hasNonNull(f)) return request.get(f).asText();
+    }
+    for (String f : REGEX_FIELDS) {
+      if (request.hasNonNull(f)) return request.get(f).asText();
+    }
+    return "*";
+  }
+
+  static String joinLiteral(String base, String path) {
+    if (path.isEmpty() || path.equals("/")) return base;
+    if (path.startsWith("?")) return base + path;
+    return base + (path.startsWith("/") ? path : "/" + path);
+  }
+
+  static String stripLiteral(String base, String path) {
+    if (path.equals(base)) return "/";
+    if (path.startsWith(base + "/")) return path.substring(base.length());
+    if (path.startsWith(base + "?")) return "/" + path.substring(base.length());
+    return path;
+  }
+
+  static String joinRegex(String base, String regex) {
+    if (regex.startsWith("^")) return "^" + joinRegex(base, regex.substring(1));
+    if (regex.startsWith("/")) return base + regex;
+    return base + "/" + regex;
+  }
+
+  static String stripRegex(String base, String regex) {
+    if (regex.startsWith("^")) return "^" + stripRegex(base, regex.substring(1));
+    if (regex.startsWith(base + "/")) return regex.substring(base.length());
+    return regex;
+  }
+
+  private static ObjectNode request(ObjectNode stub) {
+    JsonNode r = stub.get("request");
+    if (r instanceof ObjectNode o) return o;
+    ObjectNode created = stub.putObject("request");
+    created.put("method", "ANY");
+    return created;
+  }
+}
