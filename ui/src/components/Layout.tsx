@@ -1,4 +1,4 @@
-import { BookOpen, LayoutGrid, LogOut, Menu, Moon, Plus, Server, Sun, SunMoon } from 'lucide-react';
+import { BookOpen, Eye, LayoutGrid, LogOut, Menu, Moon, Plus, Server, Sun, SunMoon } from 'lucide-react';
 import { useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useApp } from '../state/AppContext';
@@ -88,6 +88,16 @@ export function Layout() {
           </button>
           <Logo size={20} /> <strong>MockHub</strong>
         </div>
+        {session?.role === 'viewer' && (
+          <div className="viewer-banner" role="status">
+            <Eye size={15} />
+            <span>
+              You're signed in as <strong>{session.username}</strong>, who can look but not change anything. Sign in as an editor or
+              admin to create projects and stubs.
+            </span>
+            <button className="btn small" onClick={signOut}>Switch account</button>
+          </div>
+        )}
         <Outlet />
       </div>
       {creating && <ProjectDialog onClose={() => setCreating(false)} />}

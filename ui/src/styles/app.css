@@ -306,6 +306,21 @@ code,
   display: none;
 }
 
+.viewer-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 36px;
+  background: var(--warn-soft);
+  color: var(--ink);
+  font-size: 13px;
+  border-bottom: 1px solid var(--line);
+}
+
+.viewer-banner span {
+  flex: 1;
+}
+
 .btn {
   display: inline-flex;
   align-items: center;
