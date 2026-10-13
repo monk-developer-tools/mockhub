@@ -28,6 +28,40 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
+val npm = if (System.getProperty("os.name").lowercase().contains("windows")) "npm.cmd" else "npm"
+
+val uiInstall by tasks.registering(Exec::class) {
+    group = "ui"
+    workingDir = file("ui")
+    commandLine(npm, "ci", "--no-audit", "--no-fund")
+    inputs.file("ui/package-lock.json")
+    outputs.dir("ui/node_modules")
+}
+
+val uiTest by tasks.registering(Exec::class) {
+    group = "verification"
+    description = "Runs the UI unit and component tests"
+    dependsOn(uiInstall)
+    workingDir = file("ui")
+    commandLine(npm, "test")
+}
+
+val uiBuild by tasks.registering(Exec::class) {
+    group = "ui"
+    dependsOn(uiInstall)
+    workingDir = file("ui")
+    commandLine(npm, "run", "build")
+    inputs.dir("ui/src")
+    inputs.file("ui/index.html")
+    inputs.file("ui/vite.config.ts")
+    outputs.dir("ui/dist")
+}
+
+if (providers.gradleProperty("withUi").isPresent) {
+    tasks.processResources { dependsOn(uiBuild) }
+    tasks.check { dependsOn(uiTest) }
+}
+
 tasks.processResources {
     from("ui/dist") {
         into("mockhub-ui")

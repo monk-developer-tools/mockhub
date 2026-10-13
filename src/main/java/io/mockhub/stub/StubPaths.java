@@ -10,6 +10,7 @@ public final class StubPaths {
   private StubPaths() {}
 
   public static void toAbsolute(ObjectNode stub, String basePath) {
+    stripBasePathBeforeProxying(stub, basePath);
     ObjectNode request = request(stub);
     boolean hasUrl = false;
     for (String f : LITERAL_FIELDS) {
@@ -30,6 +31,7 @@ public final class StubPaths {
   }
 
   public static void toRelative(ObjectNode stub, String basePath) {
+    hideDefaultProxyPrefix(stub, basePath);
     ObjectNode request = request(stub);
     if (request.path("urlPattern").asText("").equals(basePath + "(/.*)?")) {
       request.remove("urlPattern");
@@ -40,6 +42,18 @@ public final class StubPaths {
     }
     for (String f : REGEX_FIELDS) {
       if (request.hasNonNull(f)) request.put(f, stripRegex(basePath, request.get(f).asText()));
+    }
+  }
+
+  private static void stripBasePathBeforeProxying(ObjectNode stub, String basePath) {
+    if (stub.get("response") instanceof ObjectNode response && response.hasNonNull("proxyBaseUrl") && !response.has("proxyUrlPrefixToRemove")) {
+      response.put("proxyUrlPrefixToRemove", basePath);
+    }
+  }
+
+  private static void hideDefaultProxyPrefix(ObjectNode stub, String basePath) {
+    if (stub.get("response") instanceof ObjectNode response && basePath.equals(response.path("proxyUrlPrefixToRemove").asText(null))) {
+      response.remove("proxyUrlPrefixToRemove");
     }
   }
 

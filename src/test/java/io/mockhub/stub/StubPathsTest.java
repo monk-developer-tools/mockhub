@@ -88,4 +88,41 @@ class StubPathsTest {
     assertThat(stub.at("/request/method").asText()).isEqualTo("ANY");
     assertThat(stub.at("/request/urlPattern").asText()).isEqualTo("/pay(/.*)?");
   }
+
+  @Test
+  void proxiedRequestsDropTheProjectBasePathByDefault() {
+    // Given
+    ObjectNode stub = json("{'request':{'urlPathPattern':'/.*'},'response':{'proxyBaseUrl':'https://api.example.com'}}");
+
+    // When
+    StubPaths.toAbsolute(stub, "/pay");
+
+    // Then
+    assertThat(stub.at("/response/proxyUrlPrefixToRemove").asText()).isEqualTo("/pay");
+  }
+
+  @Test
+  void theDefaultProxyPrefixIsHiddenWhenMakingRelative() {
+    // Given
+    ObjectNode stub = json("{'request':{'url':'/pay/x'},'response':{'proxyBaseUrl':'https://a','proxyUrlPrefixToRemove':'/pay'}}");
+
+    // When
+    StubPaths.toRelative(stub, "/pay");
+
+    // Then
+    assertThat(stub.path("response").has("proxyUrlPrefixToRemove")).isFalse();
+  }
+
+  @Test
+  void aCustomProxyPrefixIsKept() {
+    // Given
+    ObjectNode stub = json("{'request':{'url':'/x'},'response':{'proxyBaseUrl':'https://a','proxyUrlPrefixToRemove':'/pay/v1'}}");
+
+    // When
+    StubPaths.toAbsolute(stub, "/pay");
+    StubPaths.toRelative(stub, "/pay");
+
+    // Then
+    assertThat(stub.at("/response/proxyUrlPrefixToRemove").asText()).isEqualTo("/pay/v1");
+  }
 }

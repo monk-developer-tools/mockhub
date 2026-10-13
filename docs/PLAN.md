@@ -91,20 +91,20 @@ Ticked as each item is implemented and verified.
 - [x] Optional auth (admin / editor / viewer) over the whole admin API
 
 ### Phase 2 — UI foundation
-- [ ] Vite + React + TS app, layout, theme (light/dark)
-- [ ] Projects dashboard (create, edit, delete, base URL copy, counts)
-- [ ] Project page with tabs: Stubs, Requests, Import/Export, Settings
-- [ ] Login screen when auth is on
+- [x] Vite + React + TS app, layout, theme (light/dark)
+- [x] Projects dashboard (create, edit, delete, base URL copy, counts)
+- [x] Project page with tabs: Stubs, Requests, Import/Export, Settings
+- [x] Login screen when auth is on
 
 ### Phase 3 — REST stub editor
-- [ ] Form: method, URL match type, query/header/cookie/body matchers, priority, name
-- [ ] Response: status, headers, body (JSON/text/XML/file), templating, delay, fault, proxy
-- [ ] Scenarios (name / required state / new state)
-- [ ] Raw JSON editor (full WireMock power), form ↔ JSON sync
-- [ ] "Try it" panel calling the mock from the browser
+- [x] Form: method, URL match type, query/header/cookie/body matchers, priority, name
+- [x] Response: status, headers, body (JSON/text/XML/file), templating, delay, fault, proxy
+- [x] Scenarios (name / required state / new state)
+- [x] Raw JSON editor (full WireMock power), form ↔ JSON sync
+- [x] "Try it" panel calling the mock from the browser
 
 ### Phase 4 — SOAP
-- [ ] SOAP form mode (SOAP 1.1/1.2, SOAPAction, operation/XPath match, envelope + fault templates)
+- [x] SOAP form mode (SOAP 1.1/1.2, SOAPAction, operation/XPath match, envelope + fault templates)
 - [x] WSDL import → stub per operation with XSD-generated sample request/response, `?wsdl` endpoint, unknown-op fault
 
 ### Phase 5 — Import / export
@@ -114,17 +114,17 @@ Ticked as each item is implemented and verified.
 - [x] OpenAPI (JSON/YAML) import → stubs from examples
 
 ### Phase 6 — Observability
-- [ ] Request log with detail drawer, matched/unmatched filter
-- [ ] Near misses + "create stub from request"
-- [ ] Scenarios view, reset
-- [ ] Recorder (start/stop/snapshot to project)
-- [ ] All-stubs view incl. stubs not in a project, assign to project
+- [x] Request log with detail drawer, matched/unmatched filter
+- [x] Near misses + "create stub from request"
+- [x] Scenarios view, reset
+- [x] Recorder (start/stop/snapshot to project)
+- [x] All-stubs view incl. stubs not in a project, assign to project
 
 ### Phase 6b — Built-in examples
 - [x] Example catalog bundled in the JAR (REST basics, templating, scenarios/stateful flow, faults & delays, SOAP calculator from WSDL)
 - [x] API: list examples, install one as a project
-- [ ] UI: "Explore examples" on the dashboard and empty states, one-click install
-- [ ] Stub editor template gallery (REST + SOAP snippets)
+- [x] UI: "Explore examples" on the dashboard and empty states, one-click install
+- [x] Stub editor template gallery (REST + SOAP snippets)
 
 ### Phase 7 — Ops
 - [ ] Dockerfile (multi-stage, jlink JRE, distroless, non-root, /data volume)
