@@ -1,10 +1,11 @@
 import { FileCode2, LayoutTemplate, Plus, Search } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useHotkeys } from '../../state/hotkeys';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../../api/client';
 import type { Stub } from '../../api/types';
 import { Confirm } from '../../components/Modal';
-import { Loading } from '../../components/Loading';
+import { Skeleton } from '../../components/Skeleton';
 import { StubRoute } from '../../components/StubRoute';
 import { useToast } from '../../components/Toasts';
 import { describeUrl, emptyForm, toStub } from '../../model/stubForm';
@@ -15,6 +16,8 @@ import { TemplateGallery } from './TemplateGallery';
 
 type Meta = { type?: string; folder?: string };
 const metaOf = (s: Stub) => ((s.metadata as { mockhub?: Meta } | undefined)?.mockhub ?? {}) as Meta;
+
+const methodOf = (s: Stub) => String((s.request as { method?: string } | undefined)?.method ?? 'ANY');
 
 function folderOf(stub: Stub) {
   const meta = metaOf(stub);
@@ -32,11 +35,13 @@ export function StubsTab() {
   const toast = useToast();
   const [stubs, setStubs] = useState<Stub[] | null>(null);
   const [query, setQuery] = useState('');
+  const [chip, setChip] = useState('All');
   const [draft, setDraft] = useState<Stub | null>(null);
   const [gallery, setGallery] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [pending, setPending] = useState<(() => void) | null>(null);
   const location = useLocation();
+  const searchInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const incoming = (location.state as { draft?: Stub } | null)?.draft;
@@ -61,11 +66,18 @@ export function StubsTab() {
   const guard = (action: () => void) => (dirty ? setPending(() => action) : action());
 
   const selected = draft ?? stubs?.find((s) => s.id === stubId) ?? null;
+  const chips = useMemo(() => {
+    const methods = new Set((stubs ?? []).map(methodOf));
+    const ordered = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'ANY'].filter((m) => methods.has(m));
+    const soap = (stubs ?? []).some((s) => metaOf(s).type === 'soap');
+    return ['All', ...ordered, ...(soap ? ['SOAP'] : [])];
+  }, [stubs]);
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const list = stubs ?? [];
-    return q ? list.filter((s) => JSON.stringify(s).toLowerCase().includes(q)) : list;
-  }, [stubs, query]);
+    return (stubs ?? [])
+      .filter((s) => chip === 'All' || (chip === 'SOAP' ? metaOf(s).type === 'soap' : methodOf(s) === chip))
+      .filter((s) => !q || JSON.stringify(s).toLowerCase().includes(q));
+  }, [stubs, query, chip]);
   const grouped = useMemo(() => {
     const groups = new Map<string, Stub[]>();
     for (const s of filtered) {
@@ -105,7 +117,16 @@ export function StubsTab() {
     navigate(`/projects/${project.id}/stubs`);
   };
 
-  if (!stubs) return <Loading />;
+  const hotkeys = useMemo(
+    () => [
+      { key: '/', handler: () => searchInput.current?.focus() },
+      ...(canEdit ? [{ key: 'n', handler: () => startDraft(toStub(emptyForm('rest'))) }] : []),
+    ],
+    [canEdit, dirty],
+  );
+  useHotkeys(hotkeys);
+
+  if (!stubs) return <div className="panel"><Skeleton rows={8} label="Loading stubs" /></div>;
 
   return (
     <div className="workspace">
@@ -113,7 +134,7 @@ export function StubsTab() {
         <div className="toolbar">
           <div style={{ position: 'relative', flex: 1 }}>
             <Search size={14} style={{ position: 'absolute', left: 9, top: 9, color: 'var(--muted)' }} />
-            <input type="search" aria-label="Search stubs" placeholder="Search path, name, body…" value={query} onChange={(e) => setQuery(e.target.value)} style={{ paddingLeft: 28 }} />
+            <input ref={searchInput} type="search" aria-label="Search stubs" placeholder="Search path, name, body…  ( / )" value={query} onChange={(e) => setQuery(e.target.value)} style={{ paddingLeft: 28 }} />
           </div>
           {canEdit && (
             <button className="btn icon" title="Start from a template" aria-label="Start from a template" onClick={() => setGallery(true)}>
@@ -129,6 +150,15 @@ export function StubsTab() {
             <button className="btn small" onClick={() => startDraft(toStub(emptyForm('soap')))}>
               <Plus size={14} /> SOAP stub
             </button>
+          </div>
+        )}
+        {chips.length > 2 && (
+          <div className="chips" role="group" aria-label="Filter stubs">
+            {chips.map((c) => (
+              <button key={c} className="chip" aria-pressed={chip === c} onClick={() => setChip(c)}>
+                {c}
+              </button>
+            ))}
           </div>
         )}
         <ul aria-label="Stubs">
@@ -160,7 +190,7 @@ export function StubsTab() {
               </ul>
             </li>
           ))}
-          {stubs.length > 0 && filtered.length === 0 && <li className="muted small" style={{ padding: 12 }}>No stub matches “{query}”.</li>}
+          {stubs.length > 0 && filtered.length === 0 && <li className="muted small" style={{ padding: 12 }}>No stub matches this filter.</li>}
         </ul>
       </div>
 

@@ -57,7 +57,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     ExporterRegistry exporters = new ExporterRegistry(List.of(new PostmanExporter(), new BrunoExporter(), new WireMockMappingsExporter()));
     ImporterRegistry importers = new ImporterRegistry(List.of(new WireMockJsonImporter(), new WsdlStubImporter(), new OpenApiImporter()));
 
-    ProjectViews views = new ProjectViews(stubs, requestLog, urls);
+    ProjectViews views = new ProjectViews(stubs, requestLog, urls, Clock.systemUTC());
     ExampleCatalog examples = ExampleCatalog.fromClasspath();
 
     return List.of(

@@ -1,5 +1,8 @@
-import { BookOpen, Plus } from 'lucide-react';
-import { useState } from 'react';
+import { AlertTriangle, BookOpen, Plus } from 'lucide-react';
+import { ActivityBars } from '../components/ActivityBars';
+import { StatTile } from '../components/StatTile';
+import { timeAgo } from '../model/time';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { CopyButton } from '../components/CopyButton';
 import { useApp } from '../state/AppContext';
@@ -7,9 +10,23 @@ import { ExampleGrid } from './ExamplesPage';
 import { ProjectDialog } from './ProjectDialog';
 
 export function DashboardPage() {
-  const { projects, canEdit, info } = useApp();
+  const { projects, canEdit, info, refreshProjects } = useApp();
+
+  useEffect(() => {
+    const timer = setInterval(() => refreshProjects().catch(() => undefined), 10000);
+    return () => clearInterval(timer);
+  }, [refreshProjects]);
   const [creating, setCreating] = useState(false);
   const navigate = useNavigate();
+  const totals = projects.reduce(
+    (t, p) => ({
+      stubs: t.stubs + p.stubCount,
+      soap: t.soap + p.soapStubCount,
+      requests: t.requests + p.requestCount,
+      unmatched: t.unmatched + (p.unmatchedCount ?? 0),
+    }),
+    { stubs: 0, soap: 0, requests: 0, unmatched: 0 },
+  );
 
   return (
     <div className="page">
@@ -46,6 +63,18 @@ export function DashboardPage() {
         </div>
       ) : (
         <div className="stack">
+          <div className="stats">
+            <StatTile label="Projects" value={projects.length} />
+            <StatTile label="Stubs" value={totals.stubs} detail={`${totals.soap} SOAP`} />
+            <StatTile label="Requests" value={totals.requests} detail="in the request log" />
+            <StatTile
+              label="Unmatched"
+              value={totals.unmatched}
+              tone={totals.unmatched > 0 ? 'warn' : 'default'}
+              icon={totals.unmatched > 0 ? <AlertTriangle size={13} /> : undefined}
+              detail={totals.unmatched > 0 ? 'requests with no stub' : 'every request found a stub'}
+            />
+          </div>
           <div className="panel">
             <table className="project-table">
               <thead>
@@ -54,15 +83,16 @@ export function DashboardPage() {
                   <th>Mock URL</th>
                   <th className="hide-sm">Stubs</th>
                   <th className="hide-sm">Requests</th>
+                  <th className="hide-sm" style={{ width: 150 }}>Last hour</th>
                 </tr>
               </thead>
               <tbody>
                 {projects.map((p) => (
-                  <tr key={p.id} className="clickable" onClick={() => navigate(`/projects/${p.id}/stubs`)}>
+                  <tr key={p.id} className="clickable" onClick={() => navigate(`/projects/${p.id}`)}>
                     <td>
                       <div className="project-title">
                         <span className="swatch" style={{ background: p.color }} />
-                        <Link to={`/projects/${p.id}/stubs`} onClick={(e) => e.stopPropagation()}>
+                        <Link to={`/projects/${p.id}`} onClick={(e) => e.stopPropagation()}>
                           {p.name}
                         </Link>
                       </div>
@@ -78,7 +108,18 @@ export function DashboardPage() {
                       {p.stubCount}
                       {p.soapStubCount > 0 && <span className="tag soap" style={{ marginLeft: 8 }}>{p.soapStubCount} SOAP</span>}
                     </td>
-                    <td className="hide-sm num">{p.requestCount}</td>
+                    <td className="hide-sm">
+                      <span className="num">{p.requestCount}</span>
+                      {p.unmatchedCount > 0 && (
+                        <span className="tag soap" style={{ marginLeft: 8 }} title="Requests that matched no stub">
+                          <AlertTriangle size={11} style={{ marginRight: 3 }} /> {p.unmatchedCount} unmatched
+                        </span>
+                      )}
+                      <div className="muted small">{timeAgo(p.lastRequestAt)}</div>
+                    </td>
+                    <td className="hide-sm" onClick={(e) => e.stopPropagation()}>
+                      <ActivityBars counts={p.activity ?? []} height={28} label={`${p.name} requests`} />
+                    </td>
                   </tr>
                 ))}
               </tbody>

@@ -11,6 +11,9 @@ export interface Project {
   stubCount: number;
   soapStubCount: number;
   requestCount: number;
+  unmatchedCount: number;
+  lastRequestAt?: string;
+  activity: number[];
 }
 
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json };

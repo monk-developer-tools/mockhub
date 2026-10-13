@@ -92,6 +92,14 @@
             <p>Delays, random latency, dropped connections and 503s to prove your timeouts and retries actually work.</p>
           </div>
           <div class="tile span-3 reveal">
+            <h3>Fast for people who live on the keyboard.</h3>
+            <p>Press <code>⌘K</code> to jump to any project or stub. <code>N</code> adds a stub, <code>/</code> searches, and <code>⌘S</code> saves. Every stub and every logged request can be copied as cURL, HTTPie, JavaScript, Python or Java.</p>
+          </div>
+          <div class="tile span-3 reveal">
+            <h3>See problems before your tests do.</h3>
+            <p>Each project shows traffic for the last hour and counts requests that matched no stub. One click takes you to the closest stub and turns the request into a new one.</p>
+          </div>
+          <div class="tile span-3 reveal">
             <h3>Try it without leaving the editor.</h3>
             <p>Send a real request to the stub you're editing and see status, headers, body and timing. A live request log shows every call, with the closest stub for anything that didn't match.</p>
           </div>
@@ -100,6 +108,44 @@
             <p>Import an OpenAPI or Swagger spec, a WSDL, or existing WireMock mappings, and get working stubs with realistic sample data in one step.</p>
           </div>
         </div>
+      </div>
+    </section>
+
+    <section class="try-live">
+      <div class="wrap narrow center">
+        <div class="section-head reveal" style="margin-bottom:32px">
+          <h2>Don't take our word for it. Call it.</h2>
+          <p>The live demo is running right now with the example projects installed. Paste any of these into a terminal.</p>
+        </div>
+        <div class="code reveal"><pre><span class="c"># a path template that echoes the id</span>
+curl https://mockhub.devops-monk.com/example-petstore/pets/42
+
+<span class="c"># JSON body matching: a valid pet gets 201, anything else 400</span>
+curl -X POST https://mockhub.devops-monk.com/example-petstore/pets \
+  -H 'Content-Type: application/json' -d '{"name":"Rex","type":"dog"}'
+
+<span class="c"># a SOAP operation matched on XPath values: 2 + 3 = 5</span>
+curl https://mockhub.devops-monk.com/example-soap/ws/calculator -H 'Content-Type: text/xml' \
+  -d '&lt;s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/"&gt;&lt;s:Body&gt;&lt;Add xmlns="http://example.com/calculator"&gt;&lt;a&gt;2&lt;/a&gt;&lt;b&gt;3&lt;/b&gt;&lt;/Add&gt;&lt;/s:Body&gt;&lt;/s:Envelope&gt;'
+
+<span class="c"># fails once with 503, then recovers: test your retries</span>
+curl -i https://mockhub.devops-monk.com/example-chaos/flaky</pre></div>
+        <p class="reveal" style="margin-top:22px"><a class="btn secondary" href="/__admin/mockhub/ui/">Watch them arrive in the request log</a></p>
+      </div>
+    </section>
+
+    <section class="alt">
+      <div class="wrap split">
+        <div class="reveal">
+          <h2>Everything about a service, on one screen.</h2>
+          <p>Each project opens on an overview: its mock URL, a snippet to connect your app, last-hour traffic, requests that found no stub, and one-click Postman and Bruno exports.</p>
+          <ul class="checks">
+            <li>Connect snippets for env vars, Spring, Docker Compose and cURL</li>
+            <li>A getting-started checklist for new projects</li>
+            <li>Unmatched requests flagged before they turn into failing tests</li>
+          </ul>
+        </div>
+        <div class="shot reveal"><img src="/assets/img/overview.png" alt="A project overview with stats, a connect-your-app snippet, a last-hour traffic chart and recent requests" loading="lazy" width="2000" height="1250"></div>
       </div>
     </section>
 
@@ -141,6 +187,32 @@
 }
 <span class="k">assert</span> { res.status: eq <span class="v">201</span> }</pre></div>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="section-head reveal">
+          <h2>Why teams pick MockHub.</h2>
+          <p>WireMock is the engine. MockHub adds what a team needs around it.</p>
+        </div>
+        <div class="compare reveal" role="region" aria-label="Comparison" tabindex="0">
+          <table>
+            <thead>
+              <tr><th scope="col"></th><th scope="col">MockHub</th><th scope="col">Plain WireMock</th><th scope="col">Hosted mock services</th></tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row">Web UI for developers and testers</th><td class="yes">Yes</td><td>JSON files and admin API</td><td class="yes">Yes</td></tr>
+              <tr><th scope="row">One URL per service, many services per server</th><td class="yes">Yes</td><td>Manual path conventions</td><td>Usually per subdomain</td></tr>
+              <tr><th scope="row">Full WireMock matching, templating, scenarios, faults</th><td class="yes">Yes</td><td class="yes">Yes</td><td>Varies</td></tr>
+              <tr><th scope="row">SOAP with WSDL import</th><td class="yes">Yes</td><td>Hand-written stubs</td><td>Rarely</td></tr>
+              <tr><th scope="row">Postman and Bruno export</th><td class="yes">Yes</td><td>No</td><td>Varies</td></tr>
+              <tr><th scope="row">Mocks survive restarts</th><td class="yes">Always</td><td>Only stubs marked persistent</td><td class="yes">Yes</td></tr>
+              <tr><th scope="row">Runs inside your network, data stays with you</th><td class="yes">Yes</td><td class="yes">Yes</td><td>No</td></tr>
+              <tr><th scope="row">Cost</th><td class="yes">Free, self-hosted</td><td class="yes">Free</td><td>Per seat or per request</td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </section>
@@ -224,7 +296,7 @@
 
     <section class="alt">
       <div class="wrap split">
-        <div class="shot reveal"><img src="/assets/img/requests.png" alt="The request log showing matched and unmatched requests with response codes" loading="lazy" width="2000" height="1056"></div>
+        <div class="shot reveal"><img src="/assets/img/dashboard.png" alt="The projects dashboard with five example projects, their mock URLs, stub counts, unmatched requests and last-hour traffic" loading="lazy" width="2000" height="1139"></div>
         <div class="reveal">
           <h2>Learn by example.</h2>
           <p>Five ready-made projects install with one click: REST basics, response templating, a stateful shopping cart, faults and delays, and a SOAP service generated from a WSDL. Every stub explains the technique it uses.</p>

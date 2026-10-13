@@ -1,5 +1,6 @@
 import { AlertTriangle, Copy, FolderInput, Save, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { useHotkeys } from '../../state/hotkeys';
 import { api } from '../../api/client';
 import type { Project, Stub } from '../../api/types';
 import { CodeEditor } from '../../components/CodeEditor';
@@ -23,6 +24,8 @@ import {
 } from '../../model/stubForm';
 import { BodyMatcherRows, KeyValueRows, ValueMatcherRows } from './MatcherRows';
 import { TryIt } from './TryIt';
+import { CodeSnippets } from '../../components/CodeSnippets';
+import { sampleRequest } from '../../model/sampleRequest';
 
 const URL_MATCH_LABELS: Record<UrlMatchType, string> = {
   urlPath: 'Path equals',
@@ -178,6 +181,9 @@ export function StubEditor({ project, projects, stub, isNew, canEdit, onSaved, o
     }
   };
 
+  const canSave = canEdit && !busy && errors.length === 0 && (dirty || isNew);
+  useHotkeys(useMemo(() => [{ key: 's', mod: true, allowWhileTyping: true, handler: () => canSave && save() }], [canSave, form, jsonText, mode]));
+
   const readOnly = !canEdit;
   const soap = form.kind === 'soap';
   const bodyLanguage = form.bodyType === 'json' ? 'json' : form.bodyType === 'xml' ? 'xml' : 'text';
@@ -207,7 +213,7 @@ export function StubEditor({ project, projects, stub, isNew, canEdit, onSaved, o
                 </button>
               </>
             )}
-            <button className="btn primary" onClick={save} disabled={busy || errors.length > 0 || (!dirty && !isNew)}>
+            <button className="btn primary" onClick={save} disabled={!canSave} title="Save (Ctrl/⌘ S)">
               <Save size={15} /> {isNew ? 'Create stub' : 'Save'}
             </button>
           </div>
@@ -534,6 +540,12 @@ export function StubEditor({ project, projects, stub, isNew, canEdit, onSaved, o
       )}
 
       {!isNew && <TryIt project={project} form={mode === 'form' ? form : fromStub(preview).form} />}
+      {!isNew && (
+        <div className="section">
+          <h3>Call it from your code</h3>
+          <CodeSnippets request={sampleRequest(mode === 'form' ? form : fromStub(preview).form)} baseUrl={project.mockUrl} />
+        </div>
+      )}
 
       {confirmDelete && (
         <Confirm

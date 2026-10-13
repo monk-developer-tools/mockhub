@@ -6,6 +6,7 @@ import { DashboardPage } from './pages/DashboardPage';
 import { ExamplesPage } from './pages/ExamplesPage';
 import { LoginPage } from './pages/LoginPage';
 import { ImportExportTab } from './pages/project/ImportExportTab';
+import { OverviewTab } from './pages/project/OverviewTab';
 import { ProjectPage } from './pages/project/ProjectPage';
 import { ProjectSettingsTab } from './pages/project/ProjectSettingsTab';
 import { RequestsTab } from './pages/project/RequestsTab';
@@ -27,7 +28,8 @@ const router = createBrowserRouter(
           path: 'projects/:projectId',
           element: <ProjectPage />,
           children: [
-            { index: true, element: <Navigate to="stubs" replace /> },
+            { index: true, element: <Navigate to="overview" replace /> },
+            { path: 'overview', element: <OverviewTab /> },
             { path: 'stubs', element: <StubsTab /> },
             { path: 'stubs/:stubId', element: <StubsTab /> },
             { path: 'requests', element: <RequestsTab /> },

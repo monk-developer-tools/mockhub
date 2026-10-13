@@ -1,5 +1,5 @@
-import { emptyForm } from '../../model/stubForm';
-import { samplePath } from './TryIt';
+import { emptyForm } from './stubForm';
+import { samplePath } from './sampleRequest';
 
 describe('samplePath', () => {
   it('fills path template variables and equal query parameters', () => {

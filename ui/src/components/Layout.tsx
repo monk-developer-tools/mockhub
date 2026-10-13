@@ -1,4 +1,8 @@
-import { BookOpen, Eye, LayoutGrid, LogOut, Menu, Moon, Plus, Server, Sun, SunMoon } from 'lucide-react';
+import { BookOpen, Eye, LayoutGrid, LogOut, Menu, Moon, Plus, Search, Server, Sun, SunMoon } from 'lucide-react';
+import { useMemo } from 'react';
+import { MOD_LABEL, useHotkeys } from '../state/hotkeys';
+import { CommandPalette } from './CommandPalette';
+import { ShortcutsDialog } from './ShortcutsDialog';
 import { useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useApp } from '../state/AppContext';
@@ -14,6 +18,8 @@ export function Layout() {
   const [theme, setTheme] = useState<ThemeChoice>(readTheme);
   const [open, setOpen] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [palette, setPalette] = useState(false);
+  const [shortcuts, setShortcuts] = useState(false);
   const location = useLocation();
   const ThemeIcon = THEME_ICON[theme];
 
@@ -23,6 +29,15 @@ export function Layout() {
     setTheme(next);
   };
 
+  const hotkeys = useMemo(
+    () => [
+      { key: 'k', mod: true, allowWhileTyping: true, handler: () => setPalette((open) => !open) },
+      { key: '?', handler: () => setShortcuts(true) },
+    ],
+    [],
+  );
+  useHotkeys(hotkeys);
+
   return (
     <div className="shell">
       <aside className={`sidebar${open ? ' open' : ''}`} onClick={(e) => (e.target as HTMLElement).closest('a') && setOpen(false)}>
@@ -30,6 +45,11 @@ export function Layout() {
           <Logo />
           MockHub
         </NavLink>
+        <button className="palette-trigger" onClick={() => setPalette(true)}>
+          <Search size={14} />
+          <span>Search…</span>
+          <kbd>{MOD_LABEL} K</kbd>
+        </button>
         <nav className="nav" aria-label="Main">
           <NavLink to="/" end>
             <LayoutGrid size={16} /> Projects
@@ -101,6 +121,17 @@ export function Layout() {
         <Outlet />
       </div>
       {creating && <ProjectDialog onClose={() => setCreating(false)} />}
+      {palette && (
+        <CommandPalette
+          projects={projects}
+          canEdit={canEdit}
+          onClose={() => setPalette(false)}
+          onNewProject={() => setCreating(true)}
+          onToggleTheme={cycleTheme}
+          onShowShortcuts={() => setShortcuts(true)}
+        />
+      )}
+      {shortcuts && <ShortcutsDialog onClose={() => setShortcuts(false)} />}
     </div>
   );
 }

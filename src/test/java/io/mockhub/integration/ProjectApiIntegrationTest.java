@@ -58,6 +58,25 @@ class ProjectApiIntegrationTest {
   }
 
   @Test
+  void reportsUnmatchedRequestsAndRecentActivity() {
+    // Given
+    String id = api.post(API + "/projects", "{\"name\":\"Orders\"}").json().get("id").asText();
+    api.post(API + "/projects/" + id + "/stubs", "{\"request\":{\"method\":\"GET\",\"url\":\"/ok\"}}");
+    api.get("/orders/ok");
+    api.get("/orders/missing");
+
+    // When
+    var project = api.get(API + "/projects/" + id).json();
+
+    // Then
+    assertThat(project.get("requestCount").asInt()).isEqualTo(2);
+    assertThat(project.get("unmatchedCount").asInt()).isEqualTo(1);
+    assertThat(project.get("lastRequestAt").asText()).isNotBlank();
+    assertThat(project.get("activity")).hasSize(12);
+    assertThat(project.get("activity").get(11).asInt()).isEqualTo(2);
+  }
+
+  @Test
   void returnsStubsRelativeToTheProject() {
     // Given
     String id = api.post(API + "/projects", "{\"name\":\"Orders\"}").json().get("id").asText();

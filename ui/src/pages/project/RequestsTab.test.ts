@@ -1,5 +1,5 @@
 import type { ServeEvent } from '../../api/types';
-import { stubFromRequest } from './RequestsTab';
+import { replayRequest, stubFromRequest } from './RequestsTab';
 
 const event = (method: string, url: string, body = ''): ServeEvent => ({
   id: '1',
@@ -36,5 +36,24 @@ describe('stubFromRequest', () => {
     // Then
     expect((stub.request as Record<string, unknown>).bodyPatterns).toEqual([{ matchesXPath: "//*[local-name()='Body']/*[local-name()='GetQuote']" }]);
     expect(stub.metadata).toEqual({ mockhub: { type: 'soap', operation: 'GetQuote', sampleRequest: { body: envelope } } });
+  });
+});
+
+describe('replayRequest', () => {
+  it('keeps meaningful headers and makes the path relative', () => {
+    // Given
+    const logged = event('POST', '/pay/orders?x=1', '{}');
+    logged.request.headers = { Host: 'h', 'Content-Type': 'application/json', 'X-Tenant': ['a', 'b'] };
+
+    // When
+    const replay = replayRequest(logged, '/pay');
+
+    // Then
+    expect(replay).toEqual({
+      method: 'POST',
+      path: '/orders?x=1',
+      headers: [['Content-Type', 'application/json'], ['X-Tenant', 'a, b']],
+      body: '{}',
+    });
   });
 });

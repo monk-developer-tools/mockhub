@@ -3,7 +3,7 @@ import { NavLink, Outlet, useOutletContext, useParams } from 'react-router-dom';
 import { api } from '../../api/client';
 import type { Project } from '../../api/types';
 import { CopyButton } from '../../components/CopyButton';
-import { Loading } from '../../components/Loading';
+import { Skeleton } from '../../components/Skeleton';
 import { useToast } from '../../components/Toasts';
 
 export interface ProjectContext {
@@ -46,11 +46,12 @@ export function ProjectPage() {
       </div>
     );
   }
-  if (!project) return <Loading />;
+  if (!project) return <div className="page"><Skeleton rows={4} label="Loading project" /></div>;
 
   const tabs = [
+    { to: 'overview', label: 'Overview' },
     { to: 'stubs', label: 'Stubs', count: project.stubCount },
-    { to: 'requests', label: 'Requests', count: project.requestCount },
+    { to: 'requests', label: 'Requests', count: project.requestCount, alert: project.unmatchedCount },
     { to: 'scenarios', label: 'Scenarios' },
     { to: 'import-export', label: 'Import & export' },
     { to: 'settings', label: 'Settings' },
@@ -79,6 +80,11 @@ export function ProjectPage() {
           <NavLink key={t.to} to={t.to} className={({ isActive }) => (isActive ? 'active' : '')}>
             {t.label}
             {t.count !== undefined && <span className="count">{t.count}</span>}
+            {Boolean(t.alert) && (
+              <span className="count alert" title={`${t.alert} unmatched`}>
+                {t.alert} unmatched
+              </span>
+            )}
           </NavLink>
         ))}
       </nav>

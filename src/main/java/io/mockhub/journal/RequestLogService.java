@@ -25,6 +25,17 @@ public final class RequestLogService {
         .collect(Collectors.toList());
   }
 
+  public static int[] activity(List<Long> timestamps, long nowMillis, int buckets, long bucketMillis) {
+    int[] counts = new int[buckets];
+    long start = nowMillis - buckets * bucketMillis;
+    for (long at : timestamps) {
+      if (at < start || at > nowMillis) continue;
+      int index = (int) Math.min(buckets - 1, (at - start) / bucketMillis);
+      counts[index]++;
+    }
+    return counts;
+  }
+
   public ArrayNode list(String projectId, int limit, boolean unmatchedOnly) {
     ArrayNode out = Jsons.MAPPER.createArrayNode();
     eventsOf(projects.get(projectId)).stream()

@@ -2,6 +2,7 @@ import { Play } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { Project } from '../../api/types';
 import { CodeEditor } from '../../components/CodeEditor';
+import { sampleRequest } from '../../model/sampleRequest';
 import { METHODS, type StubForm } from '../../model/stubForm';
 
 interface TryResult {
@@ -10,43 +11,6 @@ interface TryResult {
   ms: number;
   headers: [string, string][];
   body: string;
-}
-
-export function samplePath(form: StubForm): string {
-  if (form.urlMatch === 'any') return '/';
-  let path = form.url || '/';
-  if (form.urlMatch === 'urlPathTemplate') path = path.replace(/\{[^}]+}/g, '1');
-  if (form.urlMatch === 'urlPattern' || form.urlMatch === 'urlPathPattern') {
-    path = path
-      .replace(/^\^|\$$/g, '')
-      .replace(/\\d\+|\[0-9]\+/g, '1')
-      .replace(/\[\^\/]\+|\.\+|\.\*/g, 'sample')
-      .replace(/\(([^|()]*)\|[^()]*\)/g, '$1')
-      .replace(/\\(.)/g, '$1')
-      .replace(/[()?*+^$[\]{}|]/g, '');
-  }
-  const query = form.query
-    .filter((q) => q.key && (q.operator === 'equalTo' || q.operator === 'contains'))
-    .map((q) => `${encodeURIComponent(q.key)}=${encodeURIComponent(q.value)}`);
-  if (query.length && !path.includes('?')) path += `?${query.join('&')}`;
-  return path.startsWith('/') ? path : `/${path}`;
-}
-
-function sampleHeaders(form: StubForm): string {
-  const lines = form.headers.filter((h) => h.key && (h.operator === 'equalTo' || h.operator === 'contains')).map((h) => `${h.key}: ${h.value}`);
-  if (form.kind === 'soap') {
-    lines.push(`Content-Type: ${form.soapVersion === '1.2' ? 'application/soap+xml; charset=utf-8' : 'text/xml; charset=utf-8'}`);
-    if (form.soapAction) lines.push(`SOAPAction: "${form.soapAction}"`);
-  } else if (form.body.some((b) => b.operator === 'equalToJson' || b.operator === 'matchesJsonPath')) {
-    lines.push('Content-Type: application/json');
-  }
-  return lines.join('\n');
-}
-
-function sampleBody(form: StubForm): string {
-  if (form.sampleBody) return form.sampleBody;
-  const exact = form.body.find((b) => b.operator === 'equalToJson' || b.operator === 'equalToXml' || b.operator === 'equalTo');
-  return exact?.value ?? '';
 }
 
 export function TryIt({ project, form }: { project: Project; form: StubForm }) {
@@ -59,10 +23,11 @@ export function TryIt({ project, form }: { project: Project; form: StubForm }) {
   const [busy, setBusy] = useState(false);
 
   const reset = () => {
-    setMethod(form.method === 'ANY' ? (form.kind === 'soap' ? 'POST' : 'GET') : form.method);
-    setPath(samplePath(form));
-    setHeaders(sampleHeaders(form));
-    setBody(sampleBody(form));
+    const sample = sampleRequest(form);
+    setMethod(sample.method);
+    setPath(sample.path);
+    setHeaders(sample.headers.map(([k, v]) => `${k}: ${v}`).join('\n'));
+    setBody(sample.body);
     setResult(null);
     setError('');
   };

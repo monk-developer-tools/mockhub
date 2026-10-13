@@ -7,6 +7,8 @@ import { Loading } from '../../components/Loading';
 import { MethodJack, StubRoute } from '../../components/StubRoute';
 import { useToast } from '../../components/Toasts';
 import { useApp } from '../../state/AppContext';
+import { CodeSnippets } from '../../components/CodeSnippets';
+import type { SampleRequest } from '../../model/sampleRequest';
 import { useProject } from './ProjectPage';
 
 export function stubFromRequest(event: ServeEvent, basePath: string): Stub {
@@ -38,6 +40,17 @@ export function stubFromRequest(event: ServeEvent, basePath: string): Stub {
     }
   }
   return stub;
+}
+
+const SKIPPED_HEADERS = new Set(['host', 'content-length', 'connection', 'accept-encoding', 'user-agent', 'x-forwarded-for', 'x-forwarded-proto', 'x-forwarded-host', 'x-real-ip']);
+
+export function replayRequest(event: ServeEvent, basePath: string): SampleRequest {
+  const { request } = event;
+  const path = request.url === basePath ? '/' : request.url.startsWith(basePath) ? request.url.slice(basePath.length) : request.url;
+  const headers = Object.entries(request.headers ?? {})
+    .filter(([k]) => !SKIPPED_HEADERS.has(k.toLowerCase()))
+    .map(([k, v]): [string, string] => [k, Array.isArray(v) ? v.join(', ') : v]);
+  return { method: request.method, path: path.startsWith('/') || path.startsWith('?') ? path : `/${path}`, headers, body: request.body ?? '' };
 }
 
 function time(ms: number) {
@@ -208,6 +221,10 @@ export function RequestsTab() {
                 {selected.response.body && <pre className="block">{selected.response.body}</pre>}
               </section>
             )}
+            <section className="stack" style={{ gap: 6 }}>
+              <h3>Replay it</h3>
+              <CodeSnippets request={replayRequest(selected, project.basePath)} baseUrl={project.mockUrl} />
+            </section>
             <p className="muted small">
               From {selected.request.clientIp} at {selected.request.loggedDateString}
             </p>
