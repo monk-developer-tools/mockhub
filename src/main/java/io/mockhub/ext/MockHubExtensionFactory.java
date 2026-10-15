@@ -4,6 +4,12 @@ import com.github.tomakehurst.wiremock.extension.Extension;
 import com.github.tomakehurst.wiremock.extension.ExtensionFactory;
 import com.github.tomakehurst.wiremock.extension.WireMockServices;
 import io.mockhub.Config;
+import io.mockhub.ai.AiProviders;
+import io.mockhub.ai.AiSettingsStore;
+import io.mockhub.ai.AssistantService;
+import io.mockhub.ai.ChatCompletions;
+import io.mockhub.ai.JdkLlmTransport;
+import io.mockhub.controller.AiController;
 import io.mockhub.auth.AccessPolicy;
 import io.mockhub.auth.AuthService;
 import io.mockhub.auth.Principal;
@@ -93,6 +99,10 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     UserViews userViews = new UserViews(orgs);
     OrgChoice orgChoice = new OrgChoice(orgs);
     ExampleCatalog examples = ExampleCatalog.fromClasspath();
+    AiSettingsStore aiSettings = new AiSettingsStore(dataDir, config.aiApiKey);
+    AiProviders aiProviders = AiProviders.defaults();
+    ChatCompletions chat = new ChatCompletions(new JdkLlmTransport(), aiProviders, config.publicUrl);
+    AssistantService assistant = new AssistantService(aiSettings, chat, stubs, requestLog);
 
     return List.of(
         new PersistenceListener(),
@@ -110,6 +120,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
                 new StubController(stubs),
                 new RequestLogController(requestLog),
                 new ImportExportController(projects, stubs, exporters, importers, urls),
+                new AiController(aiSettings, aiProviders, chat, assistant, projects, urls),
                 new BackupController(orgs, projects, gateway))));
   }
 }

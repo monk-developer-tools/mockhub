@@ -57,6 +57,7 @@ export function ProjectPage() {
   const tabs = [
     { to: 'overview', label: 'Overview' },
     { to: 'stubs', label: 'Stubs', count: project.stubCount },
+    { to: 'assistant', label: 'Assistant' },
     { to: 'requests', label: 'Requests', count: project.requestCount, alert: project.unmatchedCount },
     { to: 'scenarios', label: 'Scenarios' },
     { to: 'import-export', label: 'Import & export' },

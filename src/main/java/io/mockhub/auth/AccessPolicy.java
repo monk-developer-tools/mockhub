@@ -15,7 +15,7 @@ public final class AccessPolicy {
   private static final Set<String> PUBLIC_API =
       Set.of("/auth/info", "/auth/login", "/auth/sso/exchange");
   private static final Set<String> ANY_SIGNED_IN =
-      Set.of("/auth/me", "/auth/password", "/info", "/projects", "/orgs", "/examples");
+      Set.of("/auth/me", "/auth/password", "/info", "/projects", "/orgs", "/examples", "/ai/status");
   private static final Set<String> READ_ONLY_NATIVE_POSTS =
       Set.of("/requests/find", "/requests/count", "/near-misses/request", "/near-misses/request-pattern");
   private static final Set<String> ADMIN_ONLY_NATIVE =
@@ -62,7 +62,8 @@ public final class AccessPolicy {
     if (project.matches()) {
       Optional<String> orgId = orgOfProject.apply(project.group(1));
       if (orgId.isEmpty()) return Decision.allow();
-      return need(p.roleIn(orgId.get()), read ? Role.VIEWER : Role.EDITOR, read ? "view this project" : "change this project");
+      boolean askOnly = read || "/ai/chat".equals(project.group(2));
+      return need(p.roleIn(orgId.get()), askOnly ? Role.VIEWER : Role.EDITOR, askOnly ? "view this project" : "change this project");
     }
 
     Matcher org = ORG.matcher(path);

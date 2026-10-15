@@ -12,7 +12,9 @@ import { ProjectSettingsTab } from './pages/project/ProjectSettingsTab';
 import { RequestsTab } from './pages/project/RequestsTab';
 import { ScenariosTab } from './pages/project/ScenariosTab';
 import { StubsTab } from './pages/project/StubsTab';
+import { AiSettingsPage } from './pages/AiSettingsPage';
 import { OrgPage } from './pages/OrgPage';
+import { AssistantTab } from './pages/project/AssistantTab';
 import { ServerPage } from './pages/ServerPage';
 import { SsoPage } from './pages/SsoPage';
 import { UsersPage } from './pages/UsersPage';
@@ -30,6 +32,7 @@ const router = createBrowserRouter(
         { path: 'org', element: <OrgPage /> },
         { path: 'admin/users', element: <UsersPage /> },
         { path: 'admin/sso', element: <SsoPage /> },
+        { path: 'admin/ai', element: <AiSettingsPage /> },
         {
           path: 'projects/:projectId',
           element: <ProjectPage />,
@@ -38,6 +41,7 @@ const router = createBrowserRouter(
             { path: 'overview', element: <OverviewTab /> },
             { path: 'stubs', element: <StubsTab /> },
             { path: 'stubs/:stubId', element: <StubsTab /> },
+            { path: 'assistant', element: <AssistantTab /> },
             { path: 'requests', element: <RequestsTab /> },
             { path: 'scenarios', element: <ScenariosTab /> },
             { path: 'import-export', element: <ImportExportTab /> },

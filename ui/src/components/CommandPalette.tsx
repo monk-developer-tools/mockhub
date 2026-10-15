@@ -104,7 +104,9 @@ export function CommandPalette({ projects, canEdit, onClose, onNewProject, onTog
     return query.trim() ? filtered : GROUP_ORDER.flatMap((g) => filtered.filter((c) => c.group === g));
   }, [commands, query]);
 
-  useEffect(() => setActive(0), [query]);
+  useEffect(() => {
+    setActive(0);
+  }, [query]);
   useEffect(() => {
     list.current?.querySelector<HTMLElement>(`[data-index="${active}"]`)?.scrollIntoView({ block: 'nearest' });
   }, [active]);

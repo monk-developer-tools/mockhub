@@ -1,5 +1,12 @@
 import type {
+  AiSettings,
+  AiStatus,
+  AiTestResult,
+  ApplyResult,
+  AssistantReply,
   AuthInfo,
+  ChatMessage,
+  ProposedChange,
   Example,
   ImportResult,
   LoginResult,
@@ -130,6 +137,18 @@ export const api = {
   saveSso: (body: Partial<SsoSettings>) => request<SsoSettings>(`${API}/sso`, { method: 'PUT', body: json(body) }),
   testSso: (body: Partial<SsoSettings>) =>
     request<{ ok: boolean; error?: string; issuer?: string }>(`${API}/sso/test`, { method: 'POST', body: json(body) }),
+
+  aiStatus: () => request<AiStatus>(`${API}/ai/status`),
+  aiSettings: () => request<AiSettings>(`${API}/ai/settings`),
+  saveAiSettings: (body: Partial<AiSettings>) => request<AiSettings>(`${API}/ai/settings`, { method: 'PUT', body: json(body) }),
+  testAi: (body: Partial<AiSettings>) => request<AiTestResult>(`${API}/ai/test`, { method: 'POST', body: json(body) }),
+  askAssistant: (projectId: string, messages: ChatMessage[], pending: ProposedChange[]) =>
+    request<AssistantReply>(`${API}/projects/${projectId}/ai/chat`, {
+      method: 'POST',
+      body: json({ messages: messages.map(({ role, content }) => ({ role, content })), pending }),
+    }),
+  applyChanges: (projectId: string, changes: ProposedChange[]) =>
+    request<ApplyResult>(`${API}/projects/${projectId}/ai/apply`, { method: 'POST', body: json({ changes }) }),
 
   projects: () => request<Project[]>(`${API}/projects`),
   project: (id: string) => request<Project>(`${API}/projects/${id}`),

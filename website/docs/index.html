@@ -44,6 +44,7 @@
       <a href="#requests">Request log</a>
       <a href="#auth">Organisations &amp; roles</a>
       <a href="#sso">Single sign-on</a>
+      <a href="#ai">AI assistant</a>
       <h4>Operations</h4>
       <a href="#config">Configuration</a>
       <a href="#api">API &amp; CI</a>
@@ -205,6 +206,19 @@
       </ol>
       <p>MockHub uses the authorisation code flow with PKCE and checks the ID token's signature, issuer, audience, expiry and nonce. Roles from groups are refreshed at every sign-in; roles set by hand are kept. Set <code>MOCKHUB_PUBLIC_URL</code> behind a proxy so the redirect URI matches. Supply the secret with <code>MOCKHUB_SSO_CLIENT_SECRET</code> if you keep it in a secret store.</p>
 
+      <h2 id="ai">AI assistant</h2>
+      <p>An admin connects a model under <strong>Administration → AI assistant</strong>:</p>
+      <table>
+        <thead><tr><th>Provider</th><th>Base URL</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>OpenRouter</td><td><code>https://openrouter.ai/api/v1</code></td><td>One key, hundreds of models. <code>openrouter/auto</code> picks one.</td></tr>
+          <tr><td>LiteLLM proxy</td><td>e.g. <code>http://litellm:4000</code></td><td>Your proxy's virtual keys, budgets and approved models.</td></tr>
+          <tr><td>OpenAI-compatible</td><td>e.g. <code>https://api.openai.com/v1</code></td><td>OpenAI, Azure OpenAI, Ollama, vLLM, LM Studio.</td></tr>
+        </tbody>
+      </table>
+      <p>In a project, open <strong>Assistant</strong> and describe what you need, or paste an OpenAPI spec, a WSDL or curl commands. The assistant reads the stubs and recent requests and <em>stages</em> changes. You review each one as a diff and apply or discard it, so nothing changes until an editor applies it. Viewers can draft changes but not apply them.</p>
+      <div class="callout">The conversation, the project's stubs and, when needed, recent requests go to the provider you configure. Choose one your organisation allows, or run models yourself behind LiteLLM.</div>
+
       <h2 id="config">Configuration</h2>
       <table>
         <thead><tr><th>Variable</th><th>Default</th><th>Purpose</th></tr></thead>
@@ -213,6 +227,7 @@
           <tr><td><code>MOCKHUB_DATA_DIR</code></td><td><code>/data</code></td><td>Where projects and stubs are stored</td></tr>
           <tr><td><code>MOCKHUB_PUBLIC_URL</code></td><td>from the request</td><td>Public URL used in exports</td></tr>
           <tr><td><code>MOCKHUB_USERS</code></td><td>empty</td><td>Break-glass accounts with a server role, see <a href="#auth">Organisations &amp; roles</a></td></tr>
+          <tr><td><code>MOCKHUB_AI_API_KEY</code></td><td>empty</td><td>AI provider key; overrides the one saved in the UI</td></tr>
           <tr><td><code>MOCKHUB_SSO_CLIENT_SECRET</code></td><td>empty</td><td>Entra client secret; overrides the one saved in the UI</td></tr>
           <tr><td><code>MOCKHUB_JOURNAL_MAX_ENTRIES</code></td><td><code>5000</code></td><td>Requests kept in the log</td></tr>
           <tr><td><code>MOCKHUB_STUB_CORS</code></td><td><code>true</code></td><td>CORS headers on mock responses</td></tr>

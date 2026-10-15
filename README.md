@@ -30,6 +30,9 @@ https://mocks.acme.internal/legacy-crm/ws/customers      SOAP mocks of project "
   Install one with a click and copy what you need. The editor also has a template gallery.
 - **Persistence.** Every stub, including ones created through the native `/__admin` API, is written to `/data`.
   There's also full backup and restore.
+- **AI assistant.** Connect OpenRouter, a LiteLLM proxy or any OpenAI-compatible API, then describe the mocks you
+  need in plain English or paste a spec. The assistant stages stubs, and you review each change as a diff before
+  applying it.
 - **Organisations and teams.** Group projects into organisations. Owners add people as viewers, editors or owners,
   and each person sees only their organisations.
 - **Users and single sign-on.** Create users in the UI, or let people sign in with **Microsoft Entra ID** (Azure AD).
@@ -59,6 +62,7 @@ All configuration is through environment variables.
 | `MOCKHUB_DATA_DIR` | `/data` in Docker, `./mockhub-data` otherwise | Where projects, stubs and body files are stored. Mount a volume (EFS on ECS). |
 | `MOCKHUB_PUBLIC_URL` | taken from the request | The URL people use to reach MockHub, e.g. `https://mocks.acme.internal`. Used in exports. |
 | `MOCKHUB_USERS` | empty | Optional break-glass accounts: `user:password:role` entries separated by commas. Roles: `admin`, `editor`, `viewer` (server-wide). A password can be `sha256:<hex>`. |
+| `MOCKHUB_AI_API_KEY` | empty | API key for the AI provider. Overrides the one saved in the UI. |
 | `MOCKHUB_SSO_CLIENT_SECRET` | empty | Entra client secret. Overrides the one saved in the UI, so it can come from a secret store. |
 | `MOCKHUB_LOGIN_NOTE` | empty | Text shown on the sign-in page, e.g. demo credentials |
 | `MOCKHUB_JOURNAL_MAX_ENTRIES` | `5000` | How many requests the request log keeps in memory |
@@ -117,6 +121,34 @@ in the UI are kept.
 Set `MOCKHUB_PUBLIC_URL` when MockHub runs behind a proxy, so the redirect URI matches what you registered. Use
 **Also allow MockHub passwords** to make SSO the only way in for everyone except admins.
 
+## AI assistant
+
+An admin connects a model under **Administration → AI assistant**:
+
+| Provider | Base URL | Notes |
+|---|---|---|
+| OpenRouter | `https://openrouter.ai/api/v1` (default) | One key for hundreds of models. `openrouter/auto` picks one, or name a model that supports tool calling. |
+| LiteLLM proxy | e.g. `http://litellm:4000` | Uses your proxy's virtual keys, budgets, logging and approved models. The model is the proxy's `model_name`. |
+| Other OpenAI-compatible | e.g. `https://api.openai.com/v1` | OpenAI, Azure OpenAI, Ollama, vLLM, LM Studio and others. |
+
+Then, in any project, open **Assistant** and say what you need. For example:
+
+- *Payments API: POST /payments creates a payment, GET /payments/{id} returns it, 404 for unknown ids*
+- *Create stubs for the requests that matched nothing*
+- *Make every POST answer after 2 seconds*
+- *Add a SOAP GetCustomer operation*
+
+You can also paste an OpenAPI spec, a WSDL or curl commands. The new-project dialog has a **Describe the API** box
+that starts the conversation for you.
+
+The assistant uses tool calling. It reads the project's stubs and recent requests, and it **stages** creates,
+updates and deletes. Each staged change appears as a diff. You apply or discard each one, so nothing changes until
+someone with the editor role applies it. Viewers can draft changes but can't apply them. Request log contents are
+treated as data, not instructions.
+
+The conversation, the project's stubs and, when the assistant asks for them, recent requests are sent to the
+provider you configure. Choose one your organisation allows, or run models yourself behind LiteLLM.
+
 ## How it works
 
 MockHub is a WireMock extension running inside a regular WireMock server:
@@ -154,6 +186,9 @@ MockHub is a WireMock extension running inside a regular WireMock server:
 | GET/POST | `/__admin/mockhub/api/examples`, `/examples/{id}/install` | built-in examples |
 | GET | `/__admin/mockhub/api/stubs/unassigned` | stubs not in any project |
 | POST | `/__admin/mockhub/api/projects/{id}/adopt/{stubId}?prefix=` | put such a stub into a project |
+| POST | `/__admin/mockhub/api/projects/{id}/ai/chat` | `{messages, pending}` → reply plus staged changes |
+| POST | `/__admin/mockhub/api/projects/{id}/ai/apply` | `{changes}` → apply staged changes (editor) |
+| GET/PUT | `/__admin/mockhub/api/ai/settings` | AI provider settings (admin); `POST /ai/test` lists models |
 | GET/POST | `/__admin/mockhub/api/backup`, `/restore` | organisations, projects and stubs as one JSON file (admin) |
 
 Example: a CI job that loads mocks before running tests.
@@ -198,6 +233,7 @@ src/main/java/io/mockhub
   org/ user/                     organisations and users: models, repository ports + file implementations, services
   auth/                          roles, principal, session tokens, access policy
   sso/                           single sign-on: provider strategy (Entra ID), OIDC token check, role mapping
+  ai/                            AI assistant: provider strategy (OpenRouter, LiteLLM, OpenAI-compatible), tool loop
   stub/                          project stubs: gateway port to WireMock, path re-rooting, metadata
   journal/                       request log per project
   importer/ export/ soap/        import and export strategies, WSDL/XSD sampling

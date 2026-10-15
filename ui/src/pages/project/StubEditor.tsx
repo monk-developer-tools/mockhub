@@ -89,7 +89,9 @@ export function StubEditor({ project, projects, stub, isNew, canEdit, onSaved, o
     setDirty(isNew);
   }, [stub, isNew]);
 
-  useEffect(() => onDirtyChange(dirty), [dirty, onDirtyChange]);
+  useEffect(() => {
+    onDirtyChange(dirty);
+  }, [dirty, onDirtyChange]);
 
   const update = (patch: Partial<StubForm>) => {
     if (!canEdit) return;

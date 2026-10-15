@@ -79,6 +79,11 @@ public final class StubService implements ProjectListener {
     return relative(stub, p);
   }
 
+  public void validate(String projectId, JsonNode relativeStub) {
+    Project p = projects.get().get(projectId);
+    Jsons.toWireMock(toAbsolute(relativeStub, p), StubMapping.class);
+  }
+
   public void delete(String projectId, String stubId) {
     Project p = projects.get().get(projectId);
     gateway.remove(find(p, stubId).getId());

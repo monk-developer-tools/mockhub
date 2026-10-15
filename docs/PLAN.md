@@ -177,3 +177,24 @@ Checklist:
 - [x] UI: organisation switcher, organisation settings and members, users admin, SSO settings with setup guide, Microsoft button on login, account/password dialog
 - [x] Tests: unit + integration (fake Entra on WireMock) + system (users/orgs survive restart) + UI
 - [x] Docs + website: organisations, users, SSO setup guide
+
+### Phase 11 — AI assistant (OpenRouter, LiteLLM, OpenAI-compatible)
+Ideas from the market: Beeceptor and WireMock Cloud let AI agents act on mocks through tools (MCP), and general
+models already know WireMock's stub format. MockHub builds this in, with a review step.
+
+Design:
+- Admin settings (`ai.json`, key write-only, `MOCKHUB_AI_API_KEY` overrides). Strategy `AiProvider`: OpenRouter
+  (default base URL, `HTTP-Referer`/`X-Title` attribution, `openrouter/auto`), LiteLLM proxy (key optional, its
+  model names), other OpenAI-compatible. Port `LlmTransport` (HTTP/1.1, JDK client) so tests fake the model.
+- Per-project chat: tool-calling loop (max rounds configurable). Read tools: `list_stubs`, `get_stub`,
+  `list_requests`. Write tools *stage* changes (`create_stub`, `update_stub`, `delete_stub`) after validating
+  them; nothing is written until a user applies. Staged changes are kept on the client and sent back each turn.
+- Viewers may chat; applying needs editor. Request-log content is marked as untrusted data in the prompt.
+- UI: Assistant tab (chat, suggestions, review panel with diffs, apply/discard per change or all), admin page
+  with provider picker, model list from `/models`, test connection; "Describe the API" in the new-project dialog.
+
+Checklist:
+- [x] Backend: settings, providers, chat client, tools, assistant loop, apply, access rules
+- [x] UI: assistant tab, review and diff, admin page, describe-on-create
+- [x] Tests: unit (fake model), integration (fake OpenAI-compatible server on WireMock), UI
+- [x] Docs + website

@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { api, credentials, setUnauthorizedHandler } from '../api/client';
-import type { AuthInfo, OrgAccess, Project, Role, ServerInfo, Session } from '../api/types';
+import type { AiStatus, AuthInfo, OrgAccess, Project, Role, ServerInfo, Session } from '../api/types';
 
 const ORG_KEY = 'mockhub.org';
 const RANK: Record<Role, number> = { none: 0, viewer: 1, editor: 2, owner: 3, admin: 4 };
@@ -12,6 +12,8 @@ export function atLeast(role: Role | undefined, needed: Role) {
 interface AppState {
   info: ServerInfo | null;
   authInfo: AuthInfo | null;
+  aiStatus: AiStatus | null;
+  refreshAiStatus: () => Promise<void>;
   session: Session | null;
   projects: Project[];
   orgProjects: Project[];
@@ -58,6 +60,7 @@ export function readSsoHash(hash: string): { code?: string; error?: string } {
 export function AppProvider({ children }: { children: ReactNode }) {
   const [info, setInfo] = useState<ServerInfo | null>(null);
   const [authInfo, setAuthInfo] = useState<AuthInfo | null>(null);
+  const [aiStatus, setAiStatus] = useState<AiStatus | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [needsLogin, setNeedsLogin] = useState(false);
@@ -66,6 +69,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const refreshProjects = useCallback(async () => {
     setProjects(await api.projects());
+  }, []);
+
+  const refreshAiStatus = useCallback(async () => {
+    setAiStatus(await api.aiStatus().catch(() => null));
   }, []);
 
   const refreshSession = useCallback(async () => {
@@ -83,9 +90,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const me = await api.me();
       setSession(me);
       setNeedsLogin(false);
-      const [serverInfo, list] = await Promise.all([api.info(), api.projects()]);
+      const [serverInfo, list, ai] = await Promise.all([api.info(), api.projects(), api.aiStatus().catch(() => null)]);
       setInfo(serverInfo);
       setProjects(list);
+      setAiStatus(ai);
     } catch {
       credentials.clear();
       setNeedsLogin(true);
@@ -161,6 +169,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const value: AppState = {
     info,
     authInfo,
+    aiStatus,
+    refreshAiStatus,
     session,
     projects,
     orgProjects,

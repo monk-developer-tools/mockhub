@@ -16,6 +16,7 @@ public final class Config {
   public final String loginNote;
   public final String ssoClientSecret;
   public final String ssoAuthority;
+  public final String aiApiKey;
 
   public Config(Map<String, String> env) {
     this.port = Integer.parseInt(env.getOrDefault("PORT", "8080"));
@@ -28,6 +29,7 @@ public final class Config {
     this.loginNote = env.getOrDefault("MOCKHUB_LOGIN_NOTE", "");
     this.ssoClientSecret = env.getOrDefault("MOCKHUB_SSO_CLIENT_SECRET", "");
     this.ssoAuthority = env.getOrDefault("MOCKHUB_SSO_AUTHORITY", "");
+    this.aiApiKey = env.getOrDefault("MOCKHUB_AI_API_KEY", "");
   }
 
   private static String trimTrailingSlash(String s) {

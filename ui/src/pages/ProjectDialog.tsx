@@ -17,7 +17,7 @@ export function slugify(name: string) {
 const COLORS = ['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'];
 
 export function ProjectDialog({ project, onClose }: { project?: Project; onClose: () => void }) {
-  const { info, refreshProjects, orgs, currentOrg, roleIn, setCurrentOrg } = useApp();
+  const { info, refreshProjects, orgs, currentOrg, roleIn, setCurrentOrg, aiStatus } = useApp();
   const toast = useToast();
   const navigate = useNavigate();
   const [name, setName] = useState(project?.name ?? '');
@@ -26,6 +26,7 @@ export function ProjectDialog({ project, onClose }: { project?: Project; onClose
   const [description, setDescription] = useState(project?.description ?? '');
   const [color, setColor] = useState(project?.color ?? COLORS[0]);
   const [busy, setBusy] = useState(false);
+  const [brief, setBrief] = useState('');
   const writableOrgs = orgs.filter((o) => ['editor', 'owner', 'admin'].includes(roleIn(o.id)));
   const [orgId, setOrgId] = useState(project?.orgId ?? currentOrg?.id ?? writableOrgs[0]?.id ?? '');
   const effectiveSlug = slugTouched ? slug : slugify(name);
@@ -40,7 +41,8 @@ export function ProjectDialog({ project, onClose }: { project?: Project; onClose
       if (orgId && orgId !== currentOrg?.id) setCurrentOrg(orgId);
       toast.notify(project ? 'Project saved' : 'Project created');
       onClose();
-      if (!project) navigate(`/projects/${saved.id}/stubs`);
+      if (!project && brief.trim()) navigate(`/projects/${saved.id}/assistant`, { state: { prompt: brief.trim() } });
+      else if (!project) navigate(`/projects/${saved.id}/stubs`);
     } catch (err) {
       toast.fail(err);
     } finally {
@@ -94,6 +96,17 @@ export function ProjectDialog({ project, onClose }: { project?: Project; onClose
           <span>Description</span>
           <textarea rows={2} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What does this service do?" />
         </label>
+        {!project && aiStatus?.enabled && (
+          <label className="field">
+            <span>Describe the API <span className="hint">optional, the AI assistant drafts the stubs</span></span>
+            <textarea
+              rows={3}
+              value={brief}
+              onChange={(e) => setBrief(e.target.value)}
+              placeholder="e.g. Payments API: POST /payments creates a payment, GET /payments/{id} returns it, 404 for unknown ids. Or paste an OpenAPI spec."
+            />
+          </label>
+        )}
         <div className="field">
           <span>Colour</span>
           <div className="btn-row" role="radiogroup" aria-label="Colour">

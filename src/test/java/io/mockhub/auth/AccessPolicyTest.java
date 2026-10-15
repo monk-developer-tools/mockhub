@@ -65,7 +65,14 @@ class AccessPolicyTest {
       "editorA, GET, /settings, true",
       "editorA, POST, /mockhub/api/examples/rest-basics/install, true",
       "viewerA, GET, /mockhub/api/stubs/unassigned, true",
-      "nobody, GET, /mockhub/api/stubs/unassigned, false"
+      "nobody, GET, /mockhub/api/stubs/unassigned, false",
+      "viewerA, POST, /mockhub/api/projects/pa/ai/chat, true",
+      "viewerA, POST, /mockhub/api/projects/pa/ai/apply, false",
+      "editorA, POST, /mockhub/api/projects/pa/ai/apply, true",
+      "viewerA, POST, /mockhub/api/projects/pb/ai/chat, false",
+      "nobody, GET, /mockhub/api/ai/status, true",
+      "ownerA, GET, /mockhub/api/ai/settings, false",
+      "ownerA, POST, /mockhub/api/ai/test, false"
   })
   void decides(String who, String method, String path, boolean allowed) {
     // When

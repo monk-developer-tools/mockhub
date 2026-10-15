@@ -174,3 +174,73 @@ export interface ImportResult {
   imported: number;
   [key: string]: Json;
 }
+
+export interface AiStatus {
+  enabled: boolean;
+  provider: string;
+  providerLabel: string;
+  model: string;
+}
+
+export interface AiProviderInfo {
+  id: string;
+  label: string;
+  defaultBaseUrl: string;
+  defaultModel: string;
+  requiresApiKey: boolean;
+}
+
+export interface AiSettings {
+  enabled: boolean;
+  provider: string;
+  baseUrl: string;
+  apiKey?: string;
+  clearApiKey?: boolean;
+  model: string;
+  temperature: number;
+  maxToolRounds: number;
+  apiKeySet: boolean;
+  apiKeyFromEnvironment: boolean;
+  providers: AiProviderInfo[];
+}
+
+export interface AiTestResult {
+  ok: boolean;
+  error?: string;
+  modelCount?: number;
+  modelFound?: boolean;
+  models?: string[];
+}
+
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  steps?: AssistantStep[];
+}
+
+export interface AssistantStep {
+  tool: string;
+  detail: string;
+}
+
+export interface ProposedChange {
+  id: string;
+  action: 'create' | 'update' | 'delete';
+  stubId: string | null;
+  stub: Stub | null;
+  before: Stub | null;
+  summary: string;
+}
+
+export interface AssistantReply {
+  reply: string;
+  changes: ProposedChange[];
+  steps: AssistantStep[];
+  promptTokens: number;
+  completionTokens: number;
+}
+
+export interface ApplyResult {
+  applied: number;
+  results: { changeId: string; ok: boolean; stubId: string | null; error: string | null }[];
+}
