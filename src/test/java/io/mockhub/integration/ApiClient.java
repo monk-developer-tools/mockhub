@@ -22,6 +22,18 @@ final class ApiClient {
     this.baseUrl = baseUrl;
   }
 
+  ApiClient bearer(String token) {
+    authorization = "Bearer " + token;
+    return this;
+  }
+
+  ApiClient login(String user, String password) {
+    Result r = new ApiClient(baseUrl).post("/__admin/mockhub/api/auth/login",
+        "{\"username\":\"" + user + "\",\"password\":\"" + password + "\"}");
+    if (r.status() != 200) throw new IllegalStateException("Login failed: " + r.body());
+    return bearer(r.json().get("token").asText());
+  }
+
   ApiClient as(String user, String password) {
     authorization = "Basic " + Base64.getEncoder().encodeToString((user + ":" + password).getBytes(StandardCharsets.UTF_8));
     return this;
@@ -55,7 +67,7 @@ final class ApiClient {
     try {
       HttpResponse<byte[]> r = http.send(b.build(), HttpResponse.BodyHandlers.ofByteArray());
       return new Result(r.statusCode(), r.body(), r.headers().firstValue("Content-Type").orElse(""),
-          r.headers().firstValue("Content-Disposition").orElse(""));
+          r.headers().firstValue("Content-Disposition").orElse(""), r.headers().firstValue("Location").orElse(""));
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     } catch (InterruptedException e) {
@@ -64,7 +76,7 @@ final class ApiClient {
     }
   }
 
-  record Result(int status, byte[] bytes, String contentType, String contentDisposition) {
+  record Result(int status, byte[] bytes, String contentType, String contentDisposition, String location) {
     String body() {
       return new String(bytes, StandardCharsets.UTF_8);
     }

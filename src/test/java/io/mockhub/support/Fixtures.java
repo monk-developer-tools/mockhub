@@ -16,7 +16,7 @@ public final class Fixtures {
   private Fixtures() {}
 
   public static Project project(String slug) {
-    return new Project("p-" + slug, slug, slug, "", "#000000", "2024-01-01T00:00:00Z", "2024-01-01T00:00:00Z");
+    return new Project("p-" + slug, slug, slug, "", "#000000", "2024-01-01T00:00:00Z", "2024-01-01T00:00:00Z", "org1");
   }
 
   public static ObjectNode json(String json) {

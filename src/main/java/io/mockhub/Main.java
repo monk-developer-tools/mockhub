@@ -54,7 +54,7 @@ public final class Main {
         server.port(),
         server.port(),
         options.filesRoot().getPath(),
-        config.users.isEmpty() ? "disabled (set MOCKHUB_USERS to enable)" : config.users.size() + " user(s)");
+        config.users.isEmpty() ? "users and SSO are managed in the UI" : config.users.size() + " user(s) from MOCKHUB_USERS");
   }
 
   private static void addDefault(List<String> out, List<String> userArgs, String flag, String value) {

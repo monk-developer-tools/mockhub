@@ -1,4 +1,19 @@
-import type { Example, ImportResult, Project, Scenario, ServeEvent, ServerInfo, Session, Stub } from './types';
+import type {
+  AuthInfo,
+  Example,
+  ImportResult,
+  LoginResult,
+  Member,
+  Organization,
+  Project,
+  Scenario,
+  ServeEvent,
+  ServerInfo,
+  Session,
+  SsoSettings,
+  Stub,
+  UserRecord,
+} from './types';
 
 const API = '/__admin/mockhub/api';
 const ADMIN = '/__admin';
@@ -18,8 +33,8 @@ export const credentials = {
       return null;
     }
   },
-  set(username: string, password: string) {
-    const token = 'Basic ' + btoa(unescape(encodeURIComponent(`${username}:${password}`)));
+  set(bearer: string) {
+    const token = `Bearer ${bearer}`;
     try {
       sessionStorage.setItem(TOKEN_KEY, token);
     } catch {
@@ -41,12 +56,12 @@ export function setUnauthorizedHandler(handler: () => void) {
   onUnauthorized = handler;
 }
 
-async function request<T>(path: string, init: RequestInit = {}, token = credentials.get()): Promise<T> {
+async function request<T>(path: string, init: RequestInit = {}, token: string | null = credentials.get()): Promise<T> {
   const headers = new Headers(init.headers);
   if (token) headers.set('Authorization', token);
   if (init.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
   const response = await fetch(path, { ...init, headers });
-  if (response.status === 401) onUnauthorized();
+  if (response.status === 401 && token) onUnauthorized();
   if (!response.ok) {
     let message = `${response.status} ${response.statusText}`;
     message = await errorMessage(response, message);
@@ -87,8 +102,34 @@ async function download(path: string) {
 
 export const api = {
   info: () => request<ServerInfo>(`${API}/info`),
-  authInfo: () => request<{ authEnabled: boolean; loginNote?: string }>(`${API}/auth/info`),
-  login: (token: string) => request<Session>(`${API}/auth/login`, { method: 'POST' }, token),
+  authInfo: () => request<AuthInfo>(`${API}/auth/info`),
+  login: (username: string, password: string) =>
+    request<LoginResult>(`${API}/auth/login`, { method: 'POST', body: json({ username, password }) }, null),
+  me: () => request<Session>(`${API}/auth/me`),
+  exchangeSsoCode: (code: string) => request<LoginResult>(`${API}/auth/sso/exchange`, { method: 'POST', body: json({ code }) }, null),
+  changePassword: (currentPassword: string, newPassword: string) =>
+    request<LoginResult>(`${API}/auth/password`, { method: 'POST', body: json({ currentPassword, newPassword }) }),
+
+  orgs: () => request<Organization[]>(`${API}/orgs`),
+  createOrg: (body: Partial<Organization>) => request<Organization>(`${API}/orgs`, { method: 'POST', body: json(body) }),
+  updateOrg: (id: string, body: Partial<Organization>) => request<Organization>(`${API}/orgs/${id}`, { method: 'PUT', body: json(body) }),
+  deleteOrg: (id: string) => request<void>(`${API}/orgs/${id}`, { method: 'DELETE' }),
+  members: (orgId: string) => request<Member[]>(`${API}/orgs/${orgId}/members`),
+  setMember: (orgId: string, userId: string, role: string) =>
+    request<UserRecord>(`${API}/orgs/${orgId}/members/${userId}`, { method: 'PUT', body: json({ role }) }),
+  removeMember: (orgId: string, userId: string) => request<void>(`${API}/orgs/${orgId}/members/${userId}`, { method: 'DELETE' }),
+
+  users: () => request<UserRecord[]>(`${API}/users`),
+  createUser: (body: Record<string, unknown>) => request<UserRecord & { token?: string }>(`${API}/users`, { method: 'POST', body: json(body) }),
+  updateUser: (id: string, body: Partial<UserRecord>) => request<UserRecord>(`${API}/users/${id}`, { method: 'PUT', body: json(body) }),
+  resetPassword: (id: string, password: string) =>
+    request<UserRecord>(`${API}/users/${id}/password`, { method: 'POST', body: json({ password }) }),
+  deleteUser: (id: string) => request<void>(`${API}/users/${id}`, { method: 'DELETE' }),
+
+  sso: () => request<SsoSettings>(`${API}/sso`),
+  saveSso: (body: Partial<SsoSettings>) => request<SsoSettings>(`${API}/sso`, { method: 'PUT', body: json(body) }),
+  testSso: (body: Partial<SsoSettings>) =>
+    request<{ ok: boolean; error?: string; issuer?: string }>(`${API}/sso/test`, { method: 'POST', body: json(body) }),
 
   projects: () => request<Project[]>(`${API}/projects`),
   project: (id: string) => request<Project>(`${API}/projects/${id}`),
@@ -127,10 +168,11 @@ export const api = {
   exportProject: (projectId: string, format: string) => download(`${API}/projects/${projectId}/export/${format}`),
 
   examples: () => request<Example[]>(`${API}/examples`),
-  installExample: (id: string) => request<Project>(`${API}/examples/${id}/install`, { method: 'POST' }),
+  installExample: (id: string, orgId?: string) =>
+    request<Project>(`${API}/examples/${id}/install${orgId ? `?orgId=${orgId}` : ''}`, { method: 'POST' }),
 
   backup: () => download(`${API}/backup`),
-  restore: (body: string) => request<{ projects: number; stubs: number }>(`${API}/restore`, { method: 'POST', body }),
+  restore: (body: string) => request<{ organizations: number; projects: number; stubs: number }>(`${API}/restore`, { method: 'POST', body }),
 
   scenarios: () => request<{ scenarios: Scenario[] }>(`${ADMIN}/scenarios`).then((r) => r.scenarios),
   resetScenarios: () => request<void>(`${ADMIN}/scenarios/reset`, { method: 'POST' }),

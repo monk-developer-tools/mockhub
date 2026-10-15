@@ -17,7 +17,7 @@ export function slugify(name: string) {
 const COLORS = ['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'];
 
 export function ProjectDialog({ project, onClose }: { project?: Project; onClose: () => void }) {
-  const { info, refreshProjects } = useApp();
+  const { info, refreshProjects, orgs, currentOrg, roleIn, setCurrentOrg } = useApp();
   const toast = useToast();
   const navigate = useNavigate();
   const [name, setName] = useState(project?.name ?? '');
@@ -26,15 +26,18 @@ export function ProjectDialog({ project, onClose }: { project?: Project; onClose
   const [description, setDescription] = useState(project?.description ?? '');
   const [color, setColor] = useState(project?.color ?? COLORS[0]);
   const [busy, setBusy] = useState(false);
+  const writableOrgs = orgs.filter((o) => ['editor', 'owner', 'admin'].includes(roleIn(o.id)));
+  const [orgId, setOrgId] = useState(project?.orgId ?? currentOrg?.id ?? writableOrgs[0]?.id ?? '');
   const effectiveSlug = slugTouched ? slug : slugify(name);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     setBusy(true);
     try {
-      const body = { name, slug: effectiveSlug, description, color };
+      const body = { name, slug: effectiveSlug, description, color, orgId };
       const saved = project ? await api.updateProject(project.id, body) : await api.createProject(body);
       await refreshProjects();
+      if (orgId && orgId !== currentOrg?.id) setCurrentOrg(orgId);
       toast.notify(project ? 'Project saved' : 'Project created');
       onClose();
       if (!project) navigate(`/projects/${saved.id}/stubs`);
@@ -77,6 +80,15 @@ export function ProjectDialog({ project, onClose }: { project?: Project; onClose
         </label>
         {project && project.slug !== effectiveSlug && (
           <div className="callout warn">Changing the base path moves every mock in this project to the new URL.</div>
+        )}
+        {writableOrgs.length > 1 && (
+          <label className="field">
+            <span>Organisation</span>
+            <select value={orgId} onChange={(e) => setOrgId(e.target.value)}>
+              {writableOrgs.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+            </select>
+            {project && project.orgId !== orgId && <span className="hint">Moves the project. Its mock URL stays the same.</span>}
+          </label>
         )}
         <label className="field">
           <span>Description</span>

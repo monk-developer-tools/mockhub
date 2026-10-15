@@ -8,7 +8,7 @@ import { useToast } from '../components/Toasts';
 import { useApp } from '../state/AppContext';
 
 export function ExampleGrid({ compact }: { compact?: boolean }) {
-  const { canEdit, refreshProjects } = useApp();
+  const { canEdit, refreshProjects, currentOrg } = useApp();
   const toast = useToast();
   const navigate = useNavigate();
   const [examples, setExamples] = useState<Example[] | null>(null);
@@ -21,7 +21,7 @@ export function ExampleGrid({ compact }: { compact?: boolean }) {
   const install = async (example: Example) => {
     setInstalling(example.id);
     try {
-      const project = await api.installExample(example.id);
+      const project = await api.installExample(example.id, currentOrg?.id);
       await refreshProjects();
       toast.notify(`Installed “${project.name}”`);
       navigate(`/projects/${project.id}/stubs`);

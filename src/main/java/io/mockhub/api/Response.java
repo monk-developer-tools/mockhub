@@ -20,6 +20,15 @@ public final class Response {
         .build();
   }
 
+  public static ResponseDefinition redirect(String location) {
+    return responseDefinition()
+        .withStatus(302)
+        .withHeader("Location", location)
+        .withHeader("Cache-Control", "no-store")
+        .withHeader("Referrer-Policy", "no-referrer")
+        .build();
+  }
+
   public static ResponseDefinition noContent() {
     return responseDefinition().withStatus(204).build();
   }

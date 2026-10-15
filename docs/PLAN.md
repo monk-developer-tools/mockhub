@@ -142,3 +142,38 @@ Ticked as each item is implemented and verified.
 - [x] Inspect VPS read-only (nginx sites, ports, certbot) — do not touch existing apps or Postgres
 - [x] Add one nginx server block + TLS (certbot), `nginx -t` before reload
 - [x] Deploy script `website/deploy.sh` (rsync), verify https://mockhub.devops-monk.com
+
+### Phase 10 — Organisations, users and single sign-on
+Design:
+- **Organisation → projects.** Every project belongs to one organisation (`orgId`). Mock URLs stay `/<base-path>/…` and base paths stay unique on the server, so existing clients keep working. On first start an organisation called "Default" is created and projects without an organisation move into it.
+- **Roles.** Organisation roles: viewer < editor < owner. Each user also has a server role: none, viewer, editor or admin. A user's role in an organisation is the higher of the server role and the organisation membership. Admins manage everything (users, SSO, server, backups). Owners manage their organisation's settings and members.
+- **Users.** There are three sources:
+  - **env:** `MOCKHUB_USERS`, read-only, the break-glass admin.
+  - **local:** created in the UI, passwords stored as PBKDF2.
+  - **azure:** created on first SSO sign-in.
+  Users are stored in `<data>/mockhub/users.json` and organisations in `organizations.json`.
+- **Sessions.** `POST /auth/login` returns a signed token (HMAC-SHA256, secret in `<data>/mockhub/secret.key`, 12-hour lifetime) that the UI sends as `Authorization: Bearer`. Basic auth still works for scripts. Changing a password or disabling a user invalidates that user's existing tokens.
+- **Sign-in on/off.** Sign-in is required as soon as there is any user (env or local) or SSO is enabled. With sign-in off, everyone is an anonymous admin. The UI offers "create the first admin" to turn it on.
+- **SSO (Microsoft Entra ID).** OIDC authorisation code flow with PKCE, configured in the UI by an admin. Settings:
+  - tenant ID, client ID and client secret (write-only; `MOCKHUB_SSO_CLIENT_SECRET` overrides it)
+  - cloud
+  - button label
+  - allowed e-mail domains
+  - default server role
+  - default organisation and role
+  - mappings from Entra groups or app roles to an organisation role or server role
+  - "Allow password sign-in"
+- **SSO flow:**
+  1. The browser opens `/auth/sso/azure/start`.
+  2. MockHub redirects to Entra, which redirects back to `/auth/sso/azure/callback`.
+  3. MockHub checks the id_token: RS256 signature against the tenant JWKS, plus issuer, audience, expiry and nonce.
+  4. MockHub creates or updates the user and redirects to the UI with a one-time code (60 seconds) that the UI exchanges for a session token.
+  5. Group-derived roles are recomputed on every sign-in and kept separate from roles set by hand in the UI.
+- **Code structure:** packages `org`, `user`, `auth`, `sso`. Ports `OrganizationRepository`, `UserRepository` and `SsoSettingsRepository`, plus `HttpTransport` so Entra can be faked in tests. Strategy `SsoProvider` (`AzureEntraProvider`; others can be added). `AccessPolicy` makes every authorisation decision.
+
+Checklist:
+- [x] Backend: organisations, users, tokens, access policy, project → organisation, migration
+- [x] Backend: Entra SSO (settings API, test connection, start/callback/exchange)
+- [x] UI: organisation switcher, organisation settings and members, users admin, SSO settings with setup guide, Microsoft button on login, account/password dialog
+- [x] Tests: unit + integration (fake Entra on WireMock) + system (users/orgs survive restart) + UI
+- [x] Docs + website: organisations, users, SSO setup guide

@@ -42,7 +42,8 @@
       <a href="#import">Import</a>
       <a href="#export">Postman &amp; Bruno</a>
       <a href="#requests">Request log</a>
-      <a href="#auth">Sign-in &amp; roles</a>
+      <a href="#auth">Organisations &amp; roles</a>
+      <a href="#sso">Single sign-on</a>
       <h4>Operations</h4>
       <a href="#config">Configuration</a>
       <a href="#api">API &amp; CI</a>
@@ -181,18 +182,28 @@
       <h2 id="requests">Request log</h2>
       <p>The <strong>Requests</strong> tab updates live. Filter to <em>Unmatched</em> to find missing stubs. Click a request to see headers and bodies, the closest stubs and how near they came, and a button that creates a stub from that request.</p>
 
-      <h2 id="auth">Sign-in &amp; roles</h2>
-      <p>Sign-in is off until you set <code>MOCKHUB_USERS</code>. Mock endpoints are never protected; only the UI and the admin API are.</p>
-      <div class="code"><pre>MOCKHUB_USERS="lead:s3cret:admin,qa:qa-pass:editor,dev:sha256:9f86d0…:viewer"</pre></div>
+      <h2 id="auth">Organisations &amp; roles</h2>
+      <p>Sign-in is off until the first user exists. Open <strong>Users</strong> and create an admin, or start with a break-glass account in <code>MOCKHUB_USERS</code>. Mock endpoints are never protected; only the UI and the admin API are.</p>
+      <div class="code"><pre>MOCKHUB_USERS="root:change-me:admin"</pre></div>
+      <p><strong>Organisations</strong> hold projects. Pick one with the switcher at the top of the sidebar. Existing projects start in <em>Default</em>. Moving a project to another organisation doesn't change its mock URL.</p>
       <table>
-        <thead><tr><th>Role</th><th>Can</th></tr></thead>
+        <thead><tr><th>Organisation role</th><th>Can</th></tr></thead>
         <tbody>
-          <tr><td>viewer</td><td>read everything and download exports</td></tr>
+          <tr><td>viewer</td><td>see the organisation's projects, stubs and request logs, and download exports</td></tr>
           <tr><td>editor</td><td>also create, edit and delete projects and stubs, import, record</td></tr>
-          <tr><td>admin</td><td>also global settings, restore, and reset or shutdown through the native API</td></tr>
+          <tr><td>owner</td><td>also rename the organisation, add and remove members, delete it</td></tr>
         </tbody>
       </table>
-      <div class="callout">For single sign-on, put MockHub behind your identity-aware proxy or an ALB with OIDC authentication on <code>/__admin/*</code>.</div>
+      <p>Each user also has a <strong>server role</strong>. <em>Viewer everywhere</em> and <em>editor everywhere</em> apply to every organisation. <em>Admin</em> also manages users, single sign-on, backups and the native WireMock API. Changing a password or disabling a user signs out that user's other sessions.</p>
+
+      <h2 id="sso">Single sign-on with Microsoft Entra ID</h2>
+      <ol>
+        <li>In the Entra admin centre, open <strong>App registrations → New registration</strong>. Choose <strong>Web</strong> and paste the redirect URI shown under <strong>MockHub → Single sign-on</strong>: <code>https://&lt;host&gt;/__admin/mockhub/api/auth/sso/azure/callback</code>.</li>
+        <li>Copy the <strong>Application (client) ID</strong> and <strong>Directory (tenant) ID</strong>. Under <strong>Certificates &amp; secrets</strong>, create a client secret and copy its value.</li>
+        <li>Optional: add a <strong>groups claim</strong> under <strong>Token configuration</strong>, or define <strong>App roles</strong>.</li>
+        <li>Paste the values into MockHub and choose <strong>Test connection</strong>. Then set the allowed domains, the organisation and role every new user gets, and mappings from group IDs or app roles to roles. Turn it on and save.</li>
+      </ol>
+      <p>MockHub uses the authorisation code flow with PKCE and checks the ID token's signature, issuer, audience, expiry and nonce. Roles from groups are refreshed at every sign-in; roles set by hand are kept. Set <code>MOCKHUB_PUBLIC_URL</code> behind a proxy so the redirect URI matches. Supply the secret with <code>MOCKHUB_SSO_CLIENT_SECRET</code> if you keep it in a secret store.</p>
 
       <h2 id="config">Configuration</h2>
       <table>
@@ -201,7 +212,8 @@
           <tr><td><code>PORT</code></td><td><code>8080</code></td><td>Port for UI, API and mocks</td></tr>
           <tr><td><code>MOCKHUB_DATA_DIR</code></td><td><code>/data</code></td><td>Where projects and stubs are stored</td></tr>
           <tr><td><code>MOCKHUB_PUBLIC_URL</code></td><td>from the request</td><td>Public URL used in exports</td></tr>
-          <tr><td><code>MOCKHUB_USERS</code></td><td>empty</td><td>Enables sign-in, see above</td></tr>
+          <tr><td><code>MOCKHUB_USERS</code></td><td>empty</td><td>Break-glass accounts with a server role, see <a href="#auth">Organisations &amp; roles</a></td></tr>
+          <tr><td><code>MOCKHUB_SSO_CLIENT_SECRET</code></td><td>empty</td><td>Entra client secret; overrides the one saved in the UI</td></tr>
           <tr><td><code>MOCKHUB_JOURNAL_MAX_ENTRIES</code></td><td><code>5000</code></td><td>Requests kept in the log</td></tr>
           <tr><td><code>MOCKHUB_STUB_CORS</code></td><td><code>true</code></td><td>CORS headers on mock responses</td></tr>
           <tr><td><code>WIREMOCK_OPTIONS</code></td><td>empty</td><td>Any extra <a href="https://wiremock.org/docs/standalone/java-jar/">WireMock flag</a></td></tr>

@@ -48,7 +48,7 @@ class AuthIntegrationTest {
     // When / Then
     assertThat(viewer.get(API + "/projects").json()).hasSize(1);
     assertThat(viewer.post(API + "/projects", "{\"name\":\"X\"}").status()).isEqualTo(403);
-    assertThat(viewer.post(API + "/auth/login", "").json().get("role").asText()).isEqualTo("viewer");
+    assertThat(viewer.post(API + "/auth/login", "").json().at("/user/effectiveServerRole").asText()).isEqualTo("viewer");
   }
 
   @Test

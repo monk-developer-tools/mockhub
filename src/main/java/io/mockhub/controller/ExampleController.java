@@ -10,16 +10,18 @@ public final class ExampleController implements ApiController {
   private final ExampleCatalog catalog;
   private final ExampleInstaller installer;
   private final ProjectViews views;
+  private final OrgChoice orgChoice;
 
-  public ExampleController(ExampleCatalog catalog, ExampleInstaller installer, ProjectViews views) {
+  public ExampleController(ExampleCatalog catalog, ExampleInstaller installer, ProjectViews views, OrgChoice orgChoice) {
     this.catalog = catalog;
     this.installer = installer;
     this.views = views;
+    this.orgChoice = orgChoice;
   }
 
   @Override
   public void register(ApiRouter r) {
     r.get("/examples", ctx -> catalog.all());
-    r.post("/examples/{id}/install", ctx -> Response.json(201, views.view(ctx, installer.install(ctx.path("id")))));
+    r.post("/examples/{id}/install", ctx -> Response.json(201, views.view(ctx, installer.install(ctx.path("id"), orgChoice.writable(ctx.principal(), ctx.query("orgId"))))));
   }
 }

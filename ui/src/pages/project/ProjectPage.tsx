@@ -5,6 +5,7 @@ import type { Project } from '../../api/types';
 import { CopyButton } from '../../components/CopyButton';
 import { Skeleton } from '../../components/Skeleton';
 import { useToast } from '../../components/Toasts';
+import { useApp } from '../../state/AppContext';
 
 export interface ProjectContext {
   project: Project;
@@ -20,6 +21,7 @@ export function ProjectPage() {
   const toast = useToast();
   const [project, setProject] = useState<Project | null>(null);
   const [missing, setMissing] = useState(false);
+  const { currentOrg, setCurrentOrg, orgs } = useApp();
 
   const reloadProject = useCallback(async () => {
     try {
@@ -30,6 +32,10 @@ export function ProjectPage() {
       toast.fail(e);
     }
   }, [projectId, toast.fail]);
+
+  useEffect(() => {
+    if (project?.orgId && project.orgId !== currentOrg?.id && orgs.some((o) => o.id === project.orgId)) setCurrentOrg(project.orgId);
+  }, [project?.orgId, currentOrg?.id, orgs, setCurrentOrg]);
 
   useEffect(() => {
     setProject(null);

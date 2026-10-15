@@ -30,7 +30,10 @@ https://mocks.acme.internal/legacy-crm/ws/customers      SOAP mocks of project "
   Install one with a click and copy what you need. The editor also has a template gallery.
 - **Persistence.** Every stub, including ones created through the native `/__admin` API, is written to `/data`.
   There's also full backup and restore.
-- **Optional sign-in** with `admin`, `editor` and `viewer` roles. Mock endpoints always stay open.
+- **Organisations and teams.** Group projects into organisations. Owners add people as viewers, editors or owners,
+  and each person sees only their organisations.
+- **Users and single sign-on.** Create users in the UI, or let people sign in with **Microsoft Entra ID** (Azure AD).
+  Entra groups and app roles can map to organisation roles. Mock endpoints always stay open.
 
 ## Quick start
 
@@ -55,26 +58,64 @@ All configuration is through environment variables.
 | `PORT` | `8080` | HTTP port for UI, API and mocks |
 | `MOCKHUB_DATA_DIR` | `/data` in Docker, `./mockhub-data` otherwise | Where projects, stubs and body files are stored. Mount a volume (EFS on ECS). |
 | `MOCKHUB_PUBLIC_URL` | taken from the request | The URL people use to reach MockHub, e.g. `https://mocks.acme.internal`. Used in exports. |
-| `MOCKHUB_USERS` | empty, so sign-in is off | `user:password:role` entries separated by commas. Roles: `admin`, `editor`, `viewer`. A password can be `sha256:<hex>`. |
+| `MOCKHUB_USERS` | empty | Optional break-glass accounts: `user:password:role` entries separated by commas. Roles: `admin`, `editor`, `viewer` (server-wide). A password can be `sha256:<hex>`. |
+| `MOCKHUB_SSO_CLIENT_SECRET` | empty | Entra client secret. Overrides the one saved in the UI, so it can come from a secret store. |
 | `MOCKHUB_LOGIN_NOTE` | empty | Text shown on the sign-in page, e.g. demo credentials |
 | `MOCKHUB_JOURNAL_MAX_ENTRIES` | `5000` | How many requests the request log keeps in memory |
 | `MOCKHUB_STUB_CORS` | `true` | Adds CORS headers to mock responses so browser apps can call them |
 | `WIREMOCK_OPTIONS` | empty | Any extra [WireMock CLI option](https://wiremock.org/docs/standalone/java-jar/), e.g. `--async-response-enabled true --verbose` |
 
-Example with sign-in:
+## Organisations, users and sign-in
+
+Sign-in is off until there is a user. While it's off, anyone who can reach MockHub can change everything. To turn it
+on, either open **Users** in the UI and create the first admin, or start with a break-glass admin:
 
 ```bash
 docker run -p 8080:8080 -v mockhub-data:/data \
-  -e MOCKHUB_USERS="lead:s3cret:admin,qa:qa-pass:editor,dev:dev-pass:viewer" \
+  -e MOCKHUB_USERS="root:change-me:admin" \
   -e MOCKHUB_PUBLIC_URL=https://mocks.acme.internal \
   abhaypratap/mockhub
 ```
 
-| Role | Can |
+**Organisations** hold projects. On first start, MockHub creates one called *Default* and moves existing projects
+into it. Admins create more from the organisation switcher at the top of the sidebar. Mock URLs don't change when a
+project moves between organisations, and base paths stay unique across the server.
+
+| Organisation role | Can |
 |---|---|
-| viewer | see projects, stubs and request logs, and download exports |
-| editor | everything a viewer can, plus create, edit and delete projects and stubs, import, record |
-| admin | everything, plus global settings, restore, reset and shutdown through the native API |
+| viewer | see the organisation's projects, stubs and request logs, and download exports |
+| editor | also create, edit and delete projects and stubs, import, and record |
+| owner | also rename the organisation, add and remove members, and delete it |
+
+Each user also has a **server role**. With *viewer everywhere* or *editor everywhere*, a user has that role in every
+organisation. With *admin*, a user also manages users, single sign-on, backups and the native WireMock admin API.
+Users from `MOCKHUB_USERS` keep the role given there. Use them as a break-glass account.
+
+The UI keeps a session token for 12 hours. Scripts can keep using HTTP Basic auth with a username and password.
+Changing a password or disabling a user signs out that user's other sessions.
+
+### Single sign-on with Microsoft Entra ID
+
+1. In the [Entra admin centre](https://entra.microsoft.com), go to **App registrations → New registration**. Choose
+   **Web** as the redirect URI type and paste the redirect URI from **MockHub → Single sign-on**:
+   `https://<your MockHub>/__admin/mockhub/api/auth/sso/azure/callback`.
+2. Copy the **Application (client) ID** and the **Directory (tenant) ID**.
+3. Under **Certificates & secrets**, create a client secret and copy its value.
+4. Optional: to use groups, add a **groups claim** under **Token configuration**, or define **App roles**.
+5. In MockHub, paste the three values and choose **Test connection**. Then pick:
+   - the allowed e-mail domains
+   - the organisation and role every new user gets
+   - mappings from group object IDs or app role values to organisation roles or a server role
+
+   Turn it on and save.
+
+The login page then shows **Sign in with Microsoft**. MockHub uses the authorisation code flow with PKCE. It checks
+the ID token's signature against the tenant's keys, and checks the issuer, audience, expiry and nonce. People are
+created on their first sign-in. Roles that come from groups are refreshed at every sign-in. Roles you set by hand
+in the UI are kept.
+
+Set `MOCKHUB_PUBLIC_URL` when MockHub runs behind a proxy, so the redirect URI matches what you registered. Use
+**Also allow MockHub passwords** to make SSO the only way in for everyone except admins.
 
 ## How it works
 
@@ -83,7 +124,8 @@ MockHub is a WireMock extension running inside a regular WireMock server:
 - Mocks are plain WireMock stubs. A project is a base path plus a tag (`metadata.mockhub.projectId`) on its stubs.
   The UI edits paths relative to the project. A stub listener marks every stub persistent, so WireMock writes it to
   `/data/mappings`.
-- Projects are stored in `/data/mockhub/projects.json`.
+- Projects, organisations, users and SSO settings are stored as JSON in `/data/mockhub/`. Passwords are PBKDF2
+  hashes. `secret.key` signs session tokens, so keep it, and back up `/data` as a whole.
 - The UI is served from the JAR at `/__admin/mockhub/ui/`, and the MockHub API at `/__admin/mockhub/api/`. The
   native WireMock admin API stays available at `/__admin/`.
 
@@ -91,7 +133,16 @@ MockHub is a WireMock extension running inside a regular WireMock server:
 
 | Method | Path | |
 |---|---|---|
-| GET/POST | `/__admin/mockhub/api/projects` | list / create projects |
+| POST | `/__admin/mockhub/api/auth/login` | `{username, password}` → session token |
+| GET | `/__admin/mockhub/api/auth/me` | the signed-in user and their organisations |
+| GET/POST | `/__admin/mockhub/api/orgs` | list / create organisations |
+| GET/PUT/DELETE | `/__admin/mockhub/api/orgs/{id}` | read / rename / delete an organisation (and its projects) |
+| GET | `/__admin/mockhub/api/orgs/{id}/members` | members with their roles |
+| PUT/DELETE | `/__admin/mockhub/api/orgs/{id}/members/{userId}` | add or change (`{role}`) / remove a member |
+| GET/POST | `/__admin/mockhub/api/users` | list / create users (admin) |
+| PUT/DELETE | `/__admin/mockhub/api/users/{id}` | update / delete a user; `POST …/password` resets it |
+| GET/PUT | `/__admin/mockhub/api/sso` | single sign-on settings (admin); `POST /sso/test` checks the tenant |
+| GET/POST | `/__admin/mockhub/api/projects?orgId=` | list / create projects (`orgId` in the body) |
 | GET/PUT/DELETE | `/__admin/mockhub/api/projects/{id}` | read / update / delete a project (and its stubs) |
 | GET/POST | `/__admin/mockhub/api/projects/{id}/stubs` | list / create stubs (project-relative URLs) |
 | GET/PUT/DELETE | `/__admin/mockhub/api/projects/{id}/stubs/{stubId}` | read / update / delete a stub |
@@ -103,7 +154,7 @@ MockHub is a WireMock extension running inside a regular WireMock server:
 | GET/POST | `/__admin/mockhub/api/examples`, `/examples/{id}/install` | built-in examples |
 | GET | `/__admin/mockhub/api/stubs/unassigned` | stubs not in any project |
 | POST | `/__admin/mockhub/api/projects/{id}/adopt/{stubId}?prefix=` | put such a stub into a project |
-| GET/POST | `/__admin/mockhub/api/backup`, `/restore` | everything as one JSON file |
+| GET/POST | `/__admin/mockhub/api/backup`, `/restore` | organisations, projects and stubs as one JSON file (admin) |
 
 Example: a CI job that loads mocks before running tests.
 
@@ -144,6 +195,9 @@ src/main/java/io/mockhub
   api/                           tiny router, request context, JSON helpers
   controller/                    one controller per resource
   project/                       projects: model, repository port + file implementation, service, listener
+  org/ user/                     organisations and users: models, repository ports + file implementations, services
+  auth/                          roles, principal, session tokens, access policy
+  sso/                           single sign-on: provider strategy (Entra ID), OIDC token check, role mapping
   stub/                          project stubs: gateway port to WireMock, path re-rooting, metadata
   journal/                       request log per project
   importer/ export/ soap/        import and export strategies, WSDL/XSD sampling

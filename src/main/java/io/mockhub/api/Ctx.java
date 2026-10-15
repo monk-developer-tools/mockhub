@@ -3,15 +3,26 @@ package io.mockhub.api;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.github.tomakehurst.wiremock.http.QueryParameter;
 import com.github.tomakehurst.wiremock.http.Request;
+import io.mockhub.auth.Principal;
 import java.util.Map;
+import java.util.function.Function;
 
 public final class Ctx {
   public final Request request;
   private final Map<String, String> pathParams;
+  private final Function<Request, Principal> principals;
+  private Principal principal;
 
-  Ctx(Request request, Map<String, String> pathParams) {
+  Ctx(Request request, Map<String, String> pathParams, Function<Request, Principal> principals) {
     this.request = request;
     this.pathParams = pathParams;
+    this.principals = principals;
+  }
+
+  public Principal principal() {
+    if (principal == null) principal = principals.apply(request);
+    if (principal == null) throw new ApiException(401, "Authentication required");
+    return principal;
   }
 
   public String path(String name) {

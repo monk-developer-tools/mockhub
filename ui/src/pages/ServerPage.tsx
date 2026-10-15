@@ -81,7 +81,7 @@ export function ServerPage() {
   const restore = async (text: string) => {
     try {
       const r = await api.restore(text);
-      toast.notify(`Restored ${r.projects} projects and ${r.stubs} stubs`);
+      toast.notify(`Restored ${r.organizations} organisations, ${r.projects} projects and ${r.stubs} stubs`);
       await Promise.all([load(), refreshProjects()]);
     } catch (e) {
       toast.fail(e);
@@ -108,7 +108,7 @@ export function ServerPage() {
                   <tr><td>Public URL</td><td>{info?.baseUrl}</td></tr>
                   <tr><td>Data directory</td><td>{info?.dataDir}</td></tr>
                   <tr><td>Request log size</td><td>{info?.journalMaxEntries} requests</td></tr>
-                  <tr><td>Sign-in</td><td>{info?.authEnabled ? 'required' : 'off (set MOCKHUB_USERS)'}</td></tr>
+                  <tr><td>Sign-in</td><td>{info?.authEnabled ? 'required' : 'off (create the first admin under Users)'}</td></tr>
                   <tr><td>Native admin API</td><td><a href="/__admin/docs" target="_blank" rel="noreferrer">/__admin</a></td></tr>
                 </tbody>
               </table>
@@ -123,11 +123,12 @@ export function ServerPage() {
             </div>
           </div>
 
+          {isAdmin && (
           <div className="panel">
             <div className="section">
               <h3>Backup</h3>
               <p className="muted small" style={{ marginBottom: 10 }}>
-                One JSON file with every project and stub. Use it to move MockHub to another environment.
+                One JSON file with every organisation, project and stub. Users and single sign-on settings are not included. Use it to move MockHub to another environment.
               </p>
               <button className="btn" onClick={() => api.backup().catch(toast.fail)}>
                 <Download size={14} /> Download backup
@@ -141,6 +142,7 @@ export function ServerPage() {
               </div>
             )}
           </div>
+          )}
         </div>
 
         <div className="stack">

@@ -14,6 +14,7 @@ export interface Project {
   unmatchedCount: number;
   lastRequestAt?: string;
   activity: number[];
+  orgId: string;
 }
 
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
@@ -30,9 +31,107 @@ export interface ServerInfo {
   journalMaxEntries: number;
 }
 
-export interface Session {
+export type ServerRole = 'none' | 'viewer' | 'editor' | 'admin';
+export type OrgRole = 'viewer' | 'editor' | 'owner';
+export type Role = ServerRole | OrgRole;
+export type UserSource = 'env' | 'local' | 'azure';
+
+export interface MembershipView {
+  orgId: string;
+  role: OrgRole;
+  orgName?: string;
+}
+
+export interface UserSummary {
+  id: string;
   username: string;
-  role: 'admin' | 'editor' | 'viewer';
+  displayName: string;
+  email: string;
+  source: UserSource;
+}
+
+export interface UserRecord extends UserSummary {
+  serverRole: ServerRole;
+  groupServerRole: ServerRole;
+  effectiveServerRole: ServerRole;
+  disabled: boolean;
+  hasPassword: boolean;
+  createdAt?: string;
+  lastLoginAt?: string;
+  memberships: MembershipView[];
+  groupMemberships: MembershipView[];
+}
+
+export interface OrgAccess {
+  id: string;
+  name: string;
+  slug: string;
+  role: Role;
+}
+
+export interface Session extends UserRecord {
+  anonymous: boolean;
+  isAdmin: boolean;
+  authEnabled: boolean;
+  orgs: OrgAccess[];
+}
+
+export interface Organization {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  createdAt: string;
+  updatedAt: string;
+  projectCount: number;
+  memberCount: number;
+  role: Role;
+}
+
+export interface Member extends UserSummary {
+  role: OrgRole | '';
+  groupRole: OrgRole | '';
+  effectiveRole: Role;
+  disabled: boolean;
+}
+
+export interface AuthInfo {
+  authEnabled: boolean;
+  loginNote?: string;
+  passwordLogin: boolean;
+  sso: { enabled: boolean; provider?: string; label?: string; startUrl?: string };
+}
+
+export interface LoginResult {
+  token?: string;
+  expiresIn?: number;
+  user: Session;
+}
+
+export interface RoleMapping {
+  claim: string;
+  orgId: string;
+  role: Role;
+}
+
+export interface SsoSettings {
+  enabled: boolean;
+  provider: 'azure';
+  tenantId: string;
+  clientId: string;
+  clientSecret?: string;
+  clientSecretSet: boolean;
+  clientSecretFromEnvironment: boolean;
+  cloud: 'global' | 'usgov' | 'china';
+  buttonLabel: string;
+  allowedDomains: string[];
+  defaultServerRole: ServerRole;
+  defaultOrgId: string;
+  defaultOrgRole: OrgRole | 'none';
+  roleMappings: RoleMapping[];
+  allowPasswordLogin: boolean;
+  redirectUri: string;
+  active: boolean;
 }
 
 export interface Example {

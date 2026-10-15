@@ -7,8 +7,13 @@ public record Project(
     String description,
     String color,
     String createdAt,
-    String updatedAt) {
+    String updatedAt,
+    String orgId) {
   public String basePath() {
     return "/" + slug;
+  }
+
+  public Project withOrgId(String newOrgId) {
+    return new Project(id, name, slug, description, color, createdAt, updatedAt, newOrgId);
   }
 }

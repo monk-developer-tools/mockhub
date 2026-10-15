@@ -10,7 +10,7 @@ import { ExampleGrid } from './ExamplesPage';
 import { ProjectDialog } from './ProjectDialog';
 
 export function DashboardPage() {
-  const { projects, canEdit, info, refreshProjects } = useApp();
+  const { orgProjects: projects, currentOrg, canEdit, info, refreshProjects } = useApp();
 
   useEffect(() => {
     const timer = setInterval(() => refreshProjects().catch(() => undefined), 10000);
@@ -32,7 +32,7 @@ export function DashboardPage() {
     <div className="page">
       <div className="page-header">
         <div>
-          <h1>Projects</h1>
+          <h1>{currentOrg ? `${currentOrg.name} projects` : 'Projects'}</h1>
           <p className="muted">
             Each project serves its mocks under its own base path on <span className="mono">{info?.baseUrl}</span>. Point your service
             or test at that URL instead of the real dependency.

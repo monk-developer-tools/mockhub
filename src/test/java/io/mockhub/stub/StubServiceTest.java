@@ -34,8 +34,8 @@ class StubServiceTest {
     stubs = new StubService(gateway, ref::get);
     projects = new ProjectService(new InMemoryProjectRepository(), List.of(stubs), Clock.systemUTC());
     ref.set(projects);
-    orders = projects.create(tree("{'name':'Orders','slug':'orders'}"));
-    billing = projects.create(tree("{'name':'Billing','slug':'billing'}"));
+    orders = projects.create(tree("{'orgId':'org1','name':'Orders','slug':'orders'}"));
+    billing = projects.create(tree("{'orgId':'org1','name':'Billing','slug':'billing'}"));
   }
 
   @Test

@@ -3,6 +3,7 @@ package io.mockhub.api;
 import com.github.tomakehurst.wiremock.admin.AdminTask;
 import com.github.tomakehurst.wiremock.common.url.PathParams;
 import com.github.tomakehurst.wiremock.core.Admin;
+import com.github.tomakehurst.wiremock.http.Request;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.http.ResponseDefinition;
 import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
@@ -12,8 +13,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import io.mockhub.auth.Principal;
 
 public final class ApiRouter {
   @FunctionalInterface
@@ -24,6 +27,11 @@ public final class ApiRouter {
   private record Route(RequestMethod method, Pattern pattern, List<String> names, Handler handler) {}
 
   private final List<Route> routes = new ArrayList<>();
+  private final Function<Request, Principal> principals;
+
+  public ApiRouter(Function<Request, Principal> principals) {
+    this.principals = principals;
+  }
 
   public ApiRouter get(String path, Handler h) { return add(RequestMethod.GET, path, h); }
   public ApiRouter post(String path, Handler h) { return add(RequestMethod.POST, path, h); }
@@ -66,7 +74,7 @@ public final class ApiRouter {
           params.put(route.names.get(i), URLDecoder.decode(m.group(i + 1), StandardCharsets.UTF_8));
         }
         try {
-          Object result = route.handler.handle(new Ctx(request, params));
+          Object result = route.handler.handle(new Ctx(request, params, principals));
           if (result == null) return Response.noContent();
           if (result instanceof ResponseDefinition rd) return rd;
           return Response.json(result);

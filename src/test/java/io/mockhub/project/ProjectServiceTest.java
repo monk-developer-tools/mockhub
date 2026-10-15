@@ -40,7 +40,7 @@ class ProjectServiceTest {
   @Test
   void derivesTheBasePathFromTheNameWhenNoneIsGiven() {
     // When
-    Project project = service.create(tree("{'name':'Payment Service v2!'}"));
+    Project project = service.create(tree("{'orgId':'org1','name':'Payment Service v2!'}"));
 
     // Then
     assertThat(project.slug()).isEqualTo("payment-service-v2");
@@ -52,10 +52,10 @@ class ProjectServiceTest {
   @Test
   void rejectsADuplicateBasePath() {
     // Given
-    service.create(tree("{'name':'Orders','slug':'orders'}"));
+    service.create(tree("{'orgId':'org1','name':'Orders','slug':'orders'}"));
 
     // When / Then
-    assertThatThrownBy(() -> service.create(tree("{'name':'Orders 2','slug':'orders'}")))
+    assertThatThrownBy(() -> service.create(tree("{'orgId':'org1','name':'Orders 2','slug':'orders'}")))
         .isInstanceOf(ApiException.class)
         .hasMessageContaining("already used")
         .extracting("status").isEqualTo(409);
@@ -63,9 +63,9 @@ class ProjectServiceTest {
 
   @Test
   void rejectsInvalidAndReservedBasePaths() {
-    assertThatThrownBy(() -> service.create(tree("{'name':'x','slug':'Has Spaces'}"))).hasMessageContaining("lowercase");
-    assertThatThrownBy(() -> service.create(tree("{'name':'x','slug':'__admin'}"))).hasMessageContaining("lowercase");
-    assertThatThrownBy(() -> service.create(tree("{'name':'x','slug':'mappings'}"))).hasMessageContaining("reserved");
+    assertThatThrownBy(() -> service.create(tree("{'orgId':'org1','name':'x','slug':'Has Spaces'}"))).hasMessageContaining("lowercase");
+    assertThatThrownBy(() -> service.create(tree("{'orgId':'org1','name':'x','slug':'__admin'}"))).hasMessageContaining("lowercase");
+    assertThatThrownBy(() -> service.create(tree("{'orgId':'org1','name':'x','slug':'mappings'}"))).hasMessageContaining("reserved");
   }
 
   @Test
@@ -76,7 +76,7 @@ class ProjectServiceTest {
   @Test
   void notifiesListenersWhenTheBasePathChanges() {
     // Given
-    Project project = service.create(tree("{'name':'Orders','slug':'orders'}"));
+    Project project = service.create(tree("{'orgId':'org1','name':'Orders','slug':'orders'}"));
 
     // When
     Project updated = service.update(project.id(), tree("{'slug':'orders-v2'}"));
@@ -90,7 +90,7 @@ class ProjectServiceTest {
   @Test
   void doesNotNotifyWhenOnlyTheNameChanges() {
     // Given
-    Project project = service.create(tree("{'name':'Orders','slug':'orders'}"));
+    Project project = service.create(tree("{'orgId':'org1','name':'Orders','slug':'orders'}"));
 
     // When
     service.update(project.id(), tree("{'name':'Order Service'}"));
@@ -102,7 +102,7 @@ class ProjectServiceTest {
   @Test
   void deletingNotifiesListenersAndRemovesTheProject() {
     // Given
-    Project project = service.create(tree("{'name':'Orders','slug':'orders'}"));
+    Project project = service.create(tree("{'orgId':'org1','name':'Orders','slug':'orders'}"));
 
     // When
     service.delete(project.id());

@@ -12,7 +12,10 @@ import { ProjectSettingsTab } from './pages/project/ProjectSettingsTab';
 import { RequestsTab } from './pages/project/RequestsTab';
 import { ScenariosTab } from './pages/project/ScenariosTab';
 import { StubsTab } from './pages/project/StubsTab';
+import { OrgPage } from './pages/OrgPage';
 import { ServerPage } from './pages/ServerPage';
+import { SsoPage } from './pages/SsoPage';
+import { UsersPage } from './pages/UsersPage';
 import { AppProvider, useApp } from './state/AppContext';
 
 const router = createBrowserRouter(
@@ -24,6 +27,9 @@ const router = createBrowserRouter(
         { index: true, element: <DashboardPage /> },
         { path: 'examples', element: <ExamplesPage /> },
         { path: 'server', element: <ServerPage /> },
+        { path: 'org', element: <OrgPage /> },
+        { path: 'admin/users', element: <UsersPage /> },
+        { path: 'admin/sso', element: <SsoPage /> },
         {
           path: 'projects/:projectId',
           element: <ProjectPage />,

@@ -69,6 +69,42 @@ class MockHubSystemTest {
   }
 
   @Test
+  void organisationsUsersAndSessionsSurviveARestart() throws Exception {
+    String token;
+    String orgId;
+    try (MockHubProcess hub = MockHubProcess.start(data, AUTH_ENV)) {
+      // Given
+      orgId = json(send(hub, "POST", API + "/orgs", "{\"name\":\"Payments\"}")).get("id").asText();
+      String userId = json(send(hub, "POST", API + "/users", "{\"username\":\"ana\",\"password\":\"longenough\"}")).get("id").asText();
+      send(hub, "PUT", API + "/orgs/" + orgId + "/members/" + userId, "{\"role\":\"editor\"}");
+      send(hub, "PUT", API + "/sso", "{\"tenantId\":\"contoso.onmicrosoft.com\",\"clientId\":\"abc\",\"clientSecret\":\"s\",\"enabled\":true}");
+
+      // When
+      token = json(sendAnonymously(hub, "POST", API + "/auth/login", "{\"username\":\"ana\",\"password\":\"longenough\"}")).get("token").asText();
+      HttpResponse<String> created = sendAs(hub, "Bearer " + token, "POST", API + "/projects", "{\"name\":\"Cards\",\"orgId\":\"" + orgId + "\"}");
+
+      // Then
+      assertThat(created.statusCode()).isEqualTo(201);
+    }
+
+    try (MockHubProcess restarted = MockHubProcess.start(data, AUTH_ENV)) {
+      // When
+      JsonNode me = json(sendAs(restarted, "Bearer " + token, "GET", API + "/auth/me", null));
+      JsonNode info = json(sendAnonymously(restarted, "GET", API + "/auth/info", null));
+
+      // Then
+      assertThat(me.get("username").asText()).isEqualTo("ana");
+      assertThat(me.at("/orgs/0/id").asText()).isEqualTo(orgId);
+      assertThat(json(sendAs(restarted, "Bearer " + token, "GET", API + "/projects", null))).hasSize(1);
+      assertThat(info.at("/sso/enabled").asBoolean()).isTrue();
+      HttpResponse<String> start = sendAnonymously(restarted, "GET", API + "/auth/sso/azure/start", null);
+      assertThat(start.statusCode()).isEqualTo(302);
+      assertThat(start.headers().firstValue("Location").orElse(""))
+          .startsWith("https://login.microsoftonline.com/contoso.onmicrosoft.com/oauth2/v2.0/authorize?client_id=abc");
+    }
+  }
+
+  @Test
   void servesTheUiEntryPoint() throws Exception {
     try (MockHubProcess hub = MockHubProcess.start(data, Map.of())) {
       // When
@@ -92,6 +128,18 @@ class MockHubSystemTest {
 
   private HttpResponse<String> sendAnonymously(MockHubProcess hub, String path) throws IOException, InterruptedException {
     return http.send(HttpRequest.newBuilder(URI.create(hub.baseUrl() + path)).build(), HttpResponse.BodyHandlers.ofString());
+  }
+
+  private HttpResponse<String> sendAnonymously(MockHubProcess hub, String method, String path, String body) throws IOException, InterruptedException {
+    return sendAs(hub, null, method, path, body);
+  }
+
+  private HttpResponse<String> sendAs(MockHubProcess hub, String authorization, String method, String path, String body)
+      throws IOException, InterruptedException {
+    HttpRequest.Builder b = HttpRequest.newBuilder(URI.create(hub.baseUrl() + path))
+        .method(method, body == null ? HttpRequest.BodyPublishers.noBody() : HttpRequest.BodyPublishers.ofString(body));
+    if (authorization != null) b.header("Authorization", authorization);
+    return http.send(b.build(), HttpResponse.BodyHandlers.ofString());
   }
 
   private static JsonNode json(HttpResponse<String> response) throws IOException {

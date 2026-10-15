@@ -15,7 +15,7 @@ const { CommandPalette } = await import('./CommandPalette');
 
 const project: Project = {
   id: 'p1', name: 'Petstore', slug: 'petstore', description: '', color: '#000', createdAt: '', updatedAt: '',
-  basePath: '/petstore', mockUrl: 'http://h/petstore', stubCount: 1, soapStubCount: 0, requestCount: 0, unmatchedCount: 0, activity: [],
+  basePath: '/petstore', mockUrl: 'http://h/petstore', stubCount: 1, soapStubCount: 0, requestCount: 0, unmatchedCount: 0, activity: [], orgId: 'o1',
 };
 
 function Where() {
