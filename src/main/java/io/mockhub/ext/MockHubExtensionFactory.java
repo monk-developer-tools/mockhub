@@ -18,6 +18,8 @@ import io.mockhub.data.CrudTransformer;
 import io.mockhub.data.DataStore;
 import io.mockhub.data.FileDataStore;
 import io.mockhub.data.ProjectDataCleaner;
+import io.mockhub.fake.FakeData;
+import io.mockhub.fake.FakeHelpers;
 import io.mockhub.auth.ProjectScope;
 import io.mockhub.auth.AuthService;
 import io.mockhub.auth.Principal;
@@ -133,6 +135,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     List<Extension> extensions = new ArrayList<>(List.of(
         new PersistenceListener(),
         new CrudTransformer(crud),
+        new FakeHelpers(new FakeData(config.fakeLocale)),
         new AuthFilter(auth, policy),
         new MockHubAdminExtension(
             request -> auth.principal(request.getHeader("Authorization")).orElse(null),

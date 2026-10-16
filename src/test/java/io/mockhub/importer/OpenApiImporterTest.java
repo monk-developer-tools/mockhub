@@ -27,7 +27,7 @@ class OpenApiImporterTest {
     assertThat(list.at("/request/urlPath").asText()).isEqualTo("/pets");
     assertThat(list.at("/response/jsonBody/0/name").asText()).isEqualTo("Fido");
     assertThat(list.at("/response/jsonBody/0/status").asText()).isEqualTo("available");
-    assertThat(list.at("/response/jsonBody/0/born").asText()).isEqualTo("2024-01-01");
+    assertThat(list.at("/response/jsonBody/0/born").asText()).matches("\\d{4}-\\d{2}-\\d{2}");
     assertThat(list.at("/metadata/mockhub/folder").asText()).isEqualTo("pets");
 
     ObjectNode create = result.stubs().get(1);
@@ -37,7 +37,37 @@ class OpenApiImporterTest {
 
     ObjectNode get = result.stubs().get(2);
     assertThat(get.at("/request/urlPathTemplate").asText()).isEqualTo("/pets/{petId}");
-    assertThat(get.at("/response/jsonBody/id").asInt()).isEqualTo(1);
+    assertThat(get.at("/response/jsonBody/id").asInt()).isPositive();
+  }
+
+  @Test
+  void fillsSchemasWithRealisticRepeatableData() {
+    // Given
+    String spec = """
+        {"openapi":"3.0.0","paths":{"/customers":{"get":{"responses":{"200":{"description":"ok","content":{"application/json":{
+          "schema":{"type":"array","items":{"type":"object","properties":{
+            "id":{"type":"string","format":"uuid"},"name":{"type":"string"},"email":{"type":"string"},
+            "city":{"type":"string"},"phone":{"type":"string"},"createdAt":{"type":"string","format":"date-time"},
+            "price":{"type":"number"},"quantity":{"type":"integer"},"format":{"type":"string"}}}}}}}}}}}}""";
+
+    // When
+    ObjectNode first = importer.parse(new StubImporter.Request(project("pay"), spec, Map.of())).stubs().get(0);
+    ObjectNode again = importer.parse(new StubImporter.Request(project("pay"), spec, Map.of())).stubs().get(0);
+
+    // Then
+    var items = first.at("/response/jsonBody");
+    assertThat(items).hasSize(3);
+    var customer = items.get(0);
+    assertThat(customer.get("id").asText()).hasSize(36);
+    assertThat(customer.get("name").asText()).contains(" ");
+    assertThat(customer.get("email").asText()).contains("@");
+    assertThat(customer.get("phone").asText()).containsPattern("\\d");
+    assertThat(customer.get("createdAt").asText()).contains("T");
+    assertThat(customer.get("price").isNumber()).isTrue();
+    assertThat(customer.get("quantity").asInt()).isBetween(1, 9);
+    assertThat(customer.get("format").asText()).doesNotContainPattern("^\\d{4}-");
+    assertThat(items.get(1).get("name").asText()).isNotEqualTo(customer.get("name").asText());
+    assertThat(again.at("/response/jsonBody")).isEqualTo(items);
   }
 
   @Test
@@ -49,7 +79,7 @@ class OpenApiImporterTest {
     StubImporter.Result result = importer.parse(new StubImporter.Request(project("pay"), swagger, Map.of()));
 
     // Then
-    assertThat(result.stubs()).singleElement().satisfies(s -> assertThat(s.at("/response/jsonBody/ok").asBoolean()).isTrue());
+    assertThat(result.stubs()).singleElement().satisfies(s -> assertThat(s.at("/response/jsonBody/ok").isBoolean()).isTrue());
   }
 
   @Test

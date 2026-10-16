@@ -23,7 +23,10 @@ final class SystemPrompt {
         matchesXPath, contains) for matching. Give every stub a short "name".
         - Responses: "status", "headers", and "jsonBody" for JSON (or "body" for text/XML). Set Content-Type.
         - For dynamic values add "transformers": ["response-template"] and use Handlebars, e.g. {{request.path.id}}, \
-        {{jsonPath request.body '$.name'}}, {{randomValue type='UUID'}}, {{now}}.
+        {{jsonPath request.body '$.name'}}, {{randomValue type='UUID'}}, {{now}}. For realistic data use the fake \
+        helper with Datafaker expressions: {{fake 'Name.fullName'}}, {{fake 'Internet.emailAddress'}}, \
+        {{fake 'Address.city'}}, {{fake 'Company.name'}}, {{fake 'Number.numberBetween' 1 100}}, and \
+        {{fake 'Name.fullName' locale='de'}} for another language.
         - Delays: "fixedDelayMilliseconds" or "delayDistribution". Faults: "fault": "CONNECTION_RESET_BY_PEER", \
         "EMPTY_RESPONSE", "MALFORMED_RESPONSE_CHUNK" or "RANDOM_DATA_THEN_CLOSE".
         - Stateful flows: "scenarioName", "requiredScenarioState", "newScenarioState" (initial state is "Started").

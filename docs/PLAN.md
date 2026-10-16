@@ -257,7 +257,8 @@ long as it works with WireMock 3.13 on Jetty 12; otherwise we build a small exte
 - Engine: decide after a spike between `org.wiremock.extensions:wiremock-faker-extension` (still beta, 0.3.0-beta.1)
   and our own `TemplateHelperProviderExtension` backed by Datafaker. Prefer whichever is stable on 3.13; an own
   helper is a few dozen lines and avoids a beta dependency.
-- Project setting: locale for fake data (default `en`).
+- Locale: server default `MOCKHUB_FAKE_LOCALE` (default `en`) and `locale='de'` per use. (Simpler than a project
+  setting; revisit if teams ask for it.)
 - Editor: "Insert" menu in the body editor with common helpers (name, e-mail, phone, address, company, UUID, date,
   number range, lorem), and a live preview of the rendered response.
 - OpenAPI import: fill strings by format and field name (`email`, `phone`, `city`, `name`, `uuid`, `date-time`)
@@ -286,8 +287,8 @@ Checklist:
 - [x] Spike: state and faker extensions on WireMock 3.13 + Jetty 12 (decide engine for 14b)
 - [x] 14a backend: state extension wiring, CRUD generator, data API, persistence on disk, backup support
 - [x] 14a UI: New CRUD resource dialog, Data tab
-- [ ] 14b backend: fake helper, locale setting, OpenAPI import uses fake data
-- [ ] 14b UI: insert-helper menu and response preview
+- [x] 14b backend: fake helper, locale setting, OpenAPI import uses realistic data
+- [x] 14b UI: Fake data menu in the editor (preview through Try it)
 - [ ] 14c backend: webhook form mapping, callout log, body file API, backup/export of files
 - [ ] 14c UI: Then call section, file picker and upload
 - [ ] AI assistant tools and prompt updated for CRUD resources and fake data

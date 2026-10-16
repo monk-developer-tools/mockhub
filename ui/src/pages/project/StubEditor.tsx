@@ -1,6 +1,7 @@
 import { Copy, Database, FloppyDisk, FolderSimplePlus, LockSimple, Trash, Warning } from '@phosphor-icons/react';
 import { Link } from 'react-router-dom';
 import { crudOf } from '../../model/crud';
+import { FakeDataMenu } from '../../components/FakeDataMenu';
 import { useEffect, useMemo, useState } from 'react';
 import { useHotkeys } from '../../state/hotkeys';
 import { api } from '../../api/client';
@@ -466,9 +467,10 @@ export function StubEditor({ project, projects, stub, isNew, canEdit, onSaved, o
                   Response templating
                   <span className="muted small">
                     use <span className="mono">{'{{request.path.id}}'}</span>, <span className="mono">{"{{jsonPath request.body '$.name'}}"}</span>,{' '}
-                    <span className="mono">{"{{randomValue type='UUID'}}"}</span>, <span className="mono">{'{{now}}'}</span>
+                    <span className="mono">{"{{fake 'Name.fullName'}}"}</span>, <span className="mono">{'{{now}}'}</span>
                   </span>
                 </label>
+                {!readOnly && <FakeDataMenu onPick={() => update({ templating: true })} />}
               </div>
             )}
 

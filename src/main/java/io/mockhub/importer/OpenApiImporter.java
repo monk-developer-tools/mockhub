@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Set;
 
 public final class OpenApiImporter implements StubImporter {
+  private static final long SEED = 20261016L;
   private static final ObjectMapper YAML = new ObjectMapper(new YAMLFactory());
   private static final Set<String> METHODS = Set.of("get", "put", "post", "delete", "patch", "head", "options");
   private static final int MAX_DEPTH = 8;
@@ -118,13 +119,17 @@ public final class OpenApiImporter implements StubImporter {
   }
 
   JsonNode sample(JsonNode spec, JsonNode schema, int depth, Deque<String> refs) {
+    return sample(spec, schema, depth, refs, "", new SampleValues(SEED + (schema == null ? 0 : schema.toString().hashCode())));
+  }
+
+  private JsonNode sample(JsonNode spec, JsonNode schema, int depth, Deque<String> refs, String name, SampleValues values) {
     if (schema == null || depth > MAX_DEPTH) return Jsons.MAPPER.nullNode();
     if (schema.has("$ref")) {
       String ref = schema.get("$ref").asText();
       if (refs.contains(ref)) return Jsons.MAPPER.nullNode();
       refs.push(ref);
       try {
-        return sample(spec, resolveRef(spec, ref), depth + 1, refs);
+        return sample(spec, resolveRef(spec, ref), depth + 1, refs, name, values);
       } finally {
         refs.pop();
       }
@@ -137,12 +142,12 @@ public final class OpenApiImporter implements StubImporter {
         if (combiner.equals("allOf")) {
           ObjectNode merged = Jsons.object();
           for (JsonNode part : schema.get(combiner)) {
-            JsonNode s = sample(spec, part, depth + 1, refs);
+            JsonNode s = sample(spec, part, depth + 1, refs, name, values);
             if (s.isObject()) merged.setAll((ObjectNode) s);
           }
           return merged;
         }
-        return sample(spec, schema.get(combiner).get(0), depth + 1, refs);
+        return sample(spec, schema.get(combiner).get(0), depth + 1, refs, name, values);
       }
     }
     String type = schema.path("type").asText(schema.has("properties") ? "object" : schema.has("items") ? "array" : "string");
@@ -151,35 +156,29 @@ public final class OpenApiImporter implements StubImporter {
         ObjectNode obj = Jsons.object();
         for (Iterator<Map.Entry<String, JsonNode>> it = schema.path("properties").fields(); it.hasNext(); ) {
           var p = it.next();
-          obj.set(p.getKey(), sample(spec, p.getValue(), depth + 1, refs));
+          obj.set(p.getKey(), sample(spec, p.getValue(), depth + 1, refs, p.getKey(), values));
         }
         return obj;
       }
       case "array": {
         ArrayNode arr = Jsons.MAPPER.createArrayNode();
-        arr.add(sample(spec, schema.path("items"), depth + 1, refs));
+        int items = depth == 0 ? SampleValues.ARRAY_ITEMS : 1;
+        for (int i = 0; i < items; i++) arr.add(sample(spec, schema.path("items"), depth + 1, refs, singular(name), values));
         return arr;
       }
       case "integer":
-        return Jsons.MAPPER.getNodeFactory().numberNode(1);
+        return Jsons.MAPPER.getNodeFactory().numberNode(values.integer(name));
       case "number":
-        return Jsons.MAPPER.getNodeFactory().numberNode(1.5);
+        return Jsons.MAPPER.getNodeFactory().numberNode(values.number(name));
       case "boolean":
-        return Jsons.MAPPER.getNodeFactory().booleanNode(true);
+        return Jsons.MAPPER.getNodeFactory().booleanNode(values.bool());
       default:
-        return Jsons.MAPPER.getNodeFactory().textNode(stringSample(schema.path("format").asText("")));
+        return Jsons.MAPPER.getNodeFactory().textNode(values.text(name, schema.path("format").asText("")));
     }
   }
 
-  private static String stringSample(String format) {
-    return switch (format) {
-      case "date" -> "2024-01-01";
-      case "date-time" -> "2024-01-01T00:00:00Z";
-      case "uuid" -> "3fa85f64-5717-4562-b3fc-2c963f66afa6";
-      case "email" -> "user@example.com";
-      case "uri", "url" -> "https://example.com";
-      default -> "string";
-    };
+  private static String singular(String name) {
+    return name.endsWith("ies") ? name.substring(0, name.length() - 3) + "y" : name.endsWith("s") ? name.substring(0, name.length() - 1) : name;
   }
 
   private static JsonNode firstExample(JsonNode examples) {
