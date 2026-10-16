@@ -88,6 +88,30 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Build image for a smoke test
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          load: true
+          pull: true
+          tags: mockhub:smoke
+          cache-from: type=gha
+
+      - name: Smoke test the image
+        run: |
+          docker run -d --name smoke -p 8080:8080 mockhub:smoke
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:8080/__admin/mockhub/api/auth/info > /dev/null; then
+              curl -fsS -X POST http://localhost:8080/__admin/mockhub/api/examples/rest-basics/install > /dev/null
+              curl -fsS http://localhost:8080/example-petstore/pets/42
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs smoke
+          exit 1
+
       - id: meta
         uses: docker/metadata-action@v5
         with:

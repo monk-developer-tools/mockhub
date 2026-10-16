@@ -1,19 +1,108 @@
-# MockHub
+<p align="center">
+  <img src="website/assets/img/logo.svg" width="76" height="76" alt="">
+</p>
 
-A team mock server for REST and SOAP services, built on [WireMock](https://wiremock.org). Developers and testers
-group mocks into **projects**. Each project gets its own URL, has a web UI for editing stubs, and exports to
-**Postman** and **Bruno**. Everything is saved to disk, so mocks survive restarts and redeploys.
+<h1 align="center">MockHub</h1>
 
-It ships as one JAR inside one small Docker image (about 115 MB, non-root, distroless), ready for AWS ECS.
+<p align="center">
+  <strong>Every dependency. Mocked in minutes.</strong><br>
+  A team mock server for REST and SOAP, built on WireMock, with a web UI, an AI assistant and one Docker image.
+</p>
 
-New here? The [step-by-step tutorials](https://mockhub.devops-monk.com/tutorials/) walk through every feature with
-screenshots, and the [live demo](https://mockhub.devops-monk.com/__admin/mockhub/ui/) runs the example projects.
+<p align="center">
+  <a href="https://github.com/monk-developer-tools/mockhub/actions/workflows/ci.yml"><img src="https://github.com/monk-developer-tools/mockhub/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://hub.docker.com/r/abhaypratap/mockhub"><img src="https://img.shields.io/docker/pulls/abhaypratap/mockhub?logo=docker&label=pulls" alt="Docker pulls"></a>
+  <a href="https://hub.docker.com/r/abhaypratap/mockhub"><img src="https://img.shields.io/docker/image-size/abhaypratap/mockhub/latest?label=image" alt="Image size"></a>
+  <img src="https://img.shields.io/badge/WireMock-3-5b7cff" alt="WireMock 3">
+  <img src="https://img.shields.io/badge/Java-21-1fbf9f" alt="Java 21">
+</p>
+
+<p align="center">
+  <a href="https://mockhub.devops-monk.com/__admin/mockhub/ui/"><strong>Live demo</strong></a> &nbsp;·&nbsp;
+  <a href="https://mockhub.devops-monk.com/tutorials/">Tutorials</a> &nbsp;·&nbsp;
+  <a href="https://mockhub.devops-monk.com/docs/">Docs</a> &nbsp;·&nbsp;
+  <a href="#quick-start">Quick start</a> &nbsp;·&nbsp;
+  <a href="https://mockhub.devops-monk.com/">Website</a>
+</p>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="website/assets/img/shots/editor-dark.webp">
+  <img src="website/assets/img/shots/editor-light.webp" alt="The MockHub stub editor with the Petstore example: routes on the left, the editor for GET /pets/{id} on the right">
+</picture>
+
+## Why MockHub
+
+Developers and testers group mocks into **projects**. Each project gets its own URL, has a web UI for editing stubs,
+and exports to **Postman** and **Bruno**. Everything is saved to disk, so mocks survive restarts and redeploys. It ships
+as one JAR inside one small Docker image (about 115 MB, non-root, distroless), ready for Docker, Compose or AWS ECS.
 
 ```
 https://mocks.acme.internal/__admin/mockhub/ui/          the UI
 https://mocks.acme.internal/payment-service/...          mocks of project "Payment service"
 https://mocks.acme.internal/legacy-crm/ws/customers      SOAP mocks of project "Legacy CRM"
 ```
+
+## See it in action
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <strong>Everything about a service, on one screen</strong><br>
+      Mock URL, a snippet to connect your app, last-hour traffic and one-click exports.<br><br>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="website/assets/img/shots/overview-dark.webp">
+  <img src="website/assets/img/shots/overview-light.webp" alt="A project overview with stats, a connect-your-app snippet and last-hour traffic">
+</picture>
+    </td>
+    <td width="50%" valign="top">
+      <strong>Describe it, review it, apply it</strong><br>
+      The AI assistant drafts stubs, and nothing goes live until you apply the diff.<br><br>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="website/assets/img/shots/assistant-dark.webp">
+  <img src="website/assets/img/shots/assistant-light.webp" alt="The AI assistant has staged four customer API stubs for review">
+</picture>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <strong>Every call, as it happens</strong><br>
+      A live request log, with the closest stub for anything that didn't match.<br><br>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="website/assets/img/shots/requests-dark.webp">
+  <img src="website/assets/img/shots/requests-light.webp" alt="The request log listing recent calls with their status">
+</picture>
+    </td>
+    <td width="50%" valign="top">
+      <strong>SOAP without the pain</strong><br>
+      Import a WSDL and match on operations, or on any field with XPath.<br><br>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="website/assets/img/shots/soap-dark.webp">
+  <img src="website/assets/img/shots/soap-light.webp" alt="Editing a SOAP stub that matches Add requests where a is 2 and b is 3">
+</picture>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <strong>All your services at a glance</strong><br>
+      Stub counts, unmatched requests and traffic for every project in your organisation.<br><br>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="website/assets/img/shots/dashboard-dark.webp">
+  <img src="website/assets/img/shots/dashboard-light.webp" alt="The projects dashboard with stats, mock URLs and last-hour traffic">
+</picture>
+    </td>
+    <td width="50%" valign="top">
+      <strong>Back up exactly what you need</strong><br>
+      Whole organisations or single projects, restored into any MockHub.<br><br>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="website/assets/img/shots/backup-dark.webp">
+  <img src="website/assets/img/shots/backup-light.webp" alt="The backup page with organisations and projects ticked for backup">
+</picture>
+    </td>
+  </tr>
+</table>
+
+New here? The [step-by-step tutorials](https://mockhub.devops-monk.com/tutorials/) walk through every feature with
+screenshots, and the [live demo](https://mockhub.devops-monk.com/__admin/mockhub/ui/) runs the example projects.
 
 ## Features
 
