@@ -118,6 +118,14 @@ screenshots, and the [live demo](https://mockhub.devops-monk.com/__admin/mockhub
   A single `baseUrl` variable switches between the mock and the real service.
 - **Try it.** Send a request to a stub from the editor and see the response.
 - **Live request log** per project, with near misses for unmatched requests and *create stub from request*.
+- **CRUD resources with a data store.** One click gives you `/customers` with list (filter, sort, page), read,
+  create, replace, patch and delete, backed by real stored records. A **Data** tab shows and edits the records, and
+  they survive restarts and travel in backups.
+- **Realistic fake data.** `{{fake 'Name.fullName'}}`, `{{fake 'Internet.emailAddress'}}`, `{{fake 'Address.city'}}`
+  and hundreds more in any templated response, in many languages. OpenAPI imports fill fields by name and format.
+- **Webhooks.** A stub can call other services after it answers (a payment callback, for example), with data from
+  the request, set up in the editor's *Then call* section.
+- **Response files.** Upload PDFs, images or large JSON (up to 10 MB) and serve them as response bodies.
 - **Built-in examples:** REST basics, templating, stateful cart, faults and delays, and a SOAP calculator from WSDL.
   Install one with a click and copy what you need. The editor also has a template gallery.
 - **Persistence.** Every stub, including ones created through the native `/__admin` API, is written to `/data`.
@@ -161,6 +169,7 @@ All configuration is through environment variables.
 | `MOCKHUB_LOGIN_NOTE` | empty | Text shown on the sign-in page, e.g. demo credentials |
 | `MOCKHUB_JOURNAL_MAX_ENTRIES` | `5000` | How many requests the request log keeps in memory |
 | `MOCKHUB_STUB_CORS` | `true` | Adds CORS headers to mock responses so browser apps can call them |
+| `MOCKHUB_FAKE_LOCALE` | `en` | Default language for `{{fake ...}}` data, e.g. `de`, `fr`, `en-GB` |
 | `WIREMOCK_OPTIONS` | empty | Any extra [WireMock CLI option](https://wiremock.org/docs/standalone/java-jar/), e.g. `--async-response-enabled true --verbose` |
 
 ## Organisations, users and sign-in
@@ -297,6 +306,11 @@ MockHub is a WireMock extension running inside a regular WireMock server:
 | POST | `/__admin/mockhub/api/projects/{id}/ai/jobs` | Same body; starts the chat in the background and returns a job id |
 | GET | `/__admin/mockhub/api/projects/{id}/ai/jobs/{jobId}` | Job status, live steps, then the reply or error (kept 30 minutes, visible to whoever started it) |
 | POST | `/__admin/mockhub/api/projects/{id}/ai/apply` | `{changes}` → apply staged changes (editor) |
+| POST | `/__admin/mockhub/api/projects/{id}/crud` | `{resource, idField, idType: number\|uuid, seed}` → create a CRUD resource |
+| GET/DELETE | `/__admin/mockhub/api/projects/{id}/data` | resources with record counts / delete all records |
+| GET/POST/PUT/DELETE | `/__admin/mockhub/api/projects/{id}/data/records?resource=&id=` | list, add, replace, delete one, or clear a resource |
+| GET/POST/DELETE | `/__admin/mockhub/api/projects/{id}/files?name=` | list / upload (raw body) / delete response files |
+| GET | `/__admin/mockhub/api/projects/{id}/files/content?name=` | download a response file |
 | GET/PUT | `/__admin/mockhub/api/ai/settings` | AI provider settings (admin); `POST /ai/test` lists models |
 | GET | `/__admin/mockhub/api/backup` | everything as one JSON file (admin) |
 | POST | `/__admin/mockhub/api/backup` | `{organizations:[ids], projects:[ids]}` or `{everything:true}` → backup of just that (admin) |

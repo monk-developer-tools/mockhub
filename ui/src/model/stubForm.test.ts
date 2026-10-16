@@ -134,11 +134,37 @@ describe('stub form conversion', () => {
     const { unsupported } = fromStub({
       request: { headers: { A: { and: [{ contains: 'x' }] } } },
       response: { transformers: ['custom'] },
-      serveEventListeners: [],
+      serveEventListeners: [{ name: 'recordState', parameters: {} }],
     });
 
     // Then
-    expect(unsupported).toEqual(['Header "A" uses and', 'Transformers custom', 'Webhooks / serve event listeners']);
+    expect(unsupported).toEqual(['Header "A" uses and', 'Transformers custom', 'Serve event listener recordState']);
+  });
+
+  it('reads and writes webhooks without touching other listeners', () => {
+    // Given
+    const original: Stub = {
+      request: { method: 'POST', urlPath: '/payments' },
+      response: { status: 202 },
+      serveEventListeners: [
+        { name: 'recordState', parameters: { context: 'x' } },
+        { name: 'webhook', parameters: { method: 'POST', url: 'https://partner/cb', headers: { 'Content-Type': 'application/json' }, body: '{"ok":true}', delay: { type: 'fixed', milliseconds: 250 } } },
+      ],
+    };
+
+    // When
+    const { form } = fromStub(original);
+    const changed = { ...form, webhooks: [...form.webhooks, { method: 'GET', url: 'https://partner/ping', headers: [], body: 'ignored', delay: '' }] };
+    const written = toStub(changed, original);
+
+    // Then
+    expect(form.webhooks).toEqual([{ method: 'POST', url: 'https://partner/cb', headers: [{ key: 'Content-Type', value: 'application/json' }], body: '{"ok":true}', delay: '250' }]);
+    expect(written.serveEventListeners).toEqual([
+      { name: 'recordState', parameters: { context: 'x' } },
+      { name: 'webhook', parameters: { method: 'POST', url: 'https://partner/cb', headers: { 'Content-Type': 'application/json' }, body: '{"ok":true}', delay: { type: 'fixed', milliseconds: 250 } } },
+      { name: 'webhook', parameters: { method: 'GET', url: 'https://partner/ping' } },
+    ]);
+    expect(toStub({ ...form, webhooks: [] }, { request: {}, response: {} }).serveEventListeners).toBeUndefined();
   });
 });
 

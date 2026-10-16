@@ -61,7 +61,10 @@
           <h2>Make mocks realistic</h2>
           <div class="tut-cards">
             <a class="tut-card" href="#templating"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M9 8l-4 4 4 4M15 8l4 4-4 4"/></svg></span><strong>Make responses dynamic</strong><span>Echo ids, read the body, generate data.</span><em>3 min</em></a>
+            <a class="tut-card" href="#fake-data"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M5 19l9-9M14 5l1 2 2 1-2 1-1 2-1-2-2-1 2-1zM18 13l.6 1.4L20 15l-1.4.6L18 17l-.6-1.4L16 15l1.4-.6z"/></svg></span><strong>Generate realistic fake data</strong><span>Names, e-mails, cities, in any language.</span><em>2 min</em></a>
+            <a class="tut-card" href="#crud"><span class="tut-ico"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg></span><strong>Build a CRUD API that stores data</strong><span>POST it, then GET it back.</span><em>3 min</em></a>
             <a class="tut-card" href="#scenarios"><span class="tut-ico"><svg viewBox="0 0 24 24"><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.3 11l7.4-4M8.3 13l7.4 4"/></svg></span><strong>Answer differently as state changes</strong><span>Carts, checkouts and other flows.</span><em>4 min</em></a>
+            <a class="tut-card" href="#webhooks"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M4 12h9M10 8l4 4-4 4"/><circle cx="18" cy="12" r="2.5"/></svg></span><strong>Send webhooks and serve files</strong><span>Callbacks, PDFs and images.</span><em>3 min</em></a>
             <a class="tut-card" href="#chaos"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M3 14h4l2-6 4 10 2-6h6"/></svg></span><strong>Simulate slow and failing services</strong><span>Delays, resets and broken responses.</span><em>3 min</em></a>
           </div>
         </div>
@@ -95,8 +98,11 @@
         <a href="#unmatched">Unmatched requests</a>
         <h4>Realistic mocks</h4>
         <a href="#templating">Dynamic responses</a>
+        <a href="#fake-data">Fake data</a>
+        <a href="#crud">CRUD resources</a>
         <a href="#scenarios">Scenarios</a>
         <a href="#chaos">Delays &amp; faults</a>
+        <a href="#webhooks">Webhooks &amp; files</a>
         <h4>Bring in what you have</h4>
         <a href="#soap">SOAP from WSDL</a>
         <a href="#openapi">OpenAPI import</a>
@@ -221,6 +227,57 @@
             </li>
           </ol>
           <p class="tip"><strong>Learn from examples.</strong> Install <em>Dynamic responses — templating</em> from <strong>Examples</strong>. Each stub explains the technique it uses.</p>
+          <a class="next" href="#fake-data">Next: Generate realistic fake data</a>
+        </article>
+
+        <article class="tut" id="fake-data">
+          <p class="tut-meta"><span>Realistic mocks</span><span>2 min</span></p>
+          <h2>Generate realistic fake data</h2>
+          <p class="tut-intro">Instead of <em>"John Doe"</em> in every response, let each call return a believable person, address or company, in any language.</p>
+          <ol class="tut-steps">
+            <li>
+              <h3>Pick a helper from the Fake data menu</h3>
+              <p>Open a stub and, under the response body, select <strong>Fake data</strong>. Choose what you need: a name, e-mail, phone, city, company, product, price and more. MockHub copies the helper, such as <code>{{fake 'Name.fullName'}}</code>, and turns on <strong>Response templating</strong>. Paste it into the body and save.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/fake-1-menu.webp" alt="The Fake data menu open under a templated JSON body, listing people, places, business and other helpers" width="1176" height="900" loading="lazy"></figure>
+            </li>
+          </ol>
+          <div class="tut-table">
+            <table>
+              <thead><tr><th>Write</th><th>Gives, for example</th></tr></thead>
+              <tbody>
+                <tr><td><code>{{fake 'Name.fullName'}}</code></td><td>Grace Hopper</td></tr>
+                <tr><td><code>{{fake 'Internet.emailAddress'}}</code></td><td>grace.hopper@example.com</td></tr>
+                <tr><td><code>{{fake 'Number.numberBetween' 1 100}}</code></td><td>42</td></tr>
+                <tr><td><code>{{fake 'Address.city' locale='de'}}</code></td><td>Bad Homburg</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="tip"><strong>Imports get it too.</strong> Importing an OpenAPI spec fills fields by their name and format, so <code>email</code> gets an e-mail address and <code>createdAt</code> a date. Those values stay the same on every import, so your tests stay stable.</p>
+          <a class="next" href="#crud">Next: Build a CRUD API that stores data</a>
+        </article>
+
+        <article class="tut" id="crud">
+          <p class="tut-meta"><span>Realistic mocks</span><span>3 min</span><span>Needs the editor role</span></p>
+          <h2>Build a CRUD API that stores data</h2>
+          <p class="tut-intro">A <strong>CRUD resource</strong> is a mock that remembers. <code>POST /customers</code> saves a customer, <code>GET /customers/1</code> returns it, and <code>PATCH</code> or <code>DELETE</code> change it. No stubs to write per endpoint.</p>
+          <ol class="tut-steps">
+            <li>
+              <h3>Create the resource</h3>
+              <p>In <strong>Stubs</strong>, select <strong>CRUD resource</strong>. Name it (plural, like <em>customers</em>), choose whether new ids are <strong>1, 2, 3</strong> or <strong>UUIDs</strong>, and optionally paste some starting records. The preview shows the six endpoints you'll get.</p>
+              <figure class="tut-shot narrow"><img src="/assets/img/tutorials/crud-1-dialog.webp" alt="The New CRUD resource dialog for products, with the six endpoints and two example starting records" width="880" height="635" loading="lazy"></figure>
+            </li>
+            <li>
+              <h3>See and edit the records in the Data tab</h3>
+              <p>The <strong>Data</strong> tab lists every resource and its records. Search them, add a record as JSON, edit one, delete one, or clear the lot. Records survive restarts and are included in backups.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/crud-2-data.webp" alt="The Data tab with the customers resource selected and four records in a table" width="1176" height="900" loading="lazy"></figure>
+            </li>
+            <li>
+              <h3>Call it from your app</h3>
+              <p>Below the records, <strong>Call it</strong> lists each endpoint with the project's base path. Lists can be filtered (<code>?city=London</code>), sorted (<code>?_sort=name&amp;_order=desc</code>) and paged (<code>?_limit=10&amp;_offset=20</code>), with the total in the <code>X-Total-Count</code> header.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/crud-3-call.webp" alt="The Call it panel listing GET, POST, PUT, PATCH and DELETE endpoints for /shop/customers" width="1176" height="900" loading="lazy"></figure>
+            </li>
+          </ol>
+          <p class="tip"><strong>Mix and match.</strong> A CRUD resource is one stub, so you can add more specific stubs next to it, like an error for one id with a higher priority. The AI assistant can create CRUD resources too: ask for "a customers API that stores data".</p>
           <a class="next" href="#scenarios">Next: Answer differently as state changes</a>
         </article>
 
@@ -272,6 +329,30 @@
             </li>
           </ol>
           <p class="tip"><strong>Fails once, then works.</strong> Combine a fault with a scenario to test retries, like the <em>Flaky</em> stub in the <em>Resilience testing</em> example. To slow down every project at once, set a <strong>Global delay</strong> on the Server page.</p>
+          <a class="next" href="#webhooks">Next: Send webhooks and serve files</a>
+        </article>
+
+        <article class="tut" id="webhooks">
+          <p class="tut-meta"><span>Realistic mocks</span><span>3 min</span></p>
+          <h2>Send webhooks and serve files</h2>
+          <p class="tut-intro">Some APIs answer later through a callback, and some return files. Mock both.</p>
+          <ol class="tut-steps">
+            <li>
+              <h3>Add a webhook under Then call</h3>
+              <p>In a stub's <strong>Then call</strong> section, select <strong>Add webhook</strong>. Set the method, the URL to call, headers, a body and an optional delay, for example a payment callback two seconds after <code>POST /payments</code>. Use <code>{{jsonPath originalRequest.body '$.id'}}</code> to pass values from the request.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/webhook-1-editor.webp" alt="The Then call section with a POST webhook to a partner callback URL, a 2000 ms delay and a templated JSON body" width="1176" height="900" loading="lazy"></figure>
+            </li>
+            <li>
+              <h3>Upload response files</h3>
+              <p>On <strong>Import &amp; export</strong>, use <strong>Response files</strong> to upload PDFs, images or large JSON, up to 10 MB each. The list shows how many stubs use each file.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/files-1-panel.webp" alt="The Response files panel with an invoice PDF used by one stub and a logo image" width="1176" height="900" loading="lazy"></figure>
+            </li>
+            <li>
+              <h3>Serve a file from a stub</h3>
+              <p>In the stub's response, choose <strong>File</strong> as the body and pick the file, or upload one right there. The <code>Content-Type</code> header is set to match.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/files-2-picker.webp" alt="A stub response with the File body type and invoice-1042.pdf selected" width="1176" height="900" loading="lazy"></figure>
+            </li>
+          </ol>
           <a class="next" href="#soap">Next: Mock a SOAP service</a>
         </article>
 

@@ -269,7 +269,8 @@ long as it works with WireMock 3.13 on Jetty 12; otherwise we build a small exte
 - Webhooks: a "Then call" section in the editor: method, URL (templated), headers, body (templated), delay (fixed or
   random). Saved as WireMock `serveEventListeners` (webhook support already ships in the image). Multiple callouts
   per stub. Remove the "unsupported in the form" warning for webhooks.
-- Callout log: show outgoing webhook calls and their status next to the request that triggered them.
+- Callout log: moved to Phase 15 with request history. It needs MockHub to send webhooks itself instead of through
+  WireMock's built-in listener, which would break compatibility with existing WireMock mappings.
 - Body files: upload, list, download and delete files under `__files` per project (`/projects/{id}/files`, size
   limit, content type kept). The editor's *File* body type gets a picker and an upload button.
 - Large responses: allow binary files (images, PDFs, zips) with the right content type.
@@ -289,12 +290,12 @@ Checklist:
 - [x] 14a UI: New CRUD resource dialog, Data tab
 - [x] 14b backend: fake helper, locale setting, OpenAPI import uses realistic data
 - [x] 14b UI: Fake data menu in the editor (preview through Try it)
-- [ ] 14c backend: webhook form mapping, callout log, body file API, backup/export of files
-- [ ] 14c UI: Then call section, file picker and upload
-- [ ] AI assistant tools and prompt updated for CRUD resources and fake data
-- [ ] Tests: unit, integration (CRUD round trip, persistence across restart, webhook delivered to a test server,
+- [x] 14c backend: webhooks through WireMock's built-in listener, body file API, backup of files
+- [x] 14c UI: Then call section, file picker and upload, Response files panel
+- [x] AI assistant prompt updated for CRUD resources and fake data
+- [x] Tests: unit, integration (CRUD round trip, persistence across restart, webhook delivered to a test server,
       file upload and serve), system, UI
-- [ ] Docs, tutorials (CRUD resource, fake data, webhooks) and website
+- [x] Docs, tutorials (CRUD resource, fake data, webhooks) and website
 
 ### Phase 15 — Agents, history and access control (recommended)
 
@@ -306,6 +307,8 @@ Checklist:
 - **Request history on disk with search.** Keep requests for a configurable time (default 7 days) in an append-only
   file per project; search by path, method, status, header and body text; filter matched/unmatched; export as HAR.
 - **Live traffic.** Requests per second chart and counts for a chosen period, for load tests.
+- **Webhook callout log.** Show outgoing webhook calls, their status and timing next to the request that triggered
+  them.
 - **Per-project protection.** Optional access key: mocks answer only when a header (e.g. `X-Mock-Key`) matches.
 - **Rate limits.** Per project or per stub: requests per second/minute; return 429 with `Retry-After` when exceeded.
 - **Default response.** A project setting for what unmatched requests get (status, body), instead of a manual

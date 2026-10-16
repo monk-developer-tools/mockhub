@@ -3573,3 +3573,70 @@ kbd {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+.webhook {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  margin-bottom: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  background: var(--surface-sunken);
+}
+
+.webhook-head {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr) 110px auto;
+  gap: 8px;
+  align-items: center;
+}
+
+@media (max-width: 760px) {
+  .webhook-head {
+    grid-template-columns: 1fr;
+  }
+}
+
+.file-pick {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.file-pick select {
+  flex: 1;
+  min-width: 0;
+}
+
+.file-list {
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+}
+
+.file-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: var(--radius-s);
+}
+
+.file-list li:hover {
+  background: var(--surface-sunken);
+}
+
+.file-name {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.file-name strong {
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

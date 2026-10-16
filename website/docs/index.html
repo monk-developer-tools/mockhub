@@ -39,7 +39,11 @@
       <h4>Mocking</h4>
       <a href="#matching">Request matching</a>
       <a href="#templating">Templating</a>
+      <a href="#fake-data">Fake data</a>
+      <a href="#crud">CRUD resources</a>
       <a href="#scenarios">Scenarios</a>
+      <a href="#webhooks">Webhooks</a>
+      <a href="#files">Response files</a>
       <a href="#faults">Delays &amp; faults</a>
       <a href="#soap">SOAP &amp; WSDL</a>
       <a href="#proxy">Proxy &amp; record</a>
@@ -140,8 +144,44 @@
       </table>
       <p>See the <a href="https://wiremock.org/docs/response-templating/">WireMock templating reference</a> for the full list.</p>
 
+      <h2 id="fake-data">Fake data</h2>
+      <p>Templated responses can use <code>{{fake '…'}}</code> with any <a href="https://www.datafaker.net/documentation/providers/">Datafaker expression</a>. In the editor, <strong>Fake data</strong> lists the common ones.</p>
+      <table>
+        <thead><tr><th>Write</th><th>Gives</th></tr></thead>
+        <tbody>
+          <tr><td><code>{{fake 'Name.fullName'}}</code></td><td>a person's name</td></tr>
+          <tr><td><code>{{fake 'Internet.emailAddress'}}</code></td><td>an e-mail address</td></tr>
+          <tr><td><code>{{fake 'Address.city'}}</code>, <code>{{fake 'Address.streetAddress'}}</code></td><td>places</td></tr>
+          <tr><td><code>{{fake 'Company.name'}}</code>, <code>{{fake 'Commerce.productName'}}</code></td><td>business data</td></tr>
+          <tr><td><code>{{fake 'Number.numberBetween' 1 100}}</code></td><td>a number in a range</td></tr>
+          <tr><td><code>{{fake 'Name.fullName' locale='de'}}</code></td><td>another language</td></tr>
+        </tbody>
+      </table>
+      <p>The default language comes from <code>MOCKHUB_FAKE_LOCALE</code> (<code>en</code>). Importing an OpenAPI spec also fills fields by name and format (e-mail, phone, city, dates, prices) with realistic values that stay the same on every import.</p>
+
+      <h2 id="crud">CRUD resources</h2>
+      <p>In <strong>Stubs</strong>, choose <strong>CRUD resource</strong> and name it, e.g. <code>customers</code>. MockHub creates one stub that handles:</p>
+      <table>
+        <thead><tr><th>Request</th><th>Does</th></tr></thead>
+        <tbody>
+          <tr><td><code>GET /customers</code></td><td>list; filter with <code>?city=London</code>, sort with <code>_sort=name&amp;_order=desc</code>, page with <code>_limit</code> and <code>_offset</code>; the total is in <code>X-Total-Count</code></td></tr>
+          <tr><td><code>GET /customers/{id}</code></td><td>one record, or 404</td></tr>
+          <tr><td><code>POST /customers</code></td><td>create; the id is generated (1, 2, 3 or a UUID) unless you send one; 201 with a <code>Location</code> header</td></tr>
+          <tr><td><code>PUT /customers/{id}</code></td><td>replace</td></tr>
+          <tr><td><code>PATCH /customers/{id}</code></td><td>merge fields; <code>null</code> removes one</td></tr>
+          <tr><td><code>DELETE /customers/{id}</code></td><td>delete; 204</td></tr>
+        </tbody>
+      </table>
+      <p>Records are kept per project in <code>/data/mockhub/data</code>, survive restarts and are included in backups. The <strong>Data</strong> tab lists them and lets you add, edit, delete or clear them. For custom stateful flows, the <a href="https://github.com/wiremock/wiremock-state-extension">WireMock state extension</a> is included too (its state lives in memory).</p>
+
       <h2 id="scenarios">Scenarios</h2>
       <p>Give stubs the same <strong>scenario name</strong>. Each stub answers only in its <em>required state</em> and can move the scenario to a <em>new state</em>. Every scenario starts in <code>Started</code>. Reset or jump between states from the project's <strong>Scenarios</strong> tab. The <em>Shopping cart</em> example shows a complete flow.</p>
+
+      <h2 id="webhooks">Webhooks</h2>
+      <p>In the editor's <strong>Then call</strong> section, add one or more webhooks: method, URL, headers, body and an optional delay. They are sent after the stub answers. Use <code>{{originalRequest.body}}</code>, <code>{{jsonPath originalRequest.body '$.id'}}</code> or <code>{{originalRequest.headers.X-Id}}</code> to pass data from the request. They're stored as standard WireMock <code>serveEventListeners</code>, so existing WireMock webhook mappings work unchanged.</p>
+
+      <h2 id="files">Response files</h2>
+      <p>On <strong>Import &amp; export</strong>, upload files up to 10 MB under <strong>Response files</strong>: PDFs, images, large JSON. In a stub, choose <strong>File</strong> as the body type and pick the file; the <code>Content-Type</code> is set for you. Files are kept per project, removed with the project, and included in backups.</p>
 
       <h2 id="faults">Delays &amp; faults</h2>
       <ul>

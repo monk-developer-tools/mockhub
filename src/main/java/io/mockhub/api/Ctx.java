@@ -58,6 +58,10 @@ public final class Ctx {
     return request.getBodyAsString();
   }
 
+  public byte[] bytes() {
+    return request.getBody();
+  }
+
   public JsonNode json() {
     String body = body();
     if (body == null || body.isBlank()) {

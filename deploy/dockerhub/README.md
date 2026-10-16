@@ -45,6 +45,10 @@ Point your service or tests at `http://<host>:8080/<base path>` instead of the r
 - **AI assistant.** Bring your own model through OpenRouter, a LiteLLM proxy or any OpenAI-compatible API. It drafts
   stubs, and you review the diff before anything changes.
 - **Teams.** Organisation › teams › people, with viewer, editor and owner roles, and Microsoft Entra ID sign-in.
+- **CRUD resources.** `/customers` with list, read, create, update and delete backed by real stored records, editable
+  in a Data tab.
+- **Realistic fake data.** `{{fake 'Name.fullName'}}` and hundreds more, in many languages.
+- **Webhooks and response files.** Call other services after answering; serve PDFs, images or large JSON.
 - **Nothing gets lost.** Every stub is saved to `/data`, and backups cover the whole server or single projects.
 
 ![A project overview](https://mockhub.devops-monk.com/assets/img/dockerhub-overview.jpg)
@@ -80,6 +84,7 @@ Everything is set with environment variables.
 | `MOCKHUB_LOGIN_NOTE` | empty | Text shown on the sign-in page |
 | `MOCKHUB_JOURNAL_MAX_ENTRIES` | `5000` | How many requests the request log keeps |
 | `MOCKHUB_STUB_CORS` | `true` | CORS headers on mock responses, for browser apps |
+| `MOCKHUB_FAKE_LOCALE` | `en` | Default language for `{{fake ...}}` data |
 | `WIREMOCK_OPTIONS` | empty | Extra WireMock options, e.g. `--async-response-enabled true` |
 
 Sign-in is off until the first user exists. Create an admin in the UI, or set `MOCKHUB_USERS`. Mock endpoints never

@@ -5,6 +5,7 @@ import type {
   ApplyResult,
   AssistantJob,
   BackupSelection,
+  BodyFile,
   CrudRequest,
   DataResource,
   RestorePreview,
@@ -180,6 +181,16 @@ export const api = {
     request<void>(`${API}/projects/${projectId}/data/records?resource=${encodeURIComponent(resource)}&id=${encodeURIComponent(id)}`, { method: 'DELETE' }),
   clearResource: (projectId: string, resource: string) =>
     request<void>(`${API}/projects/${projectId}/data/records?resource=${encodeURIComponent(resource)}`, { method: 'DELETE' }),
+  files: (projectId: string) => request<BodyFile[]>(`${API}/projects/${projectId}/files`),
+  uploadFile: (projectId: string, name: string, file: Blob) =>
+    request<BodyFile>(`${API}/projects/${projectId}/files?name=${encodeURIComponent(name)}`, {
+      method: 'POST',
+      body: file,
+      headers: { 'Content-Type': file.type || 'application/octet-stream' },
+    }),
+  downloadFile: (projectId: string, name: string) => download(`${API}/projects/${projectId}/files/content?name=${encodeURIComponent(name)}`),
+  deleteFile: (projectId: string, name: string) =>
+    request<void>(`${API}/projects/${projectId}/files?name=${encodeURIComponent(name)}`, { method: 'DELETE' }),
   resetData: (projectId: string) => request<void>(`${API}/projects/${projectId}/data`, { method: 'DELETE' }),
   applyChanges: (projectId: string, changes: ProposedChange[]) =>
     request<ApplyResult>(`${API}/projects/${projectId}/ai/apply`, { method: 'POST', body: json({ changes }) }),

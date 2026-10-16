@@ -5,6 +5,7 @@ import { FilePicker } from '../../components/FilePicker';
 import { useToast } from '../../components/Toasts';
 import { useApp } from '../../state/AppContext';
 import { useProject } from './ProjectPage';
+import { ResponseFiles } from './ResponseFiles';
 
 const EXPORTS = [
   { format: 'postman', name: 'Postman collection', detail: 'Collection v2.1 with a baseUrl variable, folders and a status test per request. Import it in Postman.' },
@@ -77,37 +78,40 @@ export function ImportExportTab() {
         </div>
       </div>
 
-      {canEdit && (
-        <div className="panel">
-          <div className="panel-head">
-            <h2>Import into {project.name}</h2>
-          </div>
-          <div className="panel-body stack">
-            <div className="segmented" role="group" aria-label="Import format">
-              {IMPORTS.map((i) => (
-                <button key={i.format} aria-pressed={i.format === format} onClick={() => setFormat(i.format)}>
-                  {i.name}
-                </button>
-              ))}
+      <div className="stack">
+        {canEdit && (
+          <div className="panel">
+            <div className="panel-head">
+              <h2>Import into {project.name}</h2>
             </div>
-            <p className="muted small">{current.detail}</p>
-            {format === 'wsdl' && (
-              <label className="field">
-                <span>Endpoint path <span className="hint">optional, defaults to the path in soap:address</span></span>
-                <input type="text" className="mono" placeholder="/ws/customers" value={path} onChange={(e) => setPath(e.target.value)} />
-              </label>
-            )}
-            {format === 'openapi' && (
-              <label className="field">
-                <span>Strip path prefix <span className="hint">optional, e.g. /api/v1</span></span>
-                <input type="text" className="mono" value={stripPrefix} onChange={(e) => setStripPrefix(e.target.value)} />
-              </label>
-            )}
-            <FilePicker accept={current.accept} label={`Drop a ${current.name} file here or click to choose`} onText={runImport} />
-            {result && <div className="callout">{result}</div>}
+            <div className="panel-body stack">
+              <div className="segmented" role="group" aria-label="Import format">
+                {IMPORTS.map((i) => (
+                  <button key={i.format} aria-pressed={i.format === format} onClick={() => setFormat(i.format)}>
+                    {i.name}
+                  </button>
+                ))}
+              </div>
+              <p className="muted small">{current.detail}</p>
+              {format === 'wsdl' && (
+                <label className="field">
+                  <span>Endpoint path <span className="hint">optional, defaults to the path in soap:address</span></span>
+                  <input type="text" className="mono" placeholder="/ws/customers" value={path} onChange={(e) => setPath(e.target.value)} />
+                </label>
+              )}
+              {format === 'openapi' && (
+                <label className="field">
+                  <span>Strip path prefix <span className="hint">optional, e.g. /api/v1</span></span>
+                  <input type="text" className="mono" value={stripPrefix} onChange={(e) => setStripPrefix(e.target.value)} />
+                </label>
+              )}
+              <FilePicker accept={current.accept} label={`Drop a ${current.name} file here or click to choose`} onText={runImport} />
+              {result && <div className="callout">{result}</div>}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+        <ResponseFiles projectId={project.id} canEdit={canEdit} />
+      </div>
     </div>
   );
 }

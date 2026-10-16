@@ -37,6 +37,26 @@ export interface KeyValue {
   value: string;
 }
 
+export interface Webhook {
+  method: string;
+  url: string;
+  headers: KeyValue[];
+  body: string;
+  delay: string;
+}
+
+export const WEBHOOK_METHODS = ['POST', 'PUT', 'PATCH', 'GET', 'DELETE'];
+
+export function emptyWebhook(): Webhook {
+  return {
+    method: 'POST',
+    url: '',
+    headers: [{ key: 'Content-Type', value: 'application/json' }],
+    body: '{\n  "event": "created",\n  "request": {{{originalRequest.body}}}\n}',
+    delay: '',
+  };
+}
+
 export interface StubForm {
   kind: StubKind;
   name: string;
@@ -75,6 +95,7 @@ export interface StubForm {
   soapAction: string;
   soapOperation: string;
   sampleBody: string;
+  webhooks: Webhook[];
 }
 
 export interface Conversion {
@@ -151,6 +172,7 @@ export function emptyForm(kind: StubKind = 'rest'): StubForm {
     soapAction: '',
     soapOperation: soap ? 'Operation' : '',
     sampleBody: '',
+    webhooks: [],
   };
 }
 
@@ -325,7 +347,24 @@ export function fromStub(stub: Stub): Conversion {
   for (const key of ['additionalProxyRequestHeaders', 'removeProxyRequestHeaders', 'transformerParameters']) {
     if (response[key] !== undefined) unsupported.push(`Response ${key}`);
   }
-  if (stub.postServeActions !== undefined || stub.serveEventListeners !== undefined) unsupported.push('Webhooks / serve event listeners');
+  form.webhooks = [];
+  for (const listener of Array.isArray(stub.serveEventListeners) ? stub.serveEventListeners : []) {
+    const l = obj(listener);
+    if (l.name !== 'webhook') {
+      unsupported.push(`Serve event listener ${str(l.name)}`);
+      continue;
+    }
+    const p = obj(l.parameters);
+    form.webhooks.push({
+      method: str(p.method) || 'POST',
+      url: str(p.url),
+      headers: Object.entries(obj(p.headers)).map(([key, value]) => ({ key, value: Array.isArray(value) ? value.join(', ') : str(value) })),
+      body: typeof p.body === 'string' ? p.body : p.body !== undefined ? JSON.stringify(p.body, null, 2) : '',
+      delay: str(obj(p.delay).milliseconds),
+    });
+    if (p.delay !== undefined && obj(p.delay).type !== 'fixed') unsupported.push('Webhook delay that is not fixed');
+  }
+  if (stub.postServeActions !== undefined) unsupported.push('Post-serve actions');
 
   form.soapVersion = meta.soapVersion === '1.2' ? '1.2' : '1.1';
   form.soapAction = str(meta.soapAction);
@@ -377,6 +416,22 @@ export function toStub(form: StubForm, original: Stub = {}): Stub {
   if (form.responseMode !== 'fault') writeDelay(response, form);
   if (form.templating && form.responseMode !== 'fault') response.transformers = [TEMPLATE_TRANSFORMER];
   stub.response = response;
+
+  const otherListeners = (Array.isArray(stub.serveEventListeners) ? stub.serveEventListeners : []).filter((l) => obj(l).name !== 'webhook');
+  const webhooks = form.webhooks
+    .filter((w) => w.url.trim())
+    .map((w) => {
+      const parameters: JsonObject = { method: w.method, url: w.url.trim() };
+      const headers: JsonObject = {};
+      for (const h of w.headers) if (h.key.trim()) headers[h.key.trim()] = h.value;
+      if (Object.keys(headers).length) parameters.headers = headers;
+      if (w.body.trim() && w.method !== 'GET') parameters.body = w.body;
+      if (Number(w.delay) > 0) parameters.delay = { type: 'fixed', milliseconds: Number(w.delay) };
+      return { name: 'webhook', parameters };
+    });
+  const listeners = [...otherListeners, ...webhooks];
+  if (listeners.length) stub.serveEventListeners = listeners;
+  else delete stub.serveEventListeners;
 
   const metadata = obj(stub.metadata);
   const meta: JsonObject = { ...obj(metadata.mockhub), type: form.kind };

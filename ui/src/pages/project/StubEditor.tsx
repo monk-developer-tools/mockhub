@@ -1,7 +1,9 @@
-import { Copy, Database, FloppyDisk, FolderSimplePlus, LockSimple, Trash, Warning } from '@phosphor-icons/react';
+import { Copy, Database, FloppyDisk, FolderSimplePlus, LockSimple, Plus, Trash, Warning } from '@phosphor-icons/react';
 import { Link } from 'react-router-dom';
 import { crudOf } from '../../model/crud';
 import { FakeDataMenu } from '../../components/FakeDataMenu';
+import { formatSize } from '../../model/files';
+import { UploadButton, useProjectFiles } from './ResponseFiles';
 import { useEffect, useMemo, useState } from 'react';
 import { useHotkeys } from '../../state/hotkeys';
 import { api } from '../../api/client';
@@ -12,6 +14,7 @@ import { StubRoute } from '../../components/StubRoute';
 import { useToast } from '../../components/Toasts';
 import {
   applySoapDefaults,
+  emptyWebhook,
   FAULTS,
   fromStub,
   METHODS,
@@ -19,10 +22,12 @@ import {
   soapFault,
   toStub,
   validate,
+  WEBHOOK_METHODS,
   type BodyType,
   type DelayType,
   type ResponseMode,
   type StubForm,
+  type Webhook,
   type UrlMatchType,
 } from '../../model/stubForm';
 import { BodyMatcherRows, KeyValueRows, ValueMatcherRows } from './MatcherRows';
@@ -69,8 +74,14 @@ interface Props {
 
 type Mode = 'form' | 'json';
 
+function withFile(form: StubForm, path: string, contentType: string): Partial<StubForm> {
+  const headers = form.responseHeaders.filter((h) => h.key.toLowerCase() !== 'content-type');
+  return { responseBody: path, responseHeaders: [{ key: 'Content-Type', value: contentType }, ...headers] };
+}
+
 export function StubEditor({ project, projects, stub, isNew, canEdit, onSaved, onDeleted, onDirtyChange }: Props) {
   const crud = crudOf(stub);
+  const { files, reload: reloadFiles } = useProjectFiles(project.id);
   const toast = useToast();
   const initial = useMemo(() => fromStub(stub), [stub]);
   const [form, setForm] = useState<StubForm>(initial.form);
@@ -455,7 +466,21 @@ export function StubEditor({ project, projects, stub, isNew, canEdit, onSaved, o
                     </span>
                   </span>
                   {form.bodyType === 'file' ? (
-                    <input type="text" className="mono" placeholder="responses/customer.json (relative to __files)" value={form.responseBody} onChange={(e) => update({ responseBody: e.target.value })} />
+                    <div className="file-pick">
+                      <select aria-label="Response file" value={form.responseBody} disabled={readOnly} onChange={(e) => {
+                        const picked = (files ?? []).find((f) => f.path === e.target.value);
+                        update(picked ? withFile(form, picked.path, picked.contentType) : { responseBody: e.target.value });
+                      }}>
+                        <option value="">Choose a file…</option>
+                        {(files ?? []).map((f) => <option key={f.path} value={f.path}>{f.name} ({formatSize(f.size)})</option>)}
+                        {form.responseBody && !(files ?? []).some((f) => f.path === form.responseBody) && (
+                          <option value={form.responseBody}>{form.responseBody}</option>
+                        )}
+                      </select>
+                      {!readOnly && (
+                        <UploadButton projectId={project.id} small onUploaded={(f) => { reloadFiles(); update(withFile(form, f.path, f.contentType)); }} />
+                      )}
+                    </div>
                   ) : form.bodyType === 'base64' ? (
                     <textarea className="mono" rows={3} placeholder="Base64-encoded bytes" value={form.responseBody} onChange={(e) => update({ responseBody: e.target.value })} />
                   ) : form.bodyType !== 'none' ? (
@@ -555,6 +580,47 @@ export function StubEditor({ project, projects, stub, isNew, canEdit, onSaved, o
                 <input type="text" value={form.newState} placeholder="unchanged" disabled={!form.scenarioName} onChange={(e) => update({ newState: e.target.value })} />
               </label>
             </div>
+          </div>
+
+          <div className="section">
+            <h3>
+              Then call <span className="muted small">optional: send webhooks after responding</span>
+            </h3>
+            {form.webhooks.length === 0 && (
+              <p className="muted small">
+                Call another service when this stub answers, e.g. to simulate a payment callback. Use{' '}
+                <span className="mono">{'{{originalRequest.body}}'}</span> or <span className="mono">{"{{jsonPath originalRequest.body '$.id'}}"}</span>{' '}
+                to pass data from the request.
+              </p>
+            )}
+            {form.webhooks.map((w, i) => {
+              const set = (patch: Partial<Webhook>) => update({ webhooks: form.webhooks.map((x, j) => (j === i ? { ...x, ...patch } : x)) });
+              return (
+                <div key={i} className="webhook">
+                  <div className="webhook-head">
+                    <select aria-label={`Webhook ${i + 1} method`} value={w.method} disabled={readOnly} onChange={(e) => set({ method: e.target.value })}>
+                      {WEBHOOK_METHODS.map((m) => <option key={m}>{m}</option>)}
+                    </select>
+                    <input type="text" className="mono" aria-label={`Webhook ${i + 1} URL`} placeholder="https://partner.example.com/callbacks" value={w.url} disabled={readOnly} onChange={(e) => set({ url: e.target.value })} />
+                    <input type="number" min={0} aria-label={`Webhook ${i + 1} delay`} placeholder="delay ms" value={w.delay} disabled={readOnly} onChange={(e) => set({ delay: e.target.value })} />
+                    {!readOnly && (
+                      <button type="button" className="btn ghost icon small" aria-label={`Remove webhook ${i + 1}`} onClick={() => update({ webhooks: form.webhooks.filter((_, j) => j !== i) })}>
+                        <Trash size={14} />
+                      </button>
+                    )}
+                  </div>
+                  <KeyValueRows rows={w.headers} onChange={(headers) => set({ headers })} disabled={readOnly} />
+                  {w.method !== 'GET' && (
+                    <CodeEditor label={`Webhook ${i + 1} body`} value={w.body} language="json" readOnly={readOnly} minHeight="70px" maxHeight="220px" onChange={(body) => set({ body })} />
+                  )}
+                </div>
+              );
+            })}
+            {!readOnly && (
+              <button type="button" className="btn small" onClick={() => update({ webhooks: [...form.webhooks, emptyWebhook()] })}>
+                <Plus size={13} /> Add webhook
+              </button>
+            )}
           </div>
 
           <div className="section">

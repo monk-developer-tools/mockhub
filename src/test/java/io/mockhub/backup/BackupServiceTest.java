@@ -16,10 +16,12 @@ import io.mockhub.team.Team;
 import io.mockhub.team.TeamService;
 import io.mockhub.support.FakeStubGateway;
 import io.mockhub.support.InMemoryOrganizationRepository;
+import io.mockhub.files.BodyFiles;
 import io.mockhub.support.InMemoryDataStore;
 import io.mockhub.support.InMemoryProjectRepository;
 import io.mockhub.support.InMemoryTeamRepository;
 import io.mockhub.support.MutableClock;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
@@ -31,6 +33,16 @@ class BackupServiceTest {
 
   private final MutableClock clock = new MutableClock(Instant.parse("2026-10-16T10:00:00Z"));
   private Server source;
+
+  private static Path tempDir() {
+    try {
+      Path dir = java.nio.file.Files.createTempDirectory("mockhub-backup");
+      dir.toFile().deleteOnExit();
+      return dir;
+    } catch (java.io.IOException e) {
+      throw new java.io.UncheckedIOException(e);
+    }
+  }
 
   private static final class Server {
     final FakeStubGateway gateway = new FakeStubGateway();
@@ -47,7 +59,7 @@ class BackupServiceTest {
       ref.set(projects);
       teams = new TeamService(new InMemoryTeamRepository(), List.of(), clock);
       orgs = new OrganizationService(new InMemoryOrganizationRepository(), List.of(projects, teams), clock);
-      backups = new BackupService(orgs, teams, projects, gateway, new InMemoryDataStore(), clock);
+      backups = new BackupService(orgs, teams, projects, gateway, new InMemoryDataStore(), new BodyFiles(tempDir()), clock);
     }
 
     Organization org(String name) {

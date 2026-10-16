@@ -357,3 +357,12 @@ export interface CrudRequest {
   idType: 'uuid' | 'number';
   seed?: unknown[];
 }
+
+export interface BodyFile {
+  name: string;
+  size: number;
+  contentType: string;
+  modified: string;
+  path: string;
+  usedBy: number;
+}

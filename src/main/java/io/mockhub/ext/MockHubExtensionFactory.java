@@ -19,6 +19,7 @@ import io.mockhub.data.DataStore;
 import io.mockhub.data.FileDataStore;
 import io.mockhub.data.ProjectDataCleaner;
 import io.mockhub.fake.FakeData;
+import io.mockhub.files.BodyFiles;
 import io.mockhub.fake.FakeHelpers;
 import io.mockhub.auth.ProjectScope;
 import io.mockhub.auth.AuthService;
@@ -27,6 +28,7 @@ import io.mockhub.auth.TokenService;
 import io.mockhub.controller.AuthController;
 import io.mockhub.controller.BackupController;
 import io.mockhub.controller.DataController;
+import io.mockhub.controller.FilesController;
 import io.mockhub.controller.BaseUrls;
 import io.mockhub.controller.ExampleController;
 import io.mockhub.controller.ImportExportController;
@@ -96,8 +98,9 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     AtomicReference<ProjectService> projectsRef = new AtomicReference<>();
     StubService stubs = new StubService(gateway, projectsRef::get);
     DataStore dataStore = new FileDataStore(dataDir);
+    BodyFiles bodyFiles = new BodyFiles(dataDir);
     CrudService crud = new CrudService(dataStore);
-    ProjectService projects = new ProjectService(new FileProjectRepository(dataDir), List.of(stubs, new ProjectDataCleaner(dataStore)), clock);
+    ProjectService projects = new ProjectService(new FileProjectRepository(dataDir), List.of(stubs, new ProjectDataCleaner(dataStore, bodyFiles)), clock);
     projectsRef.set(projects);
     UserService users = new UserService(new FileUserRepository(dataDir), config.users, new PasswordHasher(), clock);
     TeamService teams = new TeamService(new FileTeamRepository(dataDir), List.of(users), clock);
@@ -152,8 +155,9 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
                 new RequestLogController(requestLog),
                 new ImportExportController(projects, stubs, exporters, importers, urls),
                 new AiController(aiSettings, aiProviders, chat, assistant, assistantJobs, projects, urls),
-                new BackupController(new BackupService(orgs, teams, projects, gateway, dataStore, clock)),
-                new DataController(projects, stubs, dataStore, crud)))));
+                new BackupController(new BackupService(orgs, teams, projects, gateway, dataStore, bodyFiles, clock)),
+                new DataController(projects, stubs, dataStore, crud),
+                new FilesController(projects, stubs, bodyFiles)))));
     extensions.addAll(new StateExtension(new CaffeineStore()).create(services));
     return extensions;
   }

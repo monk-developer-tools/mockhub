@@ -9,6 +9,7 @@ import io.mockhub.Main;
 import io.mockhub.api.ApiException;
 import io.mockhub.api.Jsons;
 import io.mockhub.data.DataStore;
+import io.mockhub.files.BodyFiles;
 import io.mockhub.org.Organization;
 import io.mockhub.org.OrganizationService;
 import io.mockhub.project.Project;
@@ -23,6 +24,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -43,15 +45,17 @@ public final class BackupService {
   private final ProjectService projects;
   private final StubGateway gateway;
   private final DataStore data;
+  private final BodyFiles files;
   private final Clock clock;
 
   public BackupService(OrganizationService orgs, TeamService teams, ProjectService projects, StubGateway gateway, DataStore data,
-      Clock clock) {
+      BodyFiles files, Clock clock) {
     this.orgs = orgs;
     this.teams = teams;
     this.projects = projects;
     this.gateway = gateway;
     this.data = data;
+    this.files = files;
     this.clock = clock;
   }
 
@@ -91,9 +95,15 @@ public final class BackupService {
     out.set("organizations", Jsons.MAPPER.valueToTree(orgList));
     out.set("teams", Jsons.MAPPER.valueToTree(teamList));
     ObjectNode records = out.putObject("data");
+    ObjectNode bodyFiles = out.putObject("files");
     for (Project p : chosen) {
       Map<String, Map<String, ObjectNode>> snapshot = data.snapshot(p.id());
       if (!snapshot.isEmpty()) records.set(p.id(), Jsons.MAPPER.valueToTree(snapshot));
+      Map<String, byte[]> projectFiles = files.snapshot(p.id());
+      if (!projectFiles.isEmpty()) {
+        ObjectNode encoded = bodyFiles.putObject(p.id());
+        projectFiles.forEach((name, bytes) -> encoded.put(name, Base64.getEncoder().encodeToString(bytes)));
+      }
     }
     out.set("projects", Jsons.MAPPER.valueToTree(chosen));
     ArrayNode mappings = out.putArray("mappings");
@@ -199,6 +209,7 @@ public final class BackupService {
       Project saved = new Project(id, p.name(), slug, p.description(), p.color(),
           options.asCopy() ? now : p.createdAt(), now, orgId, teamId);
       projects.restore(List.of(saved));
+      file.path("files").path(p.id()).fields().forEachRemaining(e -> files.save(saved.id(), e.getKey(), Base64.getDecoder().decode(e.getValue().asText())));
       JsonNode stored = file.path("data").path(p.id());
       if (stored.isObject()) {
         data.restore(saved.id(), Jsons.MAPPER.convertValue(stored, new TypeReference<Map<String, Map<String, ObjectNode>>>() {}));
@@ -253,6 +264,11 @@ public final class BackupService {
       StubPaths.toAbsolute(m, to.basePath());
     }
     StubMetadata.node(m).put(StubMetadata.PROJECT_ID, to.id());
+    JsonNode bodyFile = m.path("response").path("bodyFileName");
+    String oldPrefix = BodyFiles.bodyFileName(from.id(), "");
+    if (bodyFile.isTextual() && bodyFile.asText().startsWith(oldPrefix) && !from.id().equals(to.id())) {
+      ((ObjectNode) m.get("response")).put("bodyFileName", BodyFiles.bodyFileName(to.id(), bodyFile.asText().substring(oldPrefix.length())));
+    }
     if (newId) {
       String id = UUID.randomUUID().toString();
       m.put("id", id).put("uuid", id);
