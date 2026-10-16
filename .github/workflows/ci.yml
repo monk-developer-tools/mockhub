@@ -121,6 +121,11 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=sha,prefix=sha-,format=short
+          labels: |
+            org.opencontainers.image.title=MockHub
+            org.opencontainers.image.url=https://mockhub.devops-monk.com
+            org.opencontainers.image.documentation=https://mockhub.devops-monk.com/docs/
+            org.opencontainers.image.vendor=monk-developer-tools
 
       - uses: docker/build-push-action@v6
         with:
@@ -143,5 +148,5 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
           repository: ${{ env.IMAGE }}
-          short-description: Team mock server for REST and SOAP built on WireMock, with a web UI
-          readme-filepath: ./README.md
+          short-description: Team mock server for REST and SOAP on WireMock: web UI, AI assistant, teams, Postman/Bruno export
+          readme-filepath: ./deploy/dockerhub/README.md
