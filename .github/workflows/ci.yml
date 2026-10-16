@@ -148,5 +148,5 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
           repository: ${{ env.IMAGE }}
-          short-description: Team mock server for REST and SOAP on WireMock: web UI, AI assistant, teams, Postman/Bruno export
+          short-description: "Team mock server for REST and SOAP on WireMock: web UI, AI assistant, teams, Postman/Bruno export"
           readme-filepath: ./deploy/dockerhub/README.md
