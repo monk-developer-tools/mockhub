@@ -342,3 +342,18 @@ export interface RestoreResult {
   stubs: number;
   renamed: { project: string; from: string; to: string }[];
 }
+
+export interface DataResource {
+  name: string;
+  count: number;
+  idField: string;
+  idType: 'uuid' | 'number';
+  crud: boolean;
+}
+
+export interface CrudRequest {
+  resource: string;
+  idField: string;
+  idType: 'uuid' | 'number';
+  seed?: unknown[];
+}

@@ -28,7 +28,11 @@ public final class Fixtures {
   }
 
   public static JsonNode tree(String json) {
-    return json(json);
+    try {
+      return Jsons.MAPPER.readTree(json.replace('\'', '"'));
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
   }
 
   public static StubMapping stub(String json) {

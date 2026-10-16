@@ -18,6 +18,7 @@ import { BackupPage } from './pages/BackupPage';
 import { OrgPage } from './pages/OrgPage';
 import { TeamPage } from './pages/TeamPage';
 import { AssistantTab } from './pages/project/AssistantTab';
+import { DataTab } from './pages/project/DataTab';
 import { ServerPage } from './pages/ServerPage';
 import { SsoPage } from './pages/SsoPage';
 import { UsersPage } from './pages/UsersPage';
@@ -46,6 +47,7 @@ const router = createBrowserRouter(
             { path: 'overview', element: <OverviewTab /> },
             { path: 'stubs', element: <StubsTab /> },
             { path: 'stubs/:stubId', element: <StubsTab /> },
+            { path: 'data', element: <DataTab /> },
             { path: 'assistant', element: <AssistantTab /> },
             { path: 'requests', element: <RequestsTab /> },
             { path: 'scenarios', element: <ScenariosTab /> },

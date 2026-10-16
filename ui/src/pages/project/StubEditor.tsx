@@ -1,4 +1,6 @@
-import { Copy, FloppyDisk, FolderSimplePlus, LockSimple, Trash, Warning } from '@phosphor-icons/react';
+import { Copy, Database, FloppyDisk, FolderSimplePlus, LockSimple, Trash, Warning } from '@phosphor-icons/react';
+import { Link } from 'react-router-dom';
+import { crudOf } from '../../model/crud';
 import { useEffect, useMemo, useState } from 'react';
 import { useHotkeys } from '../../state/hotkeys';
 import { api } from '../../api/client';
@@ -67,6 +69,7 @@ interface Props {
 type Mode = 'form' | 'json';
 
 export function StubEditor({ project, projects, stub, isNew, canEdit, onSaved, onDeleted, onDirtyChange }: Props) {
+  const crud = crudOf(stub);
   const toast = useToast();
   const initial = useMemo(() => fromStub(stub), [stub]);
   const [form, setForm] = useState<StubForm>(initial.form);
@@ -234,9 +237,21 @@ export function StubEditor({ project, projects, stub, isNew, canEdit, onSaved, o
         </div>
       )}
 
+      {crud && (
+        <div className="section">
+          <div className="callout crud-callout">
+            <Database size={16} weight="duotone" />
+            <div>
+              This stub serves the <strong>/{crud.resource}</strong> CRUD resource: list, read, create, replace, patch and delete.
+              Records live in the <Link to={`/projects/${project.id}/data?resource=${encodeURIComponent(crud.resource)}`}>Data tab</Link>.
+            </div>
+          </div>
+        </div>
+      )}
+
       {mode === 'json' ? (
         <div className="section">
-          {unsupported.length > 0 && (
+          {unsupported.length > 0 && !crud && (
             <div className="callout warn" style={{ marginBottom: 12 }}>
               <Warning size={16} />
               <div>

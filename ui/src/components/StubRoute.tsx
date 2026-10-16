@@ -1,4 +1,5 @@
 import type { Stub } from '../api/types';
+import { crudOf } from '../model/crud';
 import { describeUrl, isPatternUrl } from '../model/stubForm';
 
 type Obj = Record<string, unknown>;
@@ -16,6 +17,17 @@ export function StatusPlug({ stub }: { stub: Stub }) {
 }
 
 export function StubRoute({ stub, basePath }: { stub: Stub; basePath?: string }) {
+  const crud = crudOf(stub);
+  if (crud) {
+    return (
+      <span className="route">
+        <MethodJack method="CRUD" />
+        <span className="path" title={`${basePath ?? ''}/${crud.resource}`}>/{crud.resource}</span>
+        <span className="wire" aria-hidden="true" />
+        <span className="status-plug data">data</span>
+      </span>
+    );
+  }
   const request = (stub.request ?? {}) as Obj;
   const method = String(request.method ?? 'ANY');
   const url = describeUrl(stub);

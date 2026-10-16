@@ -274,10 +274,18 @@ long as it works with WireMock 3.13 on Jetty 12; otherwise we build a small exte
 - Large responses: allow binary files (images, PDFs, zips) with the right content type.
 - Backups and exports include the files a project uses.
 
+Spike results (16 Oct 2026):
+- `wiremock-state-extension` 0.10.1 supports WireMock 3.7+ and takes a pluggable store. It keeps state as flat
+  string properties and its lists can't be updated, so schema-less JSON CRUD on top of it would be fragile. Decision:
+  CRUD resources use MockHub's own transformer (`mockhub-crud`) and a per-project JSON data store saved under
+  `/data/mockhub/data/`. The state extension is still bundled (in memory) for counters and step tracking.
+- `wiremock-faker-extension` 0.3.0-beta.1 targets WireMock 4 betas, so it can't load on 3.13. Decision: a MockHub
+  template helper `fake` backed by Datafaker 2.7.0 (Java 17+).
+
 Checklist:
-- [ ] Spike: state and faker extensions on WireMock 3.13 + Jetty 12 (decide engine for 14b)
-- [ ] 14a backend: state extension wiring, CRUD generator, data API, optional persistence, backup support
-- [ ] 14a UI: New CRUD resource dialog, Data tab
+- [x] Spike: state and faker extensions on WireMock 3.13 + Jetty 12 (decide engine for 14b)
+- [x] 14a backend: state extension wiring, CRUD generator, data API, persistence on disk, backup support
+- [x] 14a UI: New CRUD resource dialog, Data tab
 - [ ] 14b backend: fake helper, locale setting, OpenAPI import uses fake data
 - [ ] 14b UI: insert-helper menu and response preview
 - [ ] 14c backend: webhook form mapping, callout log, body file API, backup/export of files

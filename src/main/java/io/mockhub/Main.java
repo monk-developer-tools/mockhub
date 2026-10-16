@@ -26,6 +26,9 @@ public final class Main {
     if (config.stubCors && !userArgs.contains("--enable-stub-cors")) {
       finalArgs.add("--enable-stub-cors");
     }
+    if (!userArgs.contains("--disable-extensions-scanning")) {
+      finalArgs.add("--disable-extensions-scanning");
+    }
     finalArgs.addAll(userArgs);
 
     CommandLineOptions options = new CommandLineOptions(finalArgs.toArray(String[]::new));

@@ -13,12 +13,18 @@ import io.mockhub.ai.JdkLlmTransport;
 import io.mockhub.controller.AiController;
 import io.mockhub.backup.BackupService;
 import io.mockhub.auth.AccessPolicy;
+import io.mockhub.data.CrudService;
+import io.mockhub.data.CrudTransformer;
+import io.mockhub.data.DataStore;
+import io.mockhub.data.FileDataStore;
+import io.mockhub.data.ProjectDataCleaner;
 import io.mockhub.auth.ProjectScope;
 import io.mockhub.auth.AuthService;
 import io.mockhub.auth.Principal;
 import io.mockhub.auth.TokenService;
 import io.mockhub.controller.AuthController;
 import io.mockhub.controller.BackupController;
+import io.mockhub.controller.DataController;
 import io.mockhub.controller.BaseUrls;
 import io.mockhub.controller.ExampleController;
 import io.mockhub.controller.ImportExportController;
@@ -65,7 +71,10 @@ import io.mockhub.user.PasswordHasher;
 import io.mockhub.user.UserService;
 import java.nio.file.Path;
 import java.time.Clock;
+import java.util.ArrayList;
 import java.util.List;
+import org.wiremock.extensions.state.CaffeineStore;
+import org.wiremock.extensions.state.StateExtension;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -84,7 +93,9 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
 
     AtomicReference<ProjectService> projectsRef = new AtomicReference<>();
     StubService stubs = new StubService(gateway, projectsRef::get);
-    ProjectService projects = new ProjectService(new FileProjectRepository(dataDir), List.of(stubs), clock);
+    DataStore dataStore = new FileDataStore(dataDir);
+    CrudService crud = new CrudService(dataStore);
+    ProjectService projects = new ProjectService(new FileProjectRepository(dataDir), List.of(stubs, new ProjectDataCleaner(dataStore)), clock);
     projectsRef.set(projects);
     UserService users = new UserService(new FileUserRepository(dataDir), config.users, new PasswordHasher(), clock);
     TeamService teams = new TeamService(new FileTeamRepository(dataDir), List.of(users), clock);
@@ -119,8 +130,9 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
       return t;
     }), clock);
 
-    return List.of(
+    List<Extension> extensions = new ArrayList<>(List.of(
         new PersistenceListener(),
+        new CrudTransformer(crud),
         new AuthFilter(auth, policy),
         new MockHubAdminExtension(
             request -> auth.principal(request.getHeader("Authorization")).orElse(null),
@@ -137,6 +149,9 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
                 new RequestLogController(requestLog),
                 new ImportExportController(projects, stubs, exporters, importers, urls),
                 new AiController(aiSettings, aiProviders, chat, assistant, assistantJobs, projects, urls),
-                new BackupController(new BackupService(orgs, teams, projects, gateway, clock)))));
+                new BackupController(new BackupService(orgs, teams, projects, gateway, dataStore, clock)),
+                new DataController(projects, stubs, dataStore, crud)))));
+    extensions.addAll(new StateExtension(new CaffeineStore()).create(services));
+    return extensions;
   }
 }

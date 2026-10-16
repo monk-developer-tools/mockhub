@@ -1,4 +1,4 @@
-import { MagnifyingGlass, Plus, Stack } from '@phosphor-icons/react';
+import { Database, MagnifyingGlass, Plus, Stack } from '@phosphor-icons/react';
 import { EmptyArt } from '../../components/Illustrations';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useHotkeys } from '../../state/hotkeys';
@@ -14,6 +14,7 @@ import { useApp } from '../../state/AppContext';
 import { useProject } from './ProjectPage';
 import { StubEditor } from './StubEditor';
 import { TemplateGallery } from './TemplateGallery';
+import { CrudDialog } from './CrudDialog';
 
 type Meta = { type?: string; folder?: string };
 const metaOf = (s: Stub) => ((s.metadata as { mockhub?: Meta } | undefined)?.mockhub ?? {}) as Meta;
@@ -39,6 +40,7 @@ export function StubsTab() {
   const [chip, setChip] = useState('All');
   const [draft, setDraft] = useState<Stub | null>(null);
   const [gallery, setGallery] = useState(false);
+  const [crudOpen, setCrudOpen] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [pending, setPending] = useState<(() => void) | null>(null);
   const location = useLocation();
@@ -151,6 +153,9 @@ export function StubsTab() {
             <button className="btn small" onClick={() => startDraft(toStub(emptyForm('soap')))}>
               <Plus size={14} /> SOAP stub
             </button>
+            <button className="btn small" onClick={() => setCrudOpen(true)}>
+              <Database size={14} /> CRUD resource
+            </button>
           </div>
         )}
         {chips.length > 2 && (
@@ -226,6 +231,9 @@ export function StubsTab() {
                     <button className="btn" onClick={() => startDraft(toStub(emptyForm('soap')))}>
                       <Plus size={15} /> SOAP stub
                     </button>
+                    <button className="btn" onClick={() => setCrudOpen(true)}>
+                      <Database size={15} /> CRUD resource
+                    </button>
                     <button className="btn" onClick={() => setGallery(true)}>
                       <Stack size={15} /> From a template
                     </button>
@@ -246,6 +254,17 @@ export function StubsTab() {
       )}
 
       {gallery && <TemplateGallery onPick={startDraft} onClose={() => setGallery(false)} />}
+      {crudOpen && (
+        <CrudDialog
+          projectId={project.id}
+          onClose={() => setCrudOpen(false)}
+          onCreated={async (resource) => {
+            setCrudOpen(false);
+            await reloadProject();
+            navigate(`/projects/${project.id}/data?resource=${encodeURIComponent(resource)}`);
+          }}
+        />
+      )}
       {pending && (
         <Confirm
           title="Discard unsaved changes?"

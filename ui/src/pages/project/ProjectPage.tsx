@@ -1,4 +1,4 @@
-import { ArrowsDownUp, BracketsCurly, FlowArrow, Gauge, GearSix, Pulse, Sparkle, Warning } from '@phosphor-icons/react';
+import { ArrowsDownUp, BracketsCurly, Database, FlowArrow, Gauge, GearSix, Pulse, Sparkle, Warning } from '@phosphor-icons/react';
 import { useCallback, useEffect, useState } from 'react';
 import { NavLink, Outlet, useOutletContext, useParams } from 'react-router-dom';
 import { api } from '../../api/client';
@@ -64,6 +64,7 @@ export function ProjectPage() {
   const tabs = [
     { to: 'overview', label: 'Overview', icon: Gauge },
     { to: 'stubs', label: 'Stubs', icon: BracketsCurly, count: project.stubCount },
+    { to: 'data', label: 'Data', icon: Database },
     { to: 'assistant', label: 'Assistant', icon: Sparkle },
     { to: 'requests', label: 'Requests', icon: Pulse, count: project.requestCount, alert: project.unmatchedCount },
     { to: 'scenarios', label: 'Scenarios', icon: FlowArrow },

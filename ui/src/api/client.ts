@@ -5,6 +5,8 @@ import type {
   ApplyResult,
   AssistantJob,
   BackupSelection,
+  CrudRequest,
+  DataResource,
   RestorePreview,
   RestoreRequest,
   RestoreResult,
@@ -165,6 +167,20 @@ export const api = {
       body: json({ messages: messages.map(({ role, content }) => ({ role, content })), pending }),
     }),
   assistantJob: (projectId: string, jobId: string) => request<AssistantJob>(`${API}/projects/${projectId}/ai/jobs/${jobId}`),
+  createCrud: (projectId: string, body: CrudRequest) =>
+    request<{ seeded: number; stub: Stub }>(`${API}/projects/${projectId}/crud`, { method: 'POST', body: json(body) }),
+  dataResources: (projectId: string) => request<{ resources: DataResource[] }>(`${API}/projects/${projectId}/data`),
+  dataRecords: (projectId: string, resource: string) =>
+    request<Record<string, unknown>[]>(`${API}/projects/${projectId}/data/records?resource=${encodeURIComponent(resource)}`),
+  addRecord: (projectId: string, resource: string, record: unknown) =>
+    request<Record<string, unknown>>(`${API}/projects/${projectId}/data/records?resource=${encodeURIComponent(resource)}`, { method: 'POST', body: json(record) }),
+  replaceRecord: (projectId: string, resource: string, id: string, record: unknown) =>
+    request<Record<string, unknown>>(`${API}/projects/${projectId}/data/records?resource=${encodeURIComponent(resource)}&id=${encodeURIComponent(id)}`, { method: 'PUT', body: json(record) }),
+  deleteRecord: (projectId: string, resource: string, id: string) =>
+    request<void>(`${API}/projects/${projectId}/data/records?resource=${encodeURIComponent(resource)}&id=${encodeURIComponent(id)}`, { method: 'DELETE' }),
+  clearResource: (projectId: string, resource: string) =>
+    request<void>(`${API}/projects/${projectId}/data/records?resource=${encodeURIComponent(resource)}`, { method: 'DELETE' }),
+  resetData: (projectId: string) => request<void>(`${API}/projects/${projectId}/data`, { method: 'DELETE' }),
   applyChanges: (projectId: string, changes: ProposedChange[]) =>
     request<ApplyResult>(`${API}/projects/${projectId}/ai/apply`, { method: 'POST', body: json({ changes }) }),
 

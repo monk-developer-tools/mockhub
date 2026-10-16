@@ -16,6 +16,7 @@ import io.mockhub.team.Team;
 import io.mockhub.team.TeamService;
 import io.mockhub.support.FakeStubGateway;
 import io.mockhub.support.InMemoryOrganizationRepository;
+import io.mockhub.support.InMemoryDataStore;
 import io.mockhub.support.InMemoryProjectRepository;
 import io.mockhub.support.InMemoryTeamRepository;
 import io.mockhub.support.MutableClock;
@@ -46,7 +47,7 @@ class BackupServiceTest {
       ref.set(projects);
       teams = new TeamService(new InMemoryTeamRepository(), List.of(), clock);
       orgs = new OrganizationService(new InMemoryOrganizationRepository(), List.of(projects, teams), clock);
-      backups = new BackupService(orgs, teams, projects, gateway, clock);
+      backups = new BackupService(orgs, teams, projects, gateway, new InMemoryDataStore(), clock);
     }
 
     Organization org(String name) {

@@ -8,6 +8,7 @@ import com.github.tomakehurst.wiremock.stubbing.StubMapping;
 import io.mockhub.Main;
 import io.mockhub.api.ApiException;
 import io.mockhub.api.Jsons;
+import io.mockhub.data.DataStore;
 import io.mockhub.org.Organization;
 import io.mockhub.org.OrganizationService;
 import io.mockhub.project.Project;
@@ -41,13 +42,16 @@ public final class BackupService {
   private final TeamService teams;
   private final ProjectService projects;
   private final StubGateway gateway;
+  private final DataStore data;
   private final Clock clock;
 
-  public BackupService(OrganizationService orgs, TeamService teams, ProjectService projects, StubGateway gateway, Clock clock) {
+  public BackupService(OrganizationService orgs, TeamService teams, ProjectService projects, StubGateway gateway, DataStore data,
+      Clock clock) {
     this.orgs = orgs;
     this.teams = teams;
     this.projects = projects;
     this.gateway = gateway;
+    this.data = data;
     this.clock = clock;
   }
 
@@ -86,6 +90,11 @@ public final class BackupService {
         .put("createdAt", Instant.now(clock).toString()).put("scope", selection.everything() ? "full" : "selection");
     out.set("organizations", Jsons.MAPPER.valueToTree(orgList));
     out.set("teams", Jsons.MAPPER.valueToTree(teamList));
+    ObjectNode records = out.putObject("data");
+    for (Project p : chosen) {
+      Map<String, Map<String, ObjectNode>> snapshot = data.snapshot(p.id());
+      if (!snapshot.isEmpty()) records.set(p.id(), Jsons.MAPPER.valueToTree(snapshot));
+    }
     out.set("projects", Jsons.MAPPER.valueToTree(chosen));
     ArrayNode mappings = out.putArray("mappings");
     gateway.findAll().stream()
@@ -190,6 +199,10 @@ public final class BackupService {
       Project saved = new Project(id, p.name(), slug, p.description(), p.color(),
           options.asCopy() ? now : p.createdAt(), now, orgId, teamId);
       projects.restore(List.of(saved));
+      JsonNode stored = file.path("data").path(p.id());
+      if (stored.isObject()) {
+        data.restore(saved.id(), Jsons.MAPPER.convertValue(stored, new TypeReference<Map<String, Map<String, ObjectNode>>>() {}));
+      }
       for (ObjectNode m : c.mappingsOf(p.id())) {
         upsert(rebase(m, p, saved, options.asCopy()));
         stubCount++;
