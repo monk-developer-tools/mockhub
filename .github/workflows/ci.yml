@@ -150,3 +150,11 @@ jobs:
           repository: ${{ env.IMAGE }}
           short-description: "Team mock server for REST and SOAP on WireMock: web UI, AI assistant, teams, Postman/Bruno export"
           readme-filepath: ./deploy/dockerhub/README.md
+
+      - name: Remove old image tags
+        if: github.ref == 'refs/heads/main'
+        continue-on-error: true
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: deploy/dockerhub-prune.sh --keep 2 --yes
