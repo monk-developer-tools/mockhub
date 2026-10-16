@@ -1,4 +1,5 @@
-import { FileCode2, LayoutTemplate, Plus, Search } from 'lucide-react';
+import { MagnifyingGlass, Plus, Stack } from '@phosphor-icons/react';
+import { EmptyArt } from '../../components/Illustrations';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useHotkeys } from '../../state/hotkeys';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
@@ -133,12 +134,12 @@ export function StubsTab() {
       <div className="panel stub-list">
         <div className="toolbar">
           <div style={{ position: 'relative', flex: 1 }}>
-            <Search size={14} style={{ position: 'absolute', left: 9, top: 9, color: 'var(--muted)' }} />
+            <MagnifyingGlass size={14} style={{ position: 'absolute', left: 9, top: 9, color: 'var(--muted)' }} />
             <input ref={searchInput} type="search" aria-label="Search stubs" placeholder="Search path, name, body…  ( / )" value={query} onChange={(e) => setQuery(e.target.value)} style={{ paddingLeft: 28 }} />
           </div>
           {canEdit && (
             <button className="btn icon" title="Start from a template" aria-label="Start from a template" onClick={() => setGallery(true)}>
-              <LayoutTemplate size={15} />
+              <Stack size={15} />
             </button>
           )}
         </div>
@@ -209,7 +210,7 @@ export function StubsTab() {
       ) : (
         <div className="panel">
           <div className="empty">
-            <FileCode2 size={28} className="muted" />
+            <EmptyArt kind="stubs" />
             {stubs.length === 0 ? (
               <>
                 <h2>No stubs in this project yet</h2>
@@ -226,7 +227,7 @@ export function StubsTab() {
                       <Plus size={15} /> SOAP stub
                     </button>
                     <button className="btn" onClick={() => setGallery(true)}>
-                      <LayoutTemplate size={15} /> From a template
+                      <Stack size={15} /> From a template
                     </button>
                     <button className="btn" onClick={() => navigate(`/projects/${project.id}/import-export`)}>
                       Import

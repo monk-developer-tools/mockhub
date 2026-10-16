@@ -1,4 +1,4 @@
-import { AlertTriangle, Check, Download, FileUp, Plus } from 'lucide-react';
+import { BracketsCurly, Check, CheckCircle, Clock, DownloadSimple, FileArrowUp, Plus, Pulse, Warning } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../../api/client';
@@ -98,19 +98,20 @@ export function OverviewTab() {
         <StatTile
           label="Stubs"
           value={project.stubCount}
-          detail={project.stubCount === 0 ? 'none yet' : `${restCount} REST · ${project.soapStubCount} SOAP`}
+          detail={project.stubCount === 0 ? 'none yet' : `${restCount} REST, ${project.soapStubCount} SOAP`}
+          icon={<BracketsCurly size={18} weight="duotone" />}
         />
-        <StatTile label="Requests" value={project.requestCount} detail="in the request log" />
+        <StatTile label="Requests" value={project.requestCount} detail="in the request log" icon={<Pulse size={18} weight="duotone" />} />
         <StatTile
           label="Unmatched"
           value={project.unmatchedCount}
-          tone={project.unmatchedCount > 0 ? 'warn' : 'default'}
-          icon={project.unmatchedCount > 0 ? <AlertTriangle size={13} /> : undefined}
+          tone={project.unmatchedCount > 0 ? 'warn' : 'ok'}
+          icon={project.unmatchedCount > 0 ? <Warning size={18} weight="duotone" /> : <CheckCircle size={18} weight="duotone" />}
           detail={
             project.unmatchedCount > 0 ? <Link to="requests">Find the missing stubs</Link> : 'every request found a stub'
           }
         />
-        <StatTile label="Last request" value={timeAgo(project.lastRequestAt)} detail={project.lastRequestAt ? new Date(project.lastRequestAt).toLocaleTimeString() : 'waiting for traffic'} />
+        <StatTile label="Last request" value={timeAgo(project.lastRequestAt)} detail={project.lastRequestAt ? new Date(project.lastRequestAt).toLocaleTimeString() : 'waiting for traffic'} icon={<Clock size={18} weight="duotone" />} />
       </div>
 
       <div className="overview">
@@ -200,13 +201,13 @@ export function OverviewTab() {
                 <div className="btn-row">
                   <button className="btn primary" onClick={() => newStub('rest')}><Plus size={15} /> REST stub</button>
                   <button className="btn" onClick={() => newStub('soap')}><Plus size={15} /> SOAP stub</button>
-                  <Link className="btn" to="import-export"><FileUp size={15} /> Import</Link>
+                  <Link className="btn" to="import-export"><FileArrowUp size={15} /> Import</Link>
                 </div>
               )}
               <div className="btn-row">
-                <button className="btn" onClick={() => exportAs('postman')}><Download size={15} /> Postman</button>
-                <button className="btn" onClick={() => exportAs('bruno')}><Download size={15} /> Bruno</button>
-                <button className="btn ghost" onClick={() => exportAs('wiremock')}>WireMock JSON</button>
+                <button className="btn" onClick={() => exportAs('postman')}><DownloadSimple size={15} /> Postman</button>
+                <button className="btn" onClick={() => exportAs('bruno')}><DownloadSimple size={15} /> Bruno</button>
+                <button className="btn" onClick={() => exportAs('wiremock')}><DownloadSimple size={15} /> WireMock JSON</button>
               </div>
             </div>
           </div>

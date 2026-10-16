@@ -1,4 +1,4 @@
-import { Download } from 'lucide-react';
+import { DownloadSimple } from '@phosphor-icons/react';
 import { useState } from 'react';
 import { api } from '../../api/client';
 import { FilePicker } from '../../components/FilePicker';
@@ -63,7 +63,7 @@ export function ImportExportTab() {
             <h3>
               {e.name}
               <button className="btn small" onClick={() => download(e.format)}>
-                <Download size={14} /> Download
+                <DownloadSimple size={14} /> Download
               </button>
             </h3>
             <p className="muted small">{e.detail}</p>

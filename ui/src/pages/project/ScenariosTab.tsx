@@ -1,4 +1,5 @@
-import { RotateCcw } from 'lucide-react';
+import { ArrowCounterClockwise } from '@phosphor-icons/react';
+import { EmptyArt } from '../../components/Illustrations';
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../../api/client';
 import type { Scenario, Stub } from '../../api/types';
@@ -41,6 +42,7 @@ export function ScenariosTab() {
   if (scenarios.length === 0) {
     return (
       <div className="panel empty">
+        <EmptyArt kind="scenarios" />
         <h2>No scenarios in this project</h2>
         <p>
           Scenarios let the same request get different answers as state changes, like an empty cart turning into a cart with
@@ -57,7 +59,7 @@ export function ScenariosTab() {
             {s.name}
             {canEdit && (
               <button className="btn small" onClick={() => setState(s.name, 'Started')} disabled={s.state === 'Started'}>
-                <RotateCcw size={14} /> Reset
+                <ArrowCounterClockwise size={14} /> Reset
               </button>
             )}
           </h3>

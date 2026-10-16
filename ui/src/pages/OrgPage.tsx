@@ -1,4 +1,4 @@
-import { Trash2, UserPlus } from 'lucide-react';
+import { Trash, UserPlus } from '@phosphor-icons/react';
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
@@ -175,7 +175,7 @@ export function OrgPage() {
                       <td className="actions">
                         {m.role && (
                           <button className="btn ghost icon small" aria-label={`Remove ${m.username}`} title="Remove from organisation" onClick={() => remove(m)}>
-                            <Trash2 size={14} />
+                            <Trash size={14} />
                           </button>
                         )}
                       </td>
@@ -242,7 +242,7 @@ export function OrgPage() {
                 <p className="small">Deletes {currentOrg.name}, its {org?.projectCount ?? 0} projects and all their stubs. This can't be undone.</p>
                 <div>
                   <button className="btn danger" onClick={() => setDeleting(true)} disabled={orgs.length < 2 && !isAdmin}>
-                    <Trash2 size={14} /> Delete organisation
+                    <Trash size={14} /> Delete organisation
                   </button>
                 </div>
               </div>

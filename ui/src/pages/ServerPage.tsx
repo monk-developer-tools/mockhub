@@ -1,4 +1,4 @@
-import { CircleDot, Download, Square } from 'lucide-react';
+import { DownloadSimple, Record, Stop } from '@phosphor-icons/react';
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
@@ -122,7 +122,7 @@ export function ServerPage() {
                 </p>
                 <div className="btn-row">
                   <button className="btn" onClick={() => api.backup({ everything: true, organizations: [], projects: [] }).catch(toast.fail)}>
-                    <Download size={14} /> Download full backup
+                    <DownloadSimple size={14} /> Download full backup
                   </button>
                   <Link className="btn ghost" to="/admin/backup">Choose what to back up or restore</Link>
                 </div>
@@ -137,7 +137,7 @@ export function ServerPage() {
               <div className="section">
                 <h3>
                   Record from a real service
-                  {recording && <span className="tag scenario"><CircleDot size={11} /> recording</span>}
+                  {recording && <span className="tag scenario"><Record size={11} /> recording</span>}
                 </h3>
                 <p className="muted small" style={{ marginBottom: 10 }}>
                   MockHub forwards requests sent to {info?.baseUrl}/… to the target and saves each answer as a stub in the chosen project.
@@ -155,10 +155,10 @@ export function ServerPage() {
                   </label>
                   <div>
                     {recording ? (
-                      <button className="btn primary" onClick={stopRecording}><Square size={14} /> Stop and save stubs</button>
+                      <button className="btn primary" onClick={stopRecording}><Stop size={14} /> Stop and save stubs</button>
                     ) : (
                       <button className="btn" onClick={startRecording} disabled={!/^https?:\/\//.test(recordTarget) || !recordProject}>
-                        <CircleDot size={14} /> Start recording
+                        <Record size={14} /> Start recording
                       </button>
                     )}
                   </div>

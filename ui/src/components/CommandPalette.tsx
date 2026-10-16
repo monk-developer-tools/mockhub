@@ -1,4 +1,4 @@
-import { BookOpen, CornerDownLeft, FileCode2, FolderOpen, LayoutGrid, Plus, Search, Server, Keyboard, SunMoon } from 'lucide-react';
+import { ArrowElbowDownLeft, BookOpenText, CircleHalf, FileCode, FolderOpen, HardDrives, Keyboard, MagnifyingGlass, Plus, SquaresFour } from '@phosphor-icons/react';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
@@ -52,10 +52,10 @@ export function CommandPalette({ projects, canEdit, onClose, onNewProject, onTog
       onClose();
     };
     const result: Command[] = [
-      { id: 'go-projects', group: 'Go to', title: 'Projects', icon: <LayoutGrid size={15} />, run: go('/') },
-      { id: 'go-examples', group: 'Go to', title: 'Examples', icon: <BookOpen size={15} />, run: go('/examples') },
-      { id: 'go-server', group: 'Go to', title: 'Server settings', icon: <Server size={15} />, run: go('/server') },
-      { id: 'theme', group: 'Actions', title: 'Switch theme', icon: <SunMoon size={15} />, run: () => { onToggleTheme(); onClose(); } },
+      { id: 'go-projects', group: 'Go to', title: 'Projects', icon: <SquaresFour size={15} />, run: go('/') },
+      { id: 'go-examples', group: 'Go to', title: 'Examples', icon: <BookOpenText size={15} />, run: go('/examples') },
+      { id: 'go-server', group: 'Go to', title: 'Server settings', icon: <HardDrives size={15} />, run: go('/server') },
+      { id: 'theme', group: 'Actions', title: 'Switch theme', icon: <CircleHalf size={15} />, run: () => { onToggleTheme(); onClose(); } },
       { id: 'shortcuts', group: 'Actions', title: 'Keyboard shortcuts', icon: <Keyboard size={15} />, run: () => { onClose(); onShowShortcuts(); } },
     ];
     if (canEdit) {
@@ -131,7 +131,7 @@ export function CommandPalette({ projects, canEdit, onClose, onNewProject, onTog
     <div className="backdrop palette-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div className="palette" role="dialog" aria-modal="true" aria-label="Command palette">
         <div className="palette-input">
-          <Search size={16} />
+          <MagnifyingGlass size={16} />
           <input
             ref={input}
             type="text"
@@ -163,10 +163,10 @@ export function CommandPalette({ projects, canEdit, onClose, onNewProject, onTog
                   onMouseMove={() => setActive(i)}
                   onClick={c.run}
                 >
-                  <span className="palette-icon">{c.icon ?? <FileCode2 size={15} />}</span>
+                  <span className="palette-icon">{c.icon ?? <FileCode size={15} />}</span>
                   <span className="palette-title">{c.title}</span>
                   {c.hint && <span className="palette-hint">{c.hint}</span>}
-                  {i === active && <CornerDownLeft size={14} className="muted" />}
+                  {i === active && <ArrowElbowDownLeft size={14} className="muted" />}
                 </div>
               </li>
             );

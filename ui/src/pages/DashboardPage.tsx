@@ -1,4 +1,5 @@
-import { AlertTriangle, BookOpen, Plus } from 'lucide-react';
+import { BookOpenText, BracketsCurly, CheckCircle, Plus, Pulse, SquaresFour, Warning } from '@phosphor-icons/react';
+import { EmptyArt } from '../components/Illustrations';
 import { ActivityBars } from '../components/ActivityBars';
 import { StatTile } from '../components/StatTile';
 import { timeAgo } from '../model/time';
@@ -48,6 +49,7 @@ export function DashboardPage() {
       {projects.length === 0 ? (
         <div className="panel">
           <div className="empty">
+            <EmptyArt kind="projects" />
             <h2>Create your first mock project</h2>
             <p>
               Start empty, import an OpenAPI spec, WSDL or WireMock mappings, or install an example below to see how REST, SOAP,
@@ -64,14 +66,14 @@ export function DashboardPage() {
       ) : (
         <div className="stack">
           <div className="stats">
-            <StatTile label="Projects" value={projects.length} />
-            <StatTile label="Stubs" value={totals.stubs} detail={`${totals.soap} SOAP`} />
-            <StatTile label="Requests" value={totals.requests} detail="in the request log" />
+            <StatTile label="Projects" value={projects.length} detail={`in ${currentOrg?.name ?? 'this organisation'}`} icon={<SquaresFour size={18} weight="duotone" />} />
+            <StatTile label="Stubs" value={totals.stubs} detail={`${totals.stubs - totals.soap} REST, ${totals.soap} SOAP`} icon={<BracketsCurly size={18} weight="duotone" />} />
+            <StatTile label="Requests" value={totals.requests} detail="in the request log" icon={<Pulse size={18} weight="duotone" />} />
             <StatTile
               label="Unmatched"
               value={totals.unmatched}
-              tone={totals.unmatched > 0 ? 'warn' : 'default'}
-              icon={totals.unmatched > 0 ? <AlertTriangle size={13} /> : undefined}
+              tone={totals.unmatched > 0 ? 'warn' : 'ok'}
+              icon={totals.unmatched > 0 ? <Warning size={18} weight="duotone" /> : <CheckCircle size={18} weight="duotone" />}
               detail={totals.unmatched > 0 ? 'requests with no stub' : 'every request found a stub'}
             />
           </div>
@@ -91,16 +93,21 @@ export function DashboardPage() {
                   <tr key={p.id} className="clickable" onClick={() => navigate(`/projects/${p.id}`)}>
                     <td>
                       <div className="project-title">
-                        <span className="swatch" style={{ background: p.color }} />
+                        <span className="project-mark small" style={{ background: p.color }} aria-hidden="true">
+                          {p.name.trim().charAt(0).toUpperCase()}
+                        </span>
                         <Link to={`/projects/${p.id}`} onClick={(e) => e.stopPropagation()}>
                           {p.name}
                         </Link>
                       </div>
-                      {p.description && <p className="muted small">{p.description}</p>}
+                      {p.description && <p className="muted small clamp-2">{p.description}</p>}
                     </td>
                     <td onClick={(e) => e.stopPropagation()}>
-                      <span className="btn-row" style={{ flexWrap: 'nowrap' }}>
-                        <span className="mono small">{p.mockUrl}</span>
+                      <span className="url-cell">
+                        <span className="mono small" title={p.mockUrl}>
+                          <span className="muted">{p.mockUrl.slice(0, p.mockUrl.length - p.basePath.length)}</span>
+                          {p.basePath}
+                        </span>
                         <CopyButton text={p.mockUrl} label="Copy mock URL" />
                       </span>
                     </td>
@@ -111,8 +118,8 @@ export function DashboardPage() {
                     <td className="hide-sm">
                       <span className="num">{p.requestCount}</span>
                       {p.unmatchedCount > 0 && (
-                        <span className="tag soap" style={{ marginLeft: 8 }} title="Requests that matched no stub">
-                          <AlertTriangle size={11} style={{ marginRight: 3 }} /> {p.unmatchedCount} unmatched
+                        <span className="tag warn" style={{ marginLeft: 8 }} title="Requests that matched no stub">
+                          <Warning size={11} weight="bold" style={{ marginRight: 3 }} /> {p.unmatchedCount} unmatched
                         </span>
                       )}
                       <div className="muted small">{timeAgo(p.lastRequestAt)}</div>
@@ -126,7 +133,7 @@ export function DashboardPage() {
             </table>
           </div>
           <p className="muted small">
-            <BookOpen size={13} style={{ verticalAlign: '-2px' }} /> New to mocking with WireMock? <Link to="/examples">Install an example project</Link> and copy what you need.
+            <BookOpenText size={13} style={{ verticalAlign: '-2px' }} /> New to mocking with WireMock? <Link to="/examples">Install an example project</Link> and copy what you need.
           </p>
         </div>
       )}

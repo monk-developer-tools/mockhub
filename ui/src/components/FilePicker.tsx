@@ -1,4 +1,4 @@
-import { Upload } from 'lucide-react';
+import { UploadSimple } from '@phosphor-icons/react';
 import { useRef, useState } from 'react';
 
 interface Props {
@@ -29,7 +29,7 @@ export function FilePicker({ accept, label, onText }: Props) {
         read(e.dataTransfer.files[0]);
       }}
     >
-      <Upload size={18} />
+      <UploadSimple size={18} />
       <div>{label}</div>
       <input ref={input} type="file" accept={accept} hidden onChange={(e) => read(e.target.files?.[0])} />
     </div>

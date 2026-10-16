@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { ApiError } from '../api/client';
+import { MockFlowArt } from '../components/Illustrations';
 import { Logo } from '../components/Logo';
 import { useApp } from '../state/AppContext';
 
@@ -43,40 +44,56 @@ export function LoginPage() {
 
   return (
     <div className="login">
-      <div className="panel panel-body login-card">
+      <aside className="login-hero">
         <div className="brand">
-          <Logo size={28} /> MockHub
+          <Logo size={30} /> MockHub
         </div>
-        {shownError && <div className="callout danger" role="alert">{shownError}</div>}
-        {sso?.enabled && sso.startUrl && (
-          <a className="btn sso-btn" href={sso.startUrl}>
-            <MicrosoftMark />
-            {sso.label ?? 'Sign in with Microsoft'}
-          </a>
-        )}
-        {sso?.enabled && passwordVisible && <div className="divider-label"><span>or use a MockHub password</span></div>}
-        {passwordVisible ? (
-          <form className="stack" onSubmit={submit}>
-            <label className="field">
-              <span>Username</span>
-              <input type="text" autoComplete="username" value={username} onChange={(e) => setUsername(e.target.value)} required />
-            </label>
-            <label className="field">
-              <span>Password</span>
-              <input type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-            </label>
-            {note && <div className="callout">{note}</div>}
-            <button className={`btn${sso?.enabled ? '' : ' primary'}`} type="submit" disabled={busy}>
-              {busy ? 'Signing in…' : 'Sign in'}
+        <div className="login-pitch">
+          <h1>Stand-in APIs for every team</h1>
+          <p>REST and SOAP mocks on WireMock, one base URL per project, so tests and demos never wait on a dependency.</p>
+        </div>
+        <MockFlowArt />
+      </aside>
+      <main className="login-main">
+        <div className="login-card">
+          <div className="brand login-card-brand">
+            <Logo size={28} /> MockHub
+          </div>
+          <div>
+            <h2>Sign in</h2>
+            <p className="muted small">Manage projects, stubs and your team's access.</p>
+          </div>
+          {shownError && <div className="callout danger" role="alert">{shownError}</div>}
+          {sso?.enabled && sso.startUrl && (
+            <a className="btn sso-btn" href={sso.startUrl}>
+              <MicrosoftMark />
+              {sso.label ?? 'Sign in with Microsoft'}
+            </a>
+          )}
+          {sso?.enabled && passwordVisible && <div className="divider-label"><span>or use a MockHub password</span></div>}
+          {passwordVisible ? (
+            <form className="stack" onSubmit={submit}>
+              <label className="field">
+                <span>Username</span>
+                <input type="text" autoComplete="username" value={username} onChange={(e) => setUsername(e.target.value)} required />
+              </label>
+              <label className="field">
+                <span>Password</span>
+                <input type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+              </label>
+              {note && <div className="callout">{note}</div>}
+              <button className={`btn${sso?.enabled ? '' : ' primary'}`} type="submit" disabled={busy}>
+                {busy ? 'Signing in…' : 'Sign in'}
+              </button>
+            </form>
+          ) : (
+            <button className="link-button small" onClick={() => setShowPassword(true)}>
+              Administrator? Sign in with a password
             </button>
-          </form>
-        ) : (
-          <button className="link-button small" onClick={() => setShowPassword(true)}>
-            Administrator? Sign in with a password
-          </button>
-        )}
-        <p className="muted small">Mock endpoints stay open; signing in is only needed to manage them.</p>
-      </div>
+          )}
+          <p className="muted small login-foot">Mock endpoints stay open. Signing in is only needed to manage them.</p>
+        </div>
+      </main>
     </div>
   );
 }

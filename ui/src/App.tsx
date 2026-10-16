@@ -1,4 +1,5 @@
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
+import { IconDefaults } from './components/IconDefaults';
 import { Layout } from './components/Layout';
 import { Loading } from './components/Loading';
 import { ToastProvider } from './components/Toasts';
@@ -66,10 +67,12 @@ function Gate() {
 
 export function App() {
   return (
-    <ToastProvider>
-      <AppProvider>
-        <Gate />
-      </AppProvider>
-    </ToastProvider>
+    <IconDefaults>
+      <ToastProvider>
+        <AppProvider>
+          <Gate />
+        </AppProvider>
+      </ToastProvider>
+    </IconDefaults>
   );
 }

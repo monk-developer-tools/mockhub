@@ -1,4 +1,5 @@
-import { RefreshCw, Trash2, Wand2, X } from 'lucide-react';
+import { ArrowClockwise, MagicWand, Trash, X } from '@phosphor-icons/react';
+import { EmptyArt } from '../../components/Illustrations';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../api/client';
@@ -114,17 +115,18 @@ export function RequestsTab() {
         </div>
         <div className="btn-row">
           <button className="btn ghost icon" onClick={load} aria-label="Refresh" title="Refresh">
-            <RefreshCw size={15} />
+            <ArrowClockwise size={15} />
           </button>
           {canEdit && (
             <button className="btn" onClick={clear} disabled={events.length === 0}>
-              <Trash2 size={15} /> Clear log
+              <Trash size={15} /> Clear log
             </button>
           )}
         </div>
       </div>
       {events.length === 0 ? (
         <div className="empty">
+          <EmptyArt kind="requests" />
           <h2>{unmatchedOnly ? 'No unmatched requests' : 'No requests yet'}</h2>
           <p>
             Requests sent to <span className="mono">{project.mockUrl}</span> show up here as they arrive. Unmatched ones are the
@@ -178,7 +180,7 @@ export function RequestsTab() {
             {canEdit && (
               <div>
                 <button className="btn" onClick={() => createStub(selected)}>
-                  <Wand2 size={15} /> Create stub from this request
+                  <MagicWand size={15} /> Create stub from this request
                 </button>
               </div>
             )}

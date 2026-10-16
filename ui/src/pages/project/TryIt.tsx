@@ -1,4 +1,4 @@
-import { Play } from 'lucide-react';
+import { Play } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
 import type { Project } from '../../api/types';
 import { CodeEditor } from '../../components/CodeEditor';

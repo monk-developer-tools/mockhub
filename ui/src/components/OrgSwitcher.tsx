@@ -1,4 +1,4 @@
-import { Building2, Check, ChevronsUpDown, Plus, Settings } from 'lucide-react';
+import { Buildings, CaretUpDown, Check, GearSix, Plus } from '@phosphor-icons/react';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../state/AppContext';
@@ -36,14 +36,14 @@ export function OrgSwitcher({ onNewOrg }: { onNewOrg: () => void }) {
           <span className="org-label">Organisation</span>
           <strong>{currentOrg?.name ?? 'No organisation'}</strong>
         </span>
-        <ChevronsUpDown size={14} />
+        <CaretUpDown size={14} />
       </button>
       {open && (
         <div className="org-menu" role="menu" aria-label="Organisations">
           {orgs.length === 0 && <p className="muted small" style={{ padding: '8px 10px' }}>You aren't in any organisation yet.</p>}
           {orgs.map((o) => (
             <button key={o.id} role="menuitemradio" aria-checked={o.id === currentOrg?.id} className="org-option" onClick={() => choose(o.id)}>
-              <Building2 size={14} />
+              <Buildings size={14} />
               <span>{o.name}</span>
               <RoleBadge role={roleIn(o.id)} />
               {o.id === currentOrg?.id && <Check size={14} />}
@@ -52,7 +52,7 @@ export function OrgSwitcher({ onNewOrg }: { onNewOrg: () => void }) {
           <div className="org-menu-sep" />
           {currentOrg && (
             <button role="menuitem" className="org-option" onClick={() => { setOpen(false); navigate('/org'); }}>
-              <Settings size={14} /> <span>Organisation settings</span>
+              <GearSix size={14} /> <span>Organisation settings</span>
             </button>
           )}
           {isAdmin && (

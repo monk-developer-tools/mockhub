@@ -1,4 +1,4 @@
-import { Plus, Search, ShieldCheck, Trash2 } from 'lucide-react';
+import { MagnifyingGlass, Plus, ShieldCheck, Trash } from '@phosphor-icons/react';
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { api } from '../api/client';
 import type { Organization, OrgRole, ServerRole, UserRecord, UserSource } from '../api/types';
@@ -82,7 +82,7 @@ export function UsersPage() {
       <div className="panel">
         <div className="panel-head">
           <div className="search-field">
-            <Search size={14} />
+            <MagnifyingGlass size={14} />
             <input type="search" aria-label="Search users" placeholder="Search by name or e-mail" value={query} onChange={(e) => setQuery(e.target.value)} />
           </div>
           <span className="muted small">{users ? `${users.length} user${users.length === 1 ? '' : 's'}` : ''}</span>
@@ -353,7 +353,7 @@ function EditUserDialog({ user, orgs, isSelf, onClose, onChanged, onDeleted }: E
                     </td>
                     <td className="actions">
                       <button className="btn ghost icon small" aria-label={`Remove from ${m.orgName ?? m.orgId}`} onClick={() => membership(m.orgId, null)}>
-                        <Trash2 size={14} />
+                        <Trash size={14} />
                       </button>
                     </td>
                   </tr>
@@ -402,7 +402,7 @@ function EditUserDialog({ user, orgs, isSelf, onClose, onChanged, onDeleted }: E
                 <button className="btn danger" onClick={() => run(() => api.deleteUser(user.id), 'User deleted').then((ok) => ok && onDeleted())}>Delete</button>
               </span>
             ) : (
-              <button className="btn danger" disabled={isSelf} onClick={() => setConfirmDelete(true)}><Trash2 size={14} /> Delete user</button>
+              <button className="btn danger" disabled={isSelf} onClick={() => setConfirmDelete(true)}><Trash size={14} /> Delete user</button>
             )}
           </div>
         </div>

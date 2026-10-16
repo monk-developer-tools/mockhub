@@ -1,4 +1,4 @@
-import { AlertTriangle, Copy, FolderInput, Lock, Save, Trash2 } from 'lucide-react';
+import { Copy, FloppyDisk, FolderSimplePlus, LockSimple, Trash, Warning } from '@phosphor-icons/react';
 import { useEffect, useMemo, useState } from 'react';
 import { useHotkeys } from '../../state/hotkeys';
 import { api } from '../../api/client';
@@ -208,16 +208,16 @@ export function StubEditor({ project, projects, stub, isNew, canEdit, onSaved, o
                 </button>
                 {projects.length > 1 && (
                   <button className="btn ghost icon" title="Move to another project" aria-label="Move to another project" onClick={() => setMoving(true)}>
-                    <FolderInput size={15} />
+                    <FolderSimplePlus size={15} />
                   </button>
                 )}
                 <button className="btn ghost icon danger" title="Delete" aria-label="Delete" onClick={() => setConfirmDelete(true)}>
-                  <Trash2 size={15} />
+                  <Trash size={15} />
                 </button>
               </>
             )}
             <button className="btn primary" onClick={save} disabled={!canSave} title="Save (Ctrl/⌘ S)">
-              <Save size={15} /> {isNew ? 'Create stub' : 'Save'}
+              <FloppyDisk size={15} /> {isNew ? 'Create stub' : 'Save'}
             </button>
           </div>
         )}
@@ -226,7 +226,7 @@ export function StubEditor({ project, projects, stub, isNew, canEdit, onSaved, o
       {errors.length > 0 && (
         <div className="section">
           <div className="callout danger" role="alert">
-            <AlertTriangle size={16} />
+            <Warning size={16} />
             <div>
               {errors.length === 1 ? errors[0] : <ul>{errors.map((e) => <li key={e}>{e}</li>)}</ul>}
             </div>
@@ -238,7 +238,7 @@ export function StubEditor({ project, projects, stub, isNew, canEdit, onSaved, o
         <div className="section">
           {unsupported.length > 0 && (
             <div className="callout warn" style={{ marginBottom: 12 }}>
-              <AlertTriangle size={16} />
+              <Warning size={16} />
               <div>
                 This stub uses features the form can't show, so it opens as JSON. Everything WireMock supports works here.
                 <ul>{unsupported.map((u) => <li key={u}>{u}</li>)}</ul>
@@ -271,7 +271,7 @@ export function StubEditor({ project, projects, stub, isNew, canEdit, onSaved, o
         <fieldset disabled={readOnly} className="editor-form" style={{ border: 0, margin: 0, padding: 0, minWidth: 0 }}>
           {readOnly && (
             <p className="readonly-note" role="note">
-              <Lock size={14} /> Read-only. Your account can view this stub but not change it. Sign in as an editor to edit it.
+              <LockSimple size={14} /> Read-only. Your account can view this stub but not change it. Sign in as an editor to edit it.
             </p>
           )}
           <div className="section">

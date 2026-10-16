@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, Download, RotateCcw, Upload } from 'lucide-react';
+import { ArrowCounterClockwise, CaretDown, CaretRight, DownloadSimple, UploadSimple } from '@phosphor-icons/react';
 import { useMemo, useState } from 'react';
 import { api } from '../api/client';
 import type { PreviewProject, RestorePreview, RestoreResult } from '../api/types';
@@ -71,7 +71,7 @@ function BackupPanel() {
   return (
     <section className="panel" aria-labelledby="backup-title">
       <div className="panel-head">
-        <h2 id="backup-title"><Download size={15} /> Back up</h2>
+        <h2 id="backup-title"><DownloadSimple size={15} /> Back up</h2>
         <span className="btn-row">
           <button className="btn ghost small" onClick={() => setPicked(everything(tree))}>Select all</button>
           <button className="btn ghost small" onClick={() => setPicked(NOTHING)} disabled={nothing}>Clear</button>
@@ -95,7 +95,7 @@ function BackupPanel() {
                   onClick={() => setOpen(toggleSet(open, o.id))}
                   disabled={orgProjects.length === 0}
                 >
-                  {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                  {expanded ? <CaretDown size={14} /> : <CaretRight size={14} />}
                 </button>
                 <label className="tree-label">
                   <TreeCheck state={orgState(picked, node)} label={o.name} onChange={() => setPicked(toggleOrg(picked, node))} />
@@ -134,7 +134,7 @@ function BackupPanel() {
           {nothing ? 'Nothing selected yet.' : `${plural(orgCount, 'organisation')}, ${plural(chosen.size, 'project')}, ${plural(stubs, 'stub')}`}
         </span>
         <button className="btn primary" onClick={download} disabled={nothing || busy}>
-          <Download size={14} /> {busy ? 'Preparing…' : 'Download backup'}
+          <DownloadSimple size={14} /> {busy ? 'Preparing…' : 'Download backup'}
         </button>
       </div>
     </section>
@@ -198,10 +198,10 @@ function RestorePanel() {
   return (
     <section className="panel" aria-labelledby="restore-title">
       <div className="panel-head">
-        <h2 id="restore-title"><Upload size={15} /> Restore</h2>
+        <h2 id="restore-title"><UploadSimple size={15} /> Restore</h2>
         {preview && (
           <button className="btn ghost small" onClick={reset}>
-            <RotateCcw size={13} /> Choose another file
+            <ArrowCounterClockwise size={13} /> Choose another file
           </button>
         )}
       </div>
@@ -285,7 +285,7 @@ function RestorePanel() {
               {chosen.size === 0 ? 'Choose at least one project.' : `${plural(chosen.size, 'project')} selected`}
             </span>
             <button className="btn primary" onClick={restore} disabled={chosen.size === 0 || busy}>
-              <Upload size={14} /> {busy ? 'Restoring…' : `Restore ${plural(chosen.size, 'project')}`}
+              <UploadSimple size={14} /> {busy ? 'Restoring…' : `Restore ${plural(chosen.size, 'project')}`}
             </button>
           </div>
         </>

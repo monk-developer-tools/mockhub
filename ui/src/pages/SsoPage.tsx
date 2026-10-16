@@ -1,4 +1,4 @@
-import { CheckCircle2, ExternalLink, Plus, Trash2, XCircle } from 'lucide-react';
+import { ArrowSquareOut, CheckCircle, Plus, Trash, XCircle } from '@phosphor-icons/react';
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { api } from '../api/client';
 import type { Organization, Role, RoleMapping, SsoSettings } from '../api/types';
@@ -145,7 +145,7 @@ export function SsoPage() {
                 </button>
                 {test && (
                   <span className={`test-result ${test.ok ? 'ok' : 'fail'}`} role="status">
-                    {test.ok ? <CheckCircle2 size={15} /> : <XCircle size={15} />}
+                    {test.ok ? <CheckCircle size={15} /> : <XCircle size={15} />}
                     {test.ok ? `Tenant found: ${test.issuer}` : test.error}
                   </span>
                 )}
@@ -246,7 +246,7 @@ export function SsoPage() {
                       </td>
                       <td className="actions">
                         <button type="button" className="btn ghost icon small" aria-label="Remove mapping" onClick={() => set('roleMappings', settings.roleMappings.filter((_, j) => j !== i))}>
-                          <Trash2 size={14} />
+                          <Trash size={14} />
                         </button>
                       </td>
                     </tr>
@@ -270,7 +270,7 @@ export function SsoPage() {
           <div className="panel-head"><h2>Set it up in Entra ID</h2></div>
           <ol className="guide-steps">
             <li>
-              In the <a href="https://entra.microsoft.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade" target="_blank" rel="noreferrer">Microsoft Entra admin centre <ExternalLink size={12} /></a>,
+              In the <a href="https://entra.microsoft.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade" target="_blank" rel="noreferrer">Microsoft Entra admin centre <ArrowSquareOut size={12} /></a>,
               open <strong>App registrations</strong> and choose <strong>New registration</strong>.
             </li>
             <li>Name it <em>MockHub</em>. Under <strong>Redirect URI</strong> pick <strong>Web</strong> and paste the redirect URI shown on this page.</li>

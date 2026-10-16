@@ -1,4 +1,4 @@
-import { Archive, BookOpen, Building2, Eye, KeyRound, Sparkles, LayoutGrid, Menu, Moon, Plus, Search, Server, Sun, SunMoon, UserRound, Users } from 'lucide-react';
+import { Archive, BookOpenText, Buildings, CircleHalf, Eye, HardDrives, Key, List, MagnifyingGlass, Moon, Plus, Sparkle, SquaresFour, Sun, UserCircle, UsersThree } from '@phosphor-icons/react';
 import { useMemo } from 'react';
 import { MOD_LABEL, useHotkeys } from '../state/hotkeys';
 import { CommandPalette } from './CommandPalette';
@@ -15,7 +15,7 @@ import { OrgSwitcher } from './OrgSwitcher';
 import { roleLabel } from './RoleBadge';
 
 const NEXT_THEME: Record<ThemeChoice, ThemeChoice> = { system: 'light', light: 'dark', dark: 'system' };
-const THEME_ICON = { system: SunMoon, light: Sun, dark: Moon };
+const THEME_ICON = { system: CircleHalf, light: Sun, dark: Moon };
 
 export function Layout() {
   const { projects, orgProjects, currentOrg, role, info, session, signOut, canEdit, isAdmin } = useApp();
@@ -53,24 +53,24 @@ export function Layout() {
         </NavLink>
         <OrgSwitcher onNewOrg={() => setCreatingOrg(true)} />
         <button className="palette-trigger" onClick={() => setPalette(true)}>
-          <Search size={14} />
+          <MagnifyingGlass size={14} />
           <span>Search…</span>
           <kbd>{MOD_LABEL} K</kbd>
         </button>
         <nav className="nav" aria-label="Main">
           <NavLink to="/" end>
-            <LayoutGrid size={16} /> Projects
+            <SquaresFour size={18} weight="duotone" /> Projects
           </NavLink>
           <NavLink to="/examples">
-            <BookOpen size={16} /> Examples
+            <BookOpenText size={18} weight="duotone" /> Examples
           </NavLink>
           {currentOrg && (
             <NavLink to="/org">
-              <Building2 size={16} /> Members & settings
+              <Buildings size={18} weight="duotone" /> Members & settings
             </NavLink>
           )}
           <NavLink to="/server">
-            <Server size={16} /> Server
+            <HardDrives size={18} weight="duotone" /> Server
           </NavLink>
         </nav>
         {isAdmin && (
@@ -78,16 +78,16 @@ export function Layout() {
             <div className="sidebar-section"><span>Administration</span></div>
             <nav className="nav" aria-label="Administration">
               <NavLink to="/admin/users">
-                <Users size={16} /> Users
+                <UsersThree size={18} weight="duotone" /> Users
               </NavLink>
               <NavLink to="/admin/sso">
-                <KeyRound size={16} /> Single sign-on
+                <Key size={18} weight="duotone" /> Single sign-on
               </NavLink>
               <NavLink to="/admin/ai">
-                <Sparkles size={16} /> AI assistant
+                <Sparkle size={18} weight="duotone" /> AI assistant
               </NavLink>
               <NavLink to="/admin/backup">
-                <Archive size={16} /> Backup &amp; restore
+                <Archive size={18} weight="duotone" /> Backup &amp; restore
               </NavLink>
             </nav>
           </>
@@ -109,8 +109,8 @@ export function Layout() {
               className={() => `project-link${location.pathname.startsWith(`/projects/${p.id}`) ? ' active' : ''}`}
             >
               <span className="swatch" style={{ background: p.color }} />
-              <span>
-                {p.name}
+              <span className="project-link-text" title={`${p.name} (${p.basePath})`}>
+                <span className="name">{p.name}</span>
                 <span className="path">{p.basePath}</span>
               </span>
             </NavLink>
@@ -119,7 +119,7 @@ export function Layout() {
         <div className="sidebar-footer">
           {session && info?.authEnabled ? (
             <button className="account-trigger" onClick={() => setAccount(true)} aria-label="Your account">
-              <UserRound size={15} />
+              <UserCircle size={15} />
               <span>
                 <strong>{session.displayName || session.username}</strong>
                 <span className="muted">{role === 'none' ? 'No organisation access' : roleLabel(role)}</span>
@@ -138,7 +138,7 @@ export function Layout() {
       <div className="main">
         <div className="mobile-bar">
           <button className="btn ghost icon" onClick={() => setOpen(!open)} aria-label="Menu">
-            <Menu size={18} />
+            <List size={18} />
           </button>
           <Logo size={20} /> <strong>MockHub</strong>
         </div>

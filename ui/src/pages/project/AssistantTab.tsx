@@ -1,4 +1,4 @@
-import { ArrowUp, Check, ChevronDown, ChevronRight, RotateCcw, Sparkles, Trash2, X } from 'lucide-react';
+import { ArrowCounterClockwise, ArrowUp, CaretDown, CaretRight, Check, Sparkle, Trash, X } from '@phosphor-icons/react';
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { api, ApiError } from '../../api/client';
@@ -205,7 +205,7 @@ export function AssistantTab() {
   if (aiStatus && !aiStatus.enabled) {
     return (
       <div className="panel empty">
-        <Sparkles size={22} />
+        <Sparkle size={22} />
         <h2>The AI assistant is off</h2>
         <p>
           Connect MockHub to OpenRouter, a LiteLLM proxy or any OpenAI-compatible API, then describe the mocks you need in plain
@@ -224,12 +224,12 @@ export function AssistantTab() {
     <div className={`assistant${pending.length ? ' has-changes' : ''}`}>
       <div className="panel chat">
         <div className="panel-head">
-          <h2><Sparkles size={15} /> Assistant</h2>
+          <h2><Sparkle size={15} /> Assistant</h2>
           <span className="btn-row">
             {aiStatus && <span className="muted small" title={aiStatus.providerLabel}>{aiStatus.model}</span>}
             {messages.length > 0 && (
               <button className="btn ghost small" onClick={reset} title="Start a new conversation">
-                <RotateCcw size={13} /> New chat
+                <ArrowCounterClockwise size={13} /> New chat
               </button>
             )}
           </span>
@@ -328,11 +328,11 @@ function ChangeCard({ change, basePath, canApply, onApply, onDiscard }: {
       {change.summary && <p className="change-summary">{change.summary}</p>}
       <div className="btn-row change-actions">
         <button className="btn ghost small" aria-expanded={open} onClick={() => setOpen(!open)}>
-          {open ? <ChevronDown size={13} /> : <ChevronRight size={13} />} {change.action === 'update' ? 'Diff' : 'JSON'}
+          {open ? <CaretDown size={13} /> : <CaretRight size={13} />} {change.action === 'update' ? 'Diff' : 'JSON'}
         </button>
         <span style={{ flex: 1 }} />
         <button className="btn ghost small" onClick={onDiscard} aria-label={`Discard: ${change.summary}`}>
-          {change.action === 'delete' ? <X size={13} /> : <Trash2 size={13} />} Discard
+          {change.action === 'delete' ? <X size={13} /> : <Trash size={13} />} Discard
         </button>
         <button className="btn small" disabled={!canApply} onClick={onApply} aria-label={`Apply: ${change.summary}`}>
           <Check size={13} /> Apply

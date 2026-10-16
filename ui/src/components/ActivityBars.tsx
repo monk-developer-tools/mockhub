@@ -18,6 +18,8 @@ export function ActivityBars({ counts, bucketMinutes = 5, height = 44, label }: 
   const max = Math.max(1, ...counts);
   const total = counts.reduce((a, b) => a + b, 0);
   const width = 100 / counts.length;
+  const fill = height > 40 ? 0.52 : 0.76;
+  const bar = width * fill;
   return (
     <figure className="activity" aria-label={`${label}: ${total} requests in the last hour`}>
       <svg viewBox={`0 0 100 ${height}`} preserveAspectRatio="none" height={height} role="img" aria-hidden="true">
@@ -30,13 +32,20 @@ export function ActivityBars({ counts, bucketMinutes = 5, height = 44, label }: 
               {h > 0 && (
                 <path
                   className={`activity-bar${hover === i ? ' active' : ''}`}
-                  d={roundedTop(i * width + 0.6, height - 1, width - 1.2, h, 1.6)}
+                  d={roundedTop(i * width + (width - bar) / 2, height - 1, bar, h, 1.6)}
                 />
               )}
             </g>
           );
         })}
       </svg>
+      {height > 40 && (
+        <div className="activity-axis" aria-hidden="true">
+          <span>{counts.length * bucketMinutes} min ago</span>
+          <span>{(counts.length * bucketMinutes) / 2} min</span>
+          <span>now</span>
+        </div>
+      )}
       {hover !== null && (
         <div className="activity-tip" style={{ left: `${(hover + 0.5) * width}%` }} role="tooltip">
           <strong className="num">{counts[hover]}</strong> {counts[hover] === 1 ? 'request' : 'requests'}

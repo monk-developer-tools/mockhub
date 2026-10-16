@@ -1,4 +1,4 @@
-import { CheckCircle2, ExternalLink, Sparkles, XCircle } from 'lucide-react';
+import { ArrowSquareOut, CheckCircle, Sparkle, XCircle } from '@phosphor-icons/react';
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { api } from '../api/client';
 import type { AiSettings, AiTestResult } from '../api/types';
@@ -105,7 +105,7 @@ export function AiSettingsPage() {
         <div className="stack">
           <div className="panel">
             <div className="panel-head">
-              <h2><Sparkles size={15} /> Model provider</h2>
+              <h2><Sparkle size={15} /> Model provider</h2>
               <label className="switch">
                 <input type="checkbox" checked={settings.enabled} onChange={(e) => set('enabled', e.target.checked)} />
                 <span>Enabled</span>
@@ -160,12 +160,12 @@ export function AiSettingsPage() {
               <div className="btn-row">
                 <button type="button" className="btn" onClick={runTest} disabled={testing}>{testing ? 'Checking…' : 'Test connection'}</button>
                 {guide.link && (
-                  <a className="small" href={guide.link.href} target="_blank" rel="noreferrer">{guide.link.label} <ExternalLink size={12} /></a>
+                  <a className="small" href={guide.link.href} target="_blank" rel="noreferrer">{guide.link.label} <ArrowSquareOut size={12} /></a>
                 )}
               </div>
               {test && (
                 <span className={`test-result ${test.ok ? 'ok' : 'fail'}`} role="status">
-                  {test.ok ? <CheckCircle2 size={15} /> : <XCircle size={15} />}
+                  {test.ok ? <CheckCircle size={15} /> : <XCircle size={15} />}
                   {test.ok
                     ? `Connected. ${test.modelCount} model${test.modelCount === 1 ? '' : 's'} available${model && !test.modelFound ? `, but “${model}” isn't one of them` : ''}.`
                     : test.error}

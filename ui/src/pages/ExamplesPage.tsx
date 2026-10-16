@@ -1,4 +1,4 @@
-import { Download } from 'lucide-react';
+import { DownloadSimple } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
@@ -47,7 +47,7 @@ export function ExampleGrid({ compact }: { compact?: boolean }) {
           {canEdit && (
             <div>
               <button className="btn small" onClick={() => install(ex)} disabled={installing !== null}>
-                <Download size={14} /> {installing === ex.id ? 'Installing…' : 'Install as project'}
+                <DownloadSimple size={14} /> {installing === ex.id ? 'Installing…' : 'Install as project'}
               </button>
             </div>
           )}
