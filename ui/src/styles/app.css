@@ -2421,9 +2421,22 @@ kbd {
 
 .chat-msg.thinking {
   display: inline-flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
   color: var(--muted);
+}
+
+.chat-msg.thinking .dots {
+  margin-top: 7px;
+}
+
+.chat-steps-live {
+  color: var(--ink-soft);
+}
+
+.chat-leave-note {
+  display: block;
+  margin-top: 2px;
 }
 
 .dots {

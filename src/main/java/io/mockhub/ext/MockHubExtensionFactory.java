@@ -6,6 +6,7 @@ import com.github.tomakehurst.wiremock.extension.WireMockServices;
 import io.mockhub.Config;
 import io.mockhub.ai.AiProviders;
 import io.mockhub.ai.AiSettingsStore;
+import io.mockhub.ai.AssistantJobs;
 import io.mockhub.ai.AssistantService;
 import io.mockhub.ai.ChatCompletions;
 import io.mockhub.ai.JdkLlmTransport;
@@ -60,6 +61,7 @@ import io.mockhub.user.UserService;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.util.List;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 
 public final class MockHubExtensionFactory implements ExtensionFactory {
@@ -103,6 +105,11 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     AiProviders aiProviders = AiProviders.defaults();
     ChatCompletions chat = new ChatCompletions(new JdkLlmTransport(), aiProviders, config.publicUrl);
     AssistantService assistant = new AssistantService(aiSettings, chat, stubs, requestLog);
+    AssistantJobs assistantJobs = new AssistantJobs(assistant, Executors.newCachedThreadPool(r -> {
+      Thread t = new Thread(r, "mockhub-assistant");
+      t.setDaemon(true);
+      return t;
+    }), clock);
 
     return List.of(
         new PersistenceListener(),
@@ -120,7 +127,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
                 new StubController(stubs),
                 new RequestLogController(requestLog),
                 new ImportExportController(projects, stubs, exporters, importers, urls),
-                new AiController(aiSettings, aiProviders, chat, assistant, projects, urls),
+                new AiController(aiSettings, aiProviders, chat, assistant, assistantJobs, projects, urls),
                 new BackupController(orgs, projects, gateway))));
   }
 }

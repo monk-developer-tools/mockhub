@@ -90,6 +90,39 @@ class AssistantServiceTest {
   }
 
   @Test
+  void reportsEachStepAsItHappens() {
+    // Given
+    transport.reply(TOOL_CALL).reply("{'choices':[{'message':{'content':'Done.'}}]}");
+    List<AssistantService.Step> seen = new java.util.ArrayList<>();
+
+    // When
+    assistant.chat(orders, "http://h/orders", ask("Add health"), List.of(), seen::add);
+
+    // Then
+    assertThat(seen).extracting(AssistantService.Step::tool).containsExactly("create_stub");
+  }
+
+  @Test
+  void keepsStagedChangesWhenTheProviderFailsPartWay() {
+    // Given
+    transport.reply(TOOL_CALL);
+
+    // When
+    AssistantService.Reply reply = assistant.chat(orders, "http://h/orders", ask("Add health"), List.of());
+
+    // Then
+    assertThat(reply.changes()).hasSize(1);
+    assertThat(reply.reply()).contains("stopped before I finished", "No scripted reply left");
+  }
+
+  @Test
+  void failsWhenTheProviderFailsBeforeStagingAnything() {
+    // When / Then
+    assertThatThrownBy(() -> assistant.chat(orders, "http://h/orders", ask("Add health"), List.of()))
+        .isInstanceOf(AiException.class).hasMessageContaining("No scripted reply left");
+  }
+
+  @Test
   void mentionsPendingChangesAndRefusesWhenOff() {
     // Given
     transport.reply("{'choices':[{'message':{'content':'Still staged.'}}]}");

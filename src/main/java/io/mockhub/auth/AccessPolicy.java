@@ -9,6 +9,7 @@ import java.util.regex.Pattern;
 
 public final class AccessPolicy {
   private static final String API = "/mockhub/api";
+  private static final Set<String> ASK_ONLY = Set.of("/ai/chat", "/ai/jobs");
   private static final Pattern PROJECT = Pattern.compile("/projects/([^/]+)(/.*)?");
   private static final Pattern ORG = Pattern.compile("/orgs/([^/]+)(/.*)?");
 
@@ -62,7 +63,7 @@ public final class AccessPolicy {
     if (project.matches()) {
       Optional<String> orgId = orgOfProject.apply(project.group(1));
       if (orgId.isEmpty()) return Decision.allow();
-      boolean askOnly = read || "/ai/chat".equals(project.group(2));
+      boolean askOnly = read || ASK_ONLY.contains(String.valueOf(project.group(2)));
       return need(p.roleIn(orgId.get()), askOnly ? Role.VIEWER : Role.EDITOR, askOnly ? "view this project" : "change this project");
     }
 

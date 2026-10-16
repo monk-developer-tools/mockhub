@@ -198,3 +198,4 @@ Checklist:
 - [x] UI: assistant tab, review and diff, admin page, describe-on-create
 - [x] Tests: unit (fake model), integration (fake OpenAI-compatible server on WireMock), UI
 - [x] Docs + website
+- [x] Background chat jobs with live progress: replies survive switching tabs or reloading, no proxy timeouts with slow models, staged work kept if the provider fails part-way

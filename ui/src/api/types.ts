@@ -240,6 +240,14 @@ export interface AssistantReply {
   completionTokens: number;
 }
 
+export interface AssistantJob {
+  id: string;
+  status: 'running' | 'done' | 'failed';
+  steps: AssistantStep[];
+  reply: AssistantReply | null;
+  error: string | null;
+}
+
 export interface ApplyResult {
   applied: number;
   results: { changeId: string; ok: boolean; stubId: string | null; error: string | null }[];

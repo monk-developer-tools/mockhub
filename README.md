@@ -186,7 +186,9 @@ MockHub is a WireMock extension running inside a regular WireMock server:
 | GET/POST | `/__admin/mockhub/api/examples`, `/examples/{id}/install` | built-in examples |
 | GET | `/__admin/mockhub/api/stubs/unassigned` | stubs not in any project |
 | POST | `/__admin/mockhub/api/projects/{id}/adopt/{stubId}?prefix=` | put such a stub into a project |
-| POST | `/__admin/mockhub/api/projects/{id}/ai/chat` | `{messages, pending}` → reply plus staged changes |
+| POST | `/__admin/mockhub/api/projects/{id}/ai/chat` | `{messages, pending}` → reply plus staged changes (waits for the model) |
+| POST | `/__admin/mockhub/api/projects/{id}/ai/jobs` | Same body; starts the chat in the background and returns a job id |
+| GET | `/__admin/mockhub/api/projects/{id}/ai/jobs/{jobId}` | Job status, live steps, then the reply or error (kept 30 minutes, visible to whoever started it) |
 | POST | `/__admin/mockhub/api/projects/{id}/ai/apply` | `{changes}` → apply staged changes (editor) |
 | GET/PUT | `/__admin/mockhub/api/ai/settings` | AI provider settings (admin); `POST /ai/test` lists models |
 | GET/POST | `/__admin/mockhub/api/backup`, `/restore` | organisations, projects and stubs as one JSON file (admin) |

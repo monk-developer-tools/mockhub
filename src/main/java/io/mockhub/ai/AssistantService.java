@@ -11,6 +11,7 @@ import io.mockhub.stub.StubService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 
 public final class AssistantService {
   private static final int MAX_HISTORY = 24;
@@ -42,12 +43,21 @@ public final class AssistantService {
   }
 
   public Reply chat(Project project, String mockUrl, List<Message> history, List<ProposedChange> pending) {
-    AiSettings s = settings.get();
-    if (!s.enabled()) throw new ApiException(409, "The AI assistant is turned off. An admin can turn it on under AI assistant.");
+    return chat(project, mockUrl, history, pending, step -> {});
+  }
+
+  public List<Message> prepare(List<Message> history) {
+    if (!settings.get().enabled()) throw new ApiException(409, "The AI assistant is turned off. An admin can turn it on under AI assistant.");
     List<Message> trimmed = trim(history);
     if (trimmed.isEmpty() || !trimmed.get(trimmed.size() - 1).role().equals("user")) {
       throw ApiException.badRequest("Send at least one user message");
     }
+    return trimmed;
+  }
+
+  public Reply chat(Project project, String mockUrl, List<Message> history, List<ProposedChange> pending, Consumer<Step> onStep) {
+    List<Message> trimmed = prepare(history);
+    AiSettings s = settings.get();
 
     MockTools tools = new MockTools(stubs, requestLog, project.id(), pending);
     ArrayNode messages = Jsons.MAPPER.createArrayNode();
@@ -62,7 +72,12 @@ public final class AssistantService {
     int prompt = 0;
     int completion = 0;
     for (int round = 0; round < s.maxToolRounds(); round++) {
-      ChatCompletions.Completion result = chat.complete(s, messages, definitions);
+      ChatCompletions.Completion result;
+      try {
+        result = chat.complete(s, messages, definitions);
+      } catch (AiException e) {
+        return partial(e, tools, steps, prompt, completion);
+      }
       prompt += result.promptTokens();
       completion += result.completionTokens();
       JsonNode calls = result.message().path("tool_calls");
@@ -76,12 +91,19 @@ public final class AssistantService {
         String name = call.path("function").path("name").asText();
         JsonNode args = parseArguments(call.path("function").path("arguments"));
         String output = args == null ? Jsons.write(Jsons.object().put("error", "Arguments must be a JSON object")) : tools.execute(name, args);
-        steps.add(new Step(name, detail(name, args, output)));
+        Step step = new Step(name, detail(name, args, output));
+        steps.add(step);
+        onStep.accept(step);
         messages.addObject().put("role", "tool").put("tool_call_id", call.path("id").asText()).put("content", output);
       }
     }
     messages.addObject().put("role", "user").put("content", "Stop using tools now and summarise what you staged.");
-    ChatCompletions.Completion last = chat.complete(s, messages, null);
+    ChatCompletions.Completion last;
+    try {
+      last = chat.complete(s, messages, null);
+    } catch (AiException e) {
+      return partial(e, tools, steps, prompt, completion);
+    }
     return new Reply(last.message().path("content").asText(""), tools.changes(), steps,
         prompt + last.promptTokens(), completion + last.completionTokens());
   }
@@ -105,6 +127,13 @@ public final class AssistantService {
       }
     }
     return results;
+  }
+
+  private static Reply partial(AiException e, MockTools tools, List<Step> steps, int prompt, int completion) {
+    if (tools.changes().isEmpty()) throw e;
+    String note = "The AI provider stopped before I finished: " + e.getMessage()
+        + "\n\nThe changes I staged so far are ready to review. Ask me to continue for the rest.";
+    return new Reply(note, tools.changes(), steps, prompt, completion);
   }
 
   static List<Message> trim(List<Message> history) {

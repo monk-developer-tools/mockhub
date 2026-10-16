@@ -1,7 +1,7 @@
 import { ArrowUp, Check, ChevronDown, ChevronRight, RotateCcw, Sparkles, Trash2, X } from 'lucide-react';
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { api } from '../../api/client';
+import { api, ApiError } from '../../api/client';
 import type { AssistantStep, ChatMessage, ProposedChange, Stub } from '../../api/types';
 import { ChatText } from '../../components/ChatText';
 import { StubRoute } from '../../components/StubRoute';
@@ -11,6 +11,7 @@ import { useApp } from '../../state/AppContext';
 import { useProject } from './ProjectPage';
 
 const STORAGE_KEY = 'mockhub.chat.';
+const POLL_MS = 1500;
 
 export const SUGGESTIONS = [
   'Create CRUD endpoints for /customers with realistic example data',
@@ -23,6 +24,7 @@ export const SUGGESTIONS = [
 interface Conversation {
   messages: ChatMessage[];
   pending: ProposedChange[];
+  jobId?: string;
 }
 
 function load(projectId: string): Conversation {
@@ -65,21 +67,73 @@ export function AssistantTab() {
   const navigate = useNavigate();
   const [conversation, setConversation] = useState<Conversation>(() => load(project.id));
   const [input, setInput] = useState('');
-  const [thinking, setThinking] = useState(false);
+  const [starting, setStarting] = useState(false);
+  const [liveSteps, setLiveSteps] = useState<AssistantStep[]>([]);
   const [applying, setApplying] = useState(false);
   const [error, setError] = useState('');
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const autoSent = useRef(false);
+  const mounted = useRef(true);
 
-  const { messages, pending } = conversation;
+  const { messages, pending, jobId } = conversation;
+  const thinking = starting || Boolean(jobId);
 
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
   useEffect(() => {
     save(project.id, conversation);
   }, [project.id, conversation]);
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: 'end' });
-  }, [messages.length, thinking]);
+  }, [messages.length, thinking, liveSteps.length]);
+
+  useEffect(() => {
+    if (!jobId) return;
+    let stopped = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const finish = (update: (c: Conversation) => Conversation) => {
+      setLiveSteps([]);
+      setConversation((c) => update({ messages: c.messages, pending: c.pending }));
+      inputRef.current?.focus();
+    };
+    const poll = async () => {
+      try {
+        const job = await api.assistantJob(project.id, jobId);
+        if (stopped) return;
+        if (job.status === 'running') {
+          setLiveSteps(job.steps);
+          timer = setTimeout(poll, POLL_MS);
+        } else if (job.status === 'done' && job.reply) {
+          const reply = job.reply;
+          finish((c) => ({
+            messages: [...c.messages, { role: 'assistant', content: reply.reply || 'Done.', steps: reply.steps }],
+            pending: reply.changes,
+          }));
+        } else {
+          setError(job.error || 'The assistant failed. Try again.');
+          finish((c) => c);
+        }
+      } catch (e) {
+        if (stopped) return;
+        if (e instanceof ApiError && e.status === 404) {
+          setError(e.message);
+          finish((c) => c);
+        } else {
+          timer = setTimeout(poll, POLL_MS * 2);
+        }
+      }
+    };
+    timer = setTimeout(poll, POLL_MS / 2);
+    return () => {
+      stopped = true;
+      clearTimeout(timer);
+    };
+  }, [project.id, jobId]);
 
   const send = async (text: string) => {
     const content = text.trim();
@@ -88,18 +142,15 @@ export function AssistantTab() {
     setConversation({ messages: next, pending });
     setInput('');
     setError('');
-    setThinking(true);
+    setStarting(true);
     try {
-      const reply = await api.askAssistant(project.id, next, pending);
-      setConversation({
-        messages: [...next, { role: 'assistant', content: reply.reply || 'Done.', steps: reply.steps }],
-        pending: reply.changes,
-      });
+      const job = await api.startAssistant(project.id, next, pending);
+      if (mounted.current) setConversation((c) => ({ ...c, jobId: job.id }));
+      else save(project.id, { ...load(project.id), jobId: job.id });
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
-      setThinking(false);
-      inputRef.current?.focus();
+      setStarting(false);
     }
   };
 
@@ -140,6 +191,7 @@ export function AssistantTab() {
 
   const reset = () => {
     setConversation({ messages: [], pending: [] });
+    setLiveSteps([]);
     setError('');
   };
 
@@ -204,7 +256,11 @@ export function AssistantTab() {
           ))}
           {thinking && (
             <div className="chat-msg assistant thinking" role="status">
-              <span className="dots" aria-hidden="true"><i /><i /><i /></span> Working on it…
+              <span className="dots" aria-hidden="true"><i /><i /><i /></span>
+              <span>
+                Working on it…{liveSteps.length > 0 && <span className="chat-steps-live"> {stepsLabel(liveSteps)}</span>}
+                <span className="muted small chat-leave-note">You can switch tabs. The reply will be here when you come back.</span>
+              </span>
             </div>
           )}
           {error && <div className="callout danger" role="alert">{error}</div>}

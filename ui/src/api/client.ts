@@ -3,7 +3,7 @@ import type {
   AiStatus,
   AiTestResult,
   ApplyResult,
-  AssistantReply,
+  AssistantJob,
   AuthInfo,
   ChatMessage,
   ProposedChange,
@@ -142,11 +142,12 @@ export const api = {
   aiSettings: () => request<AiSettings>(`${API}/ai/settings`),
   saveAiSettings: (body: Partial<AiSettings>) => request<AiSettings>(`${API}/ai/settings`, { method: 'PUT', body: json(body) }),
   testAi: (body: Partial<AiSettings>) => request<AiTestResult>(`${API}/ai/test`, { method: 'POST', body: json(body) }),
-  askAssistant: (projectId: string, messages: ChatMessage[], pending: ProposedChange[]) =>
-    request<AssistantReply>(`${API}/projects/${projectId}/ai/chat`, {
+  startAssistant: (projectId: string, messages: ChatMessage[], pending: ProposedChange[]) =>
+    request<AssistantJob>(`${API}/projects/${projectId}/ai/jobs`, {
       method: 'POST',
       body: json({ messages: messages.map(({ role, content }) => ({ role, content })), pending }),
     }),
+  assistantJob: (projectId: string, jobId: string) => request<AssistantJob>(`${API}/projects/${projectId}/ai/jobs/${jobId}`),
   applyChanges: (projectId: string, changes: ProposedChange[]) =>
     request<ApplyResult>(`${API}/projects/${projectId}/ai/apply`, { method: 'POST', body: json({ changes }) }),
 

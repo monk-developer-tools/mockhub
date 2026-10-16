@@ -9,6 +9,7 @@ import io.mockhub.ai.AiProvider;
 import io.mockhub.ai.AiProviders;
 import io.mockhub.ai.AiSettings;
 import io.mockhub.ai.AiSettingsStore;
+import io.mockhub.ai.AssistantJobs;
 import io.mockhub.ai.AssistantService;
 import io.mockhub.ai.ChatCompletions;
 import io.mockhub.ai.ProposedChange;
@@ -26,15 +27,17 @@ public final class AiController implements ApiController {
   private final AiProviders providers;
   private final ChatCompletions chat;
   private final AssistantService assistant;
+  private final AssistantJobs jobs;
   private final ProjectService projects;
   private final BaseUrls urls;
 
   public AiController(AiSettingsStore store, AiProviders providers, ChatCompletions chat, AssistantService assistant,
-      ProjectService projects, BaseUrls urls) {
+      AssistantJobs jobs, ProjectService projects, BaseUrls urls) {
     this.store = store;
     this.providers = providers;
     this.chat = chat;
     this.assistant = assistant;
+    this.jobs = jobs;
     this.projects = projects;
     this.urls = urls;
   }
@@ -75,13 +78,20 @@ public final class AiController implements ApiController {
     r.post("/projects/{id}/ai/chat", ctx -> {
       Project project = projects.get(ctx.path("id"));
       JsonNode body = ctx.json();
-      List<AssistantService.Message> history = Jsons.MAPPER.convertValue(body.path("messages"), new TypeReference<>() {});
-      List<ProposedChange> pending = changes(body.path("pending"));
       try {
-        return Jsons.MAPPER.valueToTree(assistant.chat(project, urls.mock(ctx, project), history == null ? List.of() : history, pending));
+        return Jsons.MAPPER.valueToTree(assistant.chat(project, urls.mock(ctx, project), history(body), changes(body.path("pending"))));
       } catch (AiException e) {
         throw new ApiException(502, e.getMessage());
       }
+    });
+    r.post("/projects/{id}/ai/jobs", ctx -> {
+      Project project = projects.get(ctx.path("id"));
+      JsonNode body = ctx.json();
+      return Jsons.MAPPER.valueToTree(jobs.start(ctx.principal().id(), project, urls.mock(ctx, project), history(body), changes(body.path("pending"))));
+    });
+    r.get("/projects/{id}/ai/jobs/{jobId}", ctx -> {
+      Project project = projects.get(ctx.path("id"));
+      return Jsons.MAPPER.valueToTree(jobs.get(ctx.principal().id(), project.id(), ctx.path("jobId")));
     });
     r.post("/projects/{id}/ai/apply", ctx -> {
       Project project = projects.get(ctx.path("id"));
@@ -91,6 +101,11 @@ public final class AiController implements ApiController {
       out.set("results", Jsons.MAPPER.valueToTree(results));
       return out;
     });
+  }
+
+  private static List<AssistantService.Message> history(JsonNode body) {
+    List<AssistantService.Message> history = Jsons.MAPPER.convertValue(body.path("messages"), new TypeReference<>() {});
+    return history == null ? List.of() : history;
   }
 
   private static List<ProposedChange> changes(JsonNode node) {

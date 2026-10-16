@@ -70,6 +70,10 @@ class AccessPolicyTest {
       "viewerA, POST, /mockhub/api/projects/pa/ai/apply, false",
       "editorA, POST, /mockhub/api/projects/pa/ai/apply, true",
       "viewerA, POST, /mockhub/api/projects/pb/ai/chat, false",
+      "viewerA, POST, /mockhub/api/projects/pa/ai/jobs, true",
+      "viewerA, GET, /mockhub/api/projects/pa/ai/jobs/j1, true",
+      "viewerA, POST, /mockhub/api/projects/pb/ai/jobs, false",
+      "viewerA, POST, /mockhub/api/projects/pa/ai/jobs/j1, false",
       "nobody, GET, /mockhub/api/ai/status, true",
       "ownerA, GET, /mockhub/api/ai/settings, false",
       "ownerA, POST, /mockhub/api/ai/test, false"

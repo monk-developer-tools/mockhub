@@ -94,6 +94,31 @@ class AiAssistantIntegrationTest {
   }
 
   @Test
+  void backgroundJobsCanBePolledUntilTheReplyIsReady() throws InterruptedException {
+    // Given
+    scriptConversation();
+    ApiClient qa = server.api().login("qa", "pw");
+
+    // When
+    ApiClient.Result started = admin.post(API + "/projects/" + projectId + "/ai/jobs",
+        "{\"messages\":[{\"role\":\"user\",\"content\":\"Add GET /orders/{id}\"}]}");
+    String jobUrl = API + "/projects/" + projectId + "/ai/jobs/" + started.json().get("id").asText();
+    JsonNode job = admin.get(jobUrl).json();
+    for (int i = 0; i < 100 && job.get("status").asText().equals("running"); i++) {
+      Thread.sleep(50);
+      job = admin.get(jobUrl).json();
+    }
+
+    // Then
+    assertThat(started.status()).as(started.body()).isEqualTo(200);
+    assertThat(job.get("status").asText()).isEqualTo("done");
+    assertThat(job.at("/reply/reply").asText()).isEqualTo("Staged GET /orders/{id}.");
+    assertThat(job.at("/reply/changes")).hasSize(1);
+    assertThat(job.get("steps")).hasSize(1);
+    assertThat(qa.get(jobUrl).status()).isEqualTo(404);
+  }
+
+  @Test
   void viewersCanAskButNotApply() {
     // Given
     scriptConversation();
