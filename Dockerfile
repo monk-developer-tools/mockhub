@@ -23,7 +23,7 @@ RUN jlink \
       --output /jre \
  && mkdir -p /data
 
-FROM gcr.io/distroless/base-debian12:nonroot
+FROM gcr.io/distroless/base-nossl-debian12:nonroot
 LABEL org.opencontainers.image.title="MockHub" \
       org.opencontainers.image.description="Team mock server for REST and SOAP built on WireMock, with a web UI" \
       org.opencontainers.image.source="https://github.com/monk-developer-tools/mockhub"
