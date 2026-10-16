@@ -123,7 +123,34 @@
     sync();
   }
 
-  const docLinks = document.querySelectorAll('.docs aside a[href^="#"]');
+  const shots = document.querySelectorAll('.tut-shot img');
+  if (shots.length && typeof HTMLDialogElement === 'function') {
+    const box = document.createElement('dialog');
+    box.className = 'lightbox';
+    box.setAttribute('aria-label', 'Screenshot');
+    const big = document.createElement('img');
+    box.appendChild(big);
+    document.body.appendChild(box);
+    box.addEventListener('click', () => box.close());
+    shots.forEach((img) => {
+      img.tabIndex = 0;
+      img.setAttribute('role', 'button');
+      const open = () => {
+        big.src = img.currentSrc || img.src;
+        big.alt = img.alt;
+        box.showModal();
+      };
+      img.addEventListener('click', open);
+      img.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          open();
+        }
+      });
+    });
+  }
+
+  const docLinks = document.querySelectorAll('.docs aside a[href^="#"], .tut-toc a[href^="#"]');
   if (docLinks.length && 'IntersectionObserver' in window) {
     const byId = new Map(Array.from(docLinks).map((a) => [a.getAttribute('href').slice(1), a]));
     const spy = new IntersectionObserver(

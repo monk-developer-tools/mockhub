@@ -6,6 +6,9 @@ group mocks into **projects**. Each project gets its own URL, has a web UI for e
 
 It ships as one JAR inside one small Docker image (about 115 MB, non-root, distroless), ready for AWS ECS.
 
+New here? The [step-by-step tutorials](https://mockhub.devops-monk.com/tutorials/) walk through every feature with
+screenshots, and the [live demo](https://mockhub.devops-monk.com/__admin/mockhub/ui/) runs the example projects.
+
 ```
 https://mocks.acme.internal/__admin/mockhub/ui/          the UI
 https://mocks.acme.internal/payment-service/...          mocks of project "Payment service"

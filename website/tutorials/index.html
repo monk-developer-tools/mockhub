@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tutorials — MockHub</title>
+  <meta name="description" content="Step-by-step MockHub tutorials with screenshots: projects, stubs, templating, scenarios, faults, SOAP, OpenAPI, Postman and Bruno, the AI assistant, teams, single sign-on and backups.">
+  <meta property="og:title" content="MockHub tutorials">
+  <meta property="og:description" content="Learn MockHub step by step, with a screenshot for every step.">
+  <meta property="og:image" content="https://mockhub.devops-monk.com/assets/img/og.jpg">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="/assets/css/site.css">
+</head>
+<body>
+  <a class="skip" href="#content">Skip to content</a>
+  <header class="nav">
+    <div class="wrap">
+      <a class="brand" href="/"><img src="/assets/img/logo.svg" alt="" width="22" height="22"> MockHub</a>
+      <button class="nav-toggle" aria-label="Menu" aria-expanded="false" aria-controls="nav-links">
+        <svg width="18" height="18" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 7h14M3 13h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </button>
+      <nav class="nav-links" id="nav-links" aria-label="Main">
+        <a href="/#highlights">Highlights</a>
+        <a href="/#features">Features</a>
+        <a href="/tutorials/" aria-current="page">Tutorials</a>
+        <a href="/docs/">Docs</a>
+        <a href="https://github.com/monk-developer-tools/mockhub">GitHub</a>
+        <a class="pill" href="/__admin/mockhub/ui/">Try the demo</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="content">
+    <section class="tut-hero">
+      <div class="wrap center">
+        <p class="product-name">Tutorials</p>
+        <h1>Learn MockHub,<br>one step at a time.</h1>
+        <p class="lede">Short guides with a screenshot for every step. The orange outline shows where to click. Follow them in order, or jump to the one you need.</p>
+        <div class="ctas">
+          <a class="btn primary" href="#first-project">Start with the basics</a>
+          <a class="link-chevron" href="/__admin/mockhub/ui/">Follow along in the live demo</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="alt tut-index">
+      <div class="wrap">
+        <div class="tut-group">
+          <h2>The basics</h2>
+          <div class="tut-cards">
+            <a class="tut-card" href="#first-project"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M4 7a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M12 11v5M9.5 13.5h5"/></svg></span><strong>Create your first project</strong><span>One base URL for one service.</span><em>2 min</em></a>
+            <a class="tut-card" href="#first-stub"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M8 4H7a2 2 0 0 0-2 2v3.5a2 2 0 0 1-2 2 2 2 0 0 1 2 2V17a2 2 0 0 0 2 2h1M16 4h1a2 2 0 0 1 2 2v3.5a2 2 0 0 0 2 2 2 2 0 0 0-2 2V17a2 2 0 0 1-2 2h-1"/></svg></span><strong>Add your first stub</strong><span>Match a request, send a response.</span><em>4 min</em></a>
+            <a class="tut-card" href="#try-it"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M7 5l12 7-12 7z"/></svg></span><strong>Test a stub in the editor</strong><span>Send a real request in one click.</span><em>2 min</em></a>
+            <a class="tut-card" href="#unmatched"><span class="tut-ico"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5M9 11h4"/></svg></span><strong>Fix unmatched requests</strong><span>See what your app called, and why it missed.</span><em>3 min</em></a>
+          </div>
+        </div>
+        <div class="tut-group">
+          <h2>Make mocks realistic</h2>
+          <div class="tut-cards">
+            <a class="tut-card" href="#templating"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M9 8l-4 4 4 4M15 8l4 4-4 4"/></svg></span><strong>Make responses dynamic</strong><span>Echo ids, read the body, generate data.</span><em>3 min</em></a>
+            <a class="tut-card" href="#scenarios"><span class="tut-ico"><svg viewBox="0 0 24 24"><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.3 11l7.4-4M8.3 13l7.4 4"/></svg></span><strong>Answer differently as state changes</strong><span>Carts, checkouts and other flows.</span><em>4 min</em></a>
+            <a class="tut-card" href="#chaos"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M3 14h4l2-6 4 10 2-6h6"/></svg></span><strong>Simulate slow and failing services</strong><span>Delays, resets and broken responses.</span><em>3 min</em></a>
+          </div>
+        </div>
+        <div class="tut-group">
+          <h2>Bring in what you have</h2>
+          <div class="tut-cards">
+            <a class="tut-card" href="#soap"><span class="tut-ico"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M4 9h16M8 13h8M8 16h5"/></svg></span><strong>Mock a SOAP service</strong><span>Straight from a WSDL.</span><em>3 min</em></a>
+            <a class="tut-card" href="#openapi"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M12 11v6M9.5 14.5L12 17l2.5-2.5"/></svg></span><strong>Import an OpenAPI spec</strong><span>Working stubs in one step.</span><em>2 min</em></a>
+            <a class="tut-card" href="#export"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19h14"/></svg></span><strong>Share with Postman and Bruno</strong><span>Collections that already work.</span><em>2 min</em></a>
+            <a class="tut-card" href="#ai"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M18.5 15.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z"/></svg></span><strong>Let the AI assistant draft stubs</strong><span>Describe it, then review the diff.</span><em>5 min</em></a>
+          </div>
+        </div>
+        <div class="tut-group">
+          <h2>Work as a team</h2>
+          <div class="tut-cards">
+            <a class="tut-card" href="#teams"><span class="tut-ico"><svg viewBox="0 0 24 24"><circle cx="9" cy="9" r="3"/><circle cx="17" cy="10" r="2.5"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0M14.5 15.2A4.5 4.5 0 0 1 21 19"/></svg></span><strong>Invite your team</strong><span>Viewers, editors and owners.</span><em>3 min</em></a>
+            <a class="tut-card" href="#sso"><span class="tut-ico"><svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span><strong>Turn on Microsoft sign-in</strong><span>Entra ID, set up from the UI.</span><em>5 min</em></a>
+            <a class="tut-card" href="#backup"><span class="tut-ico"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="4" rx="1"/><path d="M5 9v9a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9M10 13h4"/></svg></span><strong>Back up and restore</strong><span>All of it, or just one project.</span><em>2 min</em></a>
+            <a class="tut-card" href="#keyboard"><span class="tut-ico"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h.01M11 10h.01M15 10h.01M7 14h10"/></svg></span><strong>Work faster with the keyboard</strong><span>Jump anywhere with ⌘K.</span><em>1 min</em></a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="wrap tut-layout">
+      <aside class="tut-toc" aria-label="Tutorials">
+        <h4>The basics</h4>
+        <a href="#first-project">Your first project</a>
+        <a href="#first-stub">Your first stub</a>
+        <a href="#try-it">Test a stub</a>
+        <a href="#unmatched">Unmatched requests</a>
+        <h4>Realistic mocks</h4>
+        <a href="#templating">Dynamic responses</a>
+        <a href="#scenarios">Scenarios</a>
+        <a href="#chaos">Delays &amp; faults</a>
+        <h4>Bring in what you have</h4>
+        <a href="#soap">SOAP from WSDL</a>
+        <a href="#openapi">OpenAPI import</a>
+        <a href="#export">Postman &amp; Bruno</a>
+        <a href="#ai">AI assistant</a>
+        <h4>Teams</h4>
+        <a href="#teams">Invite your team</a>
+        <a href="#sso">Microsoft sign-in</a>
+        <a href="#backup">Backup &amp; restore</a>
+        <a href="#keyboard">Keyboard</a>
+      </aside>
+
+      <div class="tut-body">
+
+        <article class="tut" id="first-project">
+          <p class="tut-meta"><span>The basics</span><span>2 min</span><span>Needs the editor role</span></p>
+          <h2>Create your first project</h2>
+          <p class="tut-intro">A project holds the mocks for one service, like a payments API, and gives it its own base URL. Your app calls that URL instead of the real service.</p>
+          <ol class="tut-steps">
+            <li>
+              <h3>Select New project</h3>
+              <p>On the <strong>Projects</strong> page, select <strong>New project</strong> at the top right.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/start-1-dashboard.webp" alt="The projects page with the New project button outlined" width="1176" height="900" loading="lazy"></figure>
+            </li>
+            <li>
+              <h3>Name it after the service you're replacing</h3>
+              <p>Type a name like <em>Billing API</em>. MockHub suggests a <strong>base path</strong> from it, and every mock in the project lives under that path. Add a description if you like, then select <strong>Create project</strong>.</p>
+              <figure class="tut-shot narrow"><img src="/assets/img/tutorials/start-2-dialog.webp" alt="The New project dialog with the name Billing API, the base path billing-api and a description" width="560" height="581" loading="lazy"></figure>
+              <p class="tip"><strong>Tip.</strong> If the AI assistant is on, describe the API in <strong>Describe the API</strong> and it drafts the stubs for you. See <a href="#ai">the AI tutorial</a>.</p>
+            </li>
+            <li>
+              <h3>Point your app at the mock URL</h3>
+              <p>The project opens on <strong>Overview</strong>. Under <strong>Connect your app</strong>, pick how your app is configured (environment variable, Spring, Docker Compose or cURL) and copy the line into your test setup in place of the real service's URL.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/start-3-overview.webp" alt="A project overview with the Connect your app panel outlined" width="1176" height="900" loading="lazy"></figure>
+            </li>
+          </ol>
+          <p class="tip"><strong>Good to know.</strong> Calling a mock never needs a password. Signing in is only needed to change mocks.</p>
+          <a class="next" href="#first-stub">Next: Add your first stub</a>
+        </article>
+
+        <article class="tut" id="first-stub">
+          <p class="tut-meta"><span>The basics</span><span>4 min</span></p>
+          <h2>Add your first stub</h2>
+          <p class="tut-intro">A stub is one rule: when a request looks like <em>this</em>, answer with <em>that</em>. Here you'll make <code>GET /payments/{id}</code> return a payment.</p>
+          <ol class="tut-steps">
+            <li>
+              <h3>Open Stubs and choose REST stub</h3>
+              <p>In your project, open the <strong>Stubs</strong> tab and select <strong>REST stub</strong>. <strong>From a template</strong> starts from common patterns, and <strong>Import</strong> brings in specs you already have.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/stub-1-empty.webp" alt="An empty Stubs tab with the REST stub button outlined" width="1176" height="900" loading="lazy"></figure>
+            </li>
+            <li>
+              <h3>Describe the request to match</h3>
+              <p>Pick the method, then how to match the URL: an exact path, a <strong>path template</strong> like <code>/payments/{id}</code>, or a pattern. Paths are relative to the project's base path, and the full URL shows underneath. Add query parameters, headers, cookies or body rules only if your request needs them.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/stub-2-request.webp" alt="The stub editor with the Request section outlined: GET, path template, /payments/{id}" width="1176" height="900" loading="lazy"></figure>
+            </li>
+            <li>
+              <h3>Write the response and save</h3>
+              <p>Set the status, headers and body. The body can be JSON, XML, text or a file. Select <strong>Save</strong>, or press <kbd>⌘</kbd><kbd>S</kbd>. The stub answers straight away.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/stub-3-response.webp" alt="The Response section outlined, with status 200, a JSON body and response templating turned on" width="1176" height="900" loading="lazy"></figure>
+            </li>
+          </ol>
+          <p class="tip"><strong>When two stubs match,</strong> the one with the lower <strong>priority</strong> number wins. Give special cases like <code>/payments/0</code> priority 1 so they win over the general rule.</p>
+          <a class="next" href="#try-it">Next: Test a stub in the editor</a>
+        </article>
+
+        <article class="tut" id="try-it">
+          <p class="tut-meta"><span>The basics</span><span>2 min</span></p>
+          <h2>Test a stub in the editor</h2>
+          <p class="tut-intro">You don't need a terminal to check a stub. <strong>Try it</strong> sends a real request to the project's mock URL and shows you what came back.</p>
+          <ol class="tut-steps">
+            <li>
+              <h3>Scroll to Try it and select Send</h3>
+              <p>At the bottom of the editor, the method and path are filled in from the stub. Replace placeholders with real values, like <code>/payments/7</code>, add headers or a body if needed, and select <strong>Send</strong>. You'll see the status, the time it took and the response.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/stub-4-tryit.webp" alt="The Try it section outlined, showing a 200 OK response for /payments/7" width="1176" height="900" loading="lazy"></figure>
+            </li>
+          </ol>
+          <p class="tip"><strong>Save first.</strong> Try it calls the live mock, so save your latest changes before testing them. Below Try it, <strong>Call it from your code</strong> gives the same request as cURL, HTTPie, JavaScript, Python or Java.</p>
+          <a class="next" href="#unmatched">Next: Fix unmatched requests</a>
+        </article>
+
+        <article class="tut" id="unmatched">
+          <p class="tut-meta"><span>The basics</span><span>3 min</span></p>
+          <h2>Fix unmatched requests</h2>
+          <p class="tut-intro">When your app calls something no stub covers, MockHub records it as <strong>unmatched</strong>. It's the quickest way to find a missing or slightly wrong stub.</p>
+          <ol class="tut-steps">
+            <li>
+              <h3>Open Requests, filter to Unmatched and pick a request</h3>
+              <p>The <strong>Requests</strong> tab shows every call as it arrives. Choose <strong>Unmatched</strong>, then select a request. The panel lists the <strong>closest stubs</strong> with how well each one matched, so you can spot a typo in a path or a missing header. Select <strong>Create stub from this request</strong> to start a new stub that's already filled in.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/requests-1-unmatched.webp" alt="An unmatched request open in the request log, with the Create stub from this request button outlined" width="1176" height="900" loading="lazy"></figure>
+            </li>
+          </ol>
+          <p class="tip"><strong>Watch the counters.</strong> The dashboard, the project overview and the Requests tab all show how many requests found no stub, so you notice before a test fails.</p>
+          <a class="next" href="#templating">Next: Make responses dynamic</a>
+        </article>
+
+        <article class="tut" id="templating">
+          <p class="tut-meta"><span>Realistic mocks</span><span>3 min</span></p>
+          <h2>Make responses dynamic</h2>
+          <p class="tut-intro">With <strong>response templating</strong>, one stub can answer with values taken from the request, so <code>/payments/7</code> returns payment 7 and <code>/payments/42</code> returns payment 42.</p>
+          <ol class="tut-steps">
+            <li>
+              <h3>Turn on Response templating</h3>
+              <p>In the stub's <strong>Response</strong> section, tick <strong>Response templating</strong> (you can see it in the <a href="#first-stub">first stub tutorial</a>). Then use placeholders in the body or headers.</p>
+              <div class="tut-table">
+                <table>
+                  <thead><tr><th>Write</th><th>To get</th></tr></thead>
+                  <tbody>
+                    <tr><td><code>{{request.path.id}}</code></td><td>The <code>{id}</code> part of a path template</td></tr>
+                    <tr><td><code>{{request.query.status}}</code></td><td>A query parameter</td></tr>
+                    <tr><td><code>{{request.headers.X-Tenant}}</code></td><td>A request header</td></tr>
+                    <tr><td><code>{{jsonPath request.body '$.name'}}</code></td><td>A field from a JSON body</td></tr>
+                    <tr><td><code>{{randomValue type='UUID'}}</code></td><td>A fresh id</td></tr>
+                    <tr><td><code>{{now}}</code></td><td>The current date and time</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </li>
+            <li>
+              <h3>See a full example in JSON view</h3>
+              <p>Every stub can be edited as WireMock JSON. Select <strong>JSON</strong> at the top of the editor to see exactly what's stored, conditionals and all.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/template-1-json.webp" alt="A templated stub in JSON view, echoing method, path, query and body" width="1176" height="900" loading="lazy"></figure>
+            </li>
+          </ol>
+          <p class="tip"><strong>Learn from examples.</strong> Install <em>Dynamic responses — templating</em> from <strong>Examples</strong>. Each stub explains the technique it uses.</p>
+          <a class="next" href="#scenarios">Next: Answer differently as state changes</a>
+        </article>
+
+        <article class="tut" id="scenarios">
+          <p class="tut-meta"><span>Realistic mocks</span><span>4 min</span></p>
+          <h2>Answer differently as state changes</h2>
+          <p class="tut-intro">A <strong>scenario</strong> makes the mock remember where a flow is. The same <code>GET /cart</code> can return an empty cart, then a cart with an item after <code>POST /cart/items</code>, then an empty cart again after checkout.</p>
+          <ol class="tut-steps">
+            <li>
+              <h3>Give each stub in the flow a scenario</h3>
+              <p>In the <strong>Scenario</strong> section of the editor, use the same <strong>scenario name</strong> on every stub in the flow. <strong>Only when state is</strong> says when the stub may answer (every scenario starts in <code>Started</code>), and <strong>Then move to state</strong> says where the flow goes next.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/scenario-1-editor.webp" alt="The Scenario section outlined: scenario Cart, only when state is Started, then move to Item added" width="1176" height="900" loading="lazy"></figure>
+            </li>
+            <li>
+              <h3>Watch and reset it on the Scenarios tab</h3>
+              <p>The <strong>Scenarios</strong> tab shows each scenario's current state. Select a state to jump to it, or select <strong>Reset</strong> to go back to <code>Started</code> before each test run.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/scenario-2-tab.webp" alt="The Scenarios tab with the Cart scenario in the Started state" width="1176" height="900" loading="lazy"></figure>
+            </li>
+          </ol>
+          <div class="tut-table">
+            <table>
+              <thead><tr><th>Call</th><th>State before</th><th>Answer</th><th>State after</th></tr></thead>
+              <tbody>
+                <tr><td><code>GET /cart</code></td><td>Started</td><td>Empty cart</td><td>Started</td></tr>
+                <tr><td><code>POST /cart/items</code></td><td>Started</td><td>201 Created</td><td>Item added</td></tr>
+                <tr><td><code>GET /cart</code></td><td>Item added</td><td>Cart with the item</td><td>Item added</td></tr>
+                <tr><td><code>POST /checkout</code></td><td>Item added</td><td>Order placed</td><td>Checked out</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="tip"><strong>Try it yourself.</strong> Install <em>Shopping cart — stateful scenarios</em> from <strong>Examples</strong>, call <code>/example-cart/cart</code> a few times, and watch the state move.</p>
+          <a class="next" href="#chaos">Next: Simulate slow and failing services</a>
+        </article>
+
+        <article class="tut" id="chaos">
+          <p class="tut-meta"><span>Realistic mocks</span><span>3 min</span></p>
+          <h2>Simulate slow and failing services</h2>
+          <p class="tut-intro">Real services are sometimes slow or broken. Mock that on purpose to check your timeouts, retries and error messages.</p>
+          <ol class="tut-steps">
+            <li>
+              <h3>Send a broken response with Fault</h3>
+              <p>In <strong>Response</strong>, switch from <strong>Respond</strong> to <strong>Fault</strong> and choose what goes wrong: the connection is reset, the response is empty, the body is malformed, or random data arrives and then the connection closes.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/chaos-1-fault.webp" alt="The Response section set to Fault with connection reset by peer selected" width="1176" height="900" loading="lazy"></figure>
+            </li>
+            <li>
+              <h3>Slow it down with Delay</h3>
+              <p>In <strong>Delay</strong>, choose <strong>Fixed</strong> for the same delay every time, <strong>Random range</strong> for a delay between two values, <strong>Realistic</strong> for mostly fast answers with an occasional slow one, or <strong>Trickle</strong> to send the body slowly in pieces.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/chaos-2-delay.webp" alt="The Delay section set to Fixed, 3000 milliseconds" width="1176" height="900" loading="lazy"></figure>
+            </li>
+          </ol>
+          <p class="tip"><strong>Fails once, then works.</strong> Combine a fault with a scenario to test retries, like the <em>Flaky</em> stub in the <em>Resilience testing</em> example. To slow down every project at once, set a <strong>Global delay</strong> on the Server page.</p>
+          <a class="next" href="#soap">Next: Mock a SOAP service</a>
+        </article>
+
+        <article class="tut" id="soap">
+          <p class="tut-meta"><span>Bring in what you have</span><span>3 min</span></p>
+          <h2>Mock a SOAP service</h2>
+          <p class="tut-intro">Give MockHub a WSDL and it creates one stub per operation, with request and response envelopes generated from the schema.</p>
+          <ol class="tut-steps">
+            <li>
+              <h3>Import the WSDL</h3>
+              <p>Open <strong>Import &amp; export</strong>, choose <strong>WSDL (SOAP)</strong>, optionally set the endpoint path, and drop the WSDL file in. MockHub also serves <code>?wsdl</code> with its address pointing at the mock, and answers unknown operations with a clear SOAP fault.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/soap-1-wsdl.webp" alt="The import panel with WSDL (SOAP) selected and a file drop area" width="1176" height="900" loading="lazy"></figure>
+            </li>
+            <li>
+              <h3>Answer specific values differently</h3>
+              <p>Open an operation's stub. The <strong>SOAP</strong> section shows the operation it matches, the SOAPAction and the SOAP version. To answer <em>2 + 3</em> differently from other sums, add XPath conditions under <strong>Body</strong>.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/soap-2-stub.webp" alt="A SOAP stub with the SOAP section outlined" width="1176" height="900" loading="lazy"></figure>
+            </li>
+          </ol>
+          <a class="next" href="#openapi">Next: Import an OpenAPI spec</a>
+        </article>
+
+        <article class="tut" id="openapi">
+          <p class="tut-meta"><span>Bring in what you have</span><span>2 min</span></p>
+          <h2>Import an OpenAPI spec</h2>
+          <p class="tut-intro">Have an OpenAPI or Swagger file? Turn it into working stubs in one step.</p>
+          <ol class="tut-steps">
+            <li>
+              <h3>Drop the spec into Import</h3>
+              <p>Open <strong>Import &amp; export</strong>, keep <strong>OpenAPI / Swagger</strong> selected and drop your YAML or JSON file in. You get one stub per operation, using the spec's examples or generated sample data. If your paths start with something like <code>/api/v1</code> that the project doesn't need, put it in <strong>Strip path prefix</strong>.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/openapi-1-import.webp" alt="The import panel with OpenAPI / Swagger selected" width="1176" height="900" loading="lazy"></figure>
+            </li>
+          </ol>
+          <p class="tip"><strong>Moving from plain WireMock?</strong> Choose <strong>WireMock mappings</strong> and drop your existing JSON mappings in.</p>
+          <a class="next" href="#export">Next: Share with Postman and Bruno</a>
+        </article>
+
+        <article class="tut" id="export">
+          <p class="tut-meta"><span>Bring in what you have</span><span>2 min</span></p>
+          <h2>Share with Postman and Bruno</h2>
+          <p class="tut-intro">Hand developers and testers a collection that already works against the mock.</p>
+          <ol class="tut-steps">
+            <li>
+              <h3>Download the collection</h3>
+              <p>Under <strong>Import &amp; export → Export</strong>, download a <strong>Postman collection</strong>, a <strong>Bruno collection</strong> or plain <strong>WireMock mappings</strong>. Every request is ready to send and checks the expected status. One <code>baseUrl</code> variable switches between the mock and the real service.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/export-1-panel.webp" alt="The Export panel with Postman, Bruno and WireMock downloads" width="1176" height="900" loading="lazy"></figure>
+            </li>
+          </ol>
+          <p class="tip"><strong>Better collections.</strong> A stub's <strong>Description</strong> becomes the request's documentation, and its <strong>Example request body</strong> becomes the body Postman and Bruno send.</p>
+          <a class="next" href="#ai">Next: Let the AI assistant draft stubs</a>
+        </article>
+
+        <article class="tut" id="ai">
+          <p class="tut-meta"><span>Bring in what you have</span><span>5 min</span><span>Setup needs an admin</span></p>
+          <h2>Let the AI assistant draft stubs</h2>
+          <p class="tut-intro">Describe what you need in plain English, or paste a spec or some curl commands. The assistant drafts the stubs, and nothing changes until you've reviewed and applied them.</p>
+          <ol class="tut-steps">
+            <li>
+              <h3>Connect a model (admins, once)</h3>
+              <p>Go to <strong>Administration → AI assistant</strong> and pick a provider:</p>
+              <ul>
+                <li><strong>OpenRouter:</strong> paste a key from openrouter.ai/keys. One key reaches models from many companies.</li>
+                <li><strong>LiteLLM proxy:</strong> enter your company proxy's URL, a virtual key and the model name.</li>
+                <li><strong>Other OpenAI-compatible API:</strong> OpenAI, Azure OpenAI, Ollama and similar.</li>
+              </ul>
+              <p>Select <strong>Test connection</strong> to list the available models, choose one that supports tool calling, tick <strong>Enabled</strong> and save.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/ai-1-settings.webp" alt="The AI assistant settings page with the provider picker outlined and OpenRouter selected" width="1176" height="900" loading="lazy"></figure>
+            </li>
+            <li>
+              <h3>Ask, then review and apply</h3>
+              <p>In any project, open <strong>Assistant</strong> and describe what you need. It reads the project's stubs and recent requests, then lists its changes under <strong>Review</strong>. Open each one to see the JSON or the diff, and select <strong>Apply</strong> or <strong>Discard</strong>, one at a time or all together. You can switch tabs while it works.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/ai-2-chat.webp" alt="The assistant has staged four customer API stubs, with the review panel outlined" width="1176" height="900" loading="lazy"></figure>
+            </li>
+          </ol>
+          <p class="tip"><strong>Who can do what.</strong> Viewers can chat and draft, but only editors can apply. The conversation, the project's stubs and, when needed, recent requests go to the provider you chose, so pick one your organisation allows.</p>
+          <a class="next" href="#teams">Next: Invite your team</a>
+        </article>
+
+        <article class="tut" id="teams">
+          <p class="tut-meta"><span>Teams</span><span>3 min</span></p>
+          <h2>Invite your team</h2>
+          <p class="tut-intro">Projects belong to <strong>organisations</strong>. Each person gets a role in each organisation, and sees only the organisations they belong to.</p>
+          <ol class="tut-steps">
+            <li>
+              <h3>Create accounts (admins)</h3>
+              <p>Under <strong>Administration → Users</strong>, select <strong>New user</strong> and set a username and password. With <a href="#sso">Microsoft sign-in</a>, accounts are created automatically the first time someone signs in.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/teams-2-users.webp" alt="The Users page listing people, their server role and organisations" width="1176" height="900" loading="lazy"></figure>
+            </li>
+            <li>
+              <h3>Add people to your organisation</h3>
+              <p>Open <strong>Members &amp; settings</strong>. Under <strong>Add a person</strong>, choose a user and a role, then select <strong>Add</strong>. Change a role at any time from the list.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/teams-1-org.webp" alt="The Members panel outlined, with an owner, an editor and a viewer" width="1176" height="900" loading="lazy"></figure>
+            </li>
+          </ol>
+          <div class="tut-table">
+            <table>
+              <thead><tr><th>Role</th><th>Can</th></tr></thead>
+              <tbody>
+                <tr><td><strong>Viewer</strong></td><td>Look at projects, stubs and requests, and chat with the assistant</td></tr>
+                <tr><td><strong>Editor</strong></td><td>Everything a viewer can, plus create and change projects and stubs</td></tr>
+                <tr><td><strong>Owner</strong></td><td>Everything an editor can, plus manage members and the organisation's settings</td></tr>
+                <tr><td><strong>Admin</strong></td><td>Everything, everywhere, plus users, sign-in, the AI assistant and backups</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <a class="next" href="#sso">Next: Turn on Microsoft sign-in</a>
+        </article>
+
+        <article class="tut" id="sso">
+          <p class="tut-meta"><span>Teams</span><span>5 min</span><span>Needs an admin</span></p>
+          <h2>Turn on Microsoft sign-in</h2>
+          <p class="tut-intro">Let people sign in with their work account from Microsoft Entra ID. There are no passwords to hand out, and no accounts to create by hand.</p>
+          <ol class="tut-steps">
+            <li>
+              <h3>Fill in the details from Entra ID</h3>
+              <p>Go to <strong>Administration → Single sign-on</strong>. Follow the numbered steps under <strong>Set it up in Entra ID</strong>, on the right of the page. Copy the <strong>redirect URI</strong> into a new app registration, then bring back the <strong>tenant ID</strong>, <strong>client ID</strong> and a <strong>client secret</strong>. Select <strong>Test connection</strong>, tick <strong>Enabled</strong> and save.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/sso-1-settings.webp" alt="The single sign-on page with the Microsoft Entra ID panel outlined" width="1176" height="900" loading="lazy"></figure>
+            </li>
+          </ol>
+          <p class="tip"><strong>Control access.</strong> Limit sign-in to your company's e-mail domains, and map Entra groups or app roles to organisations and roles, so people get the right access the first time they sign in.</p>
+          <a class="next" href="#backup">Next: Back up and restore</a>
+        </article>
+
+        <article class="tut" id="backup">
+          <p class="tut-meta"><span>Teams</span><span>2 min</span><span>Needs an admin</span></p>
+          <h2>Back up and restore</h2>
+          <p class="tut-intro">Save organisations or single projects, with their stubs, to a file. Restore all of it or just the parts you need, here or on another MockHub.</p>
+          <ol class="tut-steps">
+            <li>
+              <h3>Choose what to back up</h3>
+              <p>Go to <strong>Administration → Backup &amp; restore</strong>. Tick an organisation to include everything in it, or open it and tick single projects, then select <strong>Download backup</strong>. Users and sign-in settings are never included.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/backup-1-select.webp" alt="The backup page with two projects ticked and the Download backup button outlined" width="1176" height="900" loading="lazy"></figure>
+            </li>
+            <li>
+              <h3>Restore when you need it</h3>
+              <p>On the same page, drop a backup file into <strong>Restore</strong>. Nothing changes yet: you see what's inside and what each project would do here. Then pick the projects you want, the organisation to put them in, and whether to <strong>Replace</strong> existing projects or <strong>Add a copy</strong> beside them.</p>
+            </li>
+          </ol>
+          <a class="next" href="#keyboard">Next: Work faster with the keyboard</a>
+        </article>
+
+        <article class="tut" id="keyboard">
+          <p class="tut-meta"><span>Teams</span><span>1 min</span></p>
+          <h2>Work faster with the keyboard</h2>
+          <p class="tut-intro">Press <kbd>⌘</kbd><kbd>K</kbd> (<kbd>Ctrl</kbd><kbd>K</kbd> on Windows and Linux) anywhere to jump to any project, tab or stub by typing a few letters.</p>
+          <figure class="tut-shot"><img src="/assets/img/tutorials/keys-1-palette.webp" alt="The command palette open with pay typed, listing Payments API tabs and stubs" width="1176" height="900" loading="lazy"></figure>
+          <div class="tut-table">
+            <table>
+              <thead><tr><th>Press</th><th>To</th></tr></thead>
+              <tbody>
+                <tr><td><kbd>⌘</kbd><kbd>K</kbd></td><td>Open the command palette</td></tr>
+                <tr><td><kbd>N</kbd></td><td>Add a stub, on the Stubs tab</td></tr>
+                <tr><td><kbd>/</kbd></td><td>Search stubs</td></tr>
+                <tr><td><kbd>⌘</kbd><kbd>S</kbd></td><td>Save the stub you're editing</td></tr>
+                <tr><td><kbd>?</kbd></td><td>Show every shortcut</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="tut-done">
+            <h3>That's the tour.</h3>
+            <p>For every setting and the API, see the <a href="/docs/">documentation</a>. Or try it all in the <a href="/__admin/mockhub/ui/">live demo</a>.</p>
+          </div>
+        </article>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <div class="footer-cols">
+        <div>
+          <h4>Product</h4>
+          <a href="/#highlights">Highlights</a>
+          <a href="/#features">Features</a>
+          <a href="/#ai">AI assistant</a>
+          <a href="/__admin/mockhub/ui/">Live demo</a>
+        </div>
+        <div>
+          <h4>Learn</h4>
+          <a href="/tutorials/">Tutorials</a>
+          <a href="/docs/#quick-start">Quick start</a>
+          <a href="/docs/#matching">Request matching</a>
+          <a href="/docs/#api">API &amp; CI</a>
+        </div>
+        <div>
+          <h4>Get it</h4>
+          <a href="https://github.com/monk-developer-tools/mockhub">GitHub</a>
+          <a href="https://hub.docker.com/r/abhaypratap/mockhub">Docker Hub</a>
+          <a href="/docs/#deploy">Deployment</a>
+        </div>
+      </div>
+      <p class="legal">MockHub is built on WireMock and is not affiliated with WireMock Inc.</p>
+    </div>
+  </footer>
+  <script src="/assets/js/site.js" defer></script>
+</body>
+</html>

@@ -1379,6 +1379,425 @@ footer a {
   border-left: 4px solid var(--accent);
 }
 
+/* Tutorials */
+
+.tut-hero {
+  padding: 96px 0 88px;
+}
+
+.tut-index {
+  padding: 88px 0;
+}
+
+.tut-group + .tut-group {
+  margin-top: 56px;
+}
+
+.tut-group h2 {
+  font-size: 28px;
+  letter-spacing: -0.02em;
+  margin-bottom: 20px;
+}
+
+.tut-cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.tut-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 24px 22px 22px;
+  background: var(--tile);
+  border-radius: var(--radius-l);
+  color: var(--ink);
+  min-height: 190px;
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+
+.tut-card:hover {
+  text-decoration: none;
+  transform: translateY(-3px);
+  box-shadow: 0 18px 40px -20px rgba(0, 0, 0, 0.25);
+}
+
+.tut-card strong {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+  margin-top: 8px;
+}
+
+.tut-card span:not(.tut-ico) {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.tut-card em {
+  margin-top: auto;
+  padding-top: 12px;
+  font-style: normal;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--link);
+}
+
+.tut-ico {
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, var(--brand-a), var(--brand-b));
+}
+
+.tut-ico svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: #fff;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.tut-layout {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: 64px;
+  padding: 80px 0 120px;
+}
+
+.tut-toc {
+  position: sticky;
+  top: calc(var(--nav-h) + 24px);
+  align-self: start;
+  font-size: 14px;
+  max-height: calc(100vh - var(--nav-h) - 48px);
+  overflow-y: auto;
+}
+
+.tut-toc h4 {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 600;
+  margin: 22px 0 6px;
+}
+
+.tut-toc h4:first-child {
+  margin-top: 0;
+}
+
+.tut-toc a {
+  display: block;
+  color: var(--ink-2);
+  padding: 5px 10px;
+  margin-left: -10px;
+  border-radius: 8px;
+}
+
+.tut-toc a:hover {
+  background: var(--bg-alt);
+  text-decoration: none;
+}
+
+.tut-toc a.active {
+  color: var(--link);
+  font-weight: 500;
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
+}
+
+.tut-body {
+  min-width: 0;
+}
+
+.tut + .tut {
+  margin-top: 96px;
+  padding-top: 56px;
+  border-top: 1px solid var(--hair);
+}
+
+.tut-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.tut-meta span {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--muted);
+  background: var(--bg-alt);
+  padding: 4px 10px;
+  border-radius: 980px;
+}
+
+.tut-meta span:first-child {
+  color: var(--link);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.tut h2 {
+  font-size: clamp(30px, 4vw, 40px);
+}
+
+.tut-intro {
+  font-size: 19px;
+  line-height: 1.45;
+  color: var(--muted);
+  margin-top: 14px;
+  max-width: 44em;
+}
+
+.tut-steps {
+  list-style: none;
+  padding: 0;
+  margin: 40px 0 0;
+  counter-reset: step;
+}
+
+.tut-steps > li {
+  position: relative;
+  padding-left: 56px;
+  counter-increment: step;
+}
+
+.tut-steps > li + li {
+  margin-top: 48px;
+}
+
+.tut-steps > li::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: -2px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 600;
+  font-size: 15px;
+  color: #fff;
+  background: linear-gradient(135deg, var(--brand-a), var(--brand-b));
+}
+
+.tut-steps > li::after {
+  content: '';
+  position: absolute;
+  left: 16.5px;
+  top: 42px;
+  bottom: -40px;
+  width: 1px;
+  background: var(--line);
+}
+
+.tut-steps > li:last-child::after {
+  display: none;
+}
+
+.tut-steps h3 {
+  font-size: 21px;
+}
+
+.tut-steps p,
+.tut-steps li li {
+  color: var(--ink-2);
+  max-width: 44em;
+}
+
+.tut-steps h3 + p {
+  margin-top: 8px;
+}
+
+.tut-steps ul {
+  margin: 10px 0;
+  padding-left: 20px;
+}
+
+.tut-steps ul li + li {
+  margin-top: 6px;
+}
+
+.tut-steps p + p {
+  margin-top: 10px;
+}
+
+.tut-shot {
+  margin: 22px 0 0;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--hair);
+  box-shadow: 0 20px 50px -24px rgba(0, 0, 0, 0.3);
+  background: #fff;
+  cursor: zoom-in;
+}
+
+.tut-shot.narrow {
+  max-width: 560px;
+}
+
+.tut-shot img {
+  width: 100%;
+}
+
+.tip {
+  margin-top: 22px;
+  padding: 16px 20px;
+  border-radius: var(--radius-m);
+  background: var(--bg-alt);
+  color: var(--ink-2);
+  max-width: 44em;
+  font-size: 15.5px;
+}
+
+.tip strong:first-child {
+  color: var(--ink);
+}
+
+.tut-table {
+  margin-top: 22px;
+  overflow-x: auto;
+  border-radius: var(--radius-m);
+  background: var(--bg-alt);
+  padding: 4px 18px;
+  max-width: 44em;
+}
+
+.tut-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+
+.tut-table th,
+.tut-table td {
+  text-align: left;
+  padding: 11px 8px;
+  border-bottom: 1px solid var(--hair);
+  vertical-align: top;
+}
+
+.tut-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.tut-table th {
+  font-size: 12.5px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.tut-table code {
+  background: var(--tile);
+}
+
+.tut-table kbd,
+.tut-intro kbd,
+.tut-steps kbd {
+  min-width: 26px;
+  height: 26px;
+  font-size: 13px;
+  padding: 0 6px;
+  box-shadow: 0 1px 0 var(--line);
+}
+
+.next {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 36px;
+  font-weight: 500;
+}
+
+.next::after {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-left: 8px;
+  border-right: 1.6px solid currentColor;
+  border-top: 1.6px solid currentColor;
+  transform: rotate(45deg);
+}
+
+.tut-done {
+  margin-top: 56px;
+  padding: 36px;
+  border-radius: var(--radius-xl);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--brand-a) 14%, var(--bg-alt)), color-mix(in srgb, var(--brand-b) 14%, var(--bg-alt)));
+}
+
+.tut-done p {
+  margin-top: 8px;
+  color: var(--ink-2);
+}
+
+.lightbox {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  max-width: min(1600px, 96vw);
+  max-height: 94vh;
+}
+
+.lightbox::backdrop {
+  background: rgba(0, 0, 0, 0.78);
+  backdrop-filter: blur(6px);
+}
+
+.lightbox img {
+  max-width: min(1600px, 96vw);
+  max-height: 94vh;
+  border-radius: 12px;
+  cursor: zoom-out;
+}
+
+@media (max-width: 1000px) {
+  .tut-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .tut-layout {
+    grid-template-columns: minmax(0, 1fr);
+    padding-top: 48px;
+  }
+
+  .tut-toc {
+    display: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .tut-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .tut-card {
+    min-height: 0;
+  }
+
+  .tut-steps > li {
+    padding-left: 0;
+  }
+
+  .tut-steps > li::before {
+    position: static;
+    margin-bottom: 12px;
+  }
+
+  .tut-steps > li::after {
+    display: none;
+  }
+}
+
 /* Motion */
 
 .reveal {
