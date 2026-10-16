@@ -4,6 +4,10 @@ import type {
   AiTestResult,
   ApplyResult,
   AssistantJob,
+  BackupSelection,
+  RestorePreview,
+  RestoreRequest,
+  RestoreResult,
   AuthInfo,
   ChatMessage,
   ProposedChange,
@@ -90,12 +94,13 @@ async function errorMessage(response: Response, fallback: string): Promise<strin
   }
 }
 
-async function download(path: string) {
-  const headers = new Headers();
+async function download(path: string, init: RequestInit = {}) {
+  const headers = new Headers(init.headers);
   const token = credentials.get();
   if (token) headers.set('Authorization', token);
-  const response = await fetch(path, { headers });
-  if (!response.ok) throw new ApiError(response.status, `Download failed (${response.status})`);
+  if (init.body) headers.set('Content-Type', 'application/json');
+  const response = await fetch(path, { ...init, headers });
+  if (!response.ok) throw new ApiError(response.status, await errorMessage(response, `Download failed (${response.status})`));
   const disposition = response.headers.get('Content-Disposition') ?? '';
   const filename = /filename="([^"]+)"/.exec(disposition)?.[1] ?? 'download';
   const blob = await response.blob();
@@ -191,8 +196,10 @@ export const api = {
   installExample: (id: string, orgId?: string) =>
     request<Project>(`${API}/examples/${id}/install${orgId ? `?orgId=${orgId}` : ''}`, { method: 'POST' }),
 
-  backup: () => download(`${API}/backup`),
-  restore: (body: string) => request<{ organizations: number; projects: number; stubs: number }>(`${API}/restore`, { method: 'POST', body }),
+  backup: (selection: BackupSelection) => download(`${API}/backup`, { method: 'POST', body: json(selection) }),
+  previewRestore: (file: string) => request<RestorePreview>(`${API}/restore/preview`, { method: 'POST', body: file }),
+  restore: (file: string, options: RestoreRequest) =>
+    request<RestoreResult>(`${API}/restore`, { method: 'POST', body: `{"backup":${file.trim()},${json(options).slice(1)}` }),
 
   scenarios: () => request<{ scenarios: Scenario[] }>(`${ADMIN}/scenarios`).then((r) => r.scenarios),
   resetScenarios: () => request<void>(`${ADMIN}/scenarios/reset`, { method: 'POST' }),

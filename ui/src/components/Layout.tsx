@@ -1,4 +1,4 @@
-import { BookOpen, Building2, Eye, KeyRound, Sparkles, LayoutGrid, Menu, Moon, Plus, Search, Server, Sun, SunMoon, UserRound, Users } from 'lucide-react';
+import { Archive, BookOpen, Building2, Eye, KeyRound, Sparkles, LayoutGrid, Menu, Moon, Plus, Search, Server, Sun, SunMoon, UserRound, Users } from 'lucide-react';
 import { useMemo } from 'react';
 import { MOD_LABEL, useHotkeys } from '../state/hotkeys';
 import { CommandPalette } from './CommandPalette';
@@ -85,6 +85,9 @@ export function Layout() {
               </NavLink>
               <NavLink to="/admin/ai">
                 <Sparkles size={16} /> AI assistant
+              </NavLink>
+              <NavLink to="/admin/backup">
+                <Archive size={16} /> Backup &amp; restore
               </NavLink>
             </nav>
           </>

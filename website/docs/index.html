@@ -264,7 +264,9 @@ curl "$HUB/__admin/mockhub/api/projects/$ID/requests?unmatched=true"</pre></div>
           <tr><td><code>GET /projects/{id}/export/{postman|bruno|wiremock}</code></td><td>exports</td></tr>
           <tr><td><code>POST /projects/{id}/import/{openapi|wsdl|wiremock}</code></td><td>imports</td></tr>
           <tr><td><code>GET /examples</code>, <code>POST /examples/{id}/install</code></td><td>built-in examples</td></tr>
-          <tr><td><code>GET /backup</code>, <code>POST /restore</code></td><td>everything as one file</td></tr>
+          <tr><td><code>GET /backup</code></td><td>everything as one file</td></tr>
+          <tr><td><code>POST /backup</code></td><td>chosen organisations and projects as one file</td></tr>
+          <tr><td><code>POST /restore/preview</code>, <code>POST /restore</code></td><td>see what a file holds, then restore all or part of it</td></tr>
         </tbody>
       </table>
 
@@ -293,7 +295,8 @@ terraform init &amp;&amp; terraform apply</pre></div>
 }</pre></div>
 
       <h2 id="persistence">Persistence &amp; backup</h2>
-      <p>Stubs live in <code>/data/mappings</code> as WireMock JSON files. Projects live in <code>/data/mockhub/projects.json</code>, and response files in <code>/data/__files</code>. Back up the volume, or use <strong>Server → Download backup</strong> for a single JSON file you can restore into any MockHub.</p>
+      <p>Stubs live in <code>/data/mappings</code> as WireMock JSON files. Projects live in <code>/data/mockhub/projects.json</code>, and response files in <code>/data/__files</code>. Back up the volume, or use <strong>Administration → Backup &amp; restore</strong>.</p>
+      <p>There you tick whole organisations, single projects or a mix, and download them with their stubs as one JSON file. Users and sign-in settings are never included. To restore, open a backup file: MockHub lists what's inside and what each project would do here (new, replaces an existing project, or moves to a free base path). Pick the projects you want, the organisation to put them in, and whether existing projects are replaced or kept with a copy added beside them. The file restores into any MockHub.</p>
 
       <h2 id="limits">Limits</h2>
       <ul>

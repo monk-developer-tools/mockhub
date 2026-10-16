@@ -252,3 +252,46 @@ export interface ApplyResult {
   applied: number;
   results: { changeId: string; ok: boolean; stubId: string | null; error: string | null }[];
 }
+
+export interface BackupSelection {
+  everything?: boolean;
+  organizations: string[];
+  projects: string[];
+}
+
+export interface PreviewProject {
+  id: string;
+  name: string;
+  slug: string;
+  stubCount: number;
+  status: 'new' | 'replace' | 'slug-taken';
+  newSlug?: string;
+}
+
+export interface PreviewOrg {
+  id: string;
+  name: string;
+  slug: string;
+  exists: boolean;
+  projects: PreviewProject[];
+}
+
+export interface RestorePreview {
+  createdAt: string;
+  mockhubVersion: string;
+  scope: 'full' | 'selection';
+  organizations: PreviewOrg[];
+  unassignedStubs: number;
+}
+
+export interface RestoreRequest extends BackupSelection {
+  targetOrgId?: string;
+  mode: 'replace' | 'copy';
+}
+
+export interface RestoreResult {
+  organizations: number;
+  projects: number;
+  stubs: number;
+  renamed: { project: string; from: string; to: string }[];
+}

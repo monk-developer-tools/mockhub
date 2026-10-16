@@ -11,6 +11,7 @@ import io.mockhub.ai.AssistantService;
 import io.mockhub.ai.ChatCompletions;
 import io.mockhub.ai.JdkLlmTransport;
 import io.mockhub.controller.AiController;
+import io.mockhub.backup.BackupService;
 import io.mockhub.auth.AccessPolicy;
 import io.mockhub.auth.AuthService;
 import io.mockhub.auth.Principal;
@@ -128,6 +129,6 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
                 new RequestLogController(requestLog),
                 new ImportExportController(projects, stubs, exporters, importers, urls),
                 new AiController(aiSettings, aiProviders, chat, assistant, assistantJobs, projects, urls),
-                new BackupController(orgs, projects, gateway))));
+                new BackupController(new BackupService(orgs, projects, gateway, clock)))));
   }
 }

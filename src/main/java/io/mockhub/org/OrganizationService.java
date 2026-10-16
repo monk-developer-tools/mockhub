@@ -76,8 +76,18 @@ public final class OrganizationService {
   }
 
   public int restore(List<Organization> organizations) {
-    organizations.forEach(repository::save);
+    organizations.forEach(this::restore);
     return organizations.size();
+  }
+
+  public Organization restore(Organization organization) {
+    boolean taken = repository.findBySlug(organization.slug()).filter(o -> !o.id().equals(organization.id())).isPresent();
+    Organization saved = taken
+        ? new Organization(organization.id(), organization.name(), availableSlug(organization.slug()), organization.description(),
+            organization.createdAt(), organization.updatedAt())
+        : organization;
+    repository.save(saved);
+    return saved;
   }
 
   private String availableSlug(String preferred) {

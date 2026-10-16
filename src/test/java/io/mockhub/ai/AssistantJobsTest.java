@@ -13,11 +13,11 @@ import io.mockhub.stub.StubService;
 import io.mockhub.support.FakeLlmTransport;
 import io.mockhub.support.FakeStubGateway;
 import io.mockhub.support.InMemoryProjectRepository;
+import io.mockhub.support.MutableClock;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
@@ -34,7 +34,7 @@ class AssistantJobsTest {
   private final FakeLlmTransport transport = new FakeLlmTransport();
   private final List<Runnable> queued = new ArrayList<>();
   private final Executor later = queued::add;
-  private final MutableClock clock = new MutableClock();
+  private final MutableClock clock = new MutableClock(Instant.parse("2026-10-16T10:00:00Z"));
   private Project orders;
   private AiSettingsStore settings;
   private AssistantService assistant;
@@ -136,28 +136,5 @@ class AssistantJobsTest {
 
     // Then
     assertThatThrownBy(() -> jobs.get("u1", orders.id(), id)).isInstanceOf(ApiException.class);
-  }
-
-  private static final class MutableClock extends Clock {
-    private Instant now = Instant.parse("2026-10-16T10:00:00Z");
-
-    void advance(Duration d) {
-      now = now.plus(d);
-    }
-
-    @Override
-    public ZoneOffset getZone() {
-      return ZoneOffset.UTC;
-    }
-
-    @Override
-    public Clock withZone(java.time.ZoneId zone) {
-      return this;
-    }
-
-    @Override
-    public Instant instant() {
-      return now;
-    }
   }
 }

@@ -1,8 +1,8 @@
 import { CircleDot, Download, Square } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import type { Stub } from '../api/types';
-import { FilePicker } from '../components/FilePicker';
 import { StubRoute } from '../components/StubRoute';
 import { useToast } from '../components/Toasts';
 import { useApp } from '../state/AppContext';
@@ -78,16 +78,6 @@ export function ServerPage() {
     }
   };
 
-  const restore = async (text: string) => {
-    try {
-      const r = await api.restore(text);
-      toast.notify(`Restored ${r.organizations} organisations, ${r.projects} projects and ${r.stubs} stubs`);
-      await Promise.all([load(), refreshProjects()]);
-    } catch (e) {
-      toast.fail(e);
-    }
-  };
-
   return (
     <div className="page">
       <div className="page-header">
@@ -124,24 +114,20 @@ export function ServerPage() {
           </div>
 
           {isAdmin && (
-          <div className="panel">
-            <div className="section">
-              <h3>Backup</h3>
-              <p className="muted small" style={{ marginBottom: 10 }}>
-                One JSON file with every organisation, project and stub. Users and single sign-on settings are not included. Use it to move MockHub to another environment.
-              </p>
-              <button className="btn" onClick={() => api.backup().catch(toast.fail)}>
-                <Download size={14} /> Download backup
-              </button>
-            </div>
-            {isAdmin && (
+            <div className="panel">
               <div className="section">
-                <h3>Restore</h3>
-                <p className="muted small" style={{ marginBottom: 10 }}>Adds the projects and stubs from a backup. Existing ones with the same id are replaced.</p>
-                <FilePicker accept=".json" label="Drop a backup file here or click to choose" onText={restore} />
+                <h3>Backup</h3>
+                <p className="muted small" style={{ marginBottom: 10 }}>
+                  Download everything as one file, or choose organisations and projects to back up and restore under Backup &amp; restore.
+                </p>
+                <div className="btn-row">
+                  <button className="btn" onClick={() => api.backup({ everything: true, organizations: [], projects: [] }).catch(toast.fail)}>
+                    <Download size={14} /> Download full backup
+                  </button>
+                  <Link className="btn ghost" to="/admin/backup">Choose what to back up or restore</Link>
+                </div>
               </div>
-            )}
-          </div>
+            </div>
           )}
         </div>
 

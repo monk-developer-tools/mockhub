@@ -199,3 +199,16 @@ Checklist:
 - [x] Tests: unit (fake model), integration (fake OpenAI-compatible server on WireMock), UI
 - [x] Docs + website
 - [x] Background chat jobs with live progress: replies survive switching tabs or reloading, no proxy timeouts with slow models, staged work kept if the provider fails part-way
+
+### Phase 12 — Selective backup and restore
+- Backup a selection: whole organisations, single projects, or a mix (`POST /backup`), named after what it holds.
+- Restore with a preview (`POST /restore/preview`): per project it shows new, replaces existing, or base path
+  taken (with the new path). Choose projects, target organisation and replace-or-copy. Replace makes the
+  project's stubs match the backup exactly; copy gives new ids and a free base path and rewrites stub URLs.
+- Older backup files still restore.
+
+Checklist:
+- [x] Backend: `BackupService` (export, preview, restore), `BackupSelection`, `RestoreOptions`, admin-only
+- [x] UI: Administration → Backup & restore with organisation/project tree, preview and options
+- [x] Tests: unit, integration (backup one project, preview, restore as copy on another server), UI
+- [x] Docs + website

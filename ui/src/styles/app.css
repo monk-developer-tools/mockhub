@@ -2633,3 +2633,115 @@ kbd {
     grid-template-columns: 1fr;
   }
 }
+
+.tag.ok {
+  background: var(--ok-soft);
+  color: var(--ok);
+  border-color: transparent;
+}
+
+.tag.warn {
+  background: var(--warn-soft);
+  color: var(--warn);
+  border-color: transparent;
+}
+
+.tree {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 6px;
+  border-top: 1px solid var(--line);
+}
+
+.tree ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tree-org + .tree-org {
+  border-top: 1px solid var(--line);
+}
+
+.tree-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 4px 18px 4px 10px;
+}
+
+.tree-children .tree-row {
+  padding-left: 46px;
+}
+
+.tree-children .tree-row:hover,
+.tree-org > .tree-row:hover {
+  background: var(--surface-sunken);
+}
+
+.tree-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+  font-size: 13.5px;
+}
+
+.tree-label input {
+  accent-color: var(--accent);
+  width: 15px;
+  height: 15px;
+  flex: none;
+}
+
+.tree-label code {
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tree-label .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.tree-row > .muted.small {
+  white-space: nowrap;
+}
+
+.tree-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 18px;
+  border-top: 1px solid var(--line);
+  background: var(--surface-sunken);
+  border-radius: 0 0 var(--radius-m) var(--radius-m);
+}
+
+.restore-options {
+  border-top: 1px solid var(--line);
+}
+
+.renamed {
+  margin: 8px 0 0;
+}
+
+@media (max-width: 760px) {
+  .tree-row {
+    flex-wrap: wrap;
+    padding-right: 12px;
+  }
+
+  .tree-children .tree-row {
+    padding-left: 30px;
+  }
+}

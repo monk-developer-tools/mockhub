@@ -116,6 +116,32 @@ class ImportExportIntegrationTest {
     }
   }
 
+  @Test
+  void backsUpOneProjectAndRestoresItAsACopyAfterAPreview(@TempDir Path otherData) {
+    // Given
+    api.post(API + "/projects/" + projectId + "/stubs", "{\"request\":{\"method\":\"GET\",\"url\":\"/ping\"},\"response\":{\"status\":203}}");
+    String other = api.post(API + "/projects", "{\"name\":\"Other\"}").json().get("id").asText();
+    ApiClient.Result backup = api.post(API + "/backup", "{\"projects\":[\"" + projectId + "\"]}");
+
+    try (MockHubServer fresh = MockHubServer.start(otherData)) {
+      ApiClient restoreApi = fresh.api();
+      restoreApi.post(API + "/projects", "{\"name\":\"Calc\"}");
+
+      // When
+      ApiClient.Result preview = restoreApi.post(API + "/restore/preview", backup.body());
+      ApiClient.Result restored = restoreApi.post(API + "/restore",
+          "{\"backup\":" + backup.body() + ",\"projects\":[\"" + projectId + "\"],\"mode\":\"copy\"}");
+
+      // Then
+      assertThat(backup.status()).as(backup.body()).isEqualTo(200);
+      assertThat(backup.body()).doesNotContain(other);
+      assertThat(preview.json().at("/organizations/0/projects/0/status").asText()).isEqualTo("slug-taken");
+      assertThat(restored.json().get("projects").asInt()).isEqualTo(1);
+      assertThat(restored.json().at("/renamed/0/to").asText()).isEqualTo("/calc-2");
+      assertThat(restoreApi.get("/calc-2/ping").status()).isEqualTo(203);
+    }
+  }
+
   private static String resource(String name) throws IOException {
     try (InputStream in = ImportExportIntegrationTest.class.getResourceAsStream("/" + name)) {
       return new String(in.readAllBytes(), StandardCharsets.UTF_8);

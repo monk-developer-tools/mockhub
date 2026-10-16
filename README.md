@@ -29,7 +29,8 @@ https://mocks.acme.internal/legacy-crm/ws/customers      SOAP mocks of project "
 - **Built-in examples:** REST basics, templating, stateful cart, faults and delays, and a SOAP calculator from WSDL.
   Install one with a click and copy what you need. The editor also has a template gallery.
 - **Persistence.** Every stub, including ones created through the native `/__admin` API, is written to `/data`.
-  There's also full backup and restore.
+  Admins can back up everything, whole organisations or single projects to one file, and later restore all of it
+  or just the projects they pick, replacing existing ones or adding copies, into the original or another organisation.
 - **AI assistant.** Connect OpenRouter, a LiteLLM proxy or any OpenAI-compatible API, then describe the mocks you
   need in plain English or paste a spec. The assistant stages stubs, and you review each change as a diff before
   applying it.
@@ -191,7 +192,10 @@ MockHub is a WireMock extension running inside a regular WireMock server:
 | GET | `/__admin/mockhub/api/projects/{id}/ai/jobs/{jobId}` | Job status, live steps, then the reply or error (kept 30 minutes, visible to whoever started it) |
 | POST | `/__admin/mockhub/api/projects/{id}/ai/apply` | `{changes}` → apply staged changes (editor) |
 | GET/PUT | `/__admin/mockhub/api/ai/settings` | AI provider settings (admin); `POST /ai/test` lists models |
-| GET/POST | `/__admin/mockhub/api/backup`, `/restore` | organisations, projects and stubs as one JSON file (admin) |
+| GET | `/__admin/mockhub/api/backup` | everything as one JSON file (admin) |
+| POST | `/__admin/mockhub/api/backup` | `{organizations:[ids], projects:[ids]}` or `{everything:true}` → backup of just that (admin) |
+| POST | `/__admin/mockhub/api/restore/preview` | backup file → organisations and projects inside, and what each would do here (admin) |
+| POST | `/__admin/mockhub/api/restore` | `{backup, organizations, projects, targetOrgId?, mode: replace\|copy}`, or a bare backup file to restore all of it (admin) |
 
 Example: a CI job that loads mocks before running tests.
 
