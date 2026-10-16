@@ -17,10 +17,22 @@ repositories {
     mavenCentral()
 }
 
+val jettyVersion = "12.0.40"
+
 dependencies {
-    implementation("org.wiremock:wiremock:$wiremockVersion")
+    implementation(platform("com.fasterxml.jackson:jackson-bom:2.22.3"))
+    implementation(platform("org.eclipse.jetty:jetty-bom:$jettyVersion"))
+    implementation(platform("org.eclipse.jetty.ee10:jetty-ee10-bom:$jettyVersion"))
+    implementation("org.wiremock:wiremock-jetty12:$wiremockVersion")
     implementation("org.slf4j:slf4j-simple:2.0.16")
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml")
+    constraints {
+        implementation("org.apache.httpcomponents.client5:httpclient5:5.6.5")
+        implementation("org.apache.httpcomponents.core5:httpcore5:5.4.4")
+        implementation("org.apache.httpcomponents.core5:httpcore5-h2:5.4.4")
+        implementation("com.github.jknack:handlebars:4.5.5")
+        implementation("org.apache.commons:commons-lang3:3.21.0")
+    }
 
     testImplementation(platform("org.junit:junit-bom:5.11.4"))
     testImplementation("org.junit.jupiter:junit-jupiter")

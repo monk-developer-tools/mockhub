@@ -258,6 +258,15 @@ Pushes to `main` publish `abhaypratap/mockhub:latest`. A tag `vX.Y.Z` publishes 
 multi-arch (amd64 and arm64). The pipeline needs two repository secrets: `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN`
 (a Docker Hub access token with read and write access).
 
+## Security updates
+
+- The image is rebuilt every Monday, and on every push to `main`, from the latest distroless base, so operating
+  system fixes such as OpenSSL arrive without a code change.
+- WireMock runs on Jetty 12 through `org.wiremock:wiremock-jetty12`, because Jetty 11 no longer gets fixes.
+- `build.gradle.kts` pins patched versions of libraries that WireMock pulls in (Jackson, Apache HttpComponents,
+  Handlebars, commons-lang3). Only the core Handlebars jar is upgraded: `handlebars-helpers` stays on 4.3.1, because
+  newer versions moved classes that WireMock 3 loads.
+
 ## Limits
 
 - Run **one** task per data directory. WireMock keeps stubs in memory and only reads the files at startup, so two

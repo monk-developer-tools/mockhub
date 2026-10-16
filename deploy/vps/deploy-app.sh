@@ -29,7 +29,7 @@ else
   git clone --quiet --depth 1 "$REPO" "$BASE/src"
 fi
 
-nice -n 10 docker build --quiet -t mockhub:latest "$BASE/src"
+nice -n 10 docker build --pull --quiet -t mockhub:latest "$BASE/src"
 
 docker rm -f mockhub >/dev/null 2>&1 || true
 docker run -d --name mockhub \
