@@ -228,3 +228,101 @@ Checklist:
 - [x] UI: team pages, access editor, avatars, grouping and filters
 - [x] Tests: unit, integration (`TeamsIntegrationTest`), UI
 - [x] Docs, tutorial and website
+
+## Roadmap: closing the gap with hosted mock services
+
+Compared feature by feature with Beeceptor (October 2026). MockHub already covers no-code mocking, request
+inspection, templating, OpenAPI/WSDL import, proxy and record, delays and faults, scenarios, an AI generator and team
+sharing. The phases below close the gaps that matter most. Where an official WireMock extension exists we use it, as
+long as it works with WireMock 3.13 on Jetty 12; otherwise we build a small extension of our own.
+
+### Phase 14 — CRUD routes, fake data, webhooks and body files (next)
+
+**14a. CRUD routes backed by a data store**
+- Goal: `POST /customers` stores an object, `GET /customers/{id}` returns it, `PUT`/`PATCH` change it, `DELETE`
+  removes it, `GET /customers` lists them. No code, schema-less JSON.
+- Engine: `org.wiremock.extensions:wiremock-state-extension` (0.10.1) for record/delete state and state lookups in
+  templates. Spike first: confirm it loads with WireMock 3.13 + Jetty 12 and our extension factory.
+- "New CRUD resource" in the Stubs tab: resource name (`customers`), id field (`id`, generated UUID or taken from the
+  body), optional seed records. Generates the five stubs, grouped in one folder, editable like any stub.
+- **Data** tab per project: see stored records per resource, add/edit/delete one, clear a resource, reset everything.
+- Persistence: the store is in memory by default. Add an option to save it to `/data/mockhub/state/<project>.json`
+  and reload on start, so demo data survives restarts. Backups include it.
+- Counters and simple key/value stores (step counters, "last order id") through the same extension.
+- AI assistant: tool to create a CRUD resource; system prompt explains state helpers.
+
+**14b. Realistic fake data**
+- Goal: `{{fake 'Name.fullName'}}`, `{{fake 'Address.city'}}`, `{{fake 'Commerce.productName'}}` in any response, in
+  many locales.
+- Engine: decide after a spike between `org.wiremock.extensions:wiremock-faker-extension` (still beta, 0.3.0-beta.1)
+  and our own `TemplateHelperProviderExtension` backed by Datafaker. Prefer whichever is stable on 3.13; an own
+  helper is a few dozen lines and avoids a beta dependency.
+- Project setting: locale for fake data (default `en`).
+- Editor: "Insert" menu in the body editor with common helpers (name, e-mail, phone, address, company, UUID, date,
+  number range, lorem), and a live preview of the rendered response.
+- OpenAPI import: fill strings by format and field name (`email`, `phone`, `city`, `name`, `uuid`, `date-time`)
+  instead of fixed sample values; arrays get 3–5 generated items.
+- AI assistant: knows the helper and uses it for realistic data.
+
+**14c. Webhooks/callouts in the form editor, and response body files**
+- Webhooks: a "Then call" section in the editor: method, URL (templated), headers, body (templated), delay (fixed or
+  random). Saved as WireMock `serveEventListeners` (webhook support already ships in the image). Multiple callouts
+  per stub. Remove the "unsupported in the form" warning for webhooks.
+- Callout log: show outgoing webhook calls and their status next to the request that triggered them.
+- Body files: upload, list, download and delete files under `__files` per project (`/projects/{id}/files`, size
+  limit, content type kept). The editor's *File* body type gets a picker and an upload button.
+- Large responses: allow binary files (images, PDFs, zips) with the right content type.
+- Backups and exports include the files a project uses.
+
+Checklist:
+- [ ] Spike: state and faker extensions on WireMock 3.13 + Jetty 12 (decide engine for 14b)
+- [ ] 14a backend: state extension wiring, CRUD generator, data API, optional persistence, backup support
+- [ ] 14a UI: New CRUD resource dialog, Data tab
+- [ ] 14b backend: fake helper, locale setting, OpenAPI import uses fake data
+- [ ] 14b UI: insert-helper menu and response preview
+- [ ] 14c backend: webhook form mapping, callout log, body file API, backup/export of files
+- [ ] 14c UI: Then call section, file picker and upload
+- [ ] AI assistant tools and prompt updated for CRUD resources and fake data
+- [ ] Tests: unit, integration (CRUD round trip, persistence across restart, webhook delivered to a test server,
+      file upload and serve), system, UI
+- [ ] Docs, tutorials (CRUD resource, fake data, webhooks) and website
+
+### Phase 15 — Agents, history and access control (recommended)
+
+- **MCP server.** Let Claude, Cursor and other agents create, edit and inspect mocks. Expose the assistant's tools
+  (`list_stubs`, `create_stub`, `update_stub`, `delete_stub`, `list_requests`, CRUD resources) over MCP (Streamable
+  HTTP) at `/__admin/mockhub/mcp`, authenticated with a personal access token and limited to the user's teams.
+  Changes can apply directly or be staged for review, set per token.
+- **Personal access tokens.** Long-lived tokens for CI and MCP, created in the account dialog, scoped by role.
+- **Request history on disk with search.** Keep requests for a configurable time (default 7 days) in an append-only
+  file per project; search by path, method, status, header and body text; filter matched/unmatched; export as HAR.
+- **Live traffic.** Requests per second chart and counts for a chosen period, for load tests.
+- **Per-project protection.** Optional access key: mocks answer only when a header (e.g. `X-Mock-Key`) matches.
+- **Rate limits.** Per project or per stub: requests per second/minute; return 429 with `Retry-After` when exceeded.
+- **Default response.** A project setting for what unmatched requests get (status, body), instead of a manual
+  catch-all stub.
+- **CORS allow list.** Per project origins instead of the server-wide on/off switch.
+
+Checklist:
+- [ ] Personal access tokens
+- [ ] MCP server with staged or direct changes
+- [ ] Request history store, search and HAR export
+- [ ] Live traffic chart
+- [ ] Access key, rate limits, default response, CORS allow list
+- [ ] Tests, docs and tutorials
+
+### Phase 16 — More protocols and versioning (later)
+
+- **GraphQL** mocks from an SDL or introspection: match by operation name and variables. Candidate:
+  `io.github.nilwurtz:wiremock-graphql-extension` (0.9.0, built against WireMock 3.9); verify on 3.13.
+- **gRPC** mocks from `.proto` files with `org.wiremock:wiremock-grpc-extension` (1.0.0-beta.5); verify it works on
+  Jetty 12, otherwise wait for a stable release.
+- **Project versions.** Save a named snapshot of a project's stubs and settings, compare two versions, roll back.
+- **Datasets.** Upload CSV or JSON test data once per team and use it from templates in any project.
+- **Mutual TLS and forward proxy** in the Server page instead of raw `WIREMOCK_OPTIONS`.
+
+### Not planned
+
+- Local tunnel to a laptop: use ngrok or cloudflared, which do this well.
+- Contract drift detection and API governance: a separate product.
+- Stored OAuth credentials for outbound calls: revisit if webhooks need authenticated targets.
