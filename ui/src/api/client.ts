@@ -15,6 +15,8 @@ import type {
   ImportResult,
   LoginResult,
   Member,
+  Team,
+  TeamMember,
   Organization,
   Project,
   Scenario,
@@ -130,10 +132,20 @@ export const api = {
   setMember: (orgId: string, userId: string, role: string) =>
     request<UserRecord>(`${API}/orgs/${orgId}/members/${userId}`, { method: 'PUT', body: json({ role }) }),
   removeMember: (orgId: string, userId: string) => request<void>(`${API}/orgs/${orgId}/members/${userId}`, { method: 'DELETE' }),
+  teams: (orgId: string) => request<Team[]>(`${API}/orgs/${orgId}/teams`),
+  createTeam: (orgId: string, body: Partial<Team>) => request<Team>(`${API}/orgs/${orgId}/teams`, { method: 'POST', body: json(body) }),
+  updateTeam: (orgId: string, teamId: string, body: Partial<Team>) =>
+    request<Team>(`${API}/orgs/${orgId}/teams/${teamId}`, { method: 'PUT', body: json(body) }),
+  deleteTeam: (orgId: string, teamId: string) => request<void>(`${API}/orgs/${orgId}/teams/${teamId}`, { method: 'DELETE' }),
+  teamMembers: (orgId: string, teamId: string) => request<TeamMember[]>(`${API}/orgs/${orgId}/teams/${teamId}/members`),
+  setTeamMember: (orgId: string, teamId: string, userId: string, role: string) =>
+    request<UserRecord>(`${API}/orgs/${orgId}/teams/${teamId}/members/${userId}`, { method: 'PUT', body: json({ role }) }),
+  removeTeamMember: (orgId: string, teamId: string, userId: string) =>
+    request<void>(`${API}/orgs/${orgId}/teams/${teamId}/members/${userId}`, { method: 'DELETE' }),
 
   users: () => request<UserRecord[]>(`${API}/users`),
   createUser: (body: Record<string, unknown>) => request<UserRecord & { token?: string }>(`${API}/users`, { method: 'POST', body: json(body) }),
-  updateUser: (id: string, body: Partial<UserRecord>) => request<UserRecord>(`${API}/users/${id}`, { method: 'PUT', body: json(body) }),
+  updateUser: (id: string, body: Record<string, unknown>) => request<UserRecord>(`${API}/users/${id}`, { method: 'PUT', body: json(body) }),
   resetPassword: (id: string, password: string) =>
     request<UserRecord>(`${API}/users/${id}/password`, { method: 'POST', body: json({ password }) }),
   deleteUser: (id: string) => request<void>(`${API}/users/${id}`, { method: 'DELETE' }),

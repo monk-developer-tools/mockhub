@@ -16,6 +16,7 @@ import { StubsTab } from './pages/project/StubsTab';
 import { AiSettingsPage } from './pages/AiSettingsPage';
 import { BackupPage } from './pages/BackupPage';
 import { OrgPage } from './pages/OrgPage';
+import { TeamPage } from './pages/TeamPage';
 import { AssistantTab } from './pages/project/AssistantTab';
 import { ServerPage } from './pages/ServerPage';
 import { SsoPage } from './pages/SsoPage';
@@ -32,6 +33,7 @@ const router = createBrowserRouter(
         { path: 'examples', element: <ExamplesPage /> },
         { path: 'server', element: <ServerPage /> },
         { path: 'org', element: <OrgPage /> },
+        { path: 'org/teams/:teamId', element: <TeamPage /> },
         { path: 'admin/users', element: <UsersPage /> },
         { path: 'admin/sso', element: <SsoPage /> },
         { path: 'admin/ai', element: <AiSettingsPage /> },

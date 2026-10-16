@@ -126,7 +126,8 @@ screenshots, and the [live demo](https://mockhub.devops-monk.com/__admin/mockhub
 - **AI assistant.** Connect OpenRouter, a LiteLLM proxy or any OpenAI-compatible API, then describe the mocks you
   need in plain English or paste a spec. The assistant stages stubs, and you review each change as a diff before
   applying it.
-- **Organisations and teams.** Group projects into organisations. Owners add people as viewers, editors or owners,
+- **Organisations, teams and people.** Organisations hold teams, and teams own projects. People get a role per team
+  or across the whole organisation, and see only their teams' projects. Owners add people as viewers, editors or owners,
   and each person sees only their organisations.
 - **Users and single sign-on.** Create users in the UI, or let people sign in with **Microsoft Entra ID** (Azure AD).
   Entra groups and app roles can map to organisation roles. Mock endpoints always stay open.
@@ -174,15 +175,24 @@ docker run -p 8080:8080 -v mockhub-data:/data \
   abhaypratap/mockhub
 ```
 
-**Organisations** hold projects. On first start, MockHub creates one called *Default* and moves existing projects
-into it. Admins create more from the organisation switcher at the top of the sidebar. Mock URLs don't change when a
-project moves between organisations, and base paths stay unique across the server.
+MockHub has three levels: **organisation › teams › people**.
 
-| Organisation role | Can |
-|---|---|
-| viewer | see the organisation's projects, stubs and request logs, and download exports |
-| editor | also create, edit and delete projects and stubs, import, and record |
-| owner | also rename the organisation, add and remove members, and delete it |
+- **Organisations** group everything. On first start, MockHub creates one called *Default*. Admins create more from
+  the organisation switcher at the top of the sidebar.
+- **Teams** live inside an organisation and own its projects. Every organisation has a *General* team; projects from
+  before teams existed move there on startup. Owners create more teams under **Teams & members**.
+- **People** get a role per team, an organisation-wide role that applies to every team, or both. The higher role
+  wins. Team members only see their own teams' projects.
+
+| Role | In a team | Organisation-wide |
+|---|---|---|
+| viewer | see the team's projects, stubs and request logs, and download exports | the same, in every team |
+| editor | also create, edit and delete the team's projects and stubs, import, and record | the same, in every team |
+| owner | also manage the team's members and settings | also create and delete teams, manage members and the organisation |
+
+A team can only be deleted once its projects are moved or deleted. Mock URLs don't change when a project moves between
+teams or organisations, and base paths stay unique across the server. Admins set organisation and team roles for
+anyone from **Users**, and Entra groups can map to a whole organisation or to a single team.
 
 Each user also has a **server role**. With *viewer everywhere* or *editor everywhere*, a user has that role in every
 organisation. With *admin*, a user also manages users, single sign-on, backups and the native WireMock admin API.
@@ -263,7 +273,11 @@ MockHub is a WireMock extension running inside a regular WireMock server:
 | GET/POST | `/__admin/mockhub/api/orgs` | list / create organisations |
 | GET/PUT/DELETE | `/__admin/mockhub/api/orgs/{id}` | read / rename / delete an organisation (and its projects) |
 | GET | `/__admin/mockhub/api/orgs/{id}/members` | members with their roles |
-| PUT/DELETE | `/__admin/mockhub/api/orgs/{id}/members/{userId}` | add or change (`{role}`) / remove a member |
+| PUT/DELETE | `/__admin/mockhub/api/orgs/{id}/members/{userId}` | add or change (`{role}`) / remove organisation-wide access |
+| GET/POST | `/__admin/mockhub/api/orgs/{id}/teams` | list / create teams (`{name, description}`) |
+| GET/PUT/DELETE | `/__admin/mockhub/api/orgs/{id}/teams/{teamId}` | read / rename / delete a team (only when it has no projects) |
+| GET | `/__admin/mockhub/api/orgs/{id}/teams/{teamId}/members` | team members, plus people with organisation-wide access |
+| PUT/DELETE | `/__admin/mockhub/api/orgs/{id}/teams/{teamId}/members/{userId}` | add or change (`{role}`) / remove a team member |
 | GET/POST | `/__admin/mockhub/api/users` | list / create users (admin) |
 | PUT/DELETE | `/__admin/mockhub/api/users/{id}` | update / delete a user; `POST …/password` resets it |
 | GET/PUT | `/__admin/mockhub/api/sso` | single sign-on settings (admin); `POST /sso/test` checks the tenant |

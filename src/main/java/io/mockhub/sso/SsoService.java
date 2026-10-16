@@ -77,7 +77,8 @@ public final class SsoService {
         identity.name(),
         identity.email(),
         mapped.serverRole(),
-        mapped.memberships()));
+        mapped.memberships(),
+        mapped.teamMemberships()));
     if (user.disabled()) throw new SsoException("Your MockHub account is disabled. Ask an admin to enable it.");
     String oneTime = randomToken(32);
     issued.put(oneTime, new Issued(user.id(), clock.millis()));

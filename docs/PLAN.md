@@ -212,3 +212,19 @@ Checklist:
 - [x] UI: Administration → Backup & restore with organisation/project tree, preview and options
 - [x] Tests: unit, integration (backup one project, preview, restore as copy on another server), UI
 - [x] Docs + website
+
+### Phase 13 — Teams inside organisations, avatars
+- Organisation › teams › people. Teams own projects; roles are set per team, and organisation-wide roles still apply
+  to every team. Effective role on a project = max(organisation-wide, team role). Team owners manage their team.
+- Startup migration: every organisation gets a *General* team and projects without a team move there.
+- Users page: access tree to set organisation-wide and per-team roles when creating or editing a user.
+- Entra group mappings can target a team; backups carry teams and restore can place projects in a chosen team.
+- UI: Teams section and team pages, team picker for projects, team filter and column on the dashboard, sidebar
+  grouped by team, generated SVG avatars for people and marks for teams.
+
+Checklist:
+- [x] Backend: `Team`, `TeamService`, `TeamMembership`, `TeamChoice`, `TeamController`, team-aware `AccessPolicy`
+- [x] Users, SSO mapping, backup and examples aware of teams; migration on startup
+- [x] UI: team pages, access editor, avatars, grouping and filters
+- [x] Tests: unit, integration (`TeamsIntegrationTest`), UI
+- [x] Docs, tutorial and website

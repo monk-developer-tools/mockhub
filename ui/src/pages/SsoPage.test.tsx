@@ -15,6 +15,7 @@ vi.mock('../api/client', () => ({
   api: {
     sso: () => Promise.resolve(settings),
     orgs: () => Promise.resolve([{ id: 'o1', name: 'QA' }]),
+    teams: () => Promise.resolve([{ id: 't1', orgId: 'o1', name: 'Checkout', slug: 'checkout' }]),
     saveSso: (body: Partial<SsoSettings>) => {
       saved.push(body);
       return Promise.resolve({ ...settings, ...body, active: true, clientSecretSet: true });
@@ -47,6 +48,7 @@ describe('SsoPage', () => {
     await userEvent.type(screen.getByLabelText(/Allowed e-mail domains/), 'contoso.com, @fabrikam.com');
     await userEvent.click(screen.getByRole('button', { name: 'Add mapping' }));
     await userEvent.type(screen.getByLabelText('Group object ID or app role'), 'g-qa');
+    await userEvent.selectOptions(screen.getByLabelText('Gives access to'), 'team:t1');
     await userEvent.click(screen.getByLabelText('Enabled'));
     await userEvent.click(screen.getByRole('button', { name: 'Save settings' }));
 
@@ -58,7 +60,7 @@ describe('SsoPage', () => {
       clientId: 'client-1',
       clientSecret: 's3cret',
       allowedDomains: ['contoso.com', '@fabrikam.com'],
-      roleMappings: [{ claim: 'g-qa', orgId: 'o1', role: 'editor' }],
+      roleMappings: [{ claim: 'g-qa', orgId: 'o1', teamId: 't1', role: 'editor' }],
     });
     expect(await screen.findByText('On')).toBeInTheDocument();
   });

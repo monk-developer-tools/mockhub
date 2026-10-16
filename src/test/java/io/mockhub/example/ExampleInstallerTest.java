@@ -35,7 +35,7 @@ class ExampleInstallerTest {
   @Test
   void installsAnExampleAsANewProject() {
     // When
-    Project project = installer.install("rest-basics", "org1");
+    Project project = installer.install("rest-basics", "org1", "team1");
 
     // Then
     assertThat(project.slug()).isEqualTo("example-petstore");
@@ -48,7 +48,7 @@ class ExampleInstallerTest {
     projects.create(tree("{'orgId':'org1','name':'taken','slug':'example-petstore'}"));
 
     // When
-    Project project = installer.install("rest-basics", "org1");
+    Project project = installer.install("rest-basics", "org1", "team1");
 
     // Then
     assertThat(project.slug()).isEqualTo("example-petstore-2");
@@ -57,7 +57,7 @@ class ExampleInstallerTest {
   @Test
   void runsTheExamplesImportsBeforeItsOwnStubs() {
     // When
-    installer.install("soap-calculator", "org1");
+    installer.install("soap-calculator", "org1", "team1");
 
     // Then
     assertThat(gateway.findAll()).hasSize(6).allSatisfy(s -> assertThat(StubMetadata.isSoap(s)).isTrue());

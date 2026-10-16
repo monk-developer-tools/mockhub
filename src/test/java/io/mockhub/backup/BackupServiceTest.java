@@ -12,9 +12,12 @@ import io.mockhub.org.OrganizationService;
 import io.mockhub.project.Project;
 import io.mockhub.project.ProjectService;
 import io.mockhub.stub.StubService;
+import io.mockhub.team.Team;
+import io.mockhub.team.TeamService;
 import io.mockhub.support.FakeStubGateway;
 import io.mockhub.support.InMemoryOrganizationRepository;
 import io.mockhub.support.InMemoryProjectRepository;
+import io.mockhub.support.InMemoryTeamRepository;
 import io.mockhub.support.MutableClock;
 import java.time.Instant;
 import java.util.List;
@@ -31,6 +34,7 @@ class BackupServiceTest {
   private static final class Server {
     final FakeStubGateway gateway = new FakeStubGateway();
     final OrganizationService orgs;
+    final TeamService teams;
     final ProjectService projects;
     final StubService stubs;
     final BackupService backups;
@@ -40,8 +44,9 @@ class BackupServiceTest {
       stubs = new StubService(gateway, ref::get);
       projects = new ProjectService(new InMemoryProjectRepository(), List.of(stubs), clock);
       ref.set(projects);
-      orgs = new OrganizationService(new InMemoryOrganizationRepository(), List.of(projects), clock);
-      backups = new BackupService(orgs, projects, gateway, clock);
+      teams = new TeamService(new InMemoryTeamRepository(), List.of(), clock);
+      orgs = new OrganizationService(new InMemoryOrganizationRepository(), List.of(projects, teams), clock);
+      backups = new BackupService(orgs, teams, projects, gateway, clock);
     }
 
     Organization org(String name) {
@@ -49,7 +54,8 @@ class BackupServiceTest {
     }
 
     Project project(Organization org, String slug, String... paths) {
-      Project p = projects.create(tree("{'orgId':'" + org.id() + "','name':'" + slug + "','slug':'" + slug + "'}"));
+      Team team = teams.ensureDefault(org.id());
+      Project p = projects.create(tree("{'orgId':'" + org.id() + "','teamId':'" + team.id() + "','name':'" + slug + "','slug':'" + slug + "'}"));
       for (String path : paths) stubs.create(p.id(), json("{'request':{'method':'GET','urlPath':'" + path + "'},'response':{'status':200}}"));
       return p;
     }
@@ -184,6 +190,32 @@ class BackupServiceTest {
     assertThat(copy.slug()).isEqualTo("pay-by-bank-2");
     assertThat(source.urls(copy.id())).containsExactly("/pay-by-bank-2/consents", "/pay-by-bank-2/payments");
     assertThat(source.urls(payByBank.id())).containsExactly("/pay-by-bank/consents", "/pay-by-bank/payments");
+  }
+
+  @Test
+  void carriesTeamsAcrossAndPlacesProjectsInAChosenTeam() {
+    // Given
+    Team checkout = source.teams.create(payments.id(), tree("{'name':'Checkout'}"));
+    Project pos = source.projects.create(tree("{'orgId':'" + payments.id() + "','teamId':'" + checkout.id() + "','name':'POS','slug':'pos'}"));
+    JsonNode file = source.backups.export(BackupSelection.of(Set.of(), Set.of(pos.id())));
+    Server target = new Server(clock);
+    Organization other = target.org("Other");
+    Team landing = target.teams.create(other.id(), tree("{'name':'Landing'}"));
+
+    // When
+    target.backups.restore(file, RestoreOptions.everything());
+    Server third = new Server(clock);
+    Organization elsewhere = third.org("Elsewhere");
+    Team inbox = third.teams.create(elsewhere.id(), tree("{'name':'Inbox'}"));
+    third.backups.restore(file, new RestoreOptions(BackupSelection.all(), elsewhere.id(), inbox.id(), false));
+
+    // Then
+    assertThat(file.get("teams").findValuesAsText("name")).containsExactly("Checkout");
+    assertThat(target.teams.get(checkout.id()).name()).isEqualTo("Checkout");
+    assertThat(target.projects.get(pos.id()).teamId()).isEqualTo(checkout.id());
+    assertThat(target.backups.preview(file).at("/organizations/0/projects/0/teamName").asText()).isEqualTo("Checkout");
+    assertThat(third.projects.get(pos.id()).teamId()).isEqualTo(inbox.id());
+    assertThat(landing.orgId()).isEqualTo(other.id());
   }
 
   @Test

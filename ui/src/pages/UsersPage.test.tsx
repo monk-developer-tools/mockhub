@@ -11,6 +11,7 @@ const ana: UserRecord = {
   id: 'u1', username: 'ana@contoso.com', displayName: 'Ana Tester', email: 'ana@contoso.com', source: 'azure',
   serverRole: 'none', groupServerRole: 'none', effectiveServerRole: 'none', disabled: false, hasPassword: false,
   lastLoginAt: new Date().toISOString(), memberships: [], groupMemberships: [{ orgId: 'o1', role: 'editor', orgName: 'QA' }],
+  teamMemberships: [{ teamId: 't1', orgId: 'o1', role: 'owner', teamName: 'Checkout', orgName: 'QA' }], groupTeamMemberships: [],
 };
 vi.mock('../state/AppContext', () => ({
   useApp: () => ({ info: { authEnabled }, acceptToken, session: { id: 'me' }, refreshSession: vi.fn(), currentOrg: { id: 'o1' } }),
@@ -19,6 +20,7 @@ vi.mock('../api/client', () => ({
   api: {
     users: () => Promise.resolve([ana]),
     orgs: () => Promise.resolve([{ id: 'o1', name: 'QA' }]),
+    teams: () => Promise.resolve([{ id: 't1', orgId: 'o1', name: 'Checkout', slug: 'checkout' }, { id: 't2', orgId: 'o1', name: 'Search', slug: 'search' }]),
     createUser: (body: Record<string, unknown>) => {
       created.push(body);
       return Promise.resolve({ ...ana, id: 'u2', token: 'tok' });
@@ -43,9 +45,10 @@ describe('UsersPage', () => {
     expect(screen.getByText('Entra ID')).toBeInTheDocument();
     expect(screen.getByText('QA')).toBeInTheDocument();
     expect(screen.getByText('Editor')).toBeInTheDocument();
+    expect(screen.getByText(/QA › Checkout/)).toBeInTheDocument();
   });
 
-  it('creates a local user straight into the current organisation', async () => {
+  it('creates a local user with an organisation role and a team role', async () => {
     // Given
     renderWithShell(<UsersPage />);
     await userEvent.click(await screen.findByRole('button', { name: 'New user' }));
@@ -53,11 +56,16 @@ describe('UsersPage', () => {
     // When
     await userEvent.type(screen.getByLabelText('Username'), 'bob');
     await userEvent.type(screen.getByLabelText(/Temporary password/), 'longenough');
+    await userEvent.selectOptions(await screen.findByLabelText('Organisation-wide role in QA'), 'viewer');
+    await userEvent.selectOptions(screen.getByLabelText('Role in team Search'), 'editor');
     await userEvent.click(screen.getByRole('button', { name: 'Create user' }));
 
     // Then
     await waitFor(() => expect(created).toHaveLength(1));
-    expect(created[0]).toMatchObject({ username: 'bob', password: 'longenough', serverRole: 'none', memberships: [{ orgId: 'o1', role: 'editor' }] });
+    expect(created[0]).toMatchObject({ username: 'bob', password: 'longenough', serverRole: 'none',
+      memberships: [{ orgId: 'o1', role: 'viewer' }],
+      teamMemberships: [{ teamId: 't2', role: 'editor' }],
+    });
   });
 
   it('turns sign-in on by creating the first admin', async () => {

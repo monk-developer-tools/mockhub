@@ -13,6 +13,8 @@ import io.mockhub.org.OrganizationService;
 import io.mockhub.project.Project;
 import io.mockhub.project.ProjectService;
 import io.mockhub.stub.StubGateway;
+import io.mockhub.team.Team;
+import io.mockhub.team.TeamService;
 import io.mockhub.stub.StubMetadata;
 import io.mockhub.stub.StubPaths;
 import java.time.Clock;
@@ -36,12 +38,14 @@ public final class BackupService {
   public static final int VERSION = 2;
 
   private final OrganizationService orgs;
+  private final TeamService teams;
   private final ProjectService projects;
   private final StubGateway gateway;
   private final Clock clock;
 
-  public BackupService(OrganizationService orgs, ProjectService projects, StubGateway gateway, Clock clock) {
+  public BackupService(OrganizationService orgs, TeamService teams, ProjectService projects, StubGateway gateway, Clock clock) {
     this.orgs = orgs;
+    this.teams = teams;
     this.projects = projects;
     this.gateway = gateway;
     this.clock = clock;
@@ -51,7 +55,11 @@ public final class BackupService {
 
   public record Result(int organizations, int projects, int stubs, List<Renamed> renamed) {}
 
-  private record Contents(List<Organization> organizations, List<Project> projects, List<ObjectNode> mappings) {
+  private record Contents(List<Organization> organizations, List<Team> teams, List<Project> projects, List<ObjectNode> mappings) {
+    Optional<Team> team(String id) {
+      return teams.stream().filter(t -> t.id().equals(id)).findFirst();
+    }
+
     List<ObjectNode> mappingsOf(String projectId) {
       return mappings.stream().filter(m -> projectId.equals(projectIdOf(m))).toList();
     }
@@ -67,11 +75,17 @@ public final class BackupService {
       throw ApiException.notFound("The selected organisations and projects");
     }
     Set<String> projectIds = chosen.stream().map(Project::id).collect(Collectors.toSet());
+    Set<String> teamIds = chosen.stream().map(Project::teamId).filter(Objects::nonNull).collect(Collectors.toSet());
+    Set<String> wholeOrgs = new HashSet<>(selection.organizationIds());
+    List<Team> teamList = teams.findAll().stream()
+        .filter(t -> selection.everything() || teamIds.contains(t.id()) || wholeOrgs.contains(t.orgId()))
+        .toList();
 
     ObjectNode out = Jsons.object();
     out.put("format", FORMAT).put("version", VERSION).put("mockhubVersion", Main.VERSION)
         .put("createdAt", Instant.now(clock).toString()).put("scope", selection.everything() ? "full" : "selection");
     out.set("organizations", Jsons.MAPPER.valueToTree(orgList));
+    out.set("teams", Jsons.MAPPER.valueToTree(teamList));
     out.set("projects", Jsons.MAPPER.valueToTree(chosen));
     ArrayNode mappings = out.putArray("mappings");
     gateway.findAll().stream()
@@ -113,7 +127,8 @@ public final class BackupService {
           .sorted(Comparator.comparing((Project p) -> p.name().toLowerCase())).toList();
       for (Project p : inOrg) {
         ObjectNode pn = list.addObject().put("id", p.id()).put("name", p.name()).put("slug", p.slug())
-            .put("stubCount", c.mappingsOf(p.id()).size());
+            .put("stubCount", c.mappingsOf(p.id()).size())
+            .put("teamName", c.team(p.teamId()).map(Team::name).orElse(""));
         boolean exists = projects.find(p.id()).isPresent();
         Optional<Project> holder = projectWithSlug(p.slug());
         boolean slugTaken = holder.isPresent() && !holder.get().id().equals(p.id());
@@ -132,6 +147,9 @@ public final class BackupService {
     if (selection.isEmpty()) throw ApiException.badRequest("Choose at least one project to restore");
     String target = options.targetOrgId();
     if (target != null && !orgs.exists(target)) throw ApiException.notFound("Organisation " + target);
+    String targetTeam = target == null ? null
+        : options.targetTeamId() == null || options.targetTeamId().isBlank() ? teams.ensureDefault(target).id()
+        : teams.getInOrg(target, options.targetTeamId()).id();
 
     List<Project> chosen = selection.pick(c.projects());
     int orgCount = 0;
@@ -145,19 +163,32 @@ public final class BackupService {
       }
     }
     String fallbackOrg = target != null ? target : orgs.ensureDefault().id();
+    Set<String> restoredTeams = new HashSet<>();
+    if (target == null) {
+      Set<String> neededTeams = chosen.stream().map(Project::teamId).filter(Objects::nonNull).collect(Collectors.toSet());
+      for (Team t : c.teams()) {
+        if (!neededTeams.contains(t.id()) && !(selection.everything() || selection.organizationIds().contains(t.orgId()))) continue;
+        if (!orgs.exists(t.orgId())) continue;
+        teams.restore(t);
+        restoredTeams.add(t.id());
+      }
+    }
 
     List<Renamed> renamed = new ArrayList<>();
     int stubCount = 0;
     for (Project p : chosen) {
       String id = options.asCopy() ? UUID.randomUUID().toString().substring(0, 8) : p.id();
       String orgId = target != null ? target : orgs.exists(p.orgId()) ? p.orgId() : fallbackOrg;
+      String teamId = targetTeam != null ? targetTeam
+          : restoredTeams.contains(p.teamId()) || teams.find(p.teamId()).filter(t -> t.orgId().equals(orgId)).isPresent() ? p.teamId()
+          : teams.ensureDefault(orgId).id();
       Optional<Project> holder = projectWithSlug(p.slug());
       String slug = holder.isEmpty() || holder.get().id().equals(id) ? p.slug() : projects.availableSlug(p.slug());
       if (!slug.equals(p.slug())) renamed.add(new Renamed(p.name(), p.basePath(), "/" + slug));
       if (!options.asCopy()) removeStubsOf(id);
       String now = Instant.now(clock).toString();
       Project saved = new Project(id, p.name(), slug, p.description(), p.color(),
-          options.asCopy() ? now : p.createdAt(), now, orgId);
+          options.asCopy() ? now : p.createdAt(), now, orgId, teamId);
       projects.restore(List.of(saved));
       for (ObjectNode m : c.mappingsOf(p.id())) {
         upsert(rebase(m, p, saved, options.asCopy()));
@@ -173,6 +204,7 @@ public final class BackupService {
       }
     }
     projects.assignOrphans(orgs.ensureDefault().id());
+    projects.assignTeams(org -> teams.ensureDefault(org).id());
     return new Result(orgCount, chosen.size(), stubCount, renamed);
   }
 
@@ -184,11 +216,13 @@ public final class BackupService {
     List<Organization> orgList = Jsons.MAPPER.convertValue(file.path("organizations").isArray() ? file.get("organizations") : Jsons.MAPPER.createArrayNode(),
         new TypeReference<List<Organization>>() {});
     List<Project> projectList = Jsons.MAPPER.convertValue(file.get("projects"), new TypeReference<List<Project>>() {});
+    List<Team> teamList = Jsons.MAPPER.convertValue(file.path("teams").isArray() ? file.get("teams") : Jsons.MAPPER.createArrayNode(),
+        new TypeReference<List<Team>>() {});
     List<ObjectNode> mappings = new ArrayList<>();
     file.path("mappings").forEach(m -> {
       if (m.isObject()) mappings.add((ObjectNode) m);
     });
-    return new Contents(orgList, projectList.stream().filter(p -> p != null && p.id() != null && p.slug() != null).toList(), mappings);
+    return new Contents(orgList, teamList, projectList.stream().filter(p -> p != null && p.id() != null && p.slug() != null).toList(), mappings);
   }
 
   private Optional<Project> projectWithSlug(String slug) {

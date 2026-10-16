@@ -6,6 +6,8 @@ import io.mockhub.api.ApiException;
 import io.mockhub.auth.Role;
 import io.mockhub.org.Organization;
 import io.mockhub.org.OrganizationListener;
+import io.mockhub.team.Team;
+import io.mockhub.team.TeamListener;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -15,7 +17,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
-public final class UserService implements OrganizationListener {
+public final class UserService implements OrganizationListener, TeamListener {
   private static final Pattern USERNAME = Pattern.compile("[A-Za-z0-9._@+-]{2,128}");
   private static final int MIN_PASSWORD = 8;
 
@@ -75,8 +77,14 @@ public final class UserService implements OrganizationListener {
   public List<User> membersOf(String orgId) {
     return findAll().stream()
         .filter(u -> u.memberships().stream().anyMatch(m -> m.orgId().equals(orgId))
-            || u.groupMemberships().stream().anyMatch(m -> m.orgId().equals(orgId)))
+            || u.groupMemberships().stream().anyMatch(m -> m.orgId().equals(orgId))
+            || u.teamMemberships().stream().anyMatch(m -> m.orgId().equals(orgId))
+            || u.groupTeamMemberships().stream().anyMatch(m -> m.orgId().equals(orgId)))
         .toList();
+  }
+
+  public List<User> teamMembersOf(String teamId) {
+    return findAll().stream().filter(u -> u.inTeam(teamId)).toList();
   }
 
   public User create(JsonNode body) {
@@ -88,10 +96,6 @@ public final class UserService implements OrganizationListener {
     String password = body.path("password").asText("");
     checkPassword(password);
     String now = now();
-    List<Membership> memberships = new ArrayList<>();
-    for (JsonNode m : body.path("memberships")) {
-      memberships.add(new Membership(m.path("orgId").asText(), Role.orgRole(m.path("role").asText())));
-    }
     User user = new User.Builder()
         .id(UUID.randomUUID().toString())
         .username(username)
@@ -100,7 +104,8 @@ public final class UserService implements OrganizationListener {
         .source(UserSource.LOCAL)
         .passwordHash(hasher.hash(password))
         .serverRole(Role.serverRole(body.path("serverRole").asText("none")))
-        .memberships(memberships)
+        .memberships(memberships(body))
+        .teamMemberships(teamMemberships(body))
         .createdAt(now)
         .build();
     repository.save(user);
@@ -113,6 +118,8 @@ public final class UserService implements OrganizationListener {
     if (body.hasNonNull("displayName")) b.displayName(body.get("displayName").asText().trim());
     if (body.hasNonNull("email")) b.email(body.get("email").asText().trim());
     if (body.hasNonNull("serverRole")) b.serverRole(Role.serverRole(body.get("serverRole").asText()));
+    if (body.path("memberships").isArray()) b.memberships(memberships(body));
+    if (body.path("teamMemberships").isArray()) b.teamMemberships(teamMemberships(body));
     if (body.hasNonNull("disabled")) {
       boolean disabled = body.get("disabled").asBoolean();
       b.disabled(disabled);
@@ -162,6 +169,25 @@ public final class UserService implements OrganizationListener {
     return after;
   }
 
+  public User setTeamMembership(String userId, String teamId, String orgId, Role role) {
+    User user = editable(userId);
+    List<TeamMembership> teams = new ArrayList<>(user.teamMemberships());
+    teams.removeIf(m -> m.teamId().equals(teamId));
+    teams.add(new TeamMembership(teamId, orgId, role));
+    User after = user.toBuilder().teamMemberships(teams).build();
+    repository.save(after);
+    return after;
+  }
+
+  public User removeTeamMembership(String userId, String teamId) {
+    User user = editable(userId);
+    List<TeamMembership> teams = new ArrayList<>(user.teamMemberships());
+    teams.removeIf(m -> m.teamId().equals(teamId));
+    User after = user.toBuilder().teamMemberships(teams).build();
+    repository.save(after);
+    return after;
+  }
+
   public User upsertExternal(ExternalProfile profile) {
     String now = now();
     Optional<User> existing = repository.findAll().stream()
@@ -179,6 +205,7 @@ public final class UserService implements OrganizationListener {
         .email(profile.email() == null ? "" : profile.email())
         .groupServerRole(profile.groupServerRole())
         .groupMemberships(profile.groupMemberships())
+        .groupTeamMemberships(profile.groupTeamMemberships() == null ? List.of() : profile.groupTeamMemberships())
         .lastLoginAt(now)
         .build();
     repository.save(user);
@@ -191,16 +218,54 @@ public final class UserService implements OrganizationListener {
 
   @Override
   public void onOrganizationDeleted(Organization organization) {
+    String orgId = organization.id();
     for (User u : repository.findAll()) {
-      boolean member = u.memberships().stream().anyMatch(m -> m.orgId().equals(organization.id()))
-          || u.groupMemberships().stream().anyMatch(m -> m.orgId().equals(organization.id()));
-      if (!member) continue;
+      if (!u.belongsTo(orgId) && u.memberships().stream().noneMatch(m -> m.orgId().equals(orgId))) continue;
       List<Membership> manual = new ArrayList<>(u.memberships());
       List<Membership> group = new ArrayList<>(u.groupMemberships());
-      manual.removeIf(m -> m.orgId().equals(organization.id()));
-      group.removeIf(m -> m.orgId().equals(organization.id()));
-      repository.save(u.toBuilder().memberships(manual).groupMemberships(group).build());
+      List<TeamMembership> teams = new ArrayList<>(u.teamMemberships());
+      List<TeamMembership> groupTeams = new ArrayList<>(u.groupTeamMemberships());
+      manual.removeIf(m -> m.orgId().equals(orgId));
+      group.removeIf(m -> m.orgId().equals(orgId));
+      teams.removeIf(m -> m.orgId().equals(orgId));
+      groupTeams.removeIf(m -> m.orgId().equals(orgId));
+      repository.save(u.toBuilder().memberships(manual).groupMemberships(group).teamMemberships(teams).groupTeamMemberships(groupTeams).build());
     }
+  }
+
+  @Override
+  public void onTeamDeleted(Team team) {
+    for (User u : repository.findAll()) {
+      if (!u.inTeam(team.id())) continue;
+      List<TeamMembership> teams = new ArrayList<>(u.teamMemberships());
+      List<TeamMembership> groupTeams = new ArrayList<>(u.groupTeamMemberships());
+      teams.removeIf(m -> m.teamId().equals(team.id()));
+      groupTeams.removeIf(m -> m.teamId().equals(team.id()));
+      repository.save(u.toBuilder().teamMemberships(teams).groupTeamMemberships(groupTeams).build());
+    }
+  }
+
+  private static List<Membership> memberships(JsonNode body) {
+    List<Membership> list = new ArrayList<>();
+    for (JsonNode m : body.path("memberships")) {
+      String orgId = m.path("orgId").asText("");
+      if (orgId.isBlank()) continue;
+      list.removeIf(x -> x.orgId().equals(orgId));
+      list.add(new Membership(orgId, Role.orgRole(m.path("role").asText())));
+    }
+    return list;
+  }
+
+  private static List<TeamMembership> teamMemberships(JsonNode body) {
+    List<TeamMembership> list = new ArrayList<>();
+    for (JsonNode m : body.path("teamMemberships")) {
+      String teamId = m.path("teamId").asText("");
+      String orgId = m.path("orgId").asText("");
+      if (teamId.isBlank() || orgId.isBlank()) continue;
+      list.removeIf(x -> x.teamId().equals(teamId));
+      list.add(new TeamMembership(teamId, orgId, Role.teamRole(m.path("role").asText())));
+    }
+    return list;
   }
 
   private String availableUsername(String preferred) {

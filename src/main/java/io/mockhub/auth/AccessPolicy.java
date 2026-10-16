@@ -12,6 +12,7 @@ public final class AccessPolicy {
   private static final Set<String> ASK_ONLY = Set.of("/ai/chat", "/ai/jobs");
   private static final Pattern PROJECT = Pattern.compile("/projects/([^/]+)(/.*)?");
   private static final Pattern ORG = Pattern.compile("/orgs/([^/]+)(/.*)?");
+  private static final Pattern TEAM = Pattern.compile("/orgs/([^/]+)/teams/([^/]+)(/.*)?");
 
   private static final Set<String> PUBLIC_API =
       Set.of("/auth/info", "/auth/login", "/auth/sso/exchange");
@@ -22,10 +23,10 @@ public final class AccessPolicy {
   private static final Set<String> ADMIN_ONLY_NATIVE =
       Set.of("/shutdown", "/reset", "/settings", "/mappings/reset", "/mappings/save");
 
-  private final Function<String, Optional<String>> orgOfProject;
+  private final Function<String, Optional<ProjectScope>> scopeOfProject;
 
-  public AccessPolicy(Function<String, Optional<String>> orgOfProject) {
-    this.orgOfProject = orgOfProject;
+  public AccessPolicy(Function<String, Optional<ProjectScope>> scopeOfProject) {
+    this.scopeOfProject = scopeOfProject;
   }
 
   public record Decision(boolean allowed, String reason) {
@@ -61,16 +62,27 @@ public final class AccessPolicy {
 
     Matcher project = PROJECT.matcher(path);
     if (project.matches()) {
-      Optional<String> orgId = orgOfProject.apply(project.group(1));
-      if (orgId.isEmpty()) return Decision.allow();
+      Optional<ProjectScope> scope = scopeOfProject.apply(project.group(1));
+      if (scope.isEmpty()) return Decision.allow();
+      Role role = p.roleInTeam(scope.get().orgId(), scope.get().teamId());
       boolean askOnly = read || ASK_ONLY.contains(String.valueOf(project.group(2)));
-      return need(p.roleIn(orgId.get()), askOnly ? Role.VIEWER : Role.EDITOR, askOnly ? "view this project" : "change this project");
+      return need(role, askOnly ? Role.VIEWER : Role.EDITOR, askOnly ? "view this project" : "change this project");
+    }
+
+    Matcher team = TEAM.matcher(path);
+    if (team.matches()) {
+      String orgId = team.group(1);
+      if (read) return p.belongsTo(orgId) ? Decision.allow() : Decision.deny("You need to belong to this organisation to see its teams");
+      boolean manageTeam = RequestMethod.PUT.equals(method) || String.valueOf(team.group(3)).startsWith("/members");
+      Role role = manageTeam ? p.roleInTeam(orgId, team.group(2)) : p.roleIn(orgId);
+      return need(role, Role.OWNER, manageTeam ? "manage this team" : "delete teams");
     }
 
     Matcher org = ORG.matcher(path);
     if (org.matches()) {
-      Role role = p.roleIn(org.group(1));
-      return read ? need(role, Role.VIEWER, "view this organisation") : need(role, Role.OWNER, "manage this organisation");
+      String orgId = org.group(1);
+      if (read) return p.belongsTo(orgId) ? Decision.allow() : Decision.deny("You need to belong to this organisation to see it");
+      return need(p.roleIn(orgId), Role.OWNER, "manage this organisation");
     }
 
     if (path.equals("/users") && read) return need(p.highestRole(), Role.OWNER, "list users");

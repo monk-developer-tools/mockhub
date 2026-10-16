@@ -60,4 +60,21 @@ class RoleMapperTest {
     assertThat(RoleMapper.domainAllowed(s, identity("no-at-sign", List.of(), List.of()))).isFalse();
     assertThat(RoleMapper.domainAllowed(settings(List.of(), List.of()), identity("eve@fabrikam.com", List.of(), List.of()))).isTrue();
   }
+
+  @Test
+  void mapsGroupsToTeamsInsideKnownOrganisations() {
+    // Given
+    RoleMapper teamAware = new RoleMapper(Set.of("o1")::contains, team -> team.equals("t1") ? java.util.Optional.of("o1") : java.util.Optional.empty());
+    SsoSettings s = settings(List.of(), List.of(
+        new RoleMapping("g-checkout", "o1", Role.EDITOR, "t1"),
+        new RoleMapping("g-checkout-leads", "o1", Role.OWNER, "t1"),
+        new RoleMapping("g-gone", "o1", Role.EDITOR, "t-gone")));
+
+    // When
+    RoleMapper.Result result = teamAware.map(s, identity("ana@contoso.com", List.of("g-checkout", "g-checkout-leads", "g-gone"), List.of()));
+
+    // Then
+    assertThat(result.teamMemberships()).containsExactly(new io.mockhub.user.TeamMembership("t1", "o1", Role.OWNER));
+    assertThat(result.memberships()).containsExactly(new Membership("o1", Role.VIEWER));
+  }
 }

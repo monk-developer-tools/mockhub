@@ -12,6 +12,8 @@ import io.mockhub.auth.Role;
 import io.mockhub.org.Organization;
 import io.mockhub.org.OrganizationService;
 import io.mockhub.project.ProjectService;
+import io.mockhub.team.Team;
+import io.mockhub.team.TeamService;
 import io.mockhub.user.User;
 import io.mockhub.user.UserService;
 
@@ -20,12 +22,14 @@ public final class OrganizationController implements ApiController {
   private final ProjectService projects;
   private final UserService users;
   private final UserViews userViews;
+  private final TeamService teams;
 
-  public OrganizationController(OrganizationService orgs, ProjectService projects, UserService users, UserViews userViews) {
+  public OrganizationController(OrganizationService orgs, ProjectService projects, UserService users, UserViews userViews, TeamService teams) {
     this.orgs = orgs;
     this.projects = projects;
     this.users = users;
     this.userViews = userViews;
+    this.teams = teams;
   }
 
   @Override
@@ -33,10 +37,14 @@ public final class OrganizationController implements ApiController {
     r.get("/orgs", ctx -> {
       Principal p = ctx.principal();
       ArrayNode out = Jsons.MAPPER.createArrayNode();
-      orgs.findAll().stream().filter(o -> p.can(o.id(), Role.VIEWER)).forEach(o -> out.add(view(ctx, o)));
+      orgs.findAll().stream().filter(o -> p.belongsTo(o.id())).forEach(o -> out.add(view(ctx, o)));
       return out;
     });
-    r.post("/orgs", ctx -> Response.json(201, view(ctx, orgs.create(ctx.json()))));
+    r.post("/orgs", ctx -> {
+      Organization org = orgs.create(ctx.json());
+      teams.ensureDefault(org.id());
+      return Response.json(201, view(ctx, org));
+    });
     r.get("/orgs/{id}", ctx -> view(ctx, orgs.get(ctx.path("id"))));
     r.put("/orgs/{id}", ctx -> view(ctx, orgs.update(ctx.path("id"), ctx.json())));
     r.delete("/orgs/{id}", ctx -> {
@@ -53,6 +61,12 @@ public final class OrganizationController implements ApiController {
         n.put("groupRole", u.groupMemberships().stream().filter(m -> m.orgId().equals(orgId)).map(m -> m.role().id()).findFirst().orElse(""));
         n.put("effectiveRole", u.roleIn(orgId).id());
         n.put("disabled", u.disabled());
+        ArrayNode teamList = n.putArray("teams");
+        for (Team t : teams.findByOrg(orgId)) {
+          if (!u.inTeam(t.id())) continue;
+          teamList.addObject().put("id", t.id()).put("name", t.name())
+              .put("role", u.teamRole(t.id()).or(() -> u.groupTeamRole(t.id())).map(Role::id).orElse(""));
+        }
         out.add(n);
       }
       return out;
@@ -80,6 +94,7 @@ public final class OrganizationController implements ApiController {
   private ObjectNode view(Ctx ctx, Organization o) {
     ObjectNode node = Jsons.MAPPER.valueToTree(o);
     node.put("projectCount", projects.findByOrg(o.id()).size());
+    node.put("teamCount", teams.findByOrg(o.id()).size());
     node.put("memberCount", users.membersOf(o.id()).size());
     node.put("role", ctx.principal().roleIn(o.id()).id());
     return node;

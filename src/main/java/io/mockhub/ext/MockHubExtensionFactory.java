@@ -13,6 +13,7 @@ import io.mockhub.ai.JdkLlmTransport;
 import io.mockhub.controller.AiController;
 import io.mockhub.backup.BackupService;
 import io.mockhub.auth.AccessPolicy;
+import io.mockhub.auth.ProjectScope;
 import io.mockhub.auth.AuthService;
 import io.mockhub.auth.Principal;
 import io.mockhub.auth.TokenService;
@@ -21,7 +22,6 @@ import io.mockhub.controller.BackupController;
 import io.mockhub.controller.BaseUrls;
 import io.mockhub.controller.ExampleController;
 import io.mockhub.controller.ImportExportController;
-import io.mockhub.controller.OrgChoice;
 import io.mockhub.controller.OrganizationController;
 import io.mockhub.controller.ProjectController;
 import io.mockhub.controller.ProjectViews;
@@ -29,6 +29,8 @@ import io.mockhub.controller.RequestLogController;
 import io.mockhub.controller.SsoController;
 import io.mockhub.controller.StubController;
 import io.mockhub.controller.SystemController;
+import io.mockhub.controller.TeamChoice;
+import io.mockhub.controller.TeamController;
 import io.mockhub.controller.UserController;
 import io.mockhub.controller.UserViews;
 import io.mockhub.example.ExampleCatalog;
@@ -45,7 +47,6 @@ import io.mockhub.journal.RequestLogService;
 import io.mockhub.org.FileOrganizationRepository;
 import io.mockhub.org.OrganizationService;
 import io.mockhub.project.FileProjectRepository;
-import io.mockhub.project.Project;
 import io.mockhub.project.ProjectService;
 import io.mockhub.sso.AzureEntraProvider;
 import io.mockhub.sso.JdkHttpTransport;
@@ -56,6 +57,9 @@ import io.mockhub.sso.SsoSettingsStore;
 import io.mockhub.stub.StubGateway;
 import io.mockhub.stub.StubService;
 import io.mockhub.stub.WireMockStubGateway;
+import io.mockhub.team.FileTeamRepository;
+import io.mockhub.team.Team;
+import io.mockhub.team.TeamService;
 import io.mockhub.user.FileUserRepository;
 import io.mockhub.user.PasswordHasher;
 import io.mockhub.user.UserService;
@@ -83,24 +87,27 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     ProjectService projects = new ProjectService(new FileProjectRepository(dataDir), List.of(stubs), clock);
     projectsRef.set(projects);
     UserService users = new UserService(new FileUserRepository(dataDir), config.users, new PasswordHasher(), clock);
-    OrganizationService orgs = new OrganizationService(new FileOrganizationRepository(dataDir), List.of(projects, users), clock);
+    TeamService teams = new TeamService(new FileTeamRepository(dataDir), List.of(users), clock);
+    OrganizationService orgs = new OrganizationService(new FileOrganizationRepository(dataDir), List.of(projects, teams, users), clock);
     projects.assignOrphans(orgs.ensureDefault().id());
+    orgs.findAll().forEach(o -> teams.ensureDefault(o.id()));
+    projects.assignTeams(orgId -> teams.ensureDefault(orgId).id());
     RequestLogService requestLog = new RequestLogService(gateway, projects);
 
     SsoSettingsStore ssoSettings = new SsoSettingsStore(dataDir, config.ssoClientSecret);
     JdkHttpTransport http = new JdkHttpTransport();
     SsoService sso = new SsoService(
         List.of(new AzureEntraProvider(http, new JwtVerifier(http, clock), config.ssoAuthority)),
-        ssoSettings, users, new RoleMapper(orgs::exists), clock);
+        ssoSettings, users, new RoleMapper(orgs::exists, id -> teams.find(id).map(Team::orgId)), clock);
     AuthService auth = new AuthService(users, TokenService.fromDataDir(dataDir, clock), ssoSettings::active);
-    AccessPolicy policy = new AccessPolicy(id -> projects.find(id).map(Project::orgId));
+    AccessPolicy policy = new AccessPolicy(id -> projects.find(id).map(p -> new ProjectScope(p.orgId(), p.teamId())));
 
     BaseUrls urls = new BaseUrls(config.publicUrl);
     ExporterRegistry exporters = new ExporterRegistry(List.of(new PostmanExporter(), new BrunoExporter(), new WireMockMappingsExporter()));
     ImporterRegistry importers = new ImporterRegistry(List.of(new WireMockJsonImporter(), new WsdlStubImporter(), new OpenApiImporter()));
     ProjectViews views = new ProjectViews(stubs, requestLog, urls, clock);
-    UserViews userViews = new UserViews(orgs);
-    OrgChoice orgChoice = new OrgChoice(orgs);
+    UserViews userViews = new UserViews(orgs, teams);
+    TeamChoice teamChoice = new TeamChoice(orgs, teams);
     ExampleCatalog examples = ExampleCatalog.fromClasspath();
     AiSettingsStore aiSettings = new AiSettingsStore(dataDir, config.aiApiKey);
     AiProviders aiProviders = AiProviders.defaults();
@@ -120,15 +127,16 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
             List.of(
                 new SystemController(auth, urls, dataDir.toString(), config.journalMaxEntries),
                 new AuthController(auth, users, userViews, sso, ssoSettings, urls, config.loginNote),
-                new OrganizationController(orgs, projects, users, userViews),
-                new UserController(users, userViews, auth),
-                new SsoController(ssoSettings, sso, orgs, urls),
-                new ProjectController(projects, views, orgChoice),
-                new ExampleController(examples, new ExampleInstaller(examples, projects, stubs, importers), views, orgChoice),
+                new OrganizationController(orgs, projects, users, userViews, teams),
+                new TeamController(orgs, teams, projects, users, userViews),
+                new UserController(users, userViews, auth, orgs, teams),
+                new SsoController(ssoSettings, sso, orgs, teams, urls),
+                new ProjectController(projects, views, teamChoice),
+                new ExampleController(examples, new ExampleInstaller(examples, projects, stubs, importers), views, teamChoice),
                 new StubController(stubs),
                 new RequestLogController(requestLog),
                 new ImportExportController(projects, stubs, exporters, importers, urls),
                 new AiController(aiSettings, aiProviders, chat, assistant, assistantJobs, projects, urls),
-                new BackupController(new BackupService(orgs, projects, gateway, clock)))));
+                new BackupController(new BackupService(orgs, teams, projects, gateway, clock)))));
   }
 }

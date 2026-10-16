@@ -36,7 +36,9 @@ public final class BackupController implements ApiController {
           ? BackupSelection.all()
           : BackupSelection.of(ids(body.path("organizations")), ids(body.path("projects")));
       String target = body.path("targetOrgId").asText("");
-      RestoreOptions options = new RestoreOptions(selection, target.isBlank() ? null : target, "copy".equals(body.path("mode").asText()));
+      String targetTeam = body.path("targetTeamId").asText("");
+      RestoreOptions options = new RestoreOptions(selection, target.isBlank() ? null : target, targetTeam.isBlank() ? null : targetTeam,
+          "copy".equals(body.path("mode").asText()));
       return Jsons.MAPPER.valueToTree(backups.restore(body.get("backup"), options));
     });
   }

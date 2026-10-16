@@ -142,12 +142,13 @@ function BackupPanel() {
 }
 
 function RestorePanel() {
-  const { orgs, refreshProjects, refreshSession } = useApp();
+  const { orgs, refreshProjects, refreshSession, teamsIn } = useApp();
   const toast = useToast();
   const [file, setFile] = useState<{ text: string; name: string } | null>(null);
   const [preview, setPreview] = useState<RestorePreview | null>(null);
   const [picked, setPicked] = useState<Picked>(NOTHING);
   const [target, setTarget] = useState('');
+  const [targetTeam, setTargetTeam] = useState('');
   const [mode, setMode] = useState<'replace' | 'copy'>('replace');
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<RestoreResult | null>(null);
@@ -183,7 +184,12 @@ function RestorePanel() {
     if (!file) return;
     setBusy(true);
     try {
-      const r = await api.restore(file.text, { ...toSelection(picked, tree), targetOrgId: target || undefined, mode });
+      const r = await api.restore(file.text, {
+        ...toSelection(picked, tree),
+        targetOrgId: target || undefined,
+        targetTeamId: target && targetTeam ? targetTeam : undefined,
+        mode,
+      });
       setResult(r);
       reset();
       toast.notify(`Restored ${plural(r.projects, 'project')} and ${plural(r.stubs, 'stub')}`);
@@ -246,6 +252,7 @@ function RestorePanel() {
                           {p.name}
                           <code className="muted">/{p.slug}</code>
                         </label>
+                        {p.teamName && !target && <span className="tag">{p.teamName}</span>}
                         <span className="muted small">{plural(p.stubCount, 'stub')}</span>
                         <ProjectFate project={p} mode={mode} />
                       </li>
@@ -259,13 +266,24 @@ function RestorePanel() {
           <div className="panel-body stack restore-options">
             <label className="field">
               <span>Restore into</span>
-              <select value={target} onChange={(e) => setTarget(e.target.value)}>
-                <option value="">The organisations in the backup</option>
+              <select value={target} onChange={(e) => { setTarget(e.target.value); setTargetTeam(''); }}>
+                <option value="">The organisations and teams in the backup</option>
                 {orgs.map((o) => (
                   <option key={o.id} value={o.id}>{o.name}</option>
                 ))}
               </select>
             </label>
+            {target && (
+              <label className="field">
+                <span>Team</span>
+                <select value={targetTeam} onChange={(e) => setTargetTeam(e.target.value)}>
+                  <option value="">The organisation's default team</option>
+                  {teamsIn(target).map((t) => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+              </label>
+            )}
             <div className="field">
               <span id="mode-label">When a project already exists</span>
               <div className="segmented" role="group" aria-labelledby="mode-label">

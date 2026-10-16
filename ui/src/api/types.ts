@@ -15,6 +15,7 @@ export interface Project {
   lastRequestAt?: string;
   activity: number[];
   orgId: string;
+  teamId: string;
 }
 
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
@@ -60,6 +61,46 @@ export interface UserRecord extends UserSummary {
   lastLoginAt?: string;
   memberships: MembershipView[];
   groupMemberships: MembershipView[];
+  teamMemberships: TeamMembershipView[];
+  groupTeamMemberships: TeamMembershipView[];
+}
+
+export interface TeamMembershipView {
+  teamId: string;
+  orgId: string;
+  role: OrgRole;
+  teamName?: string;
+  orgName?: string;
+}
+
+export interface TeamAccess {
+  id: string;
+  name: string;
+  slug: string;
+  role: Role;
+  member: boolean;
+}
+
+export interface Team {
+  id: string;
+  orgId: string;
+  name: string;
+  slug: string;
+  description: string;
+  createdAt: string;
+  updatedAt: string;
+  projectCount: number;
+  memberCount: number;
+  role: Role;
+}
+
+export interface TeamMember extends UserSummary {
+  role: OrgRole | '';
+  groupRole: OrgRole | '';
+  orgRole: Role | '';
+  effectiveRole: Role;
+  member: boolean;
+  disabled: boolean;
 }
 
 export interface OrgAccess {
@@ -67,6 +108,7 @@ export interface OrgAccess {
   name: string;
   slug: string;
   role: Role;
+  teams: TeamAccess[];
 }
 
 export interface Session extends UserRecord {
@@ -85,6 +127,7 @@ export interface Organization {
   updatedAt: string;
   projectCount: number;
   memberCount: number;
+  teamCount: number;
   role: Role;
 }
 
@@ -93,6 +136,7 @@ export interface Member extends UserSummary {
   groupRole: OrgRole | '';
   effectiveRole: Role;
   disabled: boolean;
+  teams: { id: string; name: string; role: OrgRole | '' }[];
 }
 
 export interface AuthInfo {
@@ -111,6 +155,7 @@ export interface LoginResult {
 export interface RoleMapping {
   claim: string;
   orgId: string;
+  teamId?: string;
   role: Role;
 }
 
@@ -266,6 +311,7 @@ export interface PreviewProject {
   stubCount: number;
   status: 'new' | 'replace' | 'slug-taken';
   newSlug?: string;
+  teamName?: string;
 }
 
 export interface PreviewOrg {
@@ -286,6 +332,7 @@ export interface RestorePreview {
 
 export interface RestoreRequest extends BackupSelection {
   targetOrgId?: string;
+  targetTeamId?: string;
   mode: 'replace' | 'copy';
 }
 

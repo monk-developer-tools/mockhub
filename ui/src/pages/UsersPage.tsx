@@ -1,7 +1,9 @@
 import { MagnifyingGlass, Plus, ShieldCheck, Trash } from '@phosphor-icons/react';
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { api } from '../api/client';
-import type { Organization, OrgRole, ServerRole, UserRecord, UserSource } from '../api/types';
+import type { ServerRole, UserRecord, UserSource } from '../api/types';
+import { AccessEditor, NO_ACCESS, summarise, type Access, type OrgWithTeams } from '../components/AccessEditor';
+import { PersonCell } from '../components/Avatar';
 import { Modal } from '../components/Modal';
 import { RoleBadge } from '../components/RoleBadge';
 import { Skeleton } from '../components/Skeleton';
@@ -27,7 +29,7 @@ export function UsersPage() {
   const { info, acceptToken, session, refreshSession } = useApp();
   const toast = useToast();
   const [users, setUsers] = useState<UserRecord[] | null>(null);
-  const [orgs, setOrgs] = useState<Organization[]>([]);
+  const [tree, setTree] = useState<OrgWithTeams[]>([]);
   const [query, setQuery] = useState('');
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<UserRecord | null>(null);
@@ -35,8 +37,9 @@ export function UsersPage() {
   const load = useCallback(async () => {
     try {
       const [u, o] = await Promise.all([api.users(), api.orgs()]);
+      const teams = await Promise.all(o.map((org) => api.teams(org.id)));
       setUsers(u);
-      setOrgs(o);
+      setTree(o.map((org, i) => ({ org, teams: teams[i] })));
     } catch (e) {
       toast.fail(e);
     }
@@ -75,7 +78,7 @@ export function UsersPage() {
       <div className="page-header">
         <div>
           <h1>Users</h1>
-          <p className="muted">People who can sign in to MockHub. Organisation owners decide who joins their organisation.</p>
+          <p className="muted">People who can sign in to MockHub, and what they can reach: whole organisations, or single teams inside them.</p>
         </div>
         <button className="btn primary" onClick={() => setCreating(true)}><Plus size={15} /> New user</button>
       </div>
@@ -95,7 +98,7 @@ export function UsersPage() {
               <tr>
                 <th>Person</th>
                 <th>Server role</th>
-                <th>Organisations</th>
+                <th>Access</th>
                 <th>Last sign-in</th>
               </tr>
             </thead>
@@ -103,9 +106,8 @@ export function UsersPage() {
               {filtered.map((u) => (
                 <tr key={u.id} className="clickable" onClick={() => setEditing(u)}>
                   <td>
-                    <button className="person link-button" onClick={(e) => { e.stopPropagation(); setEditing(u); }}>
-                      <strong>{u.displayName || u.username}</strong>
-                      <span className="muted small">{u.email || u.username}</span>
+                    <button className="link-button person-button" onClick={(e) => { e.stopPropagation(); setEditing(u); }}>
+                      <PersonCell name={u.displayName || u.username} detail={u.email || u.username} seed={u.id} />
                     </button>
                     <SourceTag source={u.source} />
                     {u.disabled && <span className="tag">disabled</span>}
@@ -116,7 +118,10 @@ export function UsersPage() {
                       {[...u.memberships, ...u.groupMemberships.filter((g) => !u.memberships.some((m) => m.orgId === g.orgId))].map((m) => (
                         <span key={m.orgId}>{m.orgName ?? m.orgId} <RoleBadge role={m.role} /></span>
                       ))}
-                      {u.memberships.length + u.groupMemberships.length === 0 && <span className="muted">none</span>}
+                      {[...u.teamMemberships, ...u.groupTeamMemberships.filter((g) => !u.teamMemberships.some((m) => m.teamId === g.teamId))].map((m) => (
+                        <span key={m.teamId}>{m.orgName ?? ''} › {m.teamName ?? m.teamId} <RoleBadge role={m.role} /></span>
+                      ))}
+                      {u.memberships.length + u.groupMemberships.length + u.teamMemberships.length + u.groupTeamMemberships.length === 0 && <span className="muted">none</span>}
                     </span>
                   </td>
                   <td className="muted num small">{u.lastLoginAt ? timeAgo(u.lastLoginAt) : 'never'}</td>
@@ -126,11 +131,11 @@ export function UsersPage() {
           </table>
         )}
       </div>
-      {creating && <NewUserDialog orgs={orgs} onClose={() => setCreating(false)} onCreated={() => { setCreating(false); afterChange(); }} />}
+      {creating && <NewUserDialog tree={tree} onClose={() => setCreating(false)} onCreated={() => { setCreating(false); afterChange(); }} />}
       {editing && (
         <EditUserDialog
           user={editing}
-          orgs={orgs}
+          tree={tree}
           isSelf={editing.id === session?.id}
           onClose={() => setEditing(null)}
           onChanged={(u) => { setEditing(u); afterChange(u); }}
@@ -182,23 +187,21 @@ function FirstAdmin({ onCreated }: { onCreated: (token: string) => void }) {
   );
 }
 
-function NewUserDialog({ orgs, onClose, onCreated }: { orgs: Organization[]; onClose: () => void; onCreated: () => void }) {
+function NewUserDialog({ tree, onClose, onCreated }: { tree: OrgWithTeams[]; onClose: () => void; onCreated: () => void }) {
   const toast = useToast();
-  const { currentOrg } = useApp();
   const [username, setUsername] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [serverRole, setServerRole] = useState<ServerRole>('none');
-  const [orgId, setOrgId] = useState(currentOrg?.id ?? '');
-  const [orgRole, setOrgRole] = useState<OrgRole>('editor');
+  const [access, setAccess] = useState<Access>(NO_ACCESS);
   const [busy, setBusy] = useState(false);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     setBusy(true);
     try {
-      await api.createUser({ username, displayName, email, password, serverRole, memberships: orgId ? [{ orgId, role: orgRole }] : [] });
+      await api.createUser({ username, displayName, email, password, serverRole, ...access });
       toast.notify(`${displayName || username} can now sign in`);
       onCreated();
     } catch (err) {
@@ -229,22 +232,10 @@ function NewUserDialog({ orgs, onClose, onCreated }: { orgs: Organization[]; onC
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
           </label>
         </div>
-        <div className="grid two">
-          <label className="field">
-            <span>Add to organisation</span>
-            <select value={orgId} onChange={(e) => setOrgId(e.target.value)}>
-              <option value="">Don't add yet</option>
-              {orgs.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
-            </select>
-          </label>
-          <label className="field">
-            <span>As</span>
-            <select value={orgRole} disabled={!orgId} onChange={(e) => setOrgRole(e.target.value as OrgRole)}>
-              <option value="viewer">Viewer</option>
-              <option value="editor">Editor</option>
-              <option value="owner">Owner</option>
-            </select>
-          </label>
+        <div className="field">
+          <span>Access <span className="hint">{summarise(access)}</span></span>
+          <AccessEditor tree={tree} value={access} onChange={setAccess} />
+          <span className="hint">An organisation-wide role applies to every team in it. A team role applies to that team only. The higher one wins.</span>
         </div>
         <ServerRoleField value={serverRole} onChange={setServerRole} />
         <div className="btn-row" style={{ justifyContent: 'flex-end' }}>
@@ -270,22 +261,29 @@ function ServerRoleField({ value, onChange, disabled }: { value: ServerRole; onC
 
 interface EditProps {
   user: UserRecord;
-  orgs: Organization[];
+  tree: OrgWithTeams[];
   isSelf: boolean;
   onClose: () => void;
   onChanged: (user: UserRecord) => void;
   onDeleted: () => void;
 }
 
-function EditUserDialog({ user, orgs, isSelf, onClose, onChanged, onDeleted }: EditProps) {
+function accessOf(user: UserRecord): Access {
+  return {
+    memberships: user.memberships.map((m) => ({ orgId: m.orgId, role: m.role })),
+    teamMemberships: user.teamMemberships.map((m) => ({ teamId: m.teamId, role: m.role })),
+  };
+}
+
+function EditUserDialog({ user, tree, isSelf, onClose, onChanged, onDeleted }: EditProps) {
   const toast = useToast();
   const [displayName, setDisplayName] = useState(user.displayName);
   const [email, setEmail] = useState(user.email);
   const [serverRole, setServerRole] = useState<ServerRole>(user.serverRole);
   const [password, setPassword] = useState('');
-  const [addOrg, setAddOrg] = useState('');
-  const [addRole, setAddRole] = useState<OrgRole>('editor');
+  const [access, setAccess] = useState<Access>(() => accessOf(user));
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const accessChanged = JSON.stringify(access) !== JSON.stringify(accessOf(user));
   const readOnly = user.source === 'env';
 
   const run = async (action: () => Promise<UserRecord | void>, message: string) => {
@@ -303,14 +301,6 @@ function EditUserDialog({ user, orgs, isSelf, onClose, onChanged, onDeleted }: E
   const save = (e: FormEvent) => {
     e.preventDefault();
     run(() => api.updateUser(user.id, { displayName, email, serverRole }), 'User saved');
-  };
-
-  const membership = async (orgId: string, role: OrgRole | null) => {
-    const ok = await run(
-      () => (role ? api.setMember(orgId, user.id, role) : api.removeMember(orgId, user.id).then(() => api.users().then((all) => all.find((u) => u.id === user.id)))) as Promise<UserRecord>,
-      role ? 'Membership saved' : 'Removed from organisation',
-    );
-    if (ok) setAddOrg('');
   };
 
   return (
@@ -337,47 +327,22 @@ function EditUserDialog({ user, orgs, isSelf, onClose, onChanged, onDeleted }: E
             <div><button className="btn" type="submit">Save</button></div>
           </form>
 
-          <div className="section-block">
-            <h3>Organisations</h3>
-            <table className="data-table compact">
-              <tbody>
-                {user.memberships.map((m) => (
-                  <tr key={m.orgId}>
-                    <td>{m.orgName ?? m.orgId}</td>
-                    <td>
-                      <select aria-label={`Role in ${m.orgName ?? m.orgId}`} value={m.role} onChange={(e) => membership(m.orgId, e.target.value as OrgRole)}>
-                        <option value="viewer">Viewer</option>
-                        <option value="editor">Editor</option>
-                        <option value="owner">Owner</option>
-                      </select>
-                    </td>
-                    <td className="actions">
-                      <button className="btn ghost icon small" aria-label={`Remove from ${m.orgName ?? m.orgId}`} onClick={() => membership(m.orgId, null)}>
-                        <Trash size={14} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {user.groupMemberships.map((m) => (
-                  <tr key={`g-${m.orgId}`}>
-                    <td>{m.orgName ?? m.orgId}</td>
-                    <td><RoleBadge role={m.role} /> <span className="muted small">from an Entra group</span></td>
-                    <td />
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="section-block stack">
+            <h3>Access <span className="muted small">{summarise(access)}</span></h3>
+            <AccessEditor tree={tree} value={access} onChange={setAccess} />
+            {(user.groupMemberships.length > 0 || user.groupTeamMemberships.length > 0) && (
+              <p className="muted small">
+                Entra groups also give:{' '}
+                {[
+                  ...user.groupMemberships.map((m) => `${m.role} in ${m.orgName ?? m.orgId}`),
+                  ...user.groupTeamMemberships.map((m) => `${m.role} in ${m.orgName ?? ''} › ${m.teamName ?? m.teamId}`),
+                ].join(', ')}
+                .
+              </p>
+            )}
             <div className="btn-row">
-              <select aria-label="Organisation to add" value={addOrg} onChange={(e) => setAddOrg(e.target.value)}>
-                <option value="">Add to organisation…</option>
-                {orgs.filter((o) => !user.memberships.some((m) => m.orgId === o.id)).map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
-              </select>
-              <select aria-label="Role to add" value={addRole} onChange={(e) => setAddRole(e.target.value as OrgRole)}>
-                <option value="viewer">Viewer</option>
-                <option value="editor">Editor</option>
-                <option value="owner">Owner</option>
-              </select>
-              <button className="btn" disabled={!addOrg} onClick={() => membership(addOrg, addRole)}>Add</button>
+              <button className="btn" disabled={!accessChanged} onClick={() => run(() => api.updateUser(user.id, { ...access }), 'Access saved')}>Save access</button>
+              {accessChanged && <button className="btn ghost" onClick={() => setAccess(accessOf(user))}>Undo changes</button>}
             </div>
           </div>
 

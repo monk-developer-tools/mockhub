@@ -47,7 +47,7 @@
       <a href="#import">Import</a>
       <a href="#export">Postman &amp; Bruno</a>
       <a href="#requests">Request log</a>
-      <a href="#auth">Organisations &amp; roles</a>
+      <a href="#auth">Organisations, teams &amp; roles</a>
       <a href="#sso">Single sign-on</a>
       <a href="#ai">AI assistant</a>
       <h4>Operations</h4>
@@ -189,16 +189,16 @@
       <h2 id="requests">Request log</h2>
       <p>The <strong>Requests</strong> tab updates live. Filter to <em>Unmatched</em> to find missing stubs. Click a request to see headers and bodies, the closest stubs and how near they came, and a button that creates a stub from that request.</p>
 
-      <h2 id="auth">Organisations &amp; roles</h2>
+      <h2 id="auth">Organisations, teams &amp; roles</h2>
       <p>Sign-in is off until the first user exists. Open <strong>Users</strong> and create an admin, or start with a break-glass account in <code>MOCKHUB_USERS</code>. Mock endpoints are never protected; only the UI and the admin API are.</p>
       <div class="code"><pre>MOCKHUB_USERS="root:change-me:admin"</pre></div>
-      <p><strong>Organisations</strong> hold projects. Pick one with the switcher at the top of the sidebar. Existing projects start in <em>Default</em>. Moving a project to another organisation doesn't change its mock URL.</p>
+      <p>MockHub has three levels: <strong>organisation › teams › people</strong>. Organisations group everything; pick one with the switcher at the top of the sidebar. <strong>Teams</strong> live inside an organisation and own its projects. Every organisation has a <em>General</em> team, and projects from before teams existed move there. People get a role in single teams, an organisation-wide role that applies to every team, or both; the higher role wins, and team members only see their own teams' projects. Moving a project to another team or organisation doesn't change its mock URL. See the <a href="/tutorials/#teams">teams tutorial</a> for a walk-through.</p>
       <table>
-        <thead><tr><th>Organisation role</th><th>Can</th></tr></thead>
+        <thead><tr><th>Role</th><th>In a team</th><th>Organisation-wide</th></tr></thead>
         <tbody>
-          <tr><td>viewer</td><td>see the organisation's projects, stubs and request logs, and download exports</td></tr>
-          <tr><td>editor</td><td>also create, edit and delete projects and stubs, import, record</td></tr>
-          <tr><td>owner</td><td>also rename the organisation, add and remove members, delete it</td></tr>
+          <tr><td>viewer</td><td>see the team's projects, stubs and request logs, and download exports</td><td>the same, in every team</td></tr>
+          <tr><td>editor</td><td>also create, edit and delete the team's projects and stubs, import, record</td><td>the same, in every team</td></tr>
+          <tr><td>owner</td><td>also manage the team's members and settings</td><td>also create and delete teams, manage members and the organisation</td></tr>
         </tbody>
       </table>
       <p>Each user also has a <strong>server role</strong>. <em>Viewer everywhere</em> and <em>editor everywhere</em> apply to every organisation. <em>Admin</em> also manages users, single sign-on, backups and the native WireMock API. Changing a password or disabling a user signs out that user's other sessions.</p>

@@ -11,6 +11,9 @@ import io.mockhub.api.Response;
 import io.mockhub.auth.AuthService;
 import io.mockhub.auth.Principal;
 import io.mockhub.auth.Role;
+import io.mockhub.org.OrganizationService;
+import io.mockhub.team.Team;
+import io.mockhub.team.TeamService;
 import io.mockhub.user.User;
 import io.mockhub.user.UserService;
 
@@ -18,11 +21,15 @@ public final class UserController implements ApiController {
   private final UserService users;
   private final UserViews views;
   private final AuthService auth;
+  private final OrganizationService orgs;
+  private final TeamService teams;
 
-  public UserController(UserService users, UserViews views, AuthService auth) {
+  public UserController(UserService users, UserViews views, AuthService auth, OrganizationService orgs, TeamService teams) {
     this.users = users;
     this.views = views;
     this.auth = auth;
+    this.orgs = orgs;
+    this.teams = teams;
   }
 
   @Override
@@ -35,7 +42,7 @@ public final class UserController implements ApiController {
     });
     r.post("/users", ctx -> {
       boolean firstUser = !auth.enabled();
-      JsonNode body = ctx.json();
+      JsonNode body = resolveAccess(ctx.json());
       if (firstUser) ((ObjectNode) body).put("serverRole", Role.ADMIN.id());
       User created = users.create(body);
       ObjectNode out = views.full(created);
@@ -44,7 +51,7 @@ public final class UserController implements ApiController {
     });
     r.get("/users/{id}", ctx -> views.full(users.get(ctx.path("id"))));
     r.put("/users/{id}", ctx -> {
-      JsonNode body = ctx.json();
+      JsonNode body = resolveAccess(ctx.json());
       if (isSelf(ctx)) {
         if (body.path("disabled").asBoolean(false)) throw ApiException.badRequest("You can't disable your own account");
         if (body.hasNonNull("serverRole") && Role.serverRole(body.get("serverRole").asText()) != Role.ADMIN
@@ -60,6 +67,17 @@ public final class UserController implements ApiController {
       users.delete(ctx.path("id"));
       return null;
     });
+  }
+
+  private JsonNode resolveAccess(JsonNode body) {
+    for (JsonNode m : body.path("memberships")) {
+      orgs.get(m.path("orgId").asText(""));
+    }
+    for (JsonNode m : body.path("teamMemberships")) {
+      Team team = teams.get(m.path("teamId").asText(""));
+      ((ObjectNode) m).put("orgId", team.orgId());
+    }
+    return body;
   }
 
   private static boolean isSelf(Ctx ctx) {

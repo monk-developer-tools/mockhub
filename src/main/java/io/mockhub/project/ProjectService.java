@@ -10,6 +10,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
 
 public final class ProjectService implements OrganizationListener {
   private static final List<String> RESERVED_SLUGS = List.of("__admin", "__files", "mappings", "health");
@@ -31,6 +32,16 @@ public final class ProjectService implements OrganizationListener {
 
   public List<Project> findByOrg(String orgId) {
     return repository.findAll().stream().filter(p -> orgId.equals(p.orgId())).toList();
+  }
+
+  public List<Project> findByTeam(String teamId) {
+    return repository.findAll().stream().filter(p -> teamId.equals(p.teamId())).toList();
+  }
+
+  public int assignTeams(Function<String, String> defaultTeamOfOrg) {
+    List<Project> missing = repository.findAll().stream().filter(p -> p.teamId() == null || p.teamId().isBlank()).toList();
+    missing.forEach(p -> repository.save(p.withTeam(p.orgId(), defaultTeamOfOrg.apply(p.orgId()))));
+    return missing.size();
   }
 
   public int assignOrphans(String orgId) {
@@ -62,7 +73,8 @@ public final class ProjectService implements OrganizationListener {
         color.isBlank() ? PALETTE[Math.floorMod(slug.hashCode(), PALETTE.length)] : color,
         now,
         now,
-        requiredText(body, "orgId"));
+        requiredText(body, "orgId"),
+        body.path("teamId").asText("").isBlank() ? null : body.get("teamId").asText());
     repository.save(project);
     return project;
   }
@@ -79,7 +91,8 @@ public final class ProjectService implements OrganizationListener {
         body.hasNonNull("color") ? body.get("color").asText() : before.color(),
         before.createdAt(),
         Instant.now(clock).toString(),
-        body.hasNonNull("orgId") && !body.get("orgId").asText().isBlank() ? body.get("orgId").asText() : before.orgId());
+        body.hasNonNull("orgId") && !body.get("orgId").asText().isBlank() ? body.get("orgId").asText() : before.orgId(),
+        body.hasNonNull("teamId") && !body.get("teamId").asText().isBlank() ? body.get("teamId").asText() : before.teamId());
     if (!before.slug().equals(after.slug())) {
       listeners.forEach(l -> l.onBasePathChanged(before, after));
     }

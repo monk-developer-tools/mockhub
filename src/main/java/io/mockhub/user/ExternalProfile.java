@@ -10,4 +10,11 @@ public record ExternalProfile(
     String displayName,
     String email,
     Role groupServerRole,
-    List<Membership> groupMemberships) {}
+    List<Membership> groupMemberships,
+    List<TeamMembership> groupTeamMemberships) {
+
+  public ExternalProfile(UserSource source, String externalId, String username, String displayName, String email,
+      Role groupServerRole, List<Membership> groupMemberships) {
+    this(source, externalId, username, displayName, email, groupServerRole, groupMemberships, List.of());
+  }
+}

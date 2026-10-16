@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import io.mockhub.user.Membership;
+import io.mockhub.user.TeamMembership;
 import io.mockhub.user.User;
 import io.mockhub.user.UserSource;
 import java.util.List;
@@ -15,11 +16,19 @@ import org.junit.jupiter.api.Test;
 
 class AccessPolicyTest {
 
-  private final AccessPolicy policy = new AccessPolicy(id -> Optional.ofNullable(Map.of("pa", "orgA", "pb", "orgB").get(id)));
+  private final AccessPolicy policy = new AccessPolicy(id -> Optional.ofNullable(Map.of(
+      "pa", new ProjectScope("orgA", "tA1"),
+      "pa2", new ProjectScope("orgA", "tA2"),
+      "pb", new ProjectScope("orgB", "tB1")).get(id)));
 
   private static Principal user(Role serverRole, Membership... memberships) {
     return Principal.of(new User.Builder().id("u").username("u").source(UserSource.LOCAL).serverRole(serverRole)
         .memberships(List.of(memberships)).build());
+  }
+
+  private static Principal teamMember(String teamId, Role role) {
+    return Principal.of(new User.Builder().id("u").username("u").source(UserSource.LOCAL).serverRole(Role.NONE)
+        .teamMemberships(List.of(new TeamMembership(teamId, "orgA", role))).build());
   }
 
   private static final Map<String, Principal> PEOPLE = Map.of(
@@ -28,11 +37,34 @@ class AccessPolicyTest {
       "editorA", user(Role.NONE, new Membership("orgA", Role.EDITOR)),
       "ownerA", user(Role.NONE, new Membership("orgA", Role.OWNER)),
       "nobody", user(Role.NONE),
-      "serverEditor", user(Role.EDITOR));
+      "serverEditor", user(Role.EDITOR),
+      "teamEditor", teamMember("tA1", Role.EDITOR),
+      "teamViewer", teamMember("tA1", Role.VIEWER),
+      "teamOwner", teamMember("tA1", Role.OWNER));
 
   @ParameterizedTest
   @CsvSource({
       "admin, POST, /mockhub/api/users, true",
+      "teamEditor, POST, /mockhub/api/projects/pa/stubs, true",
+      "teamEditor, POST, /mockhub/api/projects/pa2/stubs, false",
+      "teamEditor, GET, /mockhub/api/projects/pa2/stubs, false",
+      "teamViewer, GET, /mockhub/api/projects/pa/stubs, true",
+      "teamViewer, POST, /mockhub/api/projects/pa/stubs, false",
+      "teamEditor, GET, /mockhub/api/orgs/orgA, true",
+      "teamEditor, GET, /mockhub/api/orgs/orgA/teams, true",
+      "teamEditor, GET, /mockhub/api/orgs/orgB, false",
+      "teamEditor, PUT, /mockhub/api/orgs/orgA, false",
+      "teamEditor, PUT, /mockhub/api/orgs/orgA/teams/tA1/members/x, false",
+      "teamOwner, PUT, /mockhub/api/orgs/orgA/teams/tA1/members/x, true",
+      "teamOwner, DELETE, /mockhub/api/orgs/orgA/teams/tA1/members/x, true",
+      "teamOwner, PUT, /mockhub/api/orgs/orgA/teams/tA1, true",
+      "teamOwner, PUT, /mockhub/api/orgs/orgA/teams/tA2/members/x, false",
+      "teamOwner, DELETE, /mockhub/api/orgs/orgA/teams/tA1, false",
+      "teamOwner, POST, /mockhub/api/orgs/orgA/teams, false",
+      "ownerA, POST, /mockhub/api/orgs/orgA/teams, true",
+      "ownerA, DELETE, /mockhub/api/orgs/orgA/teams/tA1, true",
+      "ownerA, PUT, /mockhub/api/orgs/orgA/teams/tA2/members/x, true",
+      "editorA, POST, /mockhub/api/projects/pa2/stubs, true",
       "admin, DELETE, /mappings, true",
       "viewerA, GET, /mockhub/api/projects, true",
       "viewerA, GET, /mockhub/api/projects/pa/stubs, true",

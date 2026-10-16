@@ -36,6 +36,7 @@ vi.mock('../state/AppContext', () => ({
     ],
     refreshProjects,
     refreshSession: () => Promise.resolve(),
+    teamsIn: (id: string) => (id === 'o2' ? [{ id: 't9', name: 'Storefront', slug: 'storefront', role: 'admin', member: false }] : []),
   }),
 }));
 
@@ -91,11 +92,12 @@ describe('BackupPage', () => {
     expect(screen.getByText('Moves to /cards-2')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('checkbox', { name: 'Pay By Bank' }));
     await userEvent.selectOptions(screen.getByLabelText('Restore into'), 'o2');
+    await userEvent.selectOptions(screen.getByLabelText('Team'), 't9');
     await userEvent.click(screen.getByRole('button', { name: 'Add a copy' }));
     await userEvent.click(screen.getByRole('button', { name: 'Restore 1 project' }));
 
     // Then
-    await waitFor(() => expect(restore).toHaveBeenCalledWith('{"projects":[]}', { organizations: [], projects: ['p2'], targetOrgId: 'o2', mode: 'copy' }));
+    await waitFor(() => expect(restore).toHaveBeenCalledWith('{"projects":[]}', { organizations: [], projects: ['p2'], targetOrgId: 'o2', targetTeamId: 't9', mode: 'copy' }));
     expect(await screen.findByText(/now answers at/)).toHaveTextContent('Cards now answers at /cards-2 because /cards was taken.');
     expect(refreshProjects).toHaveBeenCalled();
   });

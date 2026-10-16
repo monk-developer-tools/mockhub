@@ -22,7 +22,13 @@ export function ProjectPage() {
   const toast = useToast();
   const [project, setProject] = useState<Project | null>(null);
   const [missing, setMissing] = useState(false);
-  const { currentOrg, setCurrentOrg, orgs } = useApp();
+  const { currentOrg, setCurrentOrg, orgs, setActiveProject } = useApp();
+
+  useEffect(() => {
+    setActiveProject(project);
+  }, [project, setActiveProject]);
+
+  useEffect(() => () => setActiveProject(null), [setActiveProject]);
 
   const reloadProject = useCallback(async () => {
     try {

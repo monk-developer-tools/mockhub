@@ -1,4 +1,4 @@
-import { Archive, BookOpenText, Buildings, CircleHalf, Eye, HardDrives, Key, List, MagnifyingGlass, Moon, Plus, Sparkle, SquaresFour, Sun, UserCircle, UsersThree } from '@phosphor-icons/react';
+import { Archive, BookOpenText, Buildings, CircleHalf, Eye, HardDrives, Key, List, MagnifyingGlass, Moon, Plus, Sparkle, SquaresFour, Sun, UsersThree } from '@phosphor-icons/react';
 import { useMemo } from 'react';
 import { MOD_LABEL, useHotkeys } from '../state/hotkeys';
 import { CommandPalette } from './CommandPalette';
@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useApp } from '../state/AppContext';
 import { applyTheme, readTheme, type ThemeChoice } from '../state/theme';
+import { Avatar, TeamMark } from './Avatar';
 import { Logo } from './Logo';
 import { AccountDialog } from '../pages/AccountDialog';
 import { OrgDialog } from '../pages/OrgDialog';
@@ -18,7 +19,7 @@ const NEXT_THEME: Record<ThemeChoice, ThemeChoice> = { system: 'light', light: '
 const THEME_ICON = { system: CircleHalf, light: Sun, dark: Moon };
 
 export function Layout() {
-  const { projects, orgProjects, currentOrg, role, info, session, signOut, canEdit, isAdmin } = useApp();
+  const { projects, orgProjects, currentOrg, role, info, session, signOut, canEdit, isAdmin, teamsIn } = useApp();
   const [theme, setTheme] = useState<ThemeChoice>(readTheme);
   const [open, setOpen] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -28,6 +29,15 @@ export function Layout() {
   const [account, setAccount] = useState(false);
   const location = useLocation();
   const ThemeIcon = THEME_ICON[theme];
+  const projectGroups = useMemo(() => {
+    const teams = teamsIn(currentOrg?.id);
+    const groups = teams
+      .map((t) => ({ id: t.id, name: t.name, projects: orgProjects.filter((p) => p.teamId === t.id) }))
+      .filter((g) => g.projects.length > 0);
+    const known = new Set(teams.map((t) => t.id));
+    const other = orgProjects.filter((p) => !known.has(p.teamId));
+    return other.length ? [...groups, { id: 'other', name: 'Other', projects: other }] : groups;
+  }, [orgProjects, teamsIn, currentOrg]);
 
   const cycleTheme = () => {
     const next = NEXT_THEME[theme];
@@ -66,7 +76,7 @@ export function Layout() {
           </NavLink>
           {currentOrg && (
             <NavLink to="/org">
-              <Buildings size={18} weight="duotone" /> Members & settings
+              <Buildings size={18} weight="duotone" /> Teams & members
             </NavLink>
           )}
           <NavLink to="/server">
@@ -102,24 +112,34 @@ export function Layout() {
         </div>
         <div className="project-list">
           {orgProjects.length === 0 && <p className="muted small" style={{ padding: '4px 10px' }}>No projects yet.</p>}
-          {orgProjects.map((p) => (
-            <NavLink
-              key={p.id}
-              to={`/projects/${p.id}`}
-              className={() => `project-link${location.pathname.startsWith(`/projects/${p.id}`) ? ' active' : ''}`}
-            >
-              <span className="swatch" style={{ background: p.color }} />
-              <span className="project-link-text" title={`${p.name} (${p.basePath})`}>
-                <span className="name">{p.name}</span>
-                <span className="path">{p.basePath}</span>
-              </span>
-            </NavLink>
+          {projectGroups.map((group) => (
+            <div key={group.id} className="project-group">
+              {projectGroups.length > 1 && (
+                <div className="project-group-head">
+                  <TeamMark name={group.name} seed={group.id} size={16} />
+                  <span>{group.name}</span>
+                </div>
+              )}
+              {group.projects.map((p) => (
+                <NavLink
+                  key={p.id}
+                  to={`/projects/${p.id}`}
+                  className={() => `project-link${location.pathname.startsWith(`/projects/${p.id}`) ? ' active' : ''}`}
+                >
+                  <span className="swatch" style={{ background: p.color }} />
+                  <span className="project-link-text" title={`${p.name} (${p.basePath})`}>
+                    <span className="name">{p.name}</span>
+                    <span className="path">{p.basePath}</span>
+                  </span>
+                </NavLink>
+              ))}
+            </div>
           ))}
         </div>
         <div className="sidebar-footer">
           {session && info?.authEnabled ? (
             <button className="account-trigger" onClick={() => setAccount(true)} aria-label="Your account">
-              <UserCircle size={15} />
+              <Avatar name={session.displayName || session.username} seed={session.id} size={26} />
               <span>
                 <strong>{session.displayName || session.username}</strong>
                 <span className="muted">{role === 'none' ? 'No organisation access' : roleLabel(role)}</span>

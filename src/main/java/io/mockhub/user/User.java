@@ -20,13 +20,17 @@ public record User(
     boolean disabled,
     long sessionEpoch,
     String createdAt,
-    String lastLoginAt) {
+    String lastLoginAt,
+    List<TeamMembership> teamMemberships,
+    List<TeamMembership> groupTeamMemberships) {
 
   public User {
     serverRole = serverRole == null ? Role.NONE : serverRole;
     groupServerRole = groupServerRole == null ? Role.NONE : groupServerRole;
     memberships = memberships == null ? List.of() : List.copyOf(memberships);
     groupMemberships = groupMemberships == null ? List.of() : List.copyOf(groupMemberships);
+    teamMemberships = teamMemberships == null ? List.of() : List.copyOf(teamMemberships);
+    groupTeamMemberships = groupTeamMemberships == null ? List.of() : List.copyOf(groupTeamMemberships);
   }
 
   public Role effectiveServerRole() {
@@ -38,6 +42,32 @@ public record User(
     for (Membership m : memberships) if (m.orgId().equals(orgId)) role = Role.max(role, m.role());
     for (Membership m : groupMemberships) if (m.orgId().equals(orgId)) role = Role.max(role, m.role());
     return role;
+  }
+
+  public Role roleInTeam(String orgId, String teamId) {
+    Role role = roleIn(orgId);
+    for (TeamMembership m : teamMemberships) if (m.teamId().equals(teamId)) role = Role.max(role, m.role());
+    for (TeamMembership m : groupTeamMemberships) if (m.teamId().equals(teamId)) role = Role.max(role, m.role());
+    return role;
+  }
+
+  public Optional<Role> teamRole(String teamId) {
+    return teamMemberships.stream().filter(m -> m.teamId().equals(teamId)).map(TeamMembership::role).findFirst();
+  }
+
+  public Optional<Role> groupTeamRole(String teamId) {
+    return groupTeamMemberships.stream().filter(m -> m.teamId().equals(teamId)).map(TeamMembership::role).findFirst();
+  }
+
+  public boolean belongsTo(String orgId) {
+    return roleIn(orgId).atLeast(Role.VIEWER)
+        || teamMemberships.stream().anyMatch(m -> m.orgId().equals(orgId))
+        || groupTeamMemberships.stream().anyMatch(m -> m.orgId().equals(orgId));
+  }
+
+  public boolean inTeam(String teamId) {
+    return teamMemberships.stream().anyMatch(m -> m.teamId().equals(teamId))
+        || groupTeamMemberships.stream().anyMatch(m -> m.teamId().equals(teamId));
   }
 
   public Optional<Role> memberRole(String orgId) {
@@ -68,10 +98,14 @@ public record User(
     private long sessionEpoch;
     private String createdAt;
     private String lastLoginAt;
+    private List<TeamMembership> teamMemberships;
+    private List<TeamMembership> groupTeamMemberships;
 
     public Builder() {
       memberships = new ArrayList<>();
       groupMemberships = new ArrayList<>();
+      teamMemberships = new ArrayList<>();
+      groupTeamMemberships = new ArrayList<>();
     }
 
     private Builder(User u) {
@@ -90,6 +124,8 @@ public record User(
       sessionEpoch = u.sessionEpoch;
       createdAt = u.createdAt;
       lastLoginAt = u.lastLoginAt;
+      teamMemberships = new ArrayList<>(u.teamMemberships);
+      groupTeamMemberships = new ArrayList<>(u.groupTeamMemberships);
     }
 
     public Builder id(String v) { id = v; return this; }
@@ -107,10 +143,13 @@ public record User(
     public Builder sessionEpoch(long v) { sessionEpoch = v; return this; }
     public Builder createdAt(String v) { createdAt = v; return this; }
     public Builder lastLoginAt(String v) { lastLoginAt = v; return this; }
+    public Builder teamMemberships(List<TeamMembership> v) { teamMemberships = new ArrayList<>(v); return this; }
+    public Builder groupTeamMemberships(List<TeamMembership> v) { groupTeamMemberships = new ArrayList<>(v); return this; }
 
     public User build() {
       return new User(id, username, displayName, email, source, externalId, passwordHash, serverRole, memberships,
-          groupServerRole, groupMemberships, disabled, sessionEpoch, createdAt, lastLoginAt);
+          groupServerRole, groupMemberships, disabled, sessionEpoch, createdAt, lastLoginAt, teamMemberships,
+          groupTeamMemberships);
     }
   }
 }

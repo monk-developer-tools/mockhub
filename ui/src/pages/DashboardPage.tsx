@@ -1,5 +1,6 @@
 import { BookOpenText, BracketsCurly, CheckCircle, Plus, Pulse, SquaresFour, Warning } from '@phosphor-icons/react';
 import { EmptyArt } from '../components/Illustrations';
+import { TeamMark } from '../components/Avatar';
 import { ActivityBars } from '../components/ActivityBars';
 import { StatTile } from '../components/StatTile';
 import { timeAgo } from '../model/time';
@@ -11,7 +12,11 @@ import { ExampleGrid } from './ExamplesPage';
 import { ProjectDialog } from './ProjectDialog';
 
 export function DashboardPage() {
-  const { orgProjects: projects, currentOrg, canEdit, info, refreshProjects } = useApp();
+  const { orgProjects: allProjects, currentOrg, canEdit, info, refreshProjects, teamsIn } = useApp();
+  const teams = teamsIn(currentOrg?.id);
+  const [teamFilter, setTeamFilter] = useState('all');
+  const projects = teamFilter === 'all' ? allProjects : allProjects.filter((p) => p.teamId === teamFilter);
+  const teamName = (id: string) => teams.find((t) => t.id === id)?.name ?? '';
 
   useEffect(() => {
     const timer = setInterval(() => refreshProjects().catch(() => undefined), 10000);
@@ -46,7 +51,7 @@ export function DashboardPage() {
         )}
       </div>
 
-      {projects.length === 0 ? (
+      {allProjects.length === 0 ? (
         <div className="panel">
           <div className="empty">
             <EmptyArt kind="projects" />
@@ -77,11 +82,22 @@ export function DashboardPage() {
               detail={totals.unmatched > 0 ? 'requests with no stub' : 'every request found a stub'}
             />
           </div>
+          {teams.length > 1 && (
+            <div className="segmented team-filter" role="group" aria-label="Filter by team">
+              <button aria-pressed={teamFilter === 'all'} onClick={() => setTeamFilter('all')}>All teams</button>
+              {teams.map((t) => (
+                <button key={t.id} aria-pressed={teamFilter === t.id} onClick={() => setTeamFilter(t.id)}>
+                  <TeamMark name={t.name} seed={t.id} size={16} /> {t.name}
+                </button>
+              ))}
+            </div>
+          )}
           <div className="panel">
             <table className="project-table">
               <thead>
                 <tr>
                   <th>Project</th>
+                  <th className="hide-sm">Team</th>
                   <th>Mock URL</th>
                   <th className="hide-sm">Stubs</th>
                   <th className="hide-sm">Requests</th>
@@ -101,6 +117,11 @@ export function DashboardPage() {
                         </Link>
                       </div>
                       {p.description && <p className="muted small clamp-2">{p.description}</p>}
+                    </td>
+                    <td className="hide-sm">
+                      {teamName(p.teamId) && (
+                        <span className="team-cell"><TeamMark name={teamName(p.teamId)} seed={p.teamId} size={18} /> {teamName(p.teamId)}</span>
+                      )}
                     </td>
                     <td onClick={(e) => e.stopPropagation()}>
                       <span className="url-cell">

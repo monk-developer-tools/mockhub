@@ -7,11 +7,16 @@ import { renderWithShell } from '../test/render';
 const signOut = vi.fn();
 let role: Role = 'viewer';
 let isAdmin = false;
-const orgs = [{ id: 'o1', name: 'Payments', slug: 'payments', role: 'viewer' }];
+const teams = [
+  { id: 't1', name: 'Checkout', slug: 'checkout', role: 'viewer', member: true },
+  { id: 't2', name: 'Search', slug: 'search', role: 'viewer', member: false },
+];
+const orgs = [{ id: 'o1', name: 'Payments', slug: 'payments', role: 'viewer', teams }];
+let orgProjects: { id: string; name: string; basePath: string; color: string; teamId: string; orgId: string }[] = [];
 vi.mock('../state/AppContext', () => ({
   useApp: () => ({
     projects: [],
-    orgProjects: [],
+    orgProjects,
     orgs,
     currentOrg: orgs[0],
     role,
@@ -21,6 +26,7 @@ vi.mock('../state/AppContext', () => ({
     canEdit: role === 'editor' || role === 'owner' || role === 'admin',
     isAdmin,
     roleIn: () => role,
+    teamsIn: () => teams,
     setCurrentOrg: vi.fn(),
   }),
 }));
@@ -30,6 +36,27 @@ const { Layout } = await import('./Layout');
 describe('Layout', () => {
   beforeEach(() => {
     isAdmin = false;
+    orgProjects = [];
+  });
+
+  it('groups the sidebar projects by team', () => {
+    // Given
+    role = 'viewer';
+    orgProjects = [
+      { id: 'p1', name: 'Cart', basePath: '/cart', color: '#f00', teamId: 't1', orgId: 'o1' },
+      { id: 'p2', name: 'Index', basePath: '/index', color: '#0f0', teamId: 't2', orgId: 'o1' },
+    ];
+
+    // When
+    renderWithShell(<Layout />);
+
+    // Then
+    const groups = document.querySelectorAll('.project-group');
+    expect(groups).toHaveLength(2);
+    expect(groups[0]).toHaveTextContent('Checkout');
+    expect(groups[0]).toHaveTextContent('Cart');
+    expect(groups[1]).toHaveTextContent('Search');
+    expect(groups[1]).toHaveTextContent('Index');
   });
 
   it('tells viewers why they cannot edit and lets them switch account', async () => {

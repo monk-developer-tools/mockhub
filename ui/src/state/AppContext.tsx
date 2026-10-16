@@ -1,12 +1,16 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { api, credentials, setUnauthorizedHandler } from '../api/client';
-import type { AiStatus, AuthInfo, OrgAccess, Project, Role, ServerInfo, Session } from '../api/types';
+import type { AiStatus, AuthInfo, OrgAccess, Project, Role, ServerInfo, Session, TeamAccess } from '../api/types';
 
 const ORG_KEY = 'mockhub.org';
 const RANK: Record<Role, number> = { none: 0, viewer: 1, editor: 2, owner: 3, admin: 4 };
 
 export function atLeast(role: Role | undefined, needed: Role) {
   return RANK[role ?? 'none'] >= RANK[needed];
+}
+
+export function highest(roles: Role[]): Role {
+  return roles.reduce<Role>((best, r) => (RANK[r] > RANK[best] ? r : best), 'none');
 }
 
 interface AppState {
@@ -26,6 +30,11 @@ interface AppState {
   isOwner: boolean;
   isAdmin: boolean;
   roleIn: (orgId: string | undefined) => Role;
+  roleInTeam: (orgId: string | undefined, teamId: string | undefined) => Role;
+  teamsIn: (orgId: string | undefined) => TeamAccess[];
+  writableTeams: (orgId: string | undefined) => TeamAccess[];
+  activeProject: Project | null;
+  setActiveProject: (project: Project | null) => void;
   setCurrentOrg: (orgId: string) => void;
   refreshProjects: () => Promise<void>;
   refreshSession: () => Promise<void>;
@@ -66,6 +75,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [needsLogin, setNeedsLogin] = useState(false);
   const [loginError, setLoginError] = useState('');
   const [currentOrgId, setCurrentOrgId] = useState<string | null>(readOrg);
+  const [activeProject, setActiveProject] = useState<Project | null>(null);
 
   const refreshProjects = useCallback(async () => {
     setProjects(await api.projects());
@@ -163,7 +173,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [session, orgs],
   );
 
-  const role = roleIn(currentOrg?.id);
+  const teamsIn = useCallback((orgId: string | undefined) => orgs.find((o) => o.id === orgId)?.teams ?? [], [orgs]);
+
+  const roleInTeam = useCallback(
+    (orgId: string | undefined, teamId: string | undefined): Role => {
+      if (session?.isAdmin) return 'admin';
+      const org = orgs.find((o) => o.id === orgId);
+      if (!org) return 'none';
+      return highest([org.role, org.teams.find((t) => t.id === teamId)?.role ?? 'none']);
+    },
+    [session, orgs],
+  );
+
+  const writableTeams = useCallback(
+    (orgId: string | undefined) => teamsIn(orgId).filter((t) => atLeast(roleInTeam(orgId, t.id), 'editor')),
+    [teamsIn, roleInTeam],
+  );
+
+  const orgRole = roleIn(currentOrg?.id);
+  const role = activeProject
+    ? roleInTeam(activeProject.orgId, activeProject.teamId)
+    : highest([orgRole, ...teamsIn(currentOrg?.id).map((t) => roleInTeam(currentOrg?.id, t.id))]);
   const orgProjects = useMemo(() => projects.filter((p) => p.orgId === currentOrg?.id), [projects, currentOrg]);
 
   const value: AppState = {
@@ -180,9 +210,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     needsLogin,
     loginError,
     canEdit: atLeast(role, 'editor'),
-    isOwner: atLeast(role, 'owner'),
+    isOwner: atLeast(orgRole, 'owner'),
     isAdmin: Boolean(session?.isAdmin),
     roleIn,
+    roleInTeam,
+    teamsIn,
+    writableTeams,
+    activeProject,
+    setActiveProject,
     setCurrentOrg,
     refreshProjects,
     refreshSession,

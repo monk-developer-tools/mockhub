@@ -27,14 +27,15 @@ public final class ExampleInstaller {
     this.importers = importers;
   }
 
-  public Project install(String exampleId, String orgId) {
+  public Project install(String exampleId, String orgId, String teamId) {
     Example example = catalog.get(exampleId);
     JsonNode content = catalog.content(example);
     ObjectNode request = Jsons.object()
         .put("name", example.name())
         .put("slug", projects.availableSlug(example.slug()))
         .put("description", example.description())
-        .put("orgId", orgId);
+        .put("orgId", orgId)
+        .put("teamId", teamId);
     Project project = projects.create(request);
 
     List<ObjectNode> toCreate = new ArrayList<>();

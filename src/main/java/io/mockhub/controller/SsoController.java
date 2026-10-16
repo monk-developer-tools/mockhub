@@ -14,6 +14,8 @@ import io.mockhub.sso.SsoException;
 import io.mockhub.sso.SsoService;
 import io.mockhub.sso.SsoSettings;
 import io.mockhub.sso.SsoSettingsStore;
+import io.mockhub.team.Team;
+import io.mockhub.team.TeamService;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,12 +23,14 @@ public final class SsoController implements ApiController {
   private final SsoSettingsStore store;
   private final SsoService sso;
   private final OrganizationService orgs;
+  private final TeamService teams;
   private final BaseUrls urls;
 
-  public SsoController(SsoSettingsStore store, SsoService sso, OrganizationService orgs, BaseUrls urls) {
+  public SsoController(SsoSettingsStore store, SsoService sso, OrganizationService orgs, TeamService teams, BaseUrls urls) {
     this.store = store;
     this.sso = sso;
     this.orgs = orgs;
+    this.teams = teams;
     this.urls = urls;
   }
 
@@ -73,9 +77,14 @@ public final class SsoController implements ApiController {
       String claim = m.path("claim").asText("").trim();
       if (claim.isEmpty()) continue;
       String orgId = m.path("orgId").asText("");
+      String teamId = m.path("teamId").asText("");
+      if (!teamId.isBlank()) {
+        Team team = teams.find(teamId).orElseThrow(() -> ApiException.badRequest("Unknown team in mapping for " + claim));
+        orgId = team.orgId();
+      }
       Role role = orgId.isBlank() ? Role.serverRole(m.path("role").asText()) : Role.orgRole(m.path("role").asText());
       if (!orgId.isBlank() && !orgs.exists(orgId)) throw ApiException.badRequest("Unknown organisation in mapping for " + claim);
-      mappings.add(new RoleMapping(claim, orgId, role));
+      mappings.add(new RoleMapping(claim, orgId, role, teamId));
     }
     String defaultOrgId = body.path("defaultOrgId").asText(current.defaultOrgId());
     if (!defaultOrgId.isBlank() && !orgs.exists(defaultOrgId)) throw ApiException.badRequest("Unknown default organisation");

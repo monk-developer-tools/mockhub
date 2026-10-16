@@ -133,4 +133,53 @@ class UserServiceTest {
     assertThat(users.membersOf("o1")).isEmpty();
     assertThat(users.membersOf("o2")).extracting(User::username).containsExactly("ana");
   }
+
+  @Test
+  void givesPerTeamRolesOnTopOfOrganisationWideRoles() {
+    // Given
+    User ana = users.create(json("{'username':'ana','password':'longenough','memberships':[{'orgId':'o1','role':'viewer'}],"
+        + "'teamMemberships':[{'teamId':'t1','orgId':'o1','role':'editor'}]}"));
+
+    // When
+    User owner = users.setTeamMembership(ana.id(), "t2", "o1", Role.OWNER);
+
+    // Then
+    assertThat(owner.roleInTeam("o1", "t1")).isEqualTo(Role.EDITOR);
+    assertThat(owner.roleInTeam("o1", "t2")).isEqualTo(Role.OWNER);
+    assertThat(owner.roleInTeam("o1", "t3")).isEqualTo(Role.VIEWER);
+    assertThat(users.teamMembersOf("t2")).extracting(User::username).containsExactly("ana");
+    assertThat(users.removeTeamMembership(ana.id(), "t2").inTeam("t2")).isFalse();
+  }
+
+  @Test
+  void teamOnlyMembersBelongToTheOrganisationAndLoseAccessWhenTheTeamGoes() {
+    // Given
+    User bo = users.create(json("{'username':'bo','password':'longenough','teamMemberships':[{'teamId':'t1','orgId':'o1','role':'viewer'}]}"));
+    List<User> before = users.membersOf("o1");
+
+    // When
+    users.onTeamDeleted(new io.mockhub.team.Team("t1", "o1", "Checkout", "checkout", "", "", ""));
+
+    // Then
+    assertThat(bo.belongsTo("o1")).isTrue();
+    assertThat(bo.roleIn("o1")).isEqualTo(Role.NONE);
+    assertThat(before).extracting(User::username).containsExactly("bo");
+    assertThat(users.membersOf("o1")).isEmpty();
+    assertThat(users.get(bo.id()).belongsTo("o1")).isFalse();
+  }
+
+  @Test
+  void replacesAccessWhenAnAdminEditsAUser() {
+    // Given
+    User cy = users.create(json("{'username':'cy','password':'longenough','memberships':[{'orgId':'o1','role':'owner'}]}"));
+
+    // When
+    User after = users.update(cy.id(), json("{'memberships':[],'teamMemberships':[{'teamId':'t1','orgId':'o1','role':'editor'}]}"));
+
+    // Then
+    assertThat(after.memberships()).isEmpty();
+    assertThat(after.roleInTeam("o1", "t1")).isEqualTo(Role.EDITOR);
+    assertThatThrownBy(() -> users.update(cy.id(), json("{'teamMemberships':[{'teamId':'t1','orgId':'o1','role':'admin'}]}")))
+        .hasMessageContaining("Team role");
+  }
 }

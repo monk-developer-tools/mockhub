@@ -1,7 +1,7 @@
 import { ArrowSquareOut, CheckCircle, Plus, Trash, XCircle } from '@phosphor-icons/react';
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { api } from '../api/client';
-import type { Organization, Role, RoleMapping, SsoSettings } from '../api/types';
+import type { Organization, Team, Role, RoleMapping, SsoSettings } from '../api/types';
 import { CopyButton } from '../components/CopyButton';
 import { Skeleton } from '../components/Skeleton';
 import { useToast } from '../components/Toasts';
@@ -19,6 +19,7 @@ export function SsoPage() {
   const toast = useToast();
   const [settings, setSettings] = useState<SsoSettings | null>(null);
   const [orgs, setOrgs] = useState<Organization[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
   const [secret, setSecret] = useState('');
   const [domains, setDomains] = useState('');
   const [test, setTest] = useState<TestResult>(null);
@@ -28,6 +29,7 @@ export function SsoPage() {
   const load = useCallback(async () => {
     try {
       const [s, o] = await Promise.all([api.sso(), api.orgs()]);
+      setTeams((await Promise.all(o.map((org) => api.teams(org.id)))).flat());
       setSettings(s);
       setDomains(s.allowedDomains.join(', '));
       setOrgs(o);
@@ -222,9 +224,26 @@ export function SsoPage() {
                         <input type="text" className="mono" aria-label="Group object ID or app role" placeholder="e.g. 5f2c… or MockHub.Editor" value={m.claim} onChange={(e) => setMapping(i, { claim: e.target.value })} />
                       </td>
                       <td>
-                        <select aria-label="Gives access to" value={m.orgId} onChange={(e) => setMapping(i, { orgId: e.target.value, role: e.target.value ? 'editor' : 'admin' })}>
+                        <select
+                          aria-label="Gives access to"
+                          value={m.teamId ? `team:${m.teamId}` : m.orgId}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            if (v.startsWith('team:')) {
+                              const team = teams.find((t) => `team:${t.id}` === v);
+                              setMapping(i, { orgId: team?.orgId ?? '', teamId: team?.id ?? '', role: 'editor' });
+                            } else {
+                              setMapping(i, { orgId: v, teamId: '', role: v ? 'editor' : 'admin' });
+                            }
+                          }}
+                        >
                           <option value="">The whole server</option>
-                          {orgs.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+                          {orgs.map((o) => (
+                            <optgroup key={o.id} label={o.name}>
+                              <option value={o.id}>{o.name}: every team</option>
+                              {teams.filter((t) => t.orgId === o.id).map((t) => <option key={t.id} value={`team:${t.id}`}>{o.name} › {t.name}</option>)}
+                            </optgroup>
+                          ))}
                         </select>
                       </td>
                       <td>

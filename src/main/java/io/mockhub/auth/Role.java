@@ -46,6 +46,12 @@ public enum Role {
     return role;
   }
 
+  public static Role teamRole(String value) {
+    Role role = parse(value);
+    if (!ORG_ROLES.contains(role)) throw ApiException.badRequest("Team role must be viewer, editor or owner");
+    return role;
+  }
+
   public static Role orgRole(String value) {
     Role role = parse(value);
     if (!ORG_ROLES.contains(role)) throw ApiException.badRequest("Organisation role must be viewer, editor or owner");
