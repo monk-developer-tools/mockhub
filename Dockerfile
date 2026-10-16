@@ -18,7 +18,7 @@ RUN ./gradlew --no-daemon -q shadowJar
 
 FROM eclipse-temurin:21-jdk AS runtime
 RUN jlink \
-      --add-modules java.base,java.desktop,java.instrument,java.logging,java.management,java.naming,java.net.http,java.security.jgss,java.sql,java.xml,jdk.crypto.ec,jdk.management,jdk.unsupported,jdk.zipfs \
+      --add-modules java.base,java.compiler,java.desktop,java.instrument,java.logging,java.management,java.naming,java.net.http,java.scripting,java.security.jgss,java.sql,java.xml,jdk.crypto.ec,jdk.dynalink,jdk.management,jdk.net,jdk.unsupported,jdk.zipfs \
       --strip-debug --no-man-pages --no-header-files --compress=zip-6 \
       --output /jre \
  && mkdir -p /data
