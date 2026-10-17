@@ -49,6 +49,9 @@ Point your service or tests at `http://<host>:8080/<base path>` instead of the r
   in a Data tab.
 - **Realistic fake data.** `{{fake 'Name.fullName'}}` and hundreds more, in many languages.
 - **Webhooks and response files.** Call other services after answering; serve PDFs, images or large JSON.
+- **Real-world conditions.** Delays, network faults, random failures (say 10% of calls), and API keys.
+- **On, off and usage.** Pause a stub without deleting it, and see how often each one is called.
+- **Snippets** in cURL, HTTPie, JavaScript, Python, Java, C# and Apex.
 - **Nothing gets lost.** Every stub is saved to `/data`, and backups cover the whole server or single projects.
 
 ![A project overview](https://mockhub.devops-monk.com/assets/img/dockerhub-overview.jpg)

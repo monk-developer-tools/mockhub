@@ -116,7 +116,12 @@ screenshots, and the [live demo](https://mockhub.devops-monk.com/__admin/mockhub
 - **Import** OpenAPI 3 / Swagger 2 (JSON or YAML), WSDL, or WireMock mappings.
 - **Export** a Postman v2.1 collection (with a status test per request), a Bruno collection, or WireMock mappings.
   A single `baseUrl` variable switches between the mock and the real service.
-- **Try it.** Send a request to a stub from the editor and see the response.
+- **Try it.** Send a request to a stub from the editor and see the response. *Call it from your code* gives the
+  same request as cURL, HTTPie, JavaScript, Python, Java, C# or Apex.
+- **Turn stubs on and off, and see what's used.** Pause a stub without deleting it. The stub list shows how many
+  calls each stub answered and when it was last called.
+- **Random failures.** Make a share of calls fail (say 10% with a 503, or a connection reset) to test retries.
+- **API keys.** Require a header such as `X-API-Key` on every call to a project, like the real service would.
 - **Live request log** per project, with near misses for unmatched requests and *create stub from request*.
 - **CRUD resources with a data store.** One click gives you `/customers` with list (filter, sort, page), read,
   create, replace, patch and delete, backed by real stored records. A **Data** tab shows and edits the records, and
@@ -133,7 +138,7 @@ screenshots, and the [live demo](https://mockhub.devops-monk.com/__admin/mockhub
   or just the projects they pick, replacing existing ones or adding copies, into the original or another organisation.
 - **AI assistant.** Connect OpenRouter, a LiteLLM proxy or any OpenAI-compatible API, then describe the mocks you
   need in plain English or paste a spec. The assistant stages stubs, and you review each change as a diff before
-  applying it.
+  applying it. *Generate with AI* in the editor writes a single response body from a description.
 - **Organisations, teams and people.** Organisations hold teams, and teams own projects. People get a role per team
   or across the whole organisation, and see only their teams' projects. Owners add people as viewers, editors or owners,
   and each person sees only their organisations.
@@ -296,6 +301,8 @@ MockHub is a WireMock extension running inside a regular WireMock server:
 | GET/PUT/DELETE | `/__admin/mockhub/api/projects/{id}/stubs/{stubId}` | read / update / delete a stub |
 | POST | `/__admin/mockhub/api/projects/{id}/stubs/{stubId}/clone?target=` | copy a stub |
 | POST | `/__admin/mockhub/api/projects/{id}/stubs/{stubId}/move?target=` | move a stub to another project |
+| PUT | `/__admin/mockhub/api/projects/{id}/stubs/{stubId}/enabled` | `{enabled}` → turn a stub on or off |
+| GET | `/__admin/mockhub/api/projects/{id}/usage` | calls and last call time per stub, from the request log |
 | GET/DELETE | `/__admin/mockhub/api/projects/{id}/requests?unmatched=&limit=` | request log |
 | GET | `/__admin/mockhub/api/projects/{id}/export/{postman,bruno,wiremock}` | download an export |
 | POST | `/__admin/mockhub/api/projects/{id}/import/{openapi,wsdl,wiremock}` | import a document (request body) |
@@ -306,6 +313,7 @@ MockHub is a WireMock extension running inside a regular WireMock server:
 | POST | `/__admin/mockhub/api/projects/{id}/ai/jobs` | Same body; starts the chat in the background and returns a job id |
 | GET | `/__admin/mockhub/api/projects/{id}/ai/jobs/{jobId}` | Job status, live steps, then the reply or error (kept 30 minutes, visible to whoever started it) |
 | POST | `/__admin/mockhub/api/projects/{id}/ai/apply` | `{changes}` → apply staged changes (editor) |
+| POST | `/__admin/mockhub/api/projects/{id}/ai/body` | `{description, format, method, path, status, current}` → a generated body (editor) |
 | POST | `/__admin/mockhub/api/projects/{id}/crud` | `{resource, idField, idType: number\|uuid, seed}` → create a CRUD resource |
 | GET/DELETE | `/__admin/mockhub/api/projects/{id}/data` | resources with record counts / delete all records |
 | GET/POST/PUT/DELETE | `/__admin/mockhub/api/projects/{id}/data/records?resource=&id=` | list, add, replace, delete one, or clear a resource |

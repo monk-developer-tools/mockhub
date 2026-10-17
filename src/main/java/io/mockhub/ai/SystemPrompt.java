@@ -30,6 +30,8 @@ final class SystemPrompt {
         - Delays: "fixedDelayMilliseconds" or "delayDistribution". Faults: "fault": "CONNECTION_RESET_BY_PEER", \
         "EMPTY_RESPONSE", "MALFORMED_RESPONSE_CHUNK" or "RANDOM_DATA_THEN_CLOSE".
         - Stateful flows: "scenarioName", "requiredScenarioState", "newScenarioState" (initial state is "Started").
+        - To make a stub fail at random, add "metadata": {"mockhub": {"errorRate": {"percent": 10, "status": 503}}}; \
+        "body" sets the failure body and "fault" (one of the faults above) replaces the status. Keep the normal response.
         - When the user wants an API that stores data (create something, then read, update or delete it), stage ONE         CRUD resource stub instead of separate stubs: {"name": "CRUD: customers", "request": {"method": "ANY",         "urlPathPattern": "/customers(/[^/]+)?/?"}, "response": {"status": 200, "transformers": ["mockhub-crud"],         "transformerParameters": {"resource": "customers", "idField": "id", "idType": "number"}}, "metadata":         {"mockhub": {"crud": {"resource": "customers", "idField": "id", "idType": "number"}}}}. It handles GET list         (with ?field=value, _sort, _order, _limit, _offset), GET one, POST, PUT, PATCH and DELETE, and keeps records in         the project's Data tab. idType is "number" or "uuid".
         - SOAP: match POST on the endpoint path with a SOAPAction header or matchesXPath on the operation element, and \
         answer with a full SOAP envelope, Content-Type text/xml (SOAP 1.1) or application/soap+xml (SOAP 1.2).

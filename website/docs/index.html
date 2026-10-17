@@ -45,6 +45,8 @@
       <a href="#webhooks">Webhooks</a>
       <a href="#files">Response files</a>
       <a href="#faults">Delays &amp; faults</a>
+      <a href="#api-keys">API keys</a>
+      <a href="#stub-controls">On, off &amp; usage</a>
       <a href="#soap">SOAP &amp; WSDL</a>
       <a href="#proxy">Proxy &amp; record</a>
       <h4>Working with teams</h4>
@@ -100,7 +102,7 @@
   }
 }</pre></div>
       <p>Not sure where to start? The <strong>template gallery</strong> button in the stub list has ready-made patterns for common cases.</p>
-      <p>Under <em>Call it from your code</em>, every stub has a snippet you can copy as cURL, HTTPie, JavaScript, Python or Java. The request log offers the same for any request it captured.</p>
+      <p>Under <em>Call it from your code</em>, every stub has a snippet you can copy as cURL, HTTPie, JavaScript, Python, Java, C# or Apex. The request log offers the same for any request it captured.</p>
       <h3>Keyboard shortcuts</h3>
       <table>
         <thead><tr><th>Keys</th><th>Action</th></tr></thead>
@@ -192,6 +194,14 @@
         <li><strong>Faults</strong>: connection reset, empty response, malformed chunk, or random data then close.</li>
       </ul>
       <p>A global delay for every response is on the <strong>Server</strong> page.</p>
+      <p><strong>Random failures.</strong> Under <strong>Failures</strong>, make a share of calls fail, for example 10%, with an error status or a network fault. The rest get the normal response. Failed calls carry <code>X-MockHub-Simulated-Error: true</code>. Without a body of your own, REST stubs answer <code>{"error":"Simulated failure"}</code> and SOAP stubs answer a SOAP fault. In JSON, it's stored on the stub as:</p>
+      <div class="code"><pre>"metadata": { "mockhub": { "errorRate": { "percent": 10, "status": 503 } } }</pre></div>
+
+      <h2 id="api-keys">API keys</h2>
+      <p>In a project's <strong>Settings</strong>, turn on <strong>Require an API key</strong> and choose the header (default <code>X-API-Key</code>) and the key. Every call under the project's base path must then send it. Calls without the right key get a <code>401</code>: JSON for REST, a SOAP 1.1 or 1.2 fault for SOAP. <code>OPTIONS</code> preflights and <code>?wsdl</code> stay open. Try it, code snippets and the Postman and Bruno exports send the key automatically. Anyone who can see the project can see the key: it's a mock credential, not a secret.</p>
+
+      <h2 id="stub-controls">On, off &amp; usage</h2>
+      <p>Flip the switch at the top of a stub to turn it <strong>off</strong>. Requests then skip it as if it were deleted, but it stays saved, in exports and in backups. The number next to each stub in the list, and the line under the switch, show how many calls it answered and when, counted from the request log. Clearing the log or restarting resets the counts.</p>
 
       <h2 id="soap">SOAP &amp; WSDL</h2>
       <p>Choose <strong>SOAP stub</strong>, or switch an existing stub's service type to SOAP. Enter the operation element (the first element inside <code>soap:Body</code>, such as <code>GetCustomer</code>) and MockHub matches it for you. Add XPath conditions to answer differently per field value:</p>
@@ -263,6 +273,7 @@
         </tbody>
       </table>
       <p>In a project, open <strong>Assistant</strong> and describe what you need, or paste an OpenAPI spec, a WSDL or curl commands. The assistant reads the stubs and recent requests and <em>stages</em> changes. You review each one as a diff and apply or discard it, so nothing changes until an editor applies it. Viewers can draft changes but not apply them.</p>
+      <p>For a single response, select <strong>Generate with AI</strong> next to a stub's body. Describe it, check the result and select <strong>Use this body</strong>. This needs the editor role.</p>
       <div class="callout">The conversation, the project's stubs and, when needed, recent requests go to the provider you configure. Choose one your organisation allows, or run models yourself behind LiteLLM.</div>
 
       <h2 id="config">Configuration</h2>
@@ -296,6 +307,9 @@ curl -X POST $HUB/__admin/mockhub/api/projects/$ID/stubs \
 <span class="c"># download the Postman collection</span>
 curl -OJ $HUB/__admin/mockhub/api/projects/$ID/export/postman
 
+<span class="c"># require an API key on every mock call (null turns it off)</span>
+curl -X PUT $HUB/__admin/mockhub/api/projects/$ID -d '{"apiKey":{"header":"X-API-Key","value":"test-key"}}'
+
 <span class="c"># check which calls your service made, and which didn't match</span>
 curl "$HUB/__admin/mockhub/api/projects/$ID/requests?unmatched=true"</pre></div>
       <table>
@@ -306,6 +320,9 @@ curl "$HUB/__admin/mockhub/api/projects/$ID/requests?unmatched=true"</pre></div>
           <tr><td><code>GET|POST /projects/{id}/stubs</code></td><td>list, create</td></tr>
           <tr><td><code>GET|PUT|DELETE /projects/{id}/stubs/{stubId}</code></td><td>read, update, delete</td></tr>
           <tr><td><code>POST …/stubs/{stubId}/clone?target=</code>, <code>…/move?target=</code></td><td>copy or move a stub</td></tr>
+          <tr><td><code>PUT …/stubs/{stubId}/enabled</code></td><td>turn a stub on or off: <code>{"enabled":false}</code></td></tr>
+          <tr><td><code>GET /projects/{id}/usage</code></td><td>calls and last call time per stub</td></tr>
+          <tr><td><code>POST /projects/{id}/ai/body</code></td><td>generate a response body from a description</td></tr>
           <tr><td><code>GET|DELETE /projects/{id}/requests</code></td><td>request log</td></tr>
           <tr><td><code>GET /projects/{id}/export/{postman|bruno|wiremock}</code></td><td>exports</td></tr>
           <tr><td><code>POST /projects/{id}/import/{openapi|wsdl|wiremock}</code></td><td>imports</td></tr>

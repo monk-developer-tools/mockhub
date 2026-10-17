@@ -4,12 +4,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useHotkeys } from '../../state/hotkeys';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../../api/client';
-import type { Stub } from '../../api/types';
+import type { Stub, StubUsage } from '../../api/types';
 import { Confirm } from '../../components/Modal';
 import { Skeleton } from '../../components/Skeleton';
 import { StubRoute } from '../../components/StubRoute';
 import { useToast } from '../../components/Toasts';
-import { describeUrl, emptyForm, toStub } from '../../model/stubForm';
+import { describeUrl, emptyForm, errorPercentOf, isDisabled, toStub } from '../../model/stubForm';
 import { useApp } from '../../state/AppContext';
 import { useProject } from './ProjectPage';
 import { StubEditor } from './StubEditor';
@@ -31,11 +31,12 @@ function folderOf(stub: Stub) {
 
 export function StubsTab() {
   const { project, reloadProject } = useProject();
-  const { projects, canEdit, refreshProjects } = useApp();
+  const { projects, canEdit, refreshProjects, aiStatus } = useApp();
   const { stubId } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
   const [stubs, setStubs] = useState<Stub[] | null>(null);
+  const [usage, setUsage] = useState<Record<string, StubUsage>>({});
   const [query, setQuery] = useState('');
   const [chip, setChip] = useState('All');
   const [draft, setDraft] = useState<Stub | null>(null);
@@ -56,7 +57,9 @@ export function StubsTab() {
 
   const load = useCallback(async () => {
     try {
-      setStubs(await api.stubs(project.id));
+      const [list, calls] = await Promise.all([api.stubs(project.id), api.stubUsage(project.id).catch(() => ({}))]);
+      setStubs(list);
+      setUsage(calls);
     } catch (e) {
       toast.fail(e);
     }
@@ -182,9 +185,16 @@ export function StubsTab() {
               <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
                 {list.map((s) => (
                   <li key={String(s.id)}>
-                    <button className="stub-item" aria-current={!draft && s.id === stubId} onClick={() => select(String(s.id))}>
-                      <StubRoute stub={s} basePath={project.basePath} />
+                    <button className={`stub-item${isDisabled(s) ? ' disabled' : ''}`} aria-current={!draft && s.id === stubId} onClick={() => select(String(s.id))}>
+                      <span className="stub-item-top">
+                        <StubRoute stub={s} basePath={project.basePath} />
+                        {usage[String(s.id)] && (
+                          <span className="stub-calls" title={`${usage[String(s.id)].count} calls in the request log`}>{usage[String(s.id)].count}</span>
+                        )}
+                      </span>
                       <span className="stub-name">
+                        {isDisabled(s) && <span className="tag off">off</span>}
+                        {errorPercentOf(s) > 0 && <span className="tag warn" title={`Fails ${errorPercentOf(s)}% of calls`}>{errorPercentOf(s)}% fail</span>}
                         {metaOf(s).type === 'soap' && <span className="tag soap">SOAP</span>}
                         {Boolean(s.scenarioName) && <span className="tag scenario">{String(s.scenarioName)}</span>}
                         {s.priority !== undefined && <span className="tag">p{String(s.priority)}</span>}
@@ -211,6 +221,12 @@ export function StubsTab() {
           onSaved={afterSave}
           onDeleted={afterDelete}
           onDirtyChange={setDirty}
+          usage={draft ? undefined : usage[String(selected.id)]}
+          aiEnabled={Boolean(aiStatus?.enabled)}
+          onToggled={async () => {
+            await load();
+            reloadProject();
+          }}
         />
       ) : (
         <div className="panel">

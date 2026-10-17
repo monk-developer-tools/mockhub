@@ -23,6 +23,26 @@ describe('snippets', () => {
     expect(snippet('httpie', post, 'http://h')).toMatch(/^printf %s .* \| http POST 'http:\/\/h\/orders\?dry=true'/);
   });
 
+  it('builds a C# snippet with content headers on the body', () => {
+    // When
+    const code = snippet('csharp', post, 'http://h');
+
+    // Then
+    expect(code).toContain('new HttpRequestMessage(new HttpMethod("POST"), "http://h/orders?dry=true")');
+    expect(code).toContain(`request.Content = new StringContent(@"{""note"":""it's""}", Encoding.UTF8, "application/json");`);
+    expect(code).not.toContain('TryAddWithoutValidation("Content-Type"');
+  });
+
+  it('builds an Apex snippet with escaped single quotes', () => {
+    // When
+    const code = snippet('apex', post, 'http://h');
+
+    // Then
+    expect(code).toContain("request.setEndpoint('http://h/orders?dry=true');");
+    expect(code).toContain("request.setHeader('Content-Type', 'application/json');");
+    expect(code).toContain(`request.setBody('{"note":"it\\'s"}');`);
+  });
+
   it('omits the body for GET requests', () => {
     // Given
     const get = { ...post, method: 'GET' };
@@ -34,6 +54,17 @@ describe('snippets', () => {
 });
 
 describe('sampleRequest', () => {
+  it('adds the project API key header', () => {
+    // Given
+    const form = { ...emptyForm('rest'), urlMatch: 'urlPath' as const, url: '/balance' };
+
+    // When
+    const sample = sampleRequest(form, { header: 'X-API-Key', value: 's3cret' });
+
+    // Then
+    expect(sample.headers).toContainEqual(['X-API-Key', 's3cret']);
+  });
+
   it('derives method, headers and body from a SOAP form', () => {
     // Given
     const form = { ...emptyForm('soap'), urlMatch: 'urlPath' as const, url: '/ws', soapAction: 'urn:Get', sampleBody: '<x/>' };

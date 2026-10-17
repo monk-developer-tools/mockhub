@@ -11,6 +11,7 @@ import io.mockhub.ai.AiSettings;
 import io.mockhub.ai.AiSettingsStore;
 import io.mockhub.ai.AssistantJobs;
 import io.mockhub.ai.AssistantService;
+import io.mockhub.ai.BodyGenerator;
 import io.mockhub.ai.ChatCompletions;
 import io.mockhub.ai.ProposedChange;
 import io.mockhub.api.ApiException;
@@ -30,9 +31,10 @@ public final class AiController implements ApiController {
   private final AssistantJobs jobs;
   private final ProjectService projects;
   private final BaseUrls urls;
+  private final BodyGenerator bodies;
 
   public AiController(AiSettingsStore store, AiProviders providers, ChatCompletions chat, AssistantService assistant,
-      AssistantJobs jobs, ProjectService projects, BaseUrls urls) {
+      AssistantJobs jobs, ProjectService projects, BaseUrls urls, BodyGenerator bodies) {
     this.store = store;
     this.providers = providers;
     this.chat = chat;
@@ -40,6 +42,7 @@ public final class AiController implements ApiController {
     this.jobs = jobs;
     this.projects = projects;
     this.urls = urls;
+    this.bodies = bodies;
   }
 
   @Override
@@ -92,6 +95,18 @@ public final class AiController implements ApiController {
     r.get("/projects/{id}/ai/jobs/{jobId}", ctx -> {
       Project project = projects.get(ctx.path("id"));
       return Jsons.MAPPER.valueToTree(jobs.get(ctx.principal().id(), project.id(), ctx.path("jobId")));
+    });
+    r.post("/projects/{id}/ai/body", ctx -> {
+      Project project = projects.get(ctx.path("id"));
+      JsonNode body = ctx.json();
+      String path = body.path("path").asText("");
+      BodyGenerator.Request request = new BodyGenerator.Request(body.path("description").asText(""), body.path("format").asText("json"),
+          body.path("method").asText("GET"), path.isEmpty() ? "" : project.basePath() + path, body.path("status").asInt(0), body.path("current").asText(""));
+      try {
+        return Jsons.object().put("body", bodies.generate(request));
+      } catch (AiException e) {
+        throw new ApiException(502, e.getMessage());
+      }
     });
     r.post("/projects/{id}/ai/apply", ctx -> {
       Project project = projects.get(ctx.path("id"));

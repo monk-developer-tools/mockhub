@@ -28,6 +28,7 @@ import type {
   Session,
   SsoSettings,
   Stub,
+  StubUsage,
   UserRecord,
 } from './types';
 
@@ -213,6 +214,11 @@ export const api = {
     request<Stub>(`${API}/projects/${projectId}/stubs/${stubId}/clone${target ? `?target=${target}` : ''}`, { method: 'POST' }),
   moveStub: (projectId: string, stubId: string, target: string) =>
     request<Stub>(`${API}/projects/${projectId}/stubs/${stubId}/move?target=${target}`, { method: 'POST' }),
+  setStubEnabled: (projectId: string, stubId: string, enabled: boolean) =>
+    request<Stub>(`${API}/projects/${projectId}/stubs/${stubId}/enabled`, { method: 'PUT', body: json({ enabled }) }),
+  stubUsage: (projectId: string) => request<Record<string, StubUsage>>(`${API}/projects/${projectId}/usage`),
+  generateBody: (projectId: string, body: { description: string; format: string; method: string; path: string; status: number; current: string }) =>
+    request<{ body: string }>(`${API}/projects/${projectId}/ai/body`, { method: 'POST', body: json(body) }),
   unassignedStubs: () => request<Stub[]>(`${API}/stubs/unassigned`),
   adoptStub: (projectId: string, stubId: string, prefix: boolean) =>
     request<Stub>(`${API}/projects/${projectId}/adopt/${stubId}?prefix=${prefix}`, { method: 'POST' }),

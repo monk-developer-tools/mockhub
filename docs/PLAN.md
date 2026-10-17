@@ -236,7 +236,7 @@ inspection, templating, OpenAPI/WSDL import, proxy and record, delays and faults
 sharing. The phases below close the gaps that matter most. Where an official WireMock extension exists we use it, as
 long as it works with WireMock 3.13 on Jetty 12; otherwise we build a small extension of our own.
 
-### Phase 14 — CRUD routes, fake data, webhooks and body files (next)
+### Phase 14 — CRUD routes, fake data, webhooks and body files (done)
 
 **14a. CRUD routes backed by a data store**
 - Goal: `POST /customers` stores an object, `GET /customers/{id}` returns it, `PUT`/`PATCH` change it, `DELETE`
@@ -296,6 +296,24 @@ Checklist:
 - [x] Tests: unit, integration (CRUD round trip, persistence across restart, webhook delivered to a test server,
       file upload and serve), system, UI
 - [x] Docs, tutorials (CRUD resource, fake data, webhooks) and website
+
+**14d. Gaps found against a competitor's guides (17 Oct 2026)**
+- Turn a stub off without deleting it: `metadata.mockhub.disabled`, enforced with a `mockhub-disabled` custom
+  matcher that never matches. The API hides the matcher and restores any custom matcher the stub had.
+- Usage per stub: call count and last call from the request log (`GET /projects/{id}/usage`), shown in the stub list
+  and the editor.
+- Random failures: `metadata.mockhub.errorRate` `{percent, status, body, fault}` applied by a global transformer;
+  failed calls carry `X-MockHub-Simulated-Error`. SOAP stubs fail with a SOAP fault.
+- API keys per project: header and value in project settings; a stub request filter answers 401 (JSON, or a SOAP
+  1.1/1.2 fault). `OPTIONS` and `?wsdl` stay open. Try it, snippets and Postman/Bruno exports send the key.
+- C# and Apex code snippets.
+- *Generate with AI* for a single response body (`POST /projects/{id}/ai/body`, editor role).
+
+Checklist:
+- [x] Backend: stub switch, usage, error rate transformer, API key filter, AI body generator
+- [x] UI: on/off switch and usage, Failures section, API key panel, AI body dialog, C# and Apex snippets
+- [x] Tests: unit, integration, UI
+- [x] Docs, tutorials and website
 
 ### Phase 15 — Agents, history and access control (recommended)
 

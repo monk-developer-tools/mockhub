@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.tomakehurst.wiremock.stubbing.StubMapping;
 import io.mockhub.api.Jsons;
 import io.mockhub.project.Project;
+import io.mockhub.stub.StubSwitch;
 import java.util.List;
 
 public final class WireMockMappingsExporter implements CollectionExporter {
@@ -31,6 +32,7 @@ public final class WireMockMappingsExporter implements CollectionExporter {
     for (StubMapping s : stubs) {
       ObjectNode node = (ObjectNode) Jsons.fromWireMock(s);
       node.remove("insertionIndex");
+      StubSwitch.reveal(node);
       mappings.add(node);
     }
     return Jsons.MAPPER.writeValueAsBytes(out);

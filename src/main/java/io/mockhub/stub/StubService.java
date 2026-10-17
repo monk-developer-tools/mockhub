@@ -84,6 +84,12 @@ public final class StubService implements ProjectListener {
     Jsons.toWireMock(toAbsolute(relativeStub, p), StubMapping.class);
   }
 
+  public ObjectNode setEnabled(String projectId, String stubId, boolean enabled) {
+    ObjectNode node = get(projectId, stubId);
+    StubMetadata.node(node).put(StubSwitch.DISABLED, !enabled);
+    return update(projectId, stubId, node);
+  }
+
   public void delete(String projectId, String stubId) {
     Project p = projects.get().get(projectId);
     gateway.remove(find(p, stubId).getId());
@@ -133,6 +139,7 @@ public final class StubService implements ProjectListener {
       ObjectNode node = (ObjectNode) Jsons.fromWireMock(stub);
       StubPaths.toRelative(node, before.basePath());
       StubPaths.toAbsolute(node, after.basePath());
+      StubSwitch.apply(node);
       gateway.update(Jsons.toWireMock(node, StubMapping.class));
     }
   }
@@ -167,6 +174,7 @@ public final class StubService implements ProjectListener {
     ObjectNode meta = StubMetadata.node(node);
     meta.put(StubMetadata.PROJECT_ID, p.id());
     if (!meta.has(StubMetadata.TYPE)) meta.put(StubMetadata.TYPE, "rest");
+    StubSwitch.apply(node);
     return node;
   }
 
@@ -174,6 +182,7 @@ public final class StubService implements ProjectListener {
     ObjectNode node = (ObjectNode) Jsons.fromWireMock(s);
     node.remove("insertionIndex");
     StubPaths.toRelative(node, p.basePath());
+    StubSwitch.reveal(node);
     return node;
   }
 }

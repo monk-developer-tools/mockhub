@@ -44,4 +44,51 @@ describe('StubEditor', () => {
     expect(screen.getByRole('button', { name: 'XML' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'XML' })).toHaveAttribute('aria-pressed', 'false');
   });
+
+  it('shows calls from the request log and the on switch', () => {
+    // Given
+    const usage = { count: 3, lastCalledAt: new Date().toISOString() };
+
+    // When
+    renderWithShell(<StubEditor project={project} projects={[project]} stub={stub} isNew={false} canEdit onSaved={() => undefined}
+      onDeleted={() => undefined} onDirtyChange={() => undefined} usage={usage} />);
+
+    // Then
+    expect(screen.getByRole('switch', { name: 'Stub is on' })).toBeChecked();
+    expect(screen.getByText('3 calls in the request log, last just now')).toBeInTheDocument();
+  });
+
+  it('marks a disabled stub as off', () => {
+    // Given
+    const off: Stub = { ...stub, metadata: { mockhub: { disabled: true } } };
+
+    // When
+    renderWithShell(<StubEditor project={project} projects={[project]} stub={off} isNew={false} canEdit onSaved={() => undefined}
+      onDeleted={() => undefined} onDirtyChange={() => undefined} />);
+
+    // Then
+    expect(screen.getByRole('switch', { name: 'Stub is on' })).not.toBeChecked();
+    expect(screen.getByText(/Requests skip this stub/)).toBeInTheDocument();
+  });
+
+  it('describes a failure rate and offers AI only when it is on', () => {
+    // Given
+    renderWithShell(<StubEditor project={project} projects={[project]} stub={stub} isNew={false} canEdit onSaved={() => undefined}
+      onDeleted={() => undefined} onDirtyChange={() => undefined} aiEnabled />);
+
+    // When
+    fireEvent.change(screen.getByRole('spinbutton', { name: 'Failure rate in percent' }), { target: { value: '10' } });
+
+    // Then
+    expect(screen.getByText(/About 10% of calls get 503/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Generate with AI/ })).toBeInTheDocument();
+  });
+
+  it('hides the AI button when the assistant is off', () => {
+    // When
+    renderWithShell(<Host />);
+
+    // Then
+    expect(screen.queryByRole('button', { name: /Generate with AI/ })).not.toBeInTheDocument();
+  });
 });

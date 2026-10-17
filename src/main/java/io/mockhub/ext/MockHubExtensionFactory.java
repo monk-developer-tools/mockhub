@@ -8,6 +8,9 @@ import io.mockhub.ai.AiProviders;
 import io.mockhub.ai.AiSettingsStore;
 import io.mockhub.ai.AssistantJobs;
 import io.mockhub.ai.AssistantService;
+import io.mockhub.ai.BodyGenerator;
+import io.mockhub.chaos.ErrorRateTransformer;
+import io.mockhub.stub.DisabledStubMatcher;
 import io.mockhub.ai.ChatCompletions;
 import io.mockhub.ai.JdkLlmTransport;
 import io.mockhub.controller.AiController;
@@ -80,6 +83,7 @@ import java.util.List;
 import org.wiremock.extensions.state.CaffeineStore;
 import org.wiremock.extensions.state.StateExtension;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
 
 public final class MockHubExtensionFactory implements ExtensionFactory {
@@ -138,6 +142,9 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     List<Extension> extensions = new ArrayList<>(List.of(
         new PersistenceListener(),
         new CrudTransformer(crud),
+        new ErrorRateTransformer(() -> ThreadLocalRandom.current().nextDouble()),
+        new DisabledStubMatcher(),
+        new ApiKeyFilter(projects::findBySlug),
         new FakeHelpers(new FakeData(config.fakeLocale)),
         new AuthFilter(auth, policy),
         new MockHubAdminExtension(
@@ -154,7 +161,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
                 new StubController(stubs),
                 new RequestLogController(requestLog),
                 new ImportExportController(projects, stubs, exporters, importers, urls),
-                new AiController(aiSettings, aiProviders, chat, assistant, assistantJobs, projects, urls),
+                new AiController(aiSettings, aiProviders, chat, assistant, assistantJobs, projects, urls, new BodyGenerator(aiSettings, chat)),
                 new BackupController(new BackupService(orgs, teams, projects, gateway, dataStore, bodyFiles, clock)),
                 new DataController(projects, stubs, dataStore, crud),
                 new FilesController(projects, stubs, bodyFiles)))));

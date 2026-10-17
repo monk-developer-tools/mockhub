@@ -207,7 +207,7 @@ public final class BackupService {
       if (!options.asCopy()) removeStubsOf(id);
       String now = Instant.now(clock).toString();
       Project saved = new Project(id, p.name(), slug, p.description(), p.color(),
-          options.asCopy() ? now : p.createdAt(), now, orgId, teamId);
+          options.asCopy() ? now : p.createdAt(), now, orgId, teamId, p.apiKey());
       projects.restore(List.of(saved));
       file.path("files").path(p.id()).fields().forEachRemaining(e -> files.save(saved.id(), e.getKey(), Base64.getDecoder().decode(e.getValue().asText())));
       JsonNode stored = file.path("data").path(p.id());

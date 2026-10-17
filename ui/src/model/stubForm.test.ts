@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Stub } from '../api/types';
-import { applySoapDefaults, emptyForm, fromStub, soapFault, toStub, validate } from './stubForm';
+import { applySoapDefaults, emptyForm, errorPercentOf, fromStub, isDisabled, soapFault, toStub, validate } from './stubForm';
 
 describe('stub form conversion', () => {
   it('reads a REST stub into the form', () => {
@@ -220,5 +220,49 @@ describe('validation', () => {
     expect(validate({ ...emptyForm(), responseMode: 'proxy', proxyBaseUrl: 'ftp://x' })).toEqual([
       'Proxy target must start with http:// or https://',
     ]);
+  });
+
+  it('round-trips a failure rate through stub metadata', () => {
+    // Given
+    const form = { ...emptyForm('rest'), errorPercent: '10', errorStatus: '503', errorBody: '{"error":"busy"}' };
+
+    // When
+    const stub = toStub(form);
+    const back = fromStub(stub);
+
+    // Then
+    expect((stub.metadata as { mockhub: { errorRate: unknown } }).mockhub.errorRate).toEqual({ percent: 10, status: 503, body: '{"error":"busy"}' });
+    expect(errorPercentOf(stub)).toBe(10);
+    expect(back.form.errorPercent).toBe('10');
+    expect(back.form.errorBody).toBe('{"error":"busy"}');
+    expect(back.unsupported).toEqual([]);
+  });
+
+  it('stores a fault instead of a status and removes the rate when cleared', () => {
+    // Given
+    const withFault = toStub({ ...emptyForm('rest'), errorPercent: '25', errorMode: 'fault', errorFault: 'EMPTY_RESPONSE' });
+
+    // When
+    const cleared = toStub({ ...fromStub(withFault).form, errorPercent: '' }, withFault);
+
+    // Then
+    expect((withFault.metadata as { mockhub: { errorRate: unknown } }).mockhub.errorRate).toEqual({ percent: 25, fault: 'EMPTY_RESPONSE' });
+    expect((cleared.metadata as { mockhub: Record<string, unknown> }).mockhub.errorRate).toBeUndefined();
+  });
+
+  it('rejects failure rates outside 0 to 100', () => {
+    // When / Then
+    expect(validate({ ...emptyForm('rest'), errorPercent: '120' })).toContain('The failure rate must be between 0 and 100 percent.');
+  });
+
+  it('keeps the disabled flag when a disabled stub is saved from the form', () => {
+    // Given
+    const stub = { request: { method: 'GET', urlPath: '/a' }, response: { status: 200 }, metadata: { mockhub: { disabled: true } } };
+
+    // When
+    const saved = toStub({ ...fromStub(stub).form, name: 'A' }, stub);
+
+    // Then
+    expect(isDisabled(saved)).toBe(true);
   });
 });

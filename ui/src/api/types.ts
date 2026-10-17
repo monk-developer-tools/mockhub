@@ -16,6 +16,17 @@ export interface Project {
   activity: number[];
   orgId: string;
   teamId: string;
+  apiKey?: ApiKeyRule | null;
+}
+
+export interface ApiKeyRule {
+  header: string;
+  value: string;
+}
+
+export interface StubUsage {
+  count: number;
+  lastCalledAt: string;
 }
 
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json };

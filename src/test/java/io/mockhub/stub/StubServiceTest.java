@@ -179,4 +179,23 @@ class StubServiceTest {
   void rejectsMalformedStubIds() {
     assertThatThrownBy(() -> stubs.get(orders.id(), "not-a-uuid")).extracting("status").isEqualTo(400);
   }
+
+  @Test
+  void disablingAStubHidesTheMatcherFromTheApi() {
+    // Given
+    String id = stubs.create(orders.id(), json("{'request':{'method':'GET','urlPath':'/x'}}")).get("id").asText();
+
+    // When
+    ObjectNode disabled = stubs.setEnabled(orders.id(), id, false);
+    StubMapping stored = gateway.findAll().get(0);
+    ObjectNode enabled = stubs.setEnabled(orders.id(), id, true);
+
+    // Then
+    assertThat(stored.getRequest().getCustomMatcher().getName()).isEqualTo(StubSwitch.MATCHER);
+    assertThat(StubSwitch.isDisabled(stored)).isTrue();
+    assertThat(disabled.at("/request").has("customMatcher")).isFalse();
+    assertThat(disabled.at("/metadata/mockhub/disabled").asBoolean()).isTrue();
+    assertThat(enabled.at("/metadata/mockhub").has("disabled")).isFalse();
+    assertThat(gateway.findAll().get(0).getRequest().getCustomMatcher()).isNull();
+  }
 }

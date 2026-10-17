@@ -23,7 +23,7 @@ export function TryIt({ project, form }: { project: Project; form: StubForm }) {
   const [busy, setBusy] = useState(false);
 
   const reset = () => {
-    const sample = sampleRequest(form);
+    const sample = sampleRequest(form, project.apiKey);
     setMethod(sample.method);
     setPath(sample.path);
     setHeaders(sample.headers.map(([k, v]) => `${k}: ${v}`).join('\n'));

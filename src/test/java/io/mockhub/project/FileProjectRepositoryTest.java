@@ -35,7 +35,7 @@ class FileProjectRepositoryTest {
     repository.save(original);
 
     // When
-    repository.save(new Project(original.id(), "Renamed", "orders", "", "#fff", original.createdAt(), original.updatedAt(), "org1", "team1"));
+    repository.save(new Project(original.id(), "Renamed", "orders", "", "#fff", original.createdAt(), original.updatedAt(), "org1", "team1", null));
 
     // Then
     assertThat(repository.findAll()).singleElement().extracting(Project::name).isEqualTo("Renamed");

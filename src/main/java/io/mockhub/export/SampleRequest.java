@@ -147,6 +147,7 @@ public record SampleRequest(
     Integer status = resp.has("fault") || resp.has("proxyBaseUrl") ? null : resp.path("status").asInt(200);
 
     String name = node.hasNonNull("name") ? node.get("name").asText() : method + " " + path;
+    if (project.apiKey() != null) headers.putIfAbsent(project.apiKey().header(), project.apiKey().value());
     String folder = mockhubMeta.hasNonNull("folder") ? mockhubMeta.get("folder").asText() : soap ? "SOAP" : firstSegment(path);
     if (mockhubMeta.hasNonNull("description")) description += mockhubMeta.get("description").asText();
 

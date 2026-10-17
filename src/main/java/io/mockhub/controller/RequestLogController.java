@@ -12,6 +12,7 @@ public final class RequestLogController implements ApiController {
 
   @Override
   public void register(ApiRouter r) {
+    r.get("/projects/{id}/usage", ctx -> requestLog.usage(ctx.path("id")));
     r.get("/projects/{id}/requests", ctx -> requestLog.list(
         ctx.path("id"),
         Integer.parseInt(ctx.query("limit", "200")),

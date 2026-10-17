@@ -10,6 +10,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.Map;
 
 final class ApiClient {
 
@@ -60,14 +61,20 @@ final class ApiClient {
   }
 
   Result send(String method, String path, String body, String contentType) {
+    return send(method, path, body, contentType, Map.of());
+  }
+
+  Result send(String method, String path, String body, String contentType, Map<String, String> headers) {
     HttpRequest.Builder b = HttpRequest.newBuilder(URI.create(baseUrl + path))
         .method(method, body == null ? HttpRequest.BodyPublishers.noBody() : HttpRequest.BodyPublishers.ofString(body));
     if (contentType != null) b.header("Content-Type", contentType);
+    headers.forEach(b::header);
     if (authorization != null && path.startsWith("/__admin")) b.header("Authorization", authorization);
     try {
       HttpResponse<byte[]> r = http.send(b.build(), HttpResponse.BodyHandlers.ofByteArray());
       return new Result(r.statusCode(), r.body(), r.headers().firstValue("Content-Type").orElse(""),
-          r.headers().firstValue("Content-Disposition").orElse(""), r.headers().firstValue("Location").orElse(""));
+          r.headers().firstValue("Content-Disposition").orElse(""), r.headers().firstValue("Location").orElse(""),
+          r.headers().firstValue("X-MockHub-Simulated-Error").orElse(""));
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     } catch (InterruptedException e) {
@@ -76,7 +83,7 @@ final class ApiClient {
     }
   }
 
-  record Result(int status, byte[] bytes, String contentType, String contentDisposition, String location) {
+  record Result(int status, byte[] bytes, String contentType, String contentDisposition, String location, String simulatedError) {
     String body() {
       return new String(bytes, StandardCharsets.UTF_8);
     }

@@ -1,4 +1,4 @@
-import { Copy, Database, FloppyDisk, FolderSimplePlus, LockSimple, Plus, Trash, Warning } from '@phosphor-icons/react';
+import { Copy, Database, FloppyDisk, FolderSimplePlus, LockSimple, Plus, Sparkle, Trash, Warning } from '@phosphor-icons/react';
 import { Link } from 'react-router-dom';
 import { crudOf } from '../../model/crud';
 import { FakeDataMenu } from '../../components/FakeDataMenu';
@@ -7,7 +7,9 @@ import { UploadButton, useProjectFiles } from './ResponseFiles';
 import { useEffect, useMemo, useState } from 'react';
 import { useHotkeys } from '../../state/hotkeys';
 import { api } from '../../api/client';
-import type { Project, Stub } from '../../api/types';
+import type { Project, Stub, StubUsage } from '../../api/types';
+import { timeAgo } from '../../model/time';
+import { AiBodyDialog, type BodyFormat } from './AiBodyDialog';
 import { CodeEditor } from '../../components/CodeEditor';
 import { Confirm, Modal } from '../../components/Modal';
 import { StubRoute } from '../../components/StubRoute';
@@ -17,6 +19,7 @@ import {
   emptyWebhook,
   FAULTS,
   fromStub,
+  isDisabled,
   METHODS,
   soapEnvelope,
   soapFault,
@@ -70,6 +73,9 @@ interface Props {
   onSaved: (stub: Stub) => void;
   onDeleted: () => void;
   onDirtyChange: (dirty: boolean) => void;
+  usage?: StubUsage;
+  onToggled?: (stub: Stub) => void;
+  aiEnabled?: boolean;
 }
 
 type Mode = 'form' | 'json';
@@ -79,8 +85,11 @@ function withFile(form: StubForm, path: string, contentType: string): Partial<St
   return { responseBody: path, responseHeaders: [{ key: 'Content-Type', value: contentType }, ...headers] };
 }
 
-export function StubEditor({ project, projects, stub, isNew, canEdit, onSaved, onDeleted, onDirtyChange }: Props) {
+export function StubEditor({ project, projects, stub, isNew, canEdit, onSaved, onDeleted, onDirtyChange, usage, onToggled, aiEnabled = false }: Props) {
   const crud = crudOf(stub);
+  const [generating, setGenerating] = useState(false);
+  const [toggling, setToggling] = useState(false);
+  const disabled = isDisabled(stub);
   const { files, reload: reloadFiles } = useProjectFiles(project.id);
   const toast = useToast();
   const initial = useMemo(() => fromStub(stub), [stub]);
@@ -199,6 +208,23 @@ export function StubEditor({ project, projects, stub, isNew, canEdit, onSaved, o
     }
   };
 
+  const toggle = async () => {
+    if (dirty) {
+      toast.notify('Save or discard your changes first');
+      return;
+    }
+    setToggling(true);
+    try {
+      const saved = await api.setStubEnabled(project.id, String(stub.id), disabled);
+      toast.notify(disabled ? 'Stub turned on' : 'Stub turned off');
+      onToggled?.(saved);
+    } catch (e) {
+      toast.fail(e);
+    } finally {
+      setToggling(false);
+    }
+  };
+
   const canSave = canEdit && !busy && errors.length === 0 && (dirty || isNew);
   useHotkeys(useMemo(() => [{ key: 's', mod: true, allowWhileTyping: true, handler: () => canSave && save() }], [canSave, form, jsonText, mode]));
 
@@ -237,6 +263,22 @@ export function StubEditor({ project, projects, stub, isNew, canEdit, onSaved, o
           </div>
         )}
       </div>
+
+      {!isNew && (
+        <div className="stub-status">
+          <label className={`switch${disabled ? ' off' : ''}`}>
+            <input type="checkbox" role="switch" checked={!disabled} disabled={!canEdit || toggling} onChange={toggle} aria-label="Stub is on" />
+            <span>{disabled ? 'Off' : 'On'}</span>
+          </label>
+          <span className="muted small">
+            {disabled
+              ? 'Requests skip this stub, as if it were deleted. Turn it on to answer again.'
+              : usage
+                ? `${usage.count} ${usage.count === 1 ? 'call' : 'calls'} in the request log, last ${timeAgo(usage.lastCalledAt)}`
+                : 'Not called yet'}
+          </span>
+        </div>
+      )}
 
       {errors.length > 0 && (
         <div className="section">
@@ -446,6 +488,11 @@ export function StubEditor({ project, projects, stub, isNew, canEdit, onSaved, o
                   <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                     Body
                     <span className="btn-row">
+                      {aiEnabled && canEdit && ['json', 'xml', 'text'].includes(form.bodyType) && (
+                        <button type="button" className="btn small" onClick={() => setGenerating(true)}>
+                          <Sparkle size={13} /> Generate with AI
+                        </button>
+                      )}
                       {soap && (
                         <>
                           <button type="button" className="btn small" onClick={() => update({ responseBody: soapEnvelope(form.soapVersion, `<ns:${form.soapOperation || 'Operation'}Response xmlns:ns="http://example.com/">\n      <ns:result>ok</ns:result>\n    </ns:${form.soapOperation || 'Operation'}Response>`) })}>
@@ -564,6 +611,64 @@ export function StubEditor({ project, projects, stub, isNew, canEdit, onSaved, o
             </div>
           )}
 
+          {form.responseMode !== 'fault' && (
+            <div className="section">
+              <h3>Failures <span className="muted small">optional: make some calls fail at random</span></h3>
+              <div className="rows">
+                <div className="failure-row">
+                  <label className="field">
+                    <span>Fail</span>
+                    <span className="input-suffix">
+                      <input type="number" min={0} max={100} step="any" aria-label="Failure rate in percent" placeholder="0" value={form.errorPercent} onChange={(e) => update({ errorPercent: e.target.value })} />
+                      <span>% of calls</span>
+                    </span>
+                  </label>
+                  <div className="field">
+                    <span>with</span>
+                    <div className="segmented" role="group" aria-label="Failure type">
+                      <button type="button" aria-pressed={form.errorMode === 'status'} onClick={() => update({ errorMode: 'status' })}>Error status</button>
+                      <button type="button" aria-pressed={form.errorMode === 'fault'} onClick={() => update({ errorMode: 'fault' })}>Network fault</button>
+                    </div>
+                  </div>
+                  {form.errorMode === 'status' ? (
+                    <label className="field">
+                      <span>Status</span>
+                      <input type="number" className="mono" aria-label="Failure status" value={form.errorStatus} onChange={(e) => update({ errorStatus: e.target.value })} />
+                    </label>
+                  ) : (
+                    <label className="field">
+                      <span>Fault</span>
+                      <select aria-label="Failure fault" value={form.errorFault} onChange={(e) => update({ errorFault: e.target.value as StubForm['errorFault'] })}>
+                        {FAULTS.map((f) => <option key={f} value={f}>{f.toLowerCase().replace(/_/g, ' ')}</option>)}
+                      </select>
+                    </label>
+                  )}
+                </div>
+                {Number(form.errorPercent) > 0 && form.errorMode === 'status' && (
+                  <div className="field">
+                    <span>Failure body <span className="hint">optional, leave empty for the default</span></span>
+                    <CodeEditor
+                      label="Failure body"
+                      value={form.errorBody}
+                      language={soap ? 'xml' : 'json'}
+                      readOnly={readOnly}
+                      minHeight="60px"
+                      maxHeight="200px"
+                      onChange={(errorBody) => update({ errorBody })}
+                    />
+                  </div>
+                )}
+                {Number(form.errorPercent) > 0 && (
+                  <p className="muted small">
+                    {form.errorMode === 'status'
+                      ? `About ${form.errorPercent}% of calls get ${form.errorStatus || 500}${form.errorBody.trim() ? ' with the body above' : soap ? ' with a SOAP fault' : ' with {"error":"Simulated failure"}'} and the header X-MockHub-Simulated-Error. The rest get the normal response.`
+                      : `About ${form.errorPercent}% of calls end with a ${form.errorFault.toLowerCase().replace(/_/g, ' ')}. The rest get the normal response.`}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="section">
             <h3>Scenario <span className="muted small">optional: answer differently as state changes between calls</span></h3>
             <div className="grid three">
@@ -634,10 +739,25 @@ export function StubEditor({ project, projects, stub, isNew, canEdit, onSaved, o
       {!isNew && (
         <div className="section">
           <h3>Call it from your code</h3>
-          <CodeSnippets request={sampleRequest(mode === 'form' ? form : fromStub(preview).form)} baseUrl={project.mockUrl} />
+          <CodeSnippets request={sampleRequest(mode === 'form' ? form : fromStub(preview).form, project.apiKey)} baseUrl={project.mockUrl} />
         </div>
       )}
 
+      {generating && (
+        <AiBodyDialog
+          projectId={project.id}
+          format={form.bodyType as BodyFormat}
+          method={form.method === 'ANY' ? 'GET' : form.method}
+          path={form.urlMatch === 'any' ? '' : form.url}
+          status={Number(form.status) || 200}
+          current={form.responseBody}
+          onClose={() => setGenerating(false)}
+          onUse={(responseBody) => {
+            update({ responseBody });
+            setGenerating(false);
+          }}
+        />
+      )}
       {confirmDelete && (
         <Confirm
           title="Delete stub?"

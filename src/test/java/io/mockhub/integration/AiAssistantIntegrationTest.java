@@ -166,4 +166,23 @@ class AiAssistantIntegrationTest {
     assertThat(chat.status()).isEqualTo(502);
     assertThat(chat.json().get("error").asText()).contains("Invalid API key");
   }
+
+  @Test
+  void generatesAResponseBodyFromADescription() {
+    // Given
+    llm.stubFor(post(urlPathEqualTo("/v1/chat/completions")).willReturn(aResponse().withHeader("Content-Type", "application/json")
+        .withBody("{\"choices\":[{\"message\":{\"role\":\"assistant\",\"content\":\"```json\\n{\\\"id\\\":\\\"ord_1\\\"}\\n```\"}}]}")));
+
+    // When
+    ApiClient.Result result = admin.post(API + "/projects/" + projectId + "/ai/body",
+        "{\"description\":\"an order\",\"format\":\"json\",\"method\":\"GET\",\"path\":\"/orders/1\",\"status\":200}");
+    ApiClient.Result asViewer = server.api().login("qa", "pw").post(API + "/projects/" + projectId + "/ai/body", "{\"description\":\"x\"}");
+
+    // Then
+    assertThat(result.status()).as(result.body()).isEqualTo(200);
+    assertThat(result.json().get("body").asText()).isEqualTo("{\n  \"id\" : \"ord_1\"\n}");
+    llm.verify(postRequestedFor(urlPathEqualTo("/v1/chat/completions"))
+        .withRequestBody(com.github.tomakehurst.wiremock.client.WireMock.containing("GET /orders/orders/1")));
+    assertThat(asViewer.status()).isEqualTo(403);
+  }
 }

@@ -1,12 +1,16 @@
 package io.mockhub.journal;
 
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
 import io.mockhub.api.Jsons;
 import io.mockhub.project.Project;
 import io.mockhub.project.ProjectService;
 import io.mockhub.stub.StubGateway;
+import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public final class RequestLogService {
@@ -42,6 +46,19 @@ public final class RequestLogService {
         .filter(e -> !unmatchedOnly || !e.getWasMatched())
         .limit(Math.max(1, limit))
         .forEach(e -> out.add(Jsons.fromWireMock(e)));
+    return out;
+  }
+
+  public ObjectNode usage(String projectId) {
+    Map<String, long[]> byStub = new LinkedHashMap<>();
+    for (ServeEvent e : eventsOf(projects.get(projectId))) {
+      if (!e.getWasMatched() || e.getStubMapping() == null || e.getStubMapping().getId() == null) continue;
+      long[] entry = byStub.computeIfAbsent(e.getStubMapping().getId().toString(), k -> new long[2]);
+      entry[0]++;
+      entry[1] = Math.max(entry[1], e.getRequest().getLoggedDate().getTime());
+    }
+    ObjectNode out = Jsons.object();
+    byStub.forEach((id, entry) -> out.putObject(id).put("count", entry[0]).put("lastCalledAt", Instant.ofEpochMilli(entry[1]).toString()));
     return out;
   }
 

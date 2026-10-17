@@ -1,3 +1,4 @@
+import type { ApiKeyRule } from '../api/types';
 import { soapContentType, type StubForm } from './stubForm';
 
 export interface SampleRequest {
@@ -27,7 +28,7 @@ export function samplePath(form: StubForm): string {
   return path.startsWith('/') ? path : `/${path}`;
 }
 
-export function sampleRequest(form: StubForm): SampleRequest {
+export function sampleRequest(form: StubForm, apiKey?: ApiKeyRule | null): SampleRequest {
   const headers: [string, string][] = form.headers
     .filter((h) => h.key && (h.operator === 'equalTo' || h.operator === 'contains'))
     .map((h) => [h.key, h.value]);
@@ -37,6 +38,7 @@ export function sampleRequest(form: StubForm): SampleRequest {
   } else if (!headers.some(([k]) => k.toLowerCase() === 'content-type') && form.body.some((b) => b.operator === 'equalToJson' || b.operator === 'matchesJsonPath')) {
     headers.push(['Content-Type', 'application/json']);
   }
+  if (apiKey && !headers.some(([k]) => k.toLowerCase() === apiKey.header.toLowerCase())) headers.push([apiKey.header, apiKey.value]);
   const exact = form.body.find((b) => b.operator === 'equalToJson' || b.operator === 'equalToXml' || b.operator === 'equalTo');
   const method = form.method === 'ANY' ? (form.kind === 'soap' ? 'POST' : 'GET') : form.method;
   return { method, path: samplePath(form), headers, body: form.sampleBody || exact?.value || '' };

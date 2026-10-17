@@ -96,6 +96,11 @@ export interface StubForm {
   soapOperation: string;
   sampleBody: string;
   webhooks: Webhook[];
+  errorPercent: string;
+  errorMode: 'status' | 'fault';
+  errorStatus: string;
+  errorFault: Fault;
+  errorBody: string;
 }
 
 export interface Conversion {
@@ -173,6 +178,11 @@ export function emptyForm(kind: StubKind = 'rest'): StubForm {
     soapOperation: soap ? 'Operation' : '',
     sampleBody: '',
     webhooks: [],
+    errorPercent: '',
+    errorMode: 'status',
+    errorStatus: soap ? '500' : '503',
+    errorFault: 'CONNECTION_RESET_BY_PEER',
+    errorBody: '',
   };
 }
 
@@ -366,6 +376,15 @@ export function fromStub(stub: Stub): Conversion {
   }
   if (stub.postServeActions !== undefined) unsupported.push('Post-serve actions');
 
+  const errorRate = obj(meta.errorRate);
+  if (Number(errorRate.percent) > 0) {
+    form.errorPercent = str(errorRate.percent);
+    form.errorMode = errorRate.fault ? 'fault' : 'status';
+    if (errorRate.status !== undefined) form.errorStatus = str(errorRate.status);
+    if (errorRate.fault) form.errorFault = str(errorRate.fault) as Fault;
+    form.errorBody = str(errorRate.body);
+  }
+
   form.soapVersion = meta.soapVersion === '1.2' ? '1.2' : '1.1';
   form.soapAction = str(meta.soapAction);
   form.soapOperation = str(meta.operation);
@@ -444,6 +463,18 @@ export function toStub(form: StubForm, original: Stub = {}): Stub {
   } else {
     for (const key of ['soapVersion', 'soapAction', 'operation']) delete meta[key];
   }
+  const percent = Number(form.errorPercent);
+  if (form.responseMode !== 'fault' && percent > 0) {
+    const errorRate: JsonObject = { percent: Math.min(100, percent) };
+    if (form.errorMode === 'fault') errorRate.fault = form.errorFault;
+    else {
+      errorRate.status = Number(form.errorStatus) || 500;
+      if (form.errorBody.trim()) errorRate.body = form.errorBody;
+    }
+    meta.errorRate = errorRate;
+  } else {
+    delete meta.errorRate;
+  }
   const sample = { ...obj(meta.sampleRequest) };
   setOrDelete(sample, 'body', form.sampleBody);
   if (Object.keys(sample).length) meta.sampleRequest = sample;
@@ -521,10 +552,26 @@ export function validate(form: StubForm): string[] {
   }
   if (form.responseMode === 'proxy' && !/^https?:\/\//.test(form.proxyBaseUrl)) errors.push('Proxy target must start with http:// or https://');
   if (form.priority.trim() && !/^\d+$/.test(form.priority.trim())) errors.push('Priority must be a whole number (1 is highest).');
+  if (form.errorPercent.trim()) {
+    const percent = Number(form.errorPercent);
+    if (!Number.isFinite(percent) || percent < 0 || percent > 100) errors.push('The failure rate must be between 0 and 100 percent.');
+    const status = Number(form.errorStatus);
+    if (form.errorMode === 'status' && (!Number.isInteger(status) || status < 100 || status > 599)) {
+      errors.push('The failure status must be a number between 100 and 599.');
+    }
+  }
   for (const b of form.body) {
     if (b.operator === 'equalToJson' && b.value.trim() && !tryParseJson(b.value).ok) errors.push('A JSON body matcher is not valid JSON.');
   }
   return errors;
+}
+
+export function isDisabled(stub: Stub): boolean {
+  return obj(obj(stub.metadata).mockhub).disabled === true;
+}
+
+export function errorPercentOf(stub: Stub): number {
+  return Number(obj(obj(obj(stub.metadata).mockhub).errorRate).percent) || 0;
 }
 
 export function describeUrl(stub: Stub): string {

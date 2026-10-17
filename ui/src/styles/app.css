@@ -3640,3 +3640,133 @@ kbd {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.stub-item-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.stub-item-top .route {
+  flex: 1;
+  min-width: 0;
+}
+
+.stub-calls {
+  flex: none;
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: 9px;
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  background: var(--surface-sunken);
+}
+
+.stub-item.disabled .route {
+  opacity: 0.5;
+  text-decoration: line-through;
+  text-decoration-color: var(--muted);
+}
+
+.tag.off {
+  background: var(--surface-sunken);
+  color: var(--muted);
+  border-style: dashed;
+}
+
+.stub-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-sunken);
+}
+
+.switch input[role='switch'] {
+  appearance: none;
+  position: relative;
+  width: 32px;
+  height: 18px;
+  margin: 0;
+  border-radius: 9px;
+  background: var(--line-strong, var(--line));
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.switch input[role='switch']::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
+  transition: transform 0.15s ease;
+}
+
+.switch input[role='switch']:checked {
+  background: var(--ok, var(--accent));
+}
+
+.switch input[role='switch']:checked::after {
+  transform: translateX(14px);
+}
+
+.switch input[role='switch']:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.switch input[role='switch']:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.switch.off span {
+  color: var(--muted);
+}
+
+.failure-row {
+  display: grid;
+  grid-template-columns: minmax(150px, 190px) auto minmax(140px, 1fr);
+  gap: 12px;
+  align-items: end;
+}
+
+.input-suffix {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.input-suffix input {
+  width: 80px;
+}
+
+.input-suffix span {
+  font-size: 13px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .failure-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .switch input[role='switch'],
+  .switch input[role='switch']::after {
+    transition: none;
+  }
+}

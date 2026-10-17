@@ -22,6 +22,8 @@ public final class StubController implements ApiController {
       stubs.delete(ctx.path("id"), ctx.path("stubId"));
       return null;
     });
+    r.put("/projects/{id}/stubs/{stubId}/enabled", ctx ->
+        stubs.setEnabled(ctx.path("id"), ctx.path("stubId"), ctx.json().path("enabled").asBoolean(true)));
     r.post("/projects/{id}/stubs/{stubId}/clone", ctx ->
         Response.json(201, stubs.copy(ctx.path("id"), ctx.path("stubId"), ctx.query("target"))));
     r.post("/projects/{id}/stubs/{stubId}/move", ctx -> {

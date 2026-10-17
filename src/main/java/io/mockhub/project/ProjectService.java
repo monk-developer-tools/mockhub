@@ -50,6 +50,10 @@ public final class ProjectService implements OrganizationListener {
     return orphans.size();
   }
 
+  public Optional<Project> findBySlug(String slug) {
+    return repository.findBySlug(slug);
+  }
+
   public Optional<Project> find(String id) {
     return repository.findById(id);
   }
@@ -74,7 +78,8 @@ public final class ProjectService implements OrganizationListener {
         now,
         now,
         requiredText(body, "orgId"),
-        body.path("teamId").asText("").isBlank() ? null : body.get("teamId").asText());
+        body.path("teamId").asText("").isBlank() ? null : body.get("teamId").asText(),
+        ApiKey.parse(body.get("apiKey")));
     repository.save(project);
     return project;
   }
@@ -92,7 +97,8 @@ public final class ProjectService implements OrganizationListener {
         before.createdAt(),
         Instant.now(clock).toString(),
         body.hasNonNull("orgId") && !body.get("orgId").asText().isBlank() ? body.get("orgId").asText() : before.orgId(),
-        body.hasNonNull("teamId") && !body.get("teamId").asText().isBlank() ? body.get("teamId").asText() : before.teamId());
+        body.hasNonNull("teamId") && !body.get("teamId").asText().isBlank() ? body.get("teamId").asText() : before.teamId(),
+        body.has("apiKey") ? ApiKey.parse(body.get("apiKey")) : before.apiKey());
     if (!before.slug().equals(after.slug())) {
       listeners.forEach(l -> l.onBasePathChanged(before, after));
     }
