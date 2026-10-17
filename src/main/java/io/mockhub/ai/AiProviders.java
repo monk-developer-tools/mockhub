@@ -13,7 +13,7 @@ public final class AiProviders {
   }
 
   public static AiProviders defaults() {
-    return new AiProviders(List.of(new OpenRouterProvider(), new LiteLlmProvider(), new OpenAiCompatibleProvider()));
+    return new AiProviders(List.of(new OpenRouterProvider(), new HuggingFaceProvider(), new LiteLlmProvider(), new OpenAiCompatibleProvider()));
   }
 
   public AiProvider get(String id) {

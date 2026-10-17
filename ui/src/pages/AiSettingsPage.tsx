@@ -13,6 +13,12 @@ const GUIDES: Record<string, { hint: string; keyHint: string; modelHint: string;
     modelHint: 'openrouter/auto picks a model for you. Choose a model that supports tool calling, e.g. anthropic/claude-sonnet-4.5 or openai/gpt-4.1.',
     link: { href: 'https://openrouter.ai/keys', label: 'Get an OpenRouter key' },
   },
+  huggingface: {
+    hint: 'Open models such as gpt-oss, Llama, Qwen and DeepSeek through Hugging Face Inference Providers, billed to your Hugging Face account.',
+    keyHint: 'A fine-grained token from huggingface.co/settings/tokens with "Make calls to Inference Providers". It starts with hf_.',
+    modelHint: 'Choose a model that supports tool calling, e.g. openai/gpt-oss-120b, meta-llama/Llama-3.3-70B-Instruct or Qwen/Qwen2.5-72B-Instruct. Add :provider, e.g. :cerebras, to pick who serves it.',
+    link: { href: 'https://huggingface.co/settings/tokens', label: 'Create a Hugging Face token' },
+  },
   litellm: {
     hint: 'Use the LiteLLM proxy your company already runs, with its budgets, logging and approved models.',
     keyHint: 'A LiteLLM virtual key or the master key. Leave empty if the proxy has no auth.',

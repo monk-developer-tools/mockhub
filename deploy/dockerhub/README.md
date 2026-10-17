@@ -42,7 +42,7 @@ Point your service or tests at `http://<host>:8080/<base path>` instead of the r
   templating, stateful scenarios, delays, faults, proxying and recording.
 - **SOAP.** Import a WSDL for one stub per operation, `?wsdl` served, faults for unknown operations.
 - **Import and export.** OpenAPI 3, Swagger 2, WSDL and WireMock mappings in; Postman and Bruno collections out.
-- **AI assistant.** Bring your own model through OpenRouter, a LiteLLM proxy or any OpenAI-compatible API. It drafts
+- **AI assistant.** Bring your own model through OpenRouter, Hugging Face, a LiteLLM proxy or any OpenAI-compatible API. It drafts
   stubs, and you review the diff before anything changes.
 - **Teams.** Organisation › teams › people, with viewer, editor and owner roles, and Microsoft Entra ID sign-in.
 - **CRUD resources.** `/customers` with list, read, create, update and delete backed by real stored records, editable

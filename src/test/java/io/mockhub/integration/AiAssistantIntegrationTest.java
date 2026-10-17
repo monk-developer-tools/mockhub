@@ -147,7 +147,7 @@ class AiAssistantIntegrationTest {
     // Then
     assertThat(settings.has("apiKey")).isFalse();
     assertThat(settings.get("apiKeySet").asBoolean()).isTrue();
-    assertThat(settings.get("providers")).hasSize(3);
+    assertThat(settings.get("providers")).hasSize(4);
     assertThat(test.get("ok").asBoolean()).isTrue();
     assertThat(test.get("modelFound").asBoolean()).isTrue();
     llm.verify(getRequestedFor(urlPathEqualTo("/v1/models")).withHeader("Authorization", equalTo("Bearer sk-test")));

@@ -136,7 +136,7 @@ screenshots, and the [live demo](https://mockhub.devops-monk.com/__admin/mockhub
 - **Persistence.** Every stub, including ones created through the native `/__admin` API, is written to `/data`.
   Admins can back up everything, whole organisations or single projects to one file, and later restore all of it
   or just the projects they pick, replacing existing ones or adding copies, into the original or another organisation.
-- **AI assistant.** Connect OpenRouter, a LiteLLM proxy or any OpenAI-compatible API, then describe the mocks you
+- **AI assistant.** Connect OpenRouter, Hugging Face, a LiteLLM proxy or any OpenAI-compatible API, then describe the mocks you
   need in plain English or paste a spec. The assistant stages stubs, and you review each change as a diff before
   applying it. *Generate with AI* in the editor writes a single response body from a description.
 - **Organisations, teams and people.** Organisations hold teams, and teams own projects. People get a role per team
@@ -245,6 +245,7 @@ An admin connects a model under **Administration → AI assistant**:
 | Provider | Base URL | Notes |
 |---|---|---|
 | OpenRouter | `https://openrouter.ai/api/v1` (default) | One key for hundreds of models. `openrouter/auto` picks one, or name a model that supports tool calling. |
+| Hugging Face | `https://router.huggingface.co/v1` | Open models through Inference Providers. Use a token with "Make calls to Inference Providers" and a model with tool calling, e.g. `openai/gpt-oss-120b`. |
 | LiteLLM proxy | e.g. `http://litellm:4000` | Uses your proxy's virtual keys, budgets, logging and approved models. The model is the proxy's `model_name`. |
 | Other OpenAI-compatible | e.g. `https://api.openai.com/v1` | OpenAI, Azure OpenAI, Ollama, vLLM, LM Studio and others. |
 
@@ -367,7 +368,7 @@ src/main/java/io/mockhub
   org/ user/                     organisations and users: models, repository ports + file implementations, services
   auth/                          roles, principal, session tokens, access policy
   sso/                           single sign-on: provider strategy (Entra ID), OIDC token check, role mapping
-  ai/                            AI assistant: provider strategy (OpenRouter, LiteLLM, OpenAI-compatible), tool loop
+  ai/                            AI assistant: provider strategy (OpenRouter, Hugging Face, LiteLLM, OpenAI-compatible), tool loop
   stub/                          project stubs: gateway port to WireMock, path re-rooting, metadata
   journal/                       request log per project
   importer/ export/ soap/        import and export strategies, WSDL/XSD sampling

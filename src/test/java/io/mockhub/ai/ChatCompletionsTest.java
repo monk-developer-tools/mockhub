@@ -38,6 +38,23 @@ class ChatCompletionsTest {
   }
 
   @Test
+  void callsTheHuggingFaceRouterWithItsDefaults() {
+    // Given
+    transport.reply("{'choices':[{'message':{'content':'ok'}}]}");
+
+    // When
+    chat.complete(settings("huggingface", "", "hf_123", ""), Jsons.MAPPER.createArrayNode(), MockTools.definitions());
+
+    // Then
+    FakeLlmTransport.Call call = transport.calls.get(0);
+    assertThat(call.url()).isEqualTo("https://router.huggingface.co/v1/chat/completions");
+    assertThat(call.headers()).containsEntry("Authorization", "Bearer hf_123").doesNotContainKey("X-Title");
+    assertThat(call.body().get("model").asText()).isEqualTo("openai/gpt-oss-120b");
+    assertThatThrownBy(() -> chat.complete(settings("huggingface", "", "", ""), Jsons.MAPPER.createArrayNode(), null))
+        .hasMessageContaining("Hugging Face needs an API key");
+  }
+
+  @Test
   void callsALiteLlmProxyWithoutAKeyAndSendsTools() {
     // Given
     transport.reply("{'choices':[{'message':{'content':'ok'}}]}");
