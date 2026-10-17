@@ -1,4 +1,4 @@
-import { BracketsCurly, Check, CheckCircle, Clock, DownloadSimple, FileArrowUp, Plus, Pulse, Warning } from '@phosphor-icons/react';
+import { BracketsCurly, Check, CheckCircle, Clock, DownloadSimple, FileArrowUp, PaperPlaneTilt, Plus, Pulse, Warning } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../../api/client';
@@ -202,6 +202,7 @@ export function OverviewTab() {
                   <button className="btn primary" onClick={() => newStub('rest')}><Plus size={15} /> REST stub</button>
                   <button className="btn" onClick={() => newStub('soap')}><Plus size={15} /> SOAP stub</button>
                   <Link className="btn" to="import-export"><FileArrowUp size={15} /> Import</Link>
+                  <Link className="btn" to={`/playground?url=${encodeURIComponent(`${project.mockUrl}/`)}`}><PaperPlaneTilt size={15} /> Playground</Link>
                 </div>
               )}
               <div className="btn-row">

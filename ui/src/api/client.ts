@@ -29,6 +29,9 @@ import type {
   SsoSettings,
   Stub,
   StubUsage,
+  PlaygroundEntry,
+  PlaygroundRequest,
+  GeneratorField,
   UserRecord,
 } from './types';
 
@@ -219,6 +222,12 @@ export const api = {
   stubUsage: (projectId: string) => request<Record<string, StubUsage>>(`${API}/projects/${projectId}/usage`),
   generateBody: (projectId: string, body: { description: string; format: string; method: string; path: string; status: number; current: string }) =>
     request<{ body: string }>(`${API}/projects/${projectId}/ai/body`, { method: 'POST', body: json(body) }),
+  sendPlayground: (body: PlaygroundRequest) => request<PlaygroundEntry>(`${API}/playground/send`, { method: 'POST', body: json(body) }),
+  playgroundHistory: () => request<PlaygroundEntry[]>(`${API}/playground/history`),
+  deletePlaygroundEntry: (id: string) => request<void>(`${API}/playground/history/${id}`, { method: 'DELETE' }),
+  clearPlaygroundHistory: () => request<void>(`${API}/playground/history`, { method: 'DELETE' }),
+  generateData: (body: { fields: GeneratorField[]; count: number; locale?: string }) =>
+    request<{ records: unknown[] }>(`${API}/fake/generate`, { method: 'POST', body: json(body) }),
   unassignedStubs: () => request<Stub[]>(`${API}/stubs/unassigned`),
   adoptStub: (projectId: string, stubId: string, prefix: boolean) =>
     request<Stub>(`${API}/projects/${projectId}/adopt/${stubId}?prefix=${prefix}`, { method: 'POST' }),

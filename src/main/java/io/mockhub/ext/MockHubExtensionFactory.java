@@ -21,7 +21,14 @@ import io.mockhub.data.CrudTransformer;
 import io.mockhub.data.DataStore;
 import io.mockhub.data.FileDataStore;
 import io.mockhub.data.ProjectDataCleaner;
+import io.mockhub.fake.DataGenerator;
 import io.mockhub.fake.FakeData;
+import io.mockhub.controller.PlaygroundController;
+import io.mockhub.playground.JdkHttpSender;
+import io.mockhub.playground.PlaygroundHistory;
+import io.mockhub.playground.PlaygroundService;
+import io.mockhub.playground.TargetGuard;
+import java.net.InetAddress;
 import io.mockhub.files.BodyFiles;
 import io.mockhub.fake.FakeHelpers;
 import io.mockhub.auth.ProjectScope;
@@ -84,13 +91,19 @@ import org.wiremock.extensions.state.CaffeineStore;
 import org.wiremock.extensions.state.StateExtension;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 public final class MockHubExtensionFactory implements ExtensionFactory {
   private final Config config;
+  private final AtomicInteger port = new AtomicInteger();
 
   public MockHubExtensionFactory(Config config) {
     this.config = config;
+  }
+
+  public void serverStarted(int actualPort) {
+    port.set(actualPort);
   }
 
   @Override
@@ -139,13 +152,16 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
       return t;
     }), clock);
 
+    FakeData fakeData = new FakeData(config.fakeLocale);
+    PlaygroundHistory playgroundHistory = new PlaygroundHistory(dataDir);
+
     List<Extension> extensions = new ArrayList<>(List.of(
         new PersistenceListener(),
         new CrudTransformer(crud),
         new ErrorRateTransformer(() -> ThreadLocalRandom.current().nextDouble()),
         new DisabledStubMatcher(),
         new ApiKeyFilter(projects::findBySlug),
-        new FakeHelpers(new FakeData(config.fakeLocale)),
+        new FakeHelpers(fakeData),
         new AuthFilter(auth, policy),
         new MockHubAdminExtension(
             request -> auth.principal(request.getHeader("Authorization")).orElse(null),
@@ -164,7 +180,11 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
                 new AiController(aiSettings, aiProviders, chat, assistant, assistantJobs, projects, urls, new BodyGenerator(aiSettings, chat)),
                 new BackupController(new BackupService(orgs, teams, projects, gateway, dataStore, bodyFiles, clock)),
                 new DataController(projects, stubs, dataStore, crud),
-                new FilesController(projects, stubs, bodyFiles)))));
+                new FilesController(projects, stubs, bodyFiles),
+                new PlaygroundController(
+                    new PlaygroundService(new JdkHttpSender(), new TargetGuard(config.playgroundAllowPrivate, InetAddress::getAllByName),
+                        playgroundHistory, () -> "http://127.0.0.1:" + (port.get() > 0 ? port.get() : services.getOptions().portNumber()), clock),
+                    playgroundHistory, new DataGenerator(fakeData), config.publicUrl)))));
     extensions.addAll(new StateExtension(new CaffeineStore()).create(services));
     return extensions;
   }

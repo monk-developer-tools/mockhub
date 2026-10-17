@@ -3770,3 +3770,360 @@ kbd {
     transition: none;
   }
 }
+
+.title-icon {
+  vertical-align: -3px;
+  margin-right: 8px;
+  color: var(--accent);
+}
+
+.playground {
+  display: grid;
+  grid-template-columns: 290px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.playground-history {
+  position: sticky;
+  top: 16px;
+  max-height: calc(100vh - 140px);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.playground-history ul {
+  list-style: none;
+  margin: 0;
+  padding: 4px 6px 8px;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.playground-history li {
+  position: relative;
+  border-radius: var(--radius-s);
+}
+
+.playground-history li.active {
+  background: var(--accent-soft);
+}
+
+.playground-history li.pad {
+  padding: 10px;
+}
+
+.history-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 32px 8px 8px;
+  border: 0;
+  background: transparent;
+  border-radius: var(--radius-s);
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.playground-history li:not(.active) .history-item:hover {
+  background: var(--surface-sunken);
+}
+
+.history-item .jack {
+  flex: none;
+  min-width: 52px;
+  justify-content: center;
+}
+
+.history-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.history-url {
+  font-size: 12.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.history-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.history-delete {
+  position: absolute;
+  top: 6px;
+  right: 4px;
+  opacity: 0;
+}
+
+.playground-history li:hover .history-delete,
+.history-delete:focus-visible {
+  opacity: 1;
+}
+
+.playground-search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 10px 4px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  background: var(--surface);
+  color: var(--muted);
+}
+
+.playground-search input {
+  border: 0;
+  padding: 7px 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.request-bar {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr) auto;
+  gap: 8px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.method-select {
+  font-weight: 600;
+  font-family: var(--font-code);
+}
+
+.tabs-line {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.tabs-line > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 10px 9px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  font: inherit;
+  font-size: 13.5px;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.tabs-line > button[aria-selected='true'] {
+  color: var(--ink);
+  border-bottom-color: var(--accent);
+  font-weight: 500;
+}
+
+.tabs-line .count {
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  font-size: 11px;
+  line-height: 17px;
+  text-align: center;
+  background: var(--surface-sunken);
+  color: var(--muted);
+}
+
+.tabs-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 0;
+}
+
+.response-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12.5px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.response-meta .tag {
+  gap: 4px;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 9px;
+  border-radius: 11px;
+  font-weight: 600;
+  font-size: 12.5px;
+  font-family: var(--font-code);
+}
+
+.status-pill.ok,
+.status-dot.ok {
+  color: var(--ok);
+}
+
+.status-pill.ok {
+  background: var(--ok-soft);
+}
+
+.status-pill.redirect,
+.status-dot.redirect {
+  color: var(--accent);
+}
+
+.status-pill.redirect {
+  background: var(--accent-soft);
+}
+
+.status-pill.client,
+.status-dot.client {
+  color: var(--warn);
+}
+
+.status-pill.client {
+  background: var(--warn-soft);
+}
+
+.status-pill.server,
+.status-dot.server {
+  color: var(--danger);
+}
+
+.status-pill.server {
+  background: var(--danger-soft, var(--warn-soft));
+}
+
+.status-dot {
+  font-weight: 600;
+  font-family: var(--font-code);
+}
+
+.panel-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--line);
+}
+
+.empty.slim {
+  padding: 36px 20px;
+}
+
+.generator-row {
+  grid-template-columns: minmax(120px, 1fr) minmax(160px, 1.2fr) minmax(0, 1fr) auto;
+}
+
+@media (max-width: 960px) {
+  .playground {
+    grid-template-columns: 1fr;
+  }
+
+  .playground-history {
+    position: static;
+    max-height: 320px;
+  }
+
+  .request-bar {
+    grid-template-columns: 100px minmax(0, 1fr);
+  }
+
+  .request-bar .btn {
+    grid-column: 1 / -1;
+  }
+}
+
+.workflow h2 {
+  font-size: 15px;
+  margin: 8px 0 12px;
+}
+
+.workflow ol {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+}
+
+.workflow li {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  background: var(--surface);
+  counter-increment: step;
+}
+
+.workflow li::after {
+  content: counter(step);
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.workflow li strong {
+  font-size: 14px;
+}
+
+.workflow li > span:last-child {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.workflow-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  margin-bottom: 4px;
+  border-radius: 9px;
+  color: #fff;
+}
+
+.workflow-icon.create { background: linear-gradient(135deg, #2f6bff, #4f8dff); }
+.workflow-icon.test { background: linear-gradient(135deg, #7c4dff, #b06bff); }
+.workflow-icon.track { background: linear-gradient(135deg, #0f9d75, #2cc39a); }
+.workflow-icon.share { background: linear-gradient(135deg, #e0761b, #f5a442); }
+
+@media (max-width: 900px) {
+  .workflow ol {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .workflow ol {
+    grid-template-columns: 1fr;
+  }
+}

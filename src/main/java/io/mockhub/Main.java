@@ -40,11 +40,13 @@ public final class Main {
     options.filesRoot().createIfNecessary();
     options.filesRoot().child("__files").createIfNecessary();
     options.filesRoot().child("mappings").createIfNecessary();
-    options.getDeclaredExtensions().add(new MockHubExtensionFactory(config));
+    MockHubExtensionFactory factory = new MockHubExtensionFactory(config);
+    options.getDeclaredExtensions().add(factory);
 
     WireMockServer server = new WireMockServer(options);
     try {
       server.start();
+      factory.serverStarted(server.port());
     } catch (FatalStartupException e) {
       System.err.println(e.getMessage());
       System.exit(1);

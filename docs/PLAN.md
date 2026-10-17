@@ -315,6 +315,23 @@ Checklist:
 - [x] Tests: unit, integration, UI
 - [x] Docs, tutorials and website
 
+**14e. Playground, data generator and use-case guides (17 Oct 2026)**
+- Playground: server-side requests to mocks or public APIs (no CORS limits), status/time/size/headers/body, cURL copy,
+  save a response as a stub, replay from the request log. Per-user history (100 entries, secrets hidden, 64 KB bodies).
+  Private, loopback and link-local targets refused unless `MOCKHUB_PLAYGROUND_ALLOW_PRIVATE=true`; no redirects;
+  2 MB and 30 s limits. Own mocks are called locally; `/__admin` is refused. Editor role.
+- Data generator: `POST /fake/generate` and a dialog in the stub editor and CRUD dialog; typed numbers and booleans,
+  nested fields, up to 1,000 records.
+- Dashboard "How it works" strip; Playground quick action on the project overview; Hugging Face provider for the AI
+  assistant.
+- Tutorials: use-case flows mapped to tutorials and built-in examples; Playground and data generator tutorials.
+
+Checklist:
+- [x] Backend: playground service, target guard, history, data generator, access rules
+- [x] UI: Playground page, save as stub, replay, data generator dialog, dashboard strip
+- [x] Tests: unit, integration, UI
+- [x] Docs, tutorials with use cases, website
+
 ### Phase 15 — Agents, history and access control (recommended)
 
 - **MCP server.** Let Claude, Cursor and other agents create, edit and inspect mocks. Expose the assistant's tools

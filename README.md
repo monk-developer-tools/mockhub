@@ -118,6 +118,10 @@ screenshots, and the [live demo](https://mockhub.devops-monk.com/__admin/mockhub
   A single `baseUrl` variable switches between the mock and the real service.
 - **Try it.** Send a request to a stub from the editor and see the response. *Call it from your code* gives the
   same request as cURL, HTTPie, JavaScript, Python, Java, C# or Apex.
+- **Playground.** Call your mocks or any public API from the server, see status, time, headers and a formatted body,
+  keep a private history, replay requests from the log, and save any response as a stub.
+- **Data generator.** Build a fixed JSON list (say 20 customers with names, e-mails and addresses) in one click, for
+  response bodies or CRUD starting records.
 - **Turn stubs on and off, and see what's used.** Pause a stub without deleting it. The stub list shows how many
   calls each stub answered and when it was last called.
 - **Random failures.** Make a share of calls fail (say 10% with a 503, or a connection reset) to test retries.
@@ -175,6 +179,7 @@ All configuration is through environment variables.
 | `MOCKHUB_JOURNAL_MAX_ENTRIES` | `5000` | How many requests the request log keeps in memory |
 | `MOCKHUB_STUB_CORS` | `true` | Adds CORS headers to mock responses so browser apps can call them |
 | `MOCKHUB_FAKE_LOCALE` | `en` | Default language for `{{fake ...}}` data, e.g. `de`, `fr`, `en-GB` |
+| `MOCKHUB_PLAYGROUND_ALLOW_PRIVATE` | `false` | Let the Playground call private and local addresses (blocked by default so the server can't reach your internal network) |
 | `WIREMOCK_OPTIONS` | empty | Any extra [WireMock CLI option](https://wiremock.org/docs/standalone/java-jar/), e.g. `--async-response-enabled true --verbose` |
 
 ## Organisations, users and sign-in
@@ -314,6 +319,9 @@ MockHub is a WireMock extension running inside a regular WireMock server:
 | POST | `/__admin/mockhub/api/projects/{id}/ai/jobs` | Same body; starts the chat in the background and returns a job id |
 | GET | `/__admin/mockhub/api/projects/{id}/ai/jobs/{jobId}` | Job status, live steps, then the reply or error (kept 30 minutes, visible to whoever started it) |
 | POST | `/__admin/mockhub/api/projects/{id}/ai/apply` | `{changes}` → apply staged changes (editor) |
+| POST | `/__admin/mockhub/api/playground/send` | `{method, url, headers, body}` → response and history entry (editor) |
+| GET/DELETE | `/__admin/mockhub/api/playground/history`, `…/history/{entryId}` | your Playground history / clear it / delete one entry |
+| POST | `/__admin/mockhub/api/fake/generate` | `{count, fields: [{name, expression}], locale}` → generated records |
 | POST | `/__admin/mockhub/api/projects/{id}/ai/body` | `{description, format, method, path, status, current}` → a generated body (editor) |
 | POST | `/__admin/mockhub/api/projects/{id}/crud` | `{resource, idField, idType: number\|uuid, seed}` → create a CRUD resource |
 | GET/DELETE | `/__admin/mockhub/api/projects/{id}/data` | resources with record counts / delete all records |

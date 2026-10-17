@@ -1,4 +1,4 @@
-import { Archive, BookOpenText, Buildings, CircleHalf, Eye, HardDrives, Key, List, MagnifyingGlass, Moon, Plus, Sparkle, SquaresFour, Sun, UsersThree } from '@phosphor-icons/react';
+import { Archive, BookOpenText, Buildings, CircleHalf, Eye, HardDrives, Key, List, MagnifyingGlass, Moon, PaperPlaneTilt, Plus, Sparkle, SquaresFour, Sun, UsersThree } from '@phosphor-icons/react';
 import { useMemo } from 'react';
 import { MOD_LABEL, useHotkeys } from '../state/hotkeys';
 import { CommandPalette } from './CommandPalette';
@@ -71,6 +71,11 @@ export function Layout() {
           <NavLink to="/" end>
             <SquaresFour size={18} weight="duotone" /> Projects
           </NavLink>
+          {canEdit && (
+            <NavLink to="/playground">
+              <PaperPlaneTilt size={18} weight="duotone" /> Playground
+            </NavLink>
+          )}
           <NavLink to="/examples">
             <BookOpenText size={18} weight="duotone" /> Examples
           </NavLink>

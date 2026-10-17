@@ -1,7 +1,8 @@
-import { Copy, Database, FloppyDisk, FolderSimplePlus, LockSimple, Plus, Sparkle, Trash, Warning } from '@phosphor-icons/react';
+import { Copy, Database, FloppyDisk, FolderSimplePlus, LockSimple, Plus, Sparkle, Table, Trash, Warning } from '@phosphor-icons/react';
 import { Link } from 'react-router-dom';
 import { crudOf } from '../../model/crud';
 import { FakeDataMenu } from '../../components/FakeDataMenu';
+import { DataGeneratorDialog } from '../../components/DataGeneratorDialog';
 import { formatSize } from '../../model/files';
 import { UploadButton, useProjectFiles } from './ResponseFiles';
 import { useEffect, useMemo, useState } from 'react';
@@ -89,6 +90,7 @@ export function StubEditor({ project, projects, stub, isNew, canEdit, onSaved, o
   const crud = crudOf(stub);
   const [generating, setGenerating] = useState(false);
   const [toggling, setToggling] = useState(false);
+  const [generatingData, setGeneratingData] = useState(false);
   const disabled = isDisabled(stub);
   const { files, reload: reloadFiles } = useProjectFiles(project.id);
   const toast = useToast();
@@ -542,7 +544,14 @@ export function StubEditor({ project, projects, stub, isNew, canEdit, onSaved, o
                     <span className="mono">{"{{fake 'Name.fullName'}}"}</span>, <span className="mono">{'{{now}}'}</span>
                   </span>
                 </label>
-                {!readOnly && <FakeDataMenu onPick={() => update({ templating: true })} />}
+                {!readOnly && (
+                  <div className="btn-row">
+                    <FakeDataMenu onPick={() => update({ templating: true })} />
+                    <button type="button" className="btn small" onClick={() => setGeneratingData(true)}>
+                      <Table size={14} /> Generate data
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 
@@ -743,6 +752,16 @@ export function StubEditor({ project, projects, stub, isNew, canEdit, onSaved, o
         </div>
       )}
 
+      {generatingData && (
+        <DataGeneratorDialog
+          useLabel="Use as response body"
+          onClose={() => setGeneratingData(false)}
+          onUse={(json) => {
+            update({ responseBody: json, bodyType: 'json' });
+            setGeneratingData(false);
+          }}
+        />
+      )}
       {generating && (
         <AiBodyDialog
           projectId={project.id}

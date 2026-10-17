@@ -1,7 +1,7 @@
 import { Check, Copy } from '@phosphor-icons/react';
 import { useState } from 'react';
 
-export function CopyButton({ text, label = 'Copy' }: { text: string; label?: string }) {
+export function CopyButton({ text, label = 'Copy', showLabel = false }: { text: string; label?: string; showLabel?: boolean }) {
   const [copied, setCopied] = useState(false);
   const copy = async () => {
     try {
@@ -17,6 +17,13 @@ export function CopyButton({ text, label = 'Copy' }: { text: string; label?: str
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
+  if (showLabel) {
+    return (
+      <button type="button" className="btn small" onClick={copy}>
+        {copied ? <Check size={13} /> : <Copy size={13} />} {copied ? 'Copied' : label}
+      </button>
+    );
+  }
   return (
     <button className="btn ghost icon small" onClick={copy} title={label} aria-label={label}>
       {copied ? <Check size={14} /> : <Copy size={14} />}

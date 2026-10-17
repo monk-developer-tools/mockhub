@@ -20,6 +20,7 @@ import { TeamPage } from './pages/TeamPage';
 import { AssistantTab } from './pages/project/AssistantTab';
 import { DataTab } from './pages/project/DataTab';
 import { ServerPage } from './pages/ServerPage';
+import { PlaygroundPage } from './pages/PlaygroundPage';
 import { SsoPage } from './pages/SsoPage';
 import { UsersPage } from './pages/UsersPage';
 import { AppProvider, useApp } from './state/AppContext';
@@ -32,6 +33,7 @@ const router = createBrowserRouter(
       children: [
         { index: true, element: <DashboardPage /> },
         { path: 'examples', element: <ExamplesPage /> },
+        { path: 'playground', element: <PlaygroundPage /> },
         { path: 'server', element: <ServerPage /> },
         { path: 'org', element: <OrgPage /> },
         { path: 'org/teams/:teamId', element: <TeamPage /> },

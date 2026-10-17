@@ -1,4 +1,4 @@
-import { ArrowElbowDownLeft, BookOpenText, CircleHalf, FileCode, FolderOpen, HardDrives, Keyboard, MagnifyingGlass, Plus, SquaresFour } from '@phosphor-icons/react';
+import { ArrowElbowDownLeft, BookOpenText, CircleHalf, FileCode, FolderOpen, HardDrives, Keyboard, MagnifyingGlass, PaperPlaneTilt, Plus, SquaresFour } from '@phosphor-icons/react';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
@@ -55,6 +55,7 @@ export function CommandPalette({ projects, canEdit, onClose, onNewProject, onTog
       { id: 'go-projects', group: 'Go to', title: 'Projects', icon: <SquaresFour size={15} />, run: go('/') },
       { id: 'go-examples', group: 'Go to', title: 'Examples', icon: <BookOpenText size={15} />, run: go('/examples') },
       { id: 'go-server', group: 'Go to', title: 'Server settings', icon: <HardDrives size={15} />, run: go('/server') },
+      { id: 'go-playground', group: 'Go to', title: 'Playground', icon: <PaperPlaneTilt size={15} />, run: go('/playground') },
       { id: 'theme', group: 'Actions', title: 'Switch theme', icon: <CircleHalf size={15} />, run: () => { onToggleTheme(); onClose(); } },
       { id: 'shortcuts', group: 'Actions', title: 'Keyboard shortcuts', icon: <Keyboard size={15} />, run: () => { onClose(); onShowShortcuts(); } },
     ];

@@ -1,4 +1,4 @@
-import { BookOpenText, BracketsCurly, CheckCircle, Plus, Pulse, SquaresFour, Warning } from '@phosphor-icons/react';
+import { BookOpenText, BracketsCurly, CheckCircle, ClockCounterClockwise, PaperPlaneTilt, Plus, Pulse, ShareNetwork, SquaresFour, Warning } from '@phosphor-icons/react';
 import { EmptyArt } from '../components/Illustrations';
 import { TeamMark } from '../components/Avatar';
 import { ActivityBars } from '../components/ActivityBars';
@@ -153,6 +153,31 @@ export function DashboardPage() {
               </tbody>
             </table>
           </div>
+          <section className="workflow" aria-labelledby="workflow-title">
+            <h2 id="workflow-title">How it works</h2>
+            <ol>
+              <li>
+                <span className="workflow-icon create"><Plus size={18} weight="bold" /></span>
+                <strong>Create a mock</strong>
+                <span>Add stubs by hand, import OpenAPI or WSDL, or ask the AI assistant.</span>
+              </li>
+              <li>
+                <span className="workflow-icon test"><PaperPlaneTilt size={18} weight="fill" /></span>
+                <strong>Test it</strong>
+                <span>Call it from the <Link to="/playground">Playground</Link>, Try it, or your own app.</span>
+              </li>
+              <li>
+                <span className="workflow-icon track"><ClockCounterClockwise size={18} weight="bold" /></span>
+                <strong>Track every call</strong>
+                <span>The request log shows each call and points out requests no stub matched.</span>
+              </li>
+              <li>
+                <span className="workflow-icon share"><ShareNetwork size={18} weight="fill" /></span>
+                <strong>Share it</strong>
+                <span>Give your team the mock URL, or export to Postman and Bruno.</span>
+              </li>
+            </ol>
+          </section>
           <p className="muted small">
             <BookOpenText size={13} style={{ verticalAlign: '-2px' }} /> New to mocking with WireMock? <Link to="/examples">Install an example project</Link> and copy what you need.
           </p>

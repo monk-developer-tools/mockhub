@@ -27,11 +27,13 @@ final class MockHubServer implements AutoCloseable {
     Config config = new Config(fullEnv);
     dataDir.resolve("mappings").toFile().mkdirs();
     dataDir.resolve("__files").toFile().mkdirs();
+    MockHubExtensionFactory factory = new MockHubExtensionFactory(config);
     WireMockServer server = new WireMockServer(options()
         .dynamicPort()
         .withRootDirectory(dataDir.toString())
-        .extensions(new MockHubExtensionFactory(config)));
+        .extensions(factory));
     server.start();
+    factory.serverStarted(server.port());
     return new MockHubServer(server);
   }
 

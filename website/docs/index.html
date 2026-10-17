@@ -35,11 +35,13 @@
       <h4>Getting started</h4>
       <a href="#quick-start">Quick start</a>
       <a href="#concepts">Concepts</a>
+      <a href="#use-cases">Use cases</a>
       <a href="#first-stub">Your first stub</a>
       <h4>Mocking</h4>
       <a href="#matching">Request matching</a>
       <a href="#templating">Templating</a>
       <a href="#fake-data">Fake data</a>
+      <a href="#data-generator">Data generator</a>
       <a href="#crud">CRUD resources</a>
       <a href="#scenarios">Scenarios</a>
       <a href="#webhooks">Webhooks</a>
@@ -53,6 +55,7 @@
       <a href="#import">Import</a>
       <a href="#export">Postman &amp; Bruno</a>
       <a href="#requests">Request log</a>
+      <a href="#playground">Playground</a>
       <a href="#auth">Organisations, teams &amp; roles</a>
       <a href="#sso">Single sign-on</a>
       <a href="#ai">AI assistant</a>
@@ -87,6 +90,22 @@
           <tr><td>Scenario</td><td>A named state machine that lets the same request get different answers over time.</td></tr>
         </tbody>
       </table>
+
+      <h2 id="use-cases">Use cases</h2>
+      <table>
+        <thead><tr><th>You want to…</th><th>Use</th><th>Example to install</th></tr></thead>
+        <tbody>
+          <tr><td>Build a frontend before the API exists</td><td>OpenAPI import or the AI assistant, data generator, CRUD resources</td><td>Petstore, Dynamic responses</td></tr>
+          <tr><td>Run integration tests in CI</td><td>One project per dependency, the <a href="#api">API</a> to load stubs, unmatched requests, API keys</td><td>Petstore</td></tr>
+          <tr><td>Test timeouts and retries</td><td>Delays, faults, random failures, scenarios</td><td>Resilience testing</td></tr>
+          <tr><td>Simulate a multi-step flow</td><td>Scenarios, CRUD resources, webhooks</td><td>Shopping cart</td></tr>
+          <tr><td>Replace a legacy SOAP service</td><td>WSDL import, XPath matching, SOAP faults</td><td>Calculator (SOAP)</td></tr>
+          <tr><td>Copy a real API to work offline</td><td>Playground and <em>Save as stub</em>, or proxy and record</td><td>none</td></tr>
+          <tr><td>Stable data for QA and demos</td><td>CRUD resources with generated records, backups</td><td>Dynamic responses</td></tr>
+          <tr><td>Share mocks across teams</td><td>Teams, single sign-on, Postman and Bruno exports, call counts</td><td>any</td></tr>
+        </tbody>
+      </table>
+      <p>The <a href="/tutorials/#use-cases">tutorials</a> walk through each flow step by step.</p>
 
       <h2 id="first-stub">Your first stub</h2>
       <p>Create a project, open it, and choose <strong>REST stub</strong>. Set the method and path, then the response status and body, and save. Click <strong>Send</strong> in the <em>Try it</em> panel to call it.</p>
@@ -160,6 +179,11 @@
         </tbody>
       </table>
       <p>The default language comes from <code>MOCKHUB_FAKE_LOCALE</code> (<code>en</code>). Importing an OpenAPI spec also fills fields by name and format (e-mail, phone, city, dates, prices) with realistic values that stay the same on every import.</p>
+
+      <h2 id="data-generator">Data generator</h2>
+      <p><strong>Generate data</strong> in the stub editor builds a fixed JSON list: choose fields (ids, names, e-mails, addresses, prices, IBANs, any Datafaker expression), up to 1,000 records, a language and an optional key to wrap the list in. Dots in a field name nest it, e.g. <code>address.city</code>. The CRUD resource dialog uses the same generator for starting records. Over the API:</p>
+      <div class="code"><pre>curl -X POST $HUB/__admin/mockhub/api/fake/generate \
+  -d '{"count":3,"fields":[{"name":"id","expression":"sequence"},{"name":"email","expression":"Internet.emailAddress"}]}'</pre></div>
 
       <h2 id="crud">CRUD resources</h2>
       <p>In <strong>Stubs</strong>, choose <strong>CRUD resource</strong> and name it, e.g. <code>customers</code>. MockHub creates one stub that handles:</p>
@@ -237,7 +261,15 @@
       <p>Request bodies come from each stub's matchers, or from the <em>Example request body</em> you set in the editor. Change <code>baseUrl</code> to run the same collection against the real service.</p>
 
       <h2 id="requests">Request log</h2>
-      <p>The <strong>Requests</strong> tab updates live. Filter to <em>Unmatched</em> to find missing stubs. Click a request to see headers and bodies, the closest stubs and how near they came, and a button that creates a stub from that request.</p>
+      <p>The <strong>Requests</strong> tab updates live. Filter to <em>Unmatched</em> to find missing stubs. Click a request to see headers and bodies, the closest stubs and how near they came, a button that creates a stub from that request, and <strong>Replay in Playground</strong>.</p>
+
+      <h2 id="playground">Playground</h2>
+      <p>The <strong>Playground</strong> (sidebar) sends requests to your mocks or to public APIs from the server, so browser CORS rules don't get in the way. It shows status, time, size, headers and a formatted body, and can copy the request as cURL or save the response as a stub in any project you can edit. It needs the editor role.</p>
+      <ul>
+        <li><strong>History</strong>: your last 100 requests and responses, private to you. Values of <code>Authorization</code>, <code>Proxy-Authorization</code>, <code>Cookie</code> and <code>Set-Cookie</code> are hidden before saving, and bodies over 64 KB are cut short.</li>
+        <li><strong>Own mocks</strong>: paths like <code>/shop/orders</code> and URLs on MockHub's own address go straight to the local mocks. <code>/__admin</code> is refused.</li>
+        <li><strong>Safety</strong>: private, loopback, link-local and other internal addresses are refused so the server can't be used to reach your network. Set <code>MOCKHUB_PLAYGROUND_ALLOW_PRIVATE=true</code> to allow them, for example to call services on your intranet. Redirects aren't followed; responses over 2 MB are cut short; requests time out after 30 seconds.</li>
+      </ul>
 
       <h2 id="auth">Organisations, teams &amp; roles</h2>
       <p>Sign-in is off until the first user exists. Open <strong>Users</strong> and create an admin, or start with a break-glass account in <code>MOCKHUB_USERS</code>. Mock endpoints are never protected; only the UI and the admin API are.</p>
@@ -289,6 +321,7 @@
           <tr><td><code>MOCKHUB_SSO_CLIENT_SECRET</code></td><td>empty</td><td>Entra client secret; overrides the one saved in the UI</td></tr>
           <tr><td><code>MOCKHUB_JOURNAL_MAX_ENTRIES</code></td><td><code>5000</code></td><td>Requests kept in the log</td></tr>
           <tr><td><code>MOCKHUB_STUB_CORS</code></td><td><code>true</code></td><td>CORS headers on mock responses</td></tr>
+          <tr><td><code>MOCKHUB_PLAYGROUND_ALLOW_PRIVATE</code></td><td><code>false</code></td><td>Let the Playground call private and local addresses</td></tr>
           <tr><td><code>WIREMOCK_OPTIONS</code></td><td>empty</td><td>Any extra <a href="https://wiremock.org/docs/standalone/java-jar/">WireMock flag</a></td></tr>
         </tbody>
       </table>
@@ -323,6 +356,8 @@ curl "$HUB/__admin/mockhub/api/projects/$ID/requests?unmatched=true"</pre></div>
           <tr><td><code>POST …/stubs/{stubId}/clone?target=</code>, <code>…/move?target=</code></td><td>copy or move a stub</td></tr>
           <tr><td><code>PUT …/stubs/{stubId}/enabled</code></td><td>turn a stub on or off: <code>{"enabled":false}</code></td></tr>
           <tr><td><code>GET /projects/{id}/usage</code></td><td>calls and last call time per stub</td></tr>
+          <tr><td><code>POST /playground/send</code>, <code>GET|DELETE /playground/history</code></td><td>send a request from the server; your history</td></tr>
+          <tr><td><code>POST /fake/generate</code></td><td>generate records: <code>{count, fields:[{name, expression}], locale}</code></td></tr>
           <tr><td><code>POST /projects/{id}/ai/body</code></td><td>generate a response body from a description</td></tr>
           <tr><td><code>GET|DELETE /projects/{id}/requests</code></td><td>request log</td></tr>
           <tr><td><code>GET /projects/{id}/export/{postman|bruno|wiremock}</code></td><td>exports</td></tr>

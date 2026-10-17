@@ -18,6 +18,7 @@ public final class Config {
   public final String ssoAuthority;
   public final String aiApiKey;
   public final String fakeLocale;
+  public final boolean playgroundAllowPrivate;
 
   public Config(Map<String, String> env) {
     this.port = Integer.parseInt(env.getOrDefault("PORT", "8080"));
@@ -32,6 +33,7 @@ public final class Config {
     this.ssoAuthority = env.getOrDefault("MOCKHUB_SSO_AUTHORITY", "");
     this.aiApiKey = env.getOrDefault("MOCKHUB_AI_API_KEY", "");
     this.fakeLocale = env.getOrDefault("MOCKHUB_FAKE_LOCALE", "en");
+    this.playgroundAllowPrivate = Boolean.parseBoolean(env.getOrDefault("MOCKHUB_PLAYGROUND_ALLOW_PRIVATE", "false"));
       }
 
   private static String trimTrailingSlash(String s) {

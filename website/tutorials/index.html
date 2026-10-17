@@ -41,7 +41,121 @@
         <p class="lede">Short guides with a screenshot for every step. The orange outline shows where to click. Follow them in order, or jump to the one you need.</p>
         <div class="ctas">
           <a class="btn primary" href="#first-project">Start with the basics</a>
+          <a class="link-chevron" href="#use-cases">Find your use case</a>
           <a class="link-chevron" href="/__admin/mockhub/ui/">Follow along in the live demo</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="usecases" id="use-cases">
+      <div class="wrap">
+        <div class="usecases-head">
+          <h2>Start from what you're trying to do</h2>
+          <p class="lede small">Each flow lists the tutorials to follow in order and the built-in example that already shows it working. Install an example from <strong>Examples</strong> in the app, then copy what you need.</p>
+        </div>
+        <figure class="tut-shot usecases-shot"><img src="/assets/img/tutorials/dashboard-workflow.webp" alt="The How it works strip on the dashboard: create a mock, test it, track every call, share it" width="1136" height="217" loading="lazy"></figure>
+        <div class="usecase-grid">
+          <article class="usecase">
+            <h3>Build the frontend before the backend exists</h3>
+            <p class="usecase-who">Frontend and mobile developers waiting on an API.</p>
+            <ol>
+              <li><a href="#openapi">Import the OpenAPI spec</a>, or <a href="#ai">ask the assistant</a> to draft the endpoints</li>
+              <li><a href="#data-generator">Generate realistic lists</a> and <a href="#fake-data">fake data</a></li>
+              <li><a href="#crud">Add a CRUD resource</a> so saves and edits stick</li>
+              <li><a href="#first-project">Point the app at the mock URL</a></li>
+            </ol>
+            <p class="usecase-example">Example: <strong>Petstore — REST basics</strong>, <strong>Dynamic responses</strong></p>
+          </article>
+          <article class="usecase">
+            <h3>Run integration tests in CI</h3>
+            <p class="usecase-who">Teams whose tests call payment, identity or partner APIs.</p>
+            <ol>
+              <li>One <a href="#first-project">project per dependency</a></li>
+              <li>Load stubs from your spec before the run with the <a href="/docs/#api">API</a></li>
+              <li>Check <a href="#unmatched">unmatched requests</a> after the run to catch calls you forgot</li>
+              <li><a href="#api-key">Require an API key</a> if the real service does</li>
+            </ol>
+            <p class="usecase-example">Example: <strong>Petstore — REST basics</strong></p>
+          </article>
+          <article class="usecase">
+            <h3>Test timeouts, retries and error handling</h3>
+            <p class="usecase-who">Anyone hardening a service against flaky dependencies.</p>
+            <ol>
+              <li><a href="#chaos">Add delays and network faults</a></li>
+              <li>Make <a href="#chaos">10% of calls fail</a> with a 503</li>
+              <li>Fail once, then succeed, with a <a href="#scenarios">scenario</a></li>
+              <li>Watch the retries arrive in the <a href="#unmatched">request log</a></li>
+            </ol>
+            <p class="usecase-example">Example: <strong>Resilience testing — faults &amp; delays</strong></p>
+          </article>
+          <article class="usecase">
+            <h3>Simulate a multi-step flow</h3>
+            <p class="usecase-who">Checkouts, onboarding, approvals and payments with callbacks.</p>
+            <ol>
+              <li>Change answers between calls with a <a href="#scenarios">scenario</a></li>
+              <li>Keep real records with a <a href="#crud">CRUD resource</a></li>
+              <li>Send the callback with a <a href="#webhooks">webhook</a></li>
+              <li>Reset the flow from the <strong>Scenarios</strong> tab between test runs</li>
+            </ol>
+            <p class="usecase-example">Example: <strong>Shopping cart — stateful scenarios</strong></p>
+          </article>
+          <article class="usecase">
+            <h3>Stand in for a legacy SOAP service</h3>
+            <p class="usecase-who">Teams integrating with banking, insurance or ERP systems.</p>
+            <ol>
+              <li><a href="#soap">Import the WSDL</a> for one stub per operation</li>
+              <li>Match on values in the envelope with XPath</li>
+              <li>Return SOAP faults, or <a href="#chaos">fail some calls</a></li>
+              <li><a href="#api-key">Require an API key</a>; <span class="mono">?wsdl</span> stays open</li>
+            </ol>
+            <p class="usecase-example">Example: <strong>Calculator — SOAP from WSDL</strong></p>
+          </article>
+          <article class="usecase">
+            <h3>Copy a real API so you can work offline</h3>
+            <p class="usecase-who">When the real service is slow, rate-limited or only up in office hours.</p>
+            <ol>
+              <li>Call it from the <a href="#playground">Playground</a></li>
+              <li><a href="#playground">Save the response as a stub</a></li>
+              <li>Tweak it with <a href="#templating">templating</a> so ids and dates follow the request</li>
+              <li><a href="#stub-controls">Turn stubs off</a> to switch between versions</li>
+            </ol>
+            <p class="usecase-example">No example needed: start in the <strong>Playground</strong></p>
+          </article>
+          <article class="usecase">
+            <h3>Give QA and demos stable, realistic data</h3>
+            <p class="usecase-who">Testers and sales engineers who need the same data every time.</p>
+            <ol>
+              <li><a href="#crud">Create a CRUD resource</a> and <a href="#data-generator">generate records</a></li>
+              <li>Edit or reset the records in the <strong>Data</strong> tab</li>
+              <li><a href="#backup">Back up the project</a> and restore it before each demo</li>
+            </ol>
+            <p class="usecase-example">Example: <strong>Dynamic responses — templating</strong></p>
+          </article>
+          <article class="usecase">
+            <h3>Share mocks across teams</h3>
+            <p class="usecase-who">Platform teams running one MockHub for many squads.</p>
+            <ol>
+              <li><a href="#teams">Organise people into teams</a> that own projects</li>
+              <li><a href="#sso">Turn on Microsoft sign-in</a></li>
+              <li><a href="#export">Hand out Postman and Bruno collections</a></li>
+              <li>See which stubs are actually used with <a href="#stub-controls">call counts</a></li>
+            </ol>
+            <p class="usecase-example">Works with any project</p>
+          </article>
+        </div>
+
+        <h3 class="examples-title">What each built-in example shows</h3>
+        <div class="tut-table">
+          <table>
+            <thead><tr><th>Example</th><th>Shows</th><th>Related tutorials</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Petstore — REST basics</strong></td><td>URL, path template, query, header and JSON body matching; priorities; status codes</td><td><a href="#first-stub">First stub</a>, <a href="#try-it">Try it</a>, <a href="#unmatched">Unmatched requests</a></td></tr>
+              <tr><td><strong>Dynamic responses — templating</strong></td><td>Echoing the path, query, headers and body; random values; dates; conditionals</td><td><a href="#templating">Dynamic responses</a>, <a href="#fake-data">Fake data</a></td></tr>
+              <tr><td><strong>Shopping cart — stateful scenarios</strong></td><td>A cart that moves from empty to item added to checked out</td><td><a href="#scenarios">Scenarios</a>, <a href="#crud">CRUD resources</a></td></tr>
+              <tr><td><strong>Resilience testing — faults &amp; delays</strong></td><td>Slow and random latency, dropped connections, malformed bodies, 429 and 503 with Retry-After</td><td><a href="#chaos">Delays, faults &amp; failures</a></td></tr>
+              <tr><td><strong>Calculator — SOAP from WSDL</strong></td><td>One stub per operation, the <span class="mono">?wsdl</span> endpoint, a fault for unknown operations, XPath matching</td><td><a href="#soap">SOAP from WSDL</a>, <a href="#api-key">API keys</a></td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </section>
@@ -54,6 +168,7 @@
             <a class="tut-card" href="#first-project"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M4 7a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M12 11v5M9.5 13.5h5"/></svg></span><strong>Create your first project</strong><span>One base URL for one service.</span><em>2 min</em></a>
             <a class="tut-card" href="#first-stub"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M8 4H7a2 2 0 0 0-2 2v3.5a2 2 0 0 1-2 2 2 2 0 0 1 2 2V17a2 2 0 0 0 2 2h1M16 4h1a2 2 0 0 1 2 2v3.5a2 2 0 0 0 2 2 2 2 0 0 0-2 2V17a2 2 0 0 1-2 2h-1"/></svg></span><strong>Add your first stub</strong><span>Match a request, send a response.</span><em>4 min</em></a>
             <a class="tut-card" href="#try-it"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M7 5l12 7-12 7z"/></svg></span><strong>Test a stub in the editor</strong><span>Send a real request in one click.</span><em>2 min</em></a>
+            <a class="tut-card" href="#playground"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M21 3L10 14M21 3l-7 18-4-7-7-4z"/></svg></span><strong>Call any API in the Playground</strong><span>Mocks or real APIs, with history.</span><em>3 min</em></a>
             <a class="tut-card" href="#unmatched"><span class="tut-ico"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5M9 11h4"/></svg></span><strong>Fix unmatched requests</strong><span>See what your app called, and why it missed.</span><em>3 min</em></a>
             <a class="tut-card" href="#stub-controls"><span class="tut-ico"><svg viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="8" rx="4"/><circle cx="16" cy="12" r="2.5"/></svg></span><strong>Turn stubs off and see what's used</strong><span>Pause a stub, count its calls.</span><em>2 min</em></a>
           </div>
@@ -63,6 +178,7 @@
           <div class="tut-cards">
             <a class="tut-card" href="#templating"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M9 8l-4 4 4 4M15 8l4 4-4 4"/></svg></span><strong>Make responses dynamic</strong><span>Echo ids, read the body, generate data.</span><em>3 min</em></a>
             <a class="tut-card" href="#fake-data"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M5 19l9-9M14 5l1 2 2 1-2 1-1 2-1-2-2-1 2-1zM18 13l.6 1.4L20 15l-1.4.6L18 17l-.6-1.4L16 15l1.4-.6z"/></svg></span><strong>Generate realistic fake data</strong><span>Names, e-mails, cities, in any language.</span><em>2 min</em></a>
+            <a class="tut-card" href="#data-generator"><span class="tut-ico"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M3 14h18M9 9v11"/></svg></span><strong>Generate a list of records</strong><span>20 customers in one click.</span><em>2 min</em></a>
             <a class="tut-card" href="#crud"><span class="tut-ico"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg></span><strong>Build a CRUD API that stores data</strong><span>POST it, then GET it back.</span><em>3 min</em></a>
             <a class="tut-card" href="#scenarios"><span class="tut-ico"><svg viewBox="0 0 24 24"><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.3 11l7.4-4M8.3 13l7.4 4"/></svg></span><strong>Answer differently as state changes</strong><span>Carts, checkouts and other flows.</span><em>4 min</em></a>
             <a class="tut-card" href="#webhooks"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M4 12h9M10 8l4 4-4 4"/><circle cx="18" cy="12" r="2.5"/></svg></span><strong>Send webhooks and serve files</strong><span>Callbacks, PDFs and images.</span><em>3 min</em></a>
@@ -93,15 +209,18 @@
 
     <div class="wrap tut-layout">
       <aside class="tut-toc" aria-label="Tutorials">
+        <a href="#use-cases">Use cases</a>
         <h4>The basics</h4>
         <a href="#first-project">Your first project</a>
         <a href="#first-stub">Your first stub</a>
         <a href="#try-it">Test a stub</a>
+        <a href="#playground">Playground</a>
         <a href="#unmatched">Unmatched requests</a>
         <a href="#stub-controls">On, off &amp; usage</a>
         <h4>Realistic mocks</h4>
         <a href="#templating">Dynamic responses</a>
         <a href="#fake-data">Fake data</a>
+        <a href="#data-generator">Data generator</a>
         <a href="#crud">CRUD resources</a>
         <a href="#scenarios">Scenarios</a>
         <a href="#chaos">Delays &amp; faults</a>
@@ -184,6 +303,36 @@
             </li>
           </ol>
           <p class="tip"><strong>Save first.</strong> Try it calls the live mock, so save your latest changes before testing them. Below Try it, <strong>Call it from your code</strong> gives the same request as cURL, HTTPie, JavaScript, Python, Java, C# or Apex.</p>
+          <a class="next" href="#playground">Next: Call any API in the Playground</a>
+        </article>
+
+        <article class="tut" id="playground">
+          <p class="tut-meta"><span>The basics</span><span>3 min</span><span>Needs the editor role</span></p>
+          <h2>Call any API in the Playground</h2>
+          <p class="tut-intro">The <strong>Playground</strong> sends requests to your mocks or to any public API and shows the full response. Every request is kept in your history, and any response can become a stub.</p>
+          <ol class="tut-steps">
+            <li>
+              <h3>Send a request</h3>
+              <p>Open <strong>Playground</strong> in the sidebar. Pick a method, then type a URL: start typing to pick one of your projects, use a path such as <code>/shop/orders</code>, or paste a public address like <code>https://api.example.com/users</code>. Add query parameters, headers and a body in the tabs, and select <strong>Send</strong>. The response shows the status, time, size, body and headers.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/playground-1-send.webp" alt="The Playground with GET /shop/orders sent and a 200 JSON response, outlined" width="1176" height="900" loading="lazy"></figure>
+            </li>
+            <li>
+              <h3>Go back to anything you sent</h3>
+              <p><strong>History</strong> keeps your last 100 requests with their responses. Filter by URL, method or status, select one to load it again, or delete what you don't need. Passwords and tokens in <code>Authorization</code> and <code>Cookie</code> headers are hidden before anything is saved.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/playground-2-history.webp" alt="The Playground history list with requests, their status codes and times, outlined" width="1176" height="900" loading="lazy"></figure>
+            </li>
+            <li>
+              <h3>Turn a response into a stub</h3>
+              <p>Select <strong>Save as stub</strong>. Choose the project and check the path, and MockHub creates a stub that returns the same status, content type and body. It's the fastest way to copy a real API's answers.</p>
+              <figure class="tut-shot narrow"><img src="/assets/img/tutorials/playground-3-save.webp" alt="The Save as stub dialog with the Shop project, path /orders and name filled in" width="560" height="392" loading="lazy"></figure>
+            </li>
+            <li>
+              <h3>Replay a request from the log</h3>
+              <p>In a project's <strong>Requests</strong> tab, select a request and choose <strong>Replay in Playground</strong>. It opens with the same method, path, headers and body, ready to change and send again.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/playground-4-replay.webp" alt="A logged POST /shop/checkout request with the Replay in Playground button outlined" width="1176" height="900" loading="lazy"></figure>
+            </li>
+          </ol>
+          <p class="tip"><strong>Private addresses are blocked.</strong> So the server can't be used to reach your internal network, the Playground won't call private or local addresses such as <code>10.x</code>, <code>192.168.x</code> or <code>localhost</code>, except MockHub's own mocks. An admin can allow them with <code>MOCKHUB_PLAYGROUND_ALLOW_PRIVATE=true</code>.</p>
           <a class="next" href="#unmatched">Next: Fix unmatched requests</a>
         </article>
 
@@ -277,6 +426,21 @@
             </table>
           </div>
           <p class="tip"><strong>Imports get it too.</strong> Importing an OpenAPI spec fills fields by their name and format, so <code>email</code> gets an e-mail address and <code>createdAt</code> a date. Those values stay the same on every import, so your tests stay stable.</p>
+          <a class="next" href="#data-generator">Next: Generate a list of records</a>
+        </article>
+
+        <article class="tut" id="data-generator">
+          <p class="tut-meta"><span>Realistic mocks</span><span>2 min</span></p>
+          <h2>Generate a list of records</h2>
+          <p class="tut-intro">Need 20 customers with names, e-mails and addresses? The data generator builds the JSON for you, once, so every call returns the same data.</p>
+          <ol class="tut-steps">
+            <li>
+              <h3>Choose the fields and how many records</h3>
+              <p>In a stub's response, select <strong>Generate data</strong>. Each row is a field: give it a name and pick what goes in it, from ids and names to prices, IBANs and colours, or type any Datafaker expression. Use dots to nest fields, like <code>address.city</code>. Set the number of records, an optional language, and an optional key to wrap the list in, such as <code>customers</code>. Select <strong>Generate</strong>, check the preview, then <strong>Use as response body</strong>.</p>
+              <figure class="tut-shot narrow"><img src="/assets/img/tutorials/generator-1-dialog.webp" alt="The Generate data dialog with id, name, email and address.city fields and three generated customers" width="880" height="754" loading="lazy"></figure>
+            </li>
+          </ol>
+          <p class="tip"><strong>Fixed or fresh.</strong> The generator writes fixed data, which keeps tests repeatable. For new values on every call, use <a href="#fake-data">fake data helpers</a> instead. When you create a <a href="#crud">CRUD resource</a>, <strong>Generate fake records</strong> fills its starting records the same way.</p>
           <a class="next" href="#crud">Next: Build a CRUD API that stores data</a>
         </article>
 

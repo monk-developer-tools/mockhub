@@ -1,4 +1,5 @@
-import { ArrowClockwise, MagicWand, Trash, X } from '@phosphor-icons/react';
+import { ArrowClockwise, MagicWand, PaperPlaneTilt, Trash, X } from '@phosphor-icons/react';
+import { replayOf } from '../../model/playground';
 import { EmptyArt } from '../../components/Illustrations';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -178,9 +179,12 @@ export function RequestsTab() {
           </div>
           <div className="drawer-body">
             {canEdit && (
-              <div>
+              <div className="btn-row">
                 <button className="btn" onClick={() => createStub(selected)}>
                   <MagicWand size={15} /> Create stub from this request
+                </button>
+                <button className="btn" onClick={() => navigate('/playground', { state: { request: replayOf(selected.request) } })}>
+                  <PaperPlaneTilt size={15} /> Replay in Playground
                 </button>
               </div>
             )}

@@ -2,6 +2,7 @@ import { Database } from '@phosphor-icons/react';
 import { useState, type FormEvent } from 'react';
 import { api } from '../../api/client';
 import { CodeEditor } from '../../components/CodeEditor';
+import { DataGeneratorDialog } from '../../components/DataGeneratorDialog';
 import { Modal } from '../../components/Modal';
 import { useToast } from '../../components/Toasts';
 import { crudEndpoints, slugifyResource } from '../../model/crud';
@@ -21,6 +22,7 @@ export function CrudDialog({ projectId, onClose, onCreated }: {
   const [idField, setIdField] = useState('id');
   const [idType, setIdType] = useState<'uuid' | 'number'>('number');
   const [seed, setSeed] = useState('');
+  const [generating, setGenerating] = useState(false);
   const [busy, setBusy] = useState(false);
   const resource = slugifyResource(name);
 
@@ -91,7 +93,23 @@ export function CrudDialog({ projectId, onClose, onCreated }: {
         <div className="field">
           <span>Starting records <span className="hint">optional JSON array</span></span>
           <CodeEditor label="Starting records" value={seed} onChange={setSeed} minHeight="110px" maxHeight="220px" />
-          <button type="button" className="link-button small" onClick={() => setSeed(EXAMPLE)}>Use example records</button>
+          <span className="btn-row">
+            <button type="button" className="link-button small" onClick={() => setSeed(EXAMPLE)}>Use example records</button>
+            <button type="button" className="link-button small" onClick={() => setGenerating(true)}>Generate fake records</button>
+          </span>
+          {generating && (
+            <DataGeneratorDialog
+              title="Generate starting records"
+              useLabel="Use as starting records"
+              allowWrap={false}
+              initialCount={5}
+              onClose={() => setGenerating(false)}
+              onUse={(json) => {
+                setSeed(json);
+                setGenerating(false);
+              }}
+            />
+          )}
         </div>
         <div className="modal-foot" style={{ padding: 0 }}>
           <button type="button" className="btn" onClick={onClose}>Cancel</button>

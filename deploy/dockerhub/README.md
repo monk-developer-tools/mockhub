@@ -49,6 +49,8 @@ Point your service or tests at `http://<host>:8080/<base path>` instead of the r
   in a Data tab.
 - **Realistic fake data.** `{{fake 'Name.fullName'}}` and hundreds more, in many languages.
 - **Webhooks and response files.** Call other services after answering; serve PDFs, images or large JSON.
+- **Playground.** Call mocks or real APIs, keep a history, and save any response as a stub.
+- **Data generator.** Realistic JSON lists in one click, in many languages.
 - **Real-world conditions.** Delays, network faults, random failures (say 10% of calls), and API keys.
 - **On, off and usage.** Pause a stub without deleting it, and see how often each one is called.
 - **Snippets** in cURL, HTTPie, JavaScript, Python, Java, C# and Apex.
@@ -88,6 +90,7 @@ Everything is set with environment variables.
 | `MOCKHUB_JOURNAL_MAX_ENTRIES` | `5000` | How many requests the request log keeps |
 | `MOCKHUB_STUB_CORS` | `true` | CORS headers on mock responses, for browser apps |
 | `MOCKHUB_FAKE_LOCALE` | `en` | Default language for `{{fake ...}}` data |
+| `MOCKHUB_PLAYGROUND_ALLOW_PRIVATE` | `false` | Let the Playground call private and local addresses |
 | `WIREMOCK_OPTIONS` | empty | Extra WireMock options, e.g. `--async-response-enabled true` |
 
 Sign-in is off until the first user exists. Create an admin in the UI, or set `MOCKHUB_USERS`. Mock endpoints never

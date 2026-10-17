@@ -17,7 +17,7 @@ public final class AccessPolicy {
   private static final Set<String> PUBLIC_API =
       Set.of("/auth/info", "/auth/login", "/auth/sso/exchange");
   private static final Set<String> ANY_SIGNED_IN =
-      Set.of("/auth/me", "/auth/password", "/info", "/projects", "/orgs", "/examples", "/ai/status");
+      Set.of("/auth/me", "/auth/password", "/info", "/projects", "/orgs", "/examples", "/ai/status", "/fake/generate");
   private static final Set<String> READ_ONLY_NATIVE_POSTS =
       Set.of("/requests/find", "/requests/count", "/near-misses/request", "/near-misses/request-pattern");
   private static final Set<String> ADMIN_ONLY_NATIVE =
@@ -59,6 +59,7 @@ public final class AccessPolicy {
     }
     if (path.matches("/examples/[^/]+/install")) return Decision.allow();
     if (path.equals("/stubs/unassigned")) return need(p.highestRole(), Role.VIEWER, "see stubs outside projects");
+    if (path.equals("/playground") || path.startsWith("/playground/")) return need(p.highestRole(), Role.EDITOR, "use the playground");
 
     Matcher project = PROJECT.matcher(path);
     if (project.matches()) {

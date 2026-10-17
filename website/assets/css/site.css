@@ -1811,6 +1811,150 @@ footer a {
   transform: none;
 }
 
+.mini-req {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 18px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  font-size: 14px;
+  overflow: hidden;
+}
+
+.mini-req code {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mini-method {
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: #1f8f5f;
+  color: #fff;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.mini-status {
+  color: #1f8f5f;
+  font-weight: 600;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.mini-json {
+  margin: 18px 0 0;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.usecases {
+  padding: 88px 0 72px;
+}
+
+.usecases-head {
+  max-width: 760px;
+  margin-bottom: 28px;
+}
+
+.usecases-head h2 {
+  font-size: 36px;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+  margin-bottom: 12px;
+}
+
+.usecases-head .lede {
+  margin: 0;
+  max-width: none;
+  font-size: 18px;
+  color: var(--muted);
+}
+
+.usecases-shot {
+  margin: 0 0 32px;
+}
+
+.usecase-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.usecase {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+  background: var(--tile);
+}
+
+.usecase h3 {
+  font-size: 19px;
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+}
+
+.usecase-who {
+  color: var(--muted);
+  font-size: 14.5px;
+}
+
+.usecase ol {
+  margin: 0;
+  padding-left: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.usecase-example {
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  font-size: 13.5px;
+  color: var(--muted);
+}
+
+.usecase-example strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.usecases .tut-table {
+  max-width: none;
+}
+
+.examples-title {
+  font-size: 22px;
+  letter-spacing: -0.015em;
+  margin: 48px 0 16px;
+}
+
+@media (max-width: 820px) {
+  .usecase-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .usecases-head h2 {
+    font-size: 28px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

@@ -377,3 +377,38 @@ export interface BodyFile {
   path: string;
   usedBy: number;
 }
+
+export interface HeaderPair {
+  name: string;
+  value: string;
+}
+
+export interface PlaygroundRequest {
+  method: string;
+  url: string;
+  headers: HeaderPair[];
+  body: string;
+}
+
+export interface PlaygroundResponse {
+  status: number;
+  headers: HeaderPair[];
+  body: string;
+  size: number;
+  truncated: boolean;
+  durationMs: number;
+}
+
+export interface PlaygroundEntry {
+  id: string;
+  at: string;
+  request: PlaygroundRequest;
+  response: PlaygroundResponse | null;
+  error: string | null;
+  local: boolean;
+}
+
+export interface GeneratorField {
+  name: string;
+  expression: string;
+}
