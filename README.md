@@ -99,6 +99,24 @@ https://mocks.acme.internal/legacy-crm/ws/customers      SOAP mocks of project "
 </picture>
     </td>
   </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <strong>Know who changed what, to the second</strong><br>
+      Every change on a timeline, with filters, full details in local and UTC time, and a CSV download.<br><br>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="website/assets/img/shots/audit-dark.webp">
+  <img src="website/assets/img/shots/audit-light.webp" alt="The audit log for today, with Li Wei's project change opened to show the exact local and UTC time">
+</picture>
+    </td>
+    <td width="50%" valign="top">
+      <strong>Add people in three choices</strong><br>
+      Who, where and what they can do, with the outcome in one plain sentence.<br><br>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="website/assets/img/shots/people-dark.webp">
+  <img src="website/assets/img/shots/people-light.webp" alt="The Add people dialog with a person picked, Only some teams chosen and the Editor role selected">
+</picture>
+    </td>
+  </tr>
 </table>
 
 New here? The [step-by-step tutorials](https://mockhub.devops-monk.com/tutorials/) walk through every feature with
@@ -146,6 +164,8 @@ screenshots, and the [live demo](https://mockhub.devops-monk.com/__admin/mockhub
 - **Organisations, teams and people.** Organisations hold teams, and teams own projects. People get a role per team
   or across the whole organisation, and see only their teams' projects. Managers add people as viewers, editors or managers,
   and each person sees only their organisations.
+- **Audit log.** Every create, change and delete with who did it, to the second. Filter by kind, person and date,
+  open an entry for the full local and UTC time, and download it as CSV. Kept for 90 days and written to stdout.
 - **Users and single sign-on.** Create users in the UI, or let people sign in with **Microsoft Entra ID** (Azure AD).
   Entra groups and app roles can map to organisation roles. Mock endpoints always stay open.
 
