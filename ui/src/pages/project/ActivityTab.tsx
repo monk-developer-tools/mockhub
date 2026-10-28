@@ -28,7 +28,9 @@ export function ActivityTab() {
           <p className="muted small">Who created, changed or deleted what in this project.</p>
         </div>
       </div>
-      {page ? <AuditList entries={page.entries} retentionDays={page.retentionDays} /> : <Skeleton rows={4} label="Loading activity" />}
+      <div className="panel-body">
+        {page ? <AuditList entries={page.entries} retentionDays={page.retentionDays} /> : <Skeleton rows={4} label="Loading activity" />}
+      </div>
     </div>
   );
 }

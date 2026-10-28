@@ -31,11 +31,11 @@ export function OrgDialog({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <Modal title="New organisation" description="An organisation is a team space. Its members see its projects and nothing else." onClose={onClose}>
+    <Modal title="New organisation" description="Your company or department. It starts with a General team; add more teams, and each team owns its projects." onClose={onClose}>
       <form className="stack" onSubmit={submit}>
         <label className="field">
           <span>Name</span>
-          <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Payments team" required />
+          <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Acme" required />
         </label>
         <label className="field">
           <span>Description <span className="hint">optional</span></span>

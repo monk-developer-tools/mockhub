@@ -35,7 +35,7 @@ export function AuditPage() {
           </p>
         </div>
       </div>
-      <div className="panel">
+      <div className="panel panel-body">
         <div className="audit-filters">
           {orgs.length > 1 && (
             <label className="field">
