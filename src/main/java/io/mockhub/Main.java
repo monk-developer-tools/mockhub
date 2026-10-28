@@ -2,7 +2,6 @@ package io.mockhub;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.common.FatalStartupException;
-import com.github.tomakehurst.wiremock.standalone.CommandLineOptions;
 import io.mockhub.ext.MockHubExtensionFactory;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,7 +32,7 @@ public final class Main {
     }
     finalArgs.addAll(userArgs);
 
-    CommandLineOptions options = new CommandLineOptions(finalArgs.toArray(String[]::new));
+    MockHubOptions options = new MockHubOptions(finalArgs.toArray(String[]::new));
     if (options.help()) {
       System.out.println(options.helpText());
       return;

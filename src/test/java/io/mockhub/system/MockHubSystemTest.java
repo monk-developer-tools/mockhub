@@ -135,6 +135,29 @@ class MockHubSystemTest {
   }
 
   @Test
+  void stubsWithVeryLongUrlsAreSavedAndSurviveARestart() throws Exception {
+    String path = "/customers/search/" + "where-custom-fields-email-equals-someone-at-example-com-and-".repeat(5);
+    try (MockHubProcess hub = MockHubProcess.start(data, AUTH_ENV)) {
+      // Given
+      String id = json(send(hub, "POST", API + "/projects", "{\"name\":\"Legacy\",\"root\":true}")).get("id").asText();
+
+      // When
+      HttpResponse<String> created = send(hub, "POST", API + "/projects/" + id + "/stubs",
+          "{\"request\":{\"method\":\"GET\",\"url\":\"" + path + "\"},\"response\":{\"status\":200,\"body\":\"found\"}}");
+
+      // Then
+      assertThat(created.statusCode()).isEqualTo(201);
+      assertThat(send(hub, "GET", path, null).body()).isEqualTo("found");
+    }
+
+    // When
+    try (MockHubProcess restarted = MockHubProcess.start(data, AUTH_ENV)) {
+      // Then
+      assertThat(send(restarted, "GET", path, null).body()).isEqualTo("found");
+    }
+  }
+
+  @Test
   void auditEntriesSurviveARestartAndAreWrittenToStdout() throws Exception {
     try (MockHubProcess hub = MockHubProcess.start(data, AUTH_ENV)) {
       // Given
