@@ -17,6 +17,8 @@ import { AiSettingsPage } from './pages/AiSettingsPage';
 import { BackupPage } from './pages/BackupPage';
 import { OrgPage } from './pages/OrgPage';
 import { TeamPage } from './pages/TeamPage';
+import { ActivityTab } from './pages/project/ActivityTab';
+import { AuditPage } from './pages/AuditPage';
 import { AssistantTab } from './pages/project/AssistantTab';
 import { DataTab } from './pages/project/DataTab';
 import { ServerPage } from './pages/ServerPage';
@@ -41,6 +43,7 @@ const router = createBrowserRouter(
         { path: 'admin/sso', element: <SsoPage /> },
         { path: 'admin/ai', element: <AiSettingsPage /> },
         { path: 'admin/backup', element: <BackupPage /> },
+        { path: 'audit', element: <AuditPage /> },
         {
           path: 'projects/:projectId',
           element: <ProjectPage />,
@@ -54,6 +57,7 @@ const router = createBrowserRouter(
             { path: 'requests', element: <RequestsTab /> },
             { path: 'scenarios', element: <ScenariosTab /> },
             { path: 'import-export', element: <ImportExportTab /> },
+            { path: 'activity', element: <ActivityTab /> },
             { path: 'settings', element: <ProjectSettingsTab /> },
           ],
         },

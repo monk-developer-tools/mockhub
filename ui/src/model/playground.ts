@@ -85,7 +85,9 @@ export function pathOf(url: string): string {
 
 export function projectFor(url: string, origin: string, projects: Project[]): Project | undefined {
   const absolute = absoluteUrl(url, origin);
-  return projects.find((p) => absolute.startsWith(p.mockUrl + '/') || absolute === p.mockUrl);
+  return [...projects]
+    .sort((a, b) => b.mockUrl.length - a.mockUrl.length)
+    .find((p) => absolute.startsWith(p.mockUrl + '/') || absolute === p.mockUrl);
 }
 
 export function relativePath(url: string, project: Project | undefined): string {

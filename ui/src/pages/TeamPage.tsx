@@ -1,21 +1,19 @@
-import { ArrowLeft, Plus, Trash, UserPlus } from '@phosphor-icons/react';
+import { Buildings, CaretRight, Plus, Trash, UserPlus } from '@phosphor-icons/react';
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api/client';
 import type { OrgRole, Team, TeamMember, UserSummary } from '../api/types';
 import { PersonCell, TeamMark } from '../components/Avatar';
+import { PeopleDialog } from '../components/PeopleDialog';
 import { RoleBadge } from '../components/RoleBadge';
 import { Skeleton } from '../components/Skeleton';
 import { useToast } from '../components/Toasts';
+import { ROLE_INFO } from '../model/access';
 import { atLeast, useApp } from '../state/AppContext';
 import { ProjectDialog } from './ProjectDialog';
 import { SourceTag } from './UsersPage';
 
-export const TEAM_ROLES: { value: OrgRole; label: string; hint: string }[] = [
-  { value: 'viewer', label: 'Viewer', hint: "see this team's projects, stubs and requests" },
-  { value: 'editor', label: 'Editor', hint: "also create and change this team's projects and stubs" },
-  { value: 'owner', label: 'Owner', hint: "also manage this team's members and settings" },
-];
+export const TEAM_ROLES: { value: OrgRole; label: string; hint: string }[] = ROLE_INFO.map((r) => ({ value: r.value, label: r.label, hint: r.detail }));
 
 export function TeamPage() {
   const { teamId = '' } = useParams();
@@ -27,8 +25,7 @@ export function TeamPage() {
   const [directory, setDirectory] = useState<UserSummary[]>([]);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [newMember, setNewMember] = useState('');
-  const [newRole, setNewRole] = useState<OrgRole>('editor');
+  const [adding, setAdding] = useState(false);
   const [missing, setMissing] = useState(false);
   const [creating, setCreating] = useState(false);
 
@@ -65,7 +62,6 @@ export function TeamPage() {
   const teamProjects = useMemo(() => projects.filter((p) => p.teamId === teamId), [projects, teamId]);
   const direct = (members ?? []).filter((m) => m.member);
   const viaOrg = (members ?? []).filter((m) => !m.member);
-  const candidates = directory.filter((u) => u.source !== 'env' && !direct.some((m) => m.id === u.id && m.role));
 
   if (missing) {
     return (
@@ -98,12 +94,6 @@ export function TeamPage() {
       return ok;
     });
 
-  const add = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!newMember) return;
-    if (await setRole(newMember, newRole)) setNewMember('');
-  };
-
   const save = (e: FormEvent) => {
     e.preventDefault();
     run(() => api.updateTeam(orgId, teamId, { name, description }), 'Team saved').then(async (ok) => {
@@ -120,7 +110,13 @@ export function TeamPage() {
 
   return (
     <div className="page">
-      <Link to="/org" className="back-link"><ArrowLeft size={14} /> {currentOrg.name}</Link>
+      <nav className="breadcrumbs" aria-label="Breadcrumb">
+        <Link to="/org"><Buildings size={14} weight="duotone" /> {currentOrg.name}</Link>
+        <CaretRight size={12} className="muted" />
+        <Link to="/org">Teams</Link>
+        <CaretRight size={12} className="muted" />
+        <span aria-current="page">{team.name}</span>
+      </nav>
       <div className="page-header team-header">
         <div className="team-title">
           <TeamMark name={team.name} seed={team.id} size={48} />
@@ -129,7 +125,10 @@ export function TeamPage() {
             <p className="muted">{team.description || `A team in ${currentOrg.name}`}</p>
           </div>
         </div>
-        <RoleBadge role={isAdmin ? 'admin' : team.role} />
+        <div className="btn-row">
+          <RoleBadge role={isAdmin ? 'admin' : team.role} />
+          {canManage && <button className="btn primary" onClick={() => setAdding(true)}><UserPlus size={15} /> Add people</button>}
+        </div>
       </div>
 
       <div className="split">
@@ -144,7 +143,7 @@ export function TeamPage() {
             <table className="data-table">
               <tbody>
                 {direct.length === 0 && (
-                  <tr><td colSpan={3} className="muted">Nobody has been added to this team yet.</td></tr>
+                  <tr><td colSpan={3} className="muted">Nobody has been added to this team yet.{canManage ? ' Use Add people to bring in the people who work on it.' : ''}</td></tr>
                 )}
                 {direct.map((m) => (
                   <tr key={m.id}>
@@ -190,27 +189,9 @@ export function TeamPage() {
             </div>
           )}
           {canManage && (
-            <form className="panel-body add-member" onSubmit={add}>
-              <label className="field">
-                <span>Add a person</span>
-                <select value={newMember} onChange={(e) => setNewMember(e.target.value)}>
-                  <option value="">Choose a user…</option>
-                  {candidates.map((u) => (
-                    <option key={u.id} value={u.id}>{u.displayName || u.username} ({u.email || u.username})</option>
-                  ))}
-                </select>
-              </label>
-              <label className="field">
-                <span>Role</span>
-                <select value={newRole} onChange={(e) => setNewRole(e.target.value as OrgRole)}>
-                  {TEAM_ROLES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
-                </select>
-              </label>
-              <button className="btn primary" type="submit" disabled={!newMember}><UserPlus size={14} /> Add</button>
-              <p className="muted small" style={{ gridColumn: '1 / -1' }}>
-                {TEAM_ROLES.find((r) => r.value === newRole)?.label}s {TEAM_ROLES.find((r) => r.value === newRole)?.hint}.
-              </p>
-            </form>
+            <div className="panel-body">
+              <button className="btn" onClick={() => setAdding(true)}><UserPlus size={14} /> Add people to {team.name}</button>
+            </div>
           )}
         </div>
 
@@ -232,7 +213,7 @@ export function TeamPage() {
                       <span className="project-mark small" style={{ background: p.color }} aria-hidden="true">{p.name.trim().charAt(0).toUpperCase()}</span>
                       <span className="team-row-text">
                         <strong>{p.name}</strong>
-                        <span className="muted small mono">{p.basePath}</span>
+                        <span className="muted small mono">{p.basePath || '/'}</span>
                       </span>
                       <span className="muted small">{p.stubCount} {p.stubCount === 1 ? 'stub' : 'stubs'}</span>
                     </Link>
@@ -275,6 +256,24 @@ export function TeamPage() {
         </div>
       </div>
       {creating && <ProjectDialog teamId={teamId} onClose={() => setCreating(false)} />}
+      {adding && (
+        <PeopleDialog
+          orgId={orgId}
+          orgName={currentOrg.name}
+          teams={[team]}
+          directory={directory}
+          canPickOrg={false}
+          canCreateUsers={isAdmin}
+          lockTeam={team}
+          excludeIds={direct.map((m) => m.id)}
+          onClose={() => setAdding(false)}
+          onDone={async () => {
+            setAdding(false);
+            await load();
+            await refreshSession();
+          }}
+        />
+      )}
     </div>
   );
 }

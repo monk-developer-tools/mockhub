@@ -19,6 +19,7 @@ class ConfigTest {
     assertThat(config.users).isEmpty();
     assertThat(config.stubCors).isTrue();
     assertThat(config.journalMaxEntries).isEqualTo(5000);
+    assertThat(config.auditRetentionDays).isEqualTo(90);
   }
 
   @Test

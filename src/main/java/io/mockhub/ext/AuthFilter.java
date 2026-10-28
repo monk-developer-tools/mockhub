@@ -10,8 +10,12 @@ import io.mockhub.auth.AccessPolicy;
 import io.mockhub.auth.AuthService;
 import io.mockhub.auth.Principal;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class AuthFilter implements AdminRequestFilterV2 {
+  private static final Logger LOG = LoggerFactory.getLogger(AuthFilter.class);
+
   private final AuthService auth;
   private final AccessPolicy policy;
 
@@ -33,7 +37,10 @@ public final class AuthFilter implements AdminRequestFilterV2 {
     Optional<Principal> principal = auth.principal(request.getHeader("Authorization"));
     if (principal.isEmpty()) return RequestFilterAction.stopWith(Response.error(401, "Authentication required"));
     AccessPolicy.Decision decision = policy.decide(principal.get(), request.getMethod(), path);
-    if (!decision.allowed()) return RequestFilterAction.stopWith(Response.error(403, decision.reason()));
+    if (!decision.allowed()) {
+      LOG.info("Denied {} {} for {}: {}", request.getMethod(), path, principal.get().username(), decision.reason());
+      return RequestFilterAction.stopWith(Response.error(403, decision.reason()));
+    }
     return RequestFilterAction.continueWith(request);
   }
 

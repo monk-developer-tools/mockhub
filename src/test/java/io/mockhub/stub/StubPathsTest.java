@@ -125,4 +125,50 @@ class StubPathsTest {
     // Then
     assertThat(stub.at("/response/proxyUrlPrefixToRemove").asText()).isEqualTo("/pay/v1");
   }
+
+  @ParameterizedTest
+  @CsvSource({
+      "url, /users/1",
+      "urlPathPattern, /users/[0-9]+",
+      "urlPattern, ^/users/.*"
+  })
+  void aProjectAtTheRootKeepsUrlsAsTheyAre(String field, String path) {
+    // Given
+    ObjectNode stub = json("{'request':{'method':'GET','" + field + "':'" + path + "'}}");
+
+    // When
+    StubPaths.toAbsolute(stub, "");
+    String absolute = stub.at("/request/" + field).asText();
+    StubPaths.toRelative(stub, "");
+
+    // Then
+    assertThat(absolute).isEqualTo(path);
+    assertThat(stub.at("/request/" + field).asText()).isEqualTo(path);
+  }
+
+  @Test
+  void aCatchAllAtTheRootMatchesEveryPath() {
+    // Given
+    ObjectNode stub = json("{'response':{'status':200}}");
+
+    // When
+    StubPaths.toAbsolute(stub, "");
+
+    // Then
+    assertThat(stub.at("/request/urlPattern").asText()).isEqualTo("/.*");
+    StubPaths.toRelative(stub, "");
+    assertThat(stub.path("request").has("urlPattern")).isFalse();
+  }
+
+  @Test
+  void proxiesAtTheRootKeepTheWholePath() {
+    // Given
+    ObjectNode stub = json("{'request':{'urlPathPattern':'/.*'},'response':{'proxyBaseUrl':'https://api.example.com'}}");
+
+    // When
+    StubPaths.toAbsolute(stub, "");
+
+    // Then
+    assertThat(stub.path("response").has("proxyUrlPrefixToRemove")).isFalse();
+  }
 }

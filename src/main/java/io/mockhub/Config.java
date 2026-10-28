@@ -19,6 +19,7 @@ public final class Config {
   public final String aiApiKey;
   public final String fakeLocale;
   public final boolean playgroundAllowPrivate;
+  public final int auditRetentionDays;
 
   public Config(Map<String, String> env) {
     this.port = Integer.parseInt(env.getOrDefault("PORT", "8080"));
@@ -34,7 +35,8 @@ public final class Config {
     this.aiApiKey = env.getOrDefault("MOCKHUB_AI_API_KEY", "");
     this.fakeLocale = env.getOrDefault("MOCKHUB_FAKE_LOCALE", "en");
     this.playgroundAllowPrivate = Boolean.parseBoolean(env.getOrDefault("MOCKHUB_PLAYGROUND_ALLOW_PRIVATE", "false"));
-      }
+    this.auditRetentionDays = Math.max(1, Integer.parseInt(env.getOrDefault("MOCKHUB_AUDIT_RETENTION_DAYS", "90")));
+  }
 
   private static String trimTrailingSlash(String s) {
     return s.endsWith("/") ? s.substring(0, s.length() - 1) : s;

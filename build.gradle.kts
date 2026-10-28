@@ -34,6 +34,7 @@ dependencies {
         implementation("org.apache.httpcomponents.core5:httpcore5-h2:5.4.4")
         implementation("com.github.jknack:handlebars:4.5.5")
         implementation("org.apache.commons:commons-lang3:3.21.0")
+        implementation("com.google.guava:guava:33.7.2-jre")
     }
 
     testImplementation(platform("org.junit:junit-bom:5.11.4"))

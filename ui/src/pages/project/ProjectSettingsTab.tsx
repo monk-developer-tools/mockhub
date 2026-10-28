@@ -1,4 +1,4 @@
-import { Key } from '@phosphor-icons/react';
+import { Key, TreeStructure } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
 import { CopyButton } from '../../components/CopyButton';
 import { useNavigate } from 'react-router-dom';
@@ -39,7 +39,7 @@ export function ProjectSettingsTab() {
           <table className="kv-table">
             <tbody>
               <tr><td>Name</td><td>{project.name}</td></tr>
-              <tr><td>Base path</td><td>{project.basePath}</td></tr>
+              <tr><td>Base path</td><td>{project.root ? <>none, answers at the root <span className="tag">root</span></> : project.basePath}</td></tr>
               <tr><td>Mock URL</td><td>{project.mockUrl}</td></tr>
               <tr><td>Created</td><td>{new Date(project.createdAt).toLocaleString()}</td></tr>
               <tr><td>Updated</td><td>{new Date(project.updatedAt).toLocaleString()}</td></tr>
@@ -54,6 +54,7 @@ export function ProjectSettingsTab() {
           <pre className="block">{`PAYMENT_API_URL=${project.mockUrl}`}</pre>
         </div>
       </div>
+      <RootPanel />
       <ApiKeyPanel />
       {canEdit && (
         <div className="panel">
@@ -78,12 +79,54 @@ export function ProjectSettingsTab() {
       {deleting && (
         <Confirm
           title={`Delete ${project.name}?`}
-          message={`This removes the project and all ${project.stubCount} stubs under ${project.basePath}. It can't be undone.`}
+          message={`This removes the project and all ${project.stubCount} stubs. It can't be undone.`}
           confirmLabel="Delete project"
           onConfirm={remove}
           onCancel={() => setDeleting(false)}
         />
       )}
+    </div>
+  );
+}
+
+function RootPanel() {
+  const { project, reloadProject } = useProject();
+  const { canEdit, refreshProjects } = useApp();
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+  const root = Boolean(project.root);
+
+  const toggle = async (next: boolean) => {
+    setBusy(true);
+    try {
+      await api.updateProject(project.id, { root: next });
+      toast.notify(next ? `${project.name} now answers at the root` : `${project.name} answers under /${project.slug} again`);
+      reloadProject();
+      refreshProjects();
+    } catch (e) {
+      toast.fail(e);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="panel">
+      <div className="section">
+        <h3>
+          <span><TreeStructure size={15} weight="duotone" style={{ verticalAlign: -2, marginRight: 6 }} />Answer at the root</span>
+          <label className="switch">
+            <input type="checkbox" role="switch" checked={root} disabled={!canEdit || busy} aria-label="Answer at the root" onChange={(e) => toggle(e.target.checked)} />
+          </label>
+        </h3>
+        <p className="muted small">
+          {root ? (
+            <>Stubs answer without a prefix, e.g. <span className="mono">{project.mockUrl}/orders/42</span>. Paths that start with another project's base path still go to that project.</>
+          ) : (
+            <>Stubs answer under <span className="mono">{project.basePath}</span>. Turn this on when you move an existing WireMock server here and your services, or templates like <span className="mono">{'{{request.pathSegments.[0]}}'}</span>, expect the old paths. Only one project per server can do this.</>
+          )}
+        </p>
+      </div>
     </div>
   );
 }
@@ -141,7 +184,7 @@ function ApiKeyPanel() {
           </label>
         </h3>
         <p className="muted small" style={{ marginBottom: 10 }}>
-          Every call to {project.basePath} must send this header, like the real service would. Calls without it get a 401
+          Every call to {project.root ? 'this project' : project.basePath} must send this header, like the real service would. Calls without it get a 401
           (a SOAP fault for SOAP calls). <span className="mono" style={{ whiteSpace: 'nowrap' }}>?wsdl</span> stays open. Try it, code snippets and Postman / Bruno
           exports include the key automatically.
         </p>

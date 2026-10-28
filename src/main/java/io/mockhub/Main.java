@@ -15,6 +15,8 @@ public final class Main {
           : "dev";
 
   public static void main(String[] args) {
+    String level = System.getenv("MOCKHUB_LOG_LEVEL");
+    if (level != null && !level.isBlank()) System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", level.trim().toLowerCase());
     Config config = new Config(System.getenv());
     List<String> userArgs = new ArrayList<>(config.extraWireMockArgs);
     userArgs.addAll(Arrays.asList(args));
@@ -48,7 +50,7 @@ public final class Main {
       server.start();
       factory.serverStarted(server.port());
     } catch (FatalStartupException e) {
-      System.err.println(e.getMessage());
+      System.out.println("MockHub could not start: " + e.getMessage());
       System.exit(1);
     }
     Runtime.getRuntime().addShutdownHook(new Thread(server::stop, "mockhub-shutdown"));

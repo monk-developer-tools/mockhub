@@ -15,10 +15,10 @@ import java.util.Optional;
 import java.util.function.Function;
 
 public final class ApiKeyFilter implements StubRequestFilterV2 {
-  private final Function<String, Optional<Project>> projectBySlug;
+  private final Function<String, Optional<Project>> projectForPath;
 
-  public ApiKeyFilter(Function<String, Optional<Project>> projectBySlug) {
-    this.projectBySlug = projectBySlug;
+  public ApiKeyFilter(Function<String, Optional<Project>> projectForPath) {
+    this.projectForPath = projectForPath;
   }
 
   @Override
@@ -30,8 +30,7 @@ public final class ApiKeyFilter implements StubRequestFilterV2 {
   public RequestFilterAction filter(Request request, ServeEvent serveEvent) {
     if (request.getMethod().equals(RequestMethod.OPTIONS) || isWsdl(request)) return RequestFilterAction.continueWith(request);
     String slug = firstSegment(Urls.getPath(request.getUrl()));
-    if (slug.isEmpty()) return RequestFilterAction.continueWith(request);
-    ApiKey key = projectBySlug.apply(slug).map(Project::apiKey).orElse(null);
+    ApiKey key = projectForPath.apply(slug).map(Project::apiKey).orElse(null);
     if (key == null || key.accepts(request.getHeader(key.header()))) return RequestFilterAction.continueWith(request);
     return RequestFilterAction.stopWith(rejection(request, key));
   }

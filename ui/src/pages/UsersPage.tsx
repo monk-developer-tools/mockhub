@@ -13,7 +13,7 @@ import { useApp } from '../state/AppContext';
 import { timeAgo } from '../model/time';
 
 const SERVER_ROLES: { value: ServerRole; label: string; hint: string }[] = [
-  { value: 'none', label: 'None', hint: 'only sees organisations they are a member of' },
+  { value: 'none', label: 'None (recommended)', hint: 'only sees the organisations and teams they were added to' },
   { value: 'viewer', label: 'Viewer everywhere', hint: 'can look at every organisation' },
   { value: 'editor', label: 'Editor everywhere', hint: 'can change projects in every organisation' },
   { value: 'admin', label: 'Admin', hint: 'manages users, single sign-on, organisations and the server' },
@@ -78,7 +78,7 @@ export function UsersPage() {
       <div className="page-header">
         <div>
           <h1>Users</h1>
-          <p className="muted">People who can sign in to MockHub, and what they can reach: whole organisations, or single teams inside them.</p>
+          <p className="muted">Every account on this server. To give someone access to an organisation or a team, the quickest way is <strong>Teams &amp; people → Add people</strong>.</p>
         </div>
         <button className="btn primary" onClick={() => setCreating(true)}><Plus size={15} /> New user</button>
       </div>

@@ -52,6 +52,11 @@ public final class FakeStubGateway implements StubGateway {
     clearedBasePaths.add(basePath);
   }
 
+  @Override
+  public void removeServeEvents(List<UUID> ids) {
+    events.removeIf(e -> ids.contains(e.getId()));
+  }
+
   public void record(ServeEvent event) {
     events.add(event);
   }

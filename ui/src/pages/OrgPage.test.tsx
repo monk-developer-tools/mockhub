@@ -5,12 +5,16 @@ import { renderWithShell } from '../test/render';
 
 let isOwner = true;
 const createTeam = vi.fn((_org: string, body: { name: string }) => Promise.resolve({ id: 't3', name: body.name }));
-const setMember = vi.fn((_org: string, _user: string, _role: string) => Promise.resolve({}));
+const setMember = vi.fn((..._a: unknown[]) => Promise.resolve({}));
+const removeMember = vi.fn((..._a: unknown[]) => Promise.resolve());
+const setTeamMember = vi.fn((..._a: unknown[]) => Promise.resolve({}));
+const removeTeamMember = vi.fn((..._a: unknown[]) => Promise.resolve());
 vi.mock('../state/AppContext', () => ({
   useApp: () => ({
     currentOrg: { id: 'o1', name: 'Payments', role: isOwner ? 'owner' : 'viewer' },
     isOwner,
     isAdmin: false,
+    canEdit: isOwner,
     session: { id: 'me' },
     orgs: [{ id: 'o1' }, { id: 'o2' }],
     refreshSession: vi.fn(),
@@ -19,7 +23,7 @@ vi.mock('../state/AppContext', () => ({
 }));
 vi.mock('../api/client', () => ({
   api: {
-    orgs: () => Promise.resolve([{ id: 'o1', name: 'Payments', description: '', projectCount: 2, memberCount: 1, teamCount: 2 }]),
+    orgs: () => Promise.resolve([{ id: 'o1', name: 'Payments', description: '', projectCount: 2, memberCount: 2, teamCount: 2 }]),
     teams: () => Promise.resolve([
       { id: 't1', orgId: 'o1', name: 'General', slug: 'general', description: '', projectCount: 1, memberCount: 0, role: 'owner' },
       { id: 't2', orgId: 'o1', name: 'Checkout', slug: 'checkout', description: 'Cart pages', projectCount: 1, memberCount: 3, role: 'owner' },
@@ -27,12 +31,18 @@ vi.mock('../api/client', () => ({
     createTeam: (org: string, body: { name: string }) => createTeam(org, body),
     members: () => Promise.resolve([
       { id: 'me', username: 'me', displayName: 'Me', email: '', source: 'local', role: 'owner', groupRole: '', effectiveRole: 'owner', disabled: false, teams: [] },
+      { id: 'u3', username: 'kim', displayName: 'Kim Lee', email: 'kim@x.com', source: 'local', role: '', groupRole: '', effectiveRole: 'editor', disabled: false,
+        teams: [{ id: 't2', name: 'Checkout', role: 'editor' }] },
     ]),
     users: () => Promise.resolve([
       { id: 'me', username: 'me', displayName: 'Me', email: '', source: 'local' },
       { id: 'u2', username: 'qa', displayName: 'Quinn', email: 'quinn@x.com', source: 'azure' },
+      { id: 'u3', username: 'kim', displayName: 'Kim Lee', email: 'kim@x.com', source: 'local' },
     ]),
-    setMember: (org: string, user: string, role: string) => setMember(org, user, role),
+    setMember: (...a: unknown[]) => setMember(...a),
+    removeMember: (...a: unknown[]) => removeMember(...a),
+    setTeamMember: (...a: unknown[]) => setTeamMember(...a),
+    removeTeamMember: (...a: unknown[]) => removeTeamMember(...a),
   },
 }));
 
@@ -40,31 +50,81 @@ const { OrgPage } = await import('./OrgPage');
 
 describe('OrgPage', () => {
   beforeEach(() => {
-    setMember.mockClear();
+    [setMember, removeMember, setTeamMember, removeTeamMember].forEach((f) => f.mockClear());
     isOwner = true;
   });
 
-  it('lets owners add people with a role', async () => {
+  it('explains how organisations, teams and projects fit together', async () => {
+    // When
+    renderWithShell(<OrgPage />);
+
+    // Then
+    const map = await screen.findByRole('region', { name: 'How it fits together' });
+    expect(within(map).getByText('2 teams')).toBeInTheDocument();
+    expect(within(map).getByText('2 projects')).toBeInTheDocument();
+    expect(within(map).getByText('2 people')).toBeInTheDocument();
+  });
+
+  it('adds a person to the whole organisation in three choices', async () => {
     // Given
     renderWithShell(<OrgPage />);
-    expect(await screen.findByText('2 teams, 2 projects and 1 person')).toBeInTheDocument();
+    await screen.findByText('2 teams', { selector: 'strong' });
 
     // When
-    await userEvent.selectOptions(screen.getByLabelText('Add a person'), 'u2');
-    await userEvent.selectOptions(screen.getByLabelText('Role'), 'viewer');
-    await userEvent.click(screen.getByRole('button', { name: 'Add' }));
+    await userEvent.click(screen.getAllByRole('button', { name: /Add people/ })[0]);
+    const dialog = within(screen.getByRole('dialog'));
+    await userEvent.click(dialog.getByLabelText('Quinn'));
+    await userEvent.click(dialog.getByLabelText('Viewer'));
+    expect(dialog.getByText('Quinn will see every project in Payments, including teams added later.')).toBeInTheDocument();
+    await userEvent.click(dialog.getByRole('button', { name: 'Add person' }));
 
     // Then
     await waitFor(() => expect(setMember).toHaveBeenCalledWith('o1', 'u2', 'viewer'));
+    expect(setTeamMember).not.toHaveBeenCalled();
   });
 
-  it('lists teams and lets owners create one', async () => {
+  it('adds a person to chosen teams only', async () => {
+    // Given
+    renderWithShell(<OrgPage />);
+    await screen.findByText('2 teams', { selector: 'strong' });
+
+    // When
+    await userEvent.click(screen.getAllByRole('button', { name: /Add people/ })[0]);
+    const dialog = within(screen.getByRole('dialog'));
+    await userEvent.click(dialog.getByLabelText('Quinn'));
+    await userEvent.click(dialog.getByText('Only some teams'));
+    await userEvent.click(dialog.getByLabelText('Checkout'));
+    await userEvent.click(dialog.getByRole('button', { name: 'Add person' }));
+
+    // Then
+    await waitFor(() => expect(setTeamMember).toHaveBeenCalledWith('o1', 't2', 'u2', 'editor'));
+    expect(setMember).not.toHaveBeenCalled();
+  });
+
+  it('shows where each person works in plain words and moves them to the whole organisation', async () => {
+    // Given
+    renderWithShell(<OrgPage />, '/org?tab=people');
+    const row = (await screen.findByText('Kim Lee')).closest('tr')!;
+    expect(within(row).getByText('Checkout')).toBeInTheDocument();
+
+    // When
+    await userEvent.click(within(row).getByRole('button', { name: 'Change access for kim' }));
+    const dialog = within(screen.getByRole('dialog'));
+    await userEvent.click(dialog.getByText('Whole organisation'));
+    await userEvent.click(dialog.getByRole('button', { name: 'Save access' }));
+
+    // Then
+    await waitFor(() => expect(setMember).toHaveBeenCalledWith('o1', 'u3', 'editor'));
+    expect(removeTeamMember).toHaveBeenCalledWith('o1', 't2', 'u3');
+  });
+
+  it('lists teams as cards and lets owners create one', async () => {
     // Given
     renderWithShell(<OrgPage />);
     expect(await screen.findByRole('link', { name: /Checkout/ })).toHaveAttribute('href', '/org/teams/t2');
 
     // When
-    await userEvent.click(screen.getByRole('button', { name: 'New team' }));
+    await userEvent.click(screen.getByRole('button', { name: /New team/ }));
     await userEvent.type(within(screen.getByRole('dialog')).getByLabelText('Name'), 'Search');
     await userEvent.click(screen.getByRole('button', { name: 'Create team' }));
 
@@ -72,16 +132,16 @@ describe('OrgPage', () => {
     await waitFor(() => expect(createTeam).toHaveBeenCalledWith('o1', { name: 'Search', description: '' }));
   });
 
-  it('shows viewers the members without management controls', async () => {
+  it('shows viewers the people without management controls', async () => {
     // Given
     isOwner = false;
 
     // When
-    renderWithShell(<OrgPage />);
+    renderWithShell(<OrgPage />, '/org?tab=people');
 
     // Then
     expect(await screen.findByText('Me')).toBeInTheDocument();
-    expect(screen.queryByLabelText('Add a person')).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Delete organisation/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Add people/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: /Settings/ })).not.toBeInTheDocument();
   });
 });

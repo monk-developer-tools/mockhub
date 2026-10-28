@@ -17,6 +17,12 @@ const IMPORTS = [
   { format: 'openapi', name: 'OpenAPI / Swagger', accept: '.json,.yaml,.yml', detail: 'One stub per operation, using examples from the spec or generated sample data.' },
   { format: 'wsdl', name: 'WSDL (SOAP)', accept: '.wsdl,.xml', detail: 'One stub per operation with sample envelopes, plus ?wsdl and a fault for unknown operations.' },
   { format: 'wiremock', name: 'WireMock mappings', accept: '.json', detail: 'A mappings file, an array of stubs or a single stub.' },
+  {
+    format: 'wiremock-zip',
+    name: 'WireMock folder',
+    accept: '.zip',
+    detail: 'Moving from WireMock? Zip the folder that holds mappings and __files (for example src/test/resources/wiremock). Every mapping is imported and every body file is copied into this project.',
+  },
 ];
 
 export function ImportExportTab() {
@@ -27,6 +33,7 @@ export function ImportExportTab() {
   const [path, setPath] = useState('');
   const [stripPrefix, setStripPrefix] = useState('');
   const [result, setResult] = useState<string>('');
+  const [filesVersion, setFilesVersion] = useState(0);
   const current = IMPORTS.find((i) => i.format === format)!;
 
   const runImport = async (text: string, fileName: string) => {
@@ -37,6 +44,21 @@ export function ImportExportTab() {
       const r = await api.importInto(project.id, format, text, options);
       setResult(`Imported ${r.imported} stub${r.imported === 1 ? '' : 's'} from ${fileName}.`);
       toast.notify(`Imported ${r.imported} stubs`);
+      reloadProject();
+      refreshProjects();
+    } catch (e) {
+      setResult('');
+      toast.fail(e);
+    }
+  };
+
+  const runZipImport = async (file: File) => {
+    try {
+      const r = await api.importZip(project.id, file);
+      const missing = r.missingFiles.length ? ` ${r.missingFiles.length} body file${r.missingFiles.length === 1 ? ' was' : 's were'} not in the zip: ${r.missingFiles.join(', ')}.` : '';
+      setResult(`Imported ${r.imported} stub${r.imported === 1 ? '' : 's'} and ${r.files} body file${r.files === 1 ? '' : 's'} from ${file.name}.${missing}`);
+      toast.notify(`Imported ${r.imported} stubs`);
+      setFilesVersion((v) => v + 1);
       reloadProject();
       refreshProjects();
     } catch (e) {
@@ -105,12 +127,24 @@ export function ImportExportTab() {
                   <input type="text" className="mono" value={stripPrefix} onChange={(e) => setStripPrefix(e.target.value)} />
                 </label>
               )}
-              <FilePicker accept={current.accept} label={`Drop a ${current.name} file here or click to choose`} onText={runImport} />
+              {format === 'wiremock-zip' && !project.root && (
+                <div className="callout small">
+                  <span>
+                    Your WireMock URLs will answer under <span className="mono">{project.basePath}</span>. To keep them exactly as they are, turn on
+                    <strong> Answer at the root</strong> in this project's settings before you point your services here.
+                  </span>
+                </div>
+              )}
+              {format === 'wiremock-zip' ? (
+                <FilePicker accept=".zip" label="Drop a .zip of your WireMock folder here or click to choose" onFile={runZipImport} />
+              ) : (
+                <FilePicker accept={current.accept} label={`Drop a ${current.name} file here or click to choose`} onText={runImport} />
+              )}
               {result && <div className="callout">{result}</div>}
             </div>
           </div>
         )}
-        <ResponseFiles projectId={project.id} canEdit={canEdit} />
+        <ResponseFiles key={filesVersion} projectId={project.id} canEdit={canEdit} />
       </div>
     </div>
   );

@@ -4,13 +4,18 @@ import { useRef, useState } from 'react';
 interface Props {
   accept: string;
   label: string;
-  onText: (text: string, fileName: string) => void;
+  onText?: (text: string, fileName: string) => void;
+  onFile?: (file: File) => void;
 }
 
-export function FilePicker({ accept, label, onText }: Props) {
+export function FilePicker({ accept, label, onText, onFile }: Props) {
   const input = useRef<HTMLInputElement>(null);
   const [over, setOver] = useState(false);
-  const read = (file?: File) => file && file.text().then((t) => onText(t, file.name));
+  const read = (file?: File) => {
+    if (!file) return;
+    if (onFile) onFile(file);
+    else file.text().then((t) => onText?.(t, file.name));
+  };
   return (
     <div
       className={`dropzone${over ? ' over' : ''}`}

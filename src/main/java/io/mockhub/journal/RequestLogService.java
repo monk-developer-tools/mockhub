@@ -23,9 +23,13 @@ public final class RequestLogService {
   }
 
   public List<ServeEvent> eventsOf(Project p) {
-    String base = p.basePath();
+    if (!p.root()) {
+      String base = p.basePath();
+      return gateway.serveEvents().stream().filter(e -> isUnder(e.getRequest().getUrl(), base)).collect(Collectors.toList());
+    }
+    List<String> others = projects.findAll().stream().filter(o -> !o.root()).map(Project::basePath).toList();
     return gateway.serveEvents().stream()
-        .filter(e -> isUnder(e.getRequest().getUrl(), base))
+        .filter(e -> others.stream().noneMatch(base -> isUnder(e.getRequest().getUrl(), base)))
         .collect(Collectors.toList());
   }
 
@@ -63,7 +67,12 @@ public final class RequestLogService {
   }
 
   public void clear(String projectId) {
-    gateway.removeServeEventsUnder(projects.get(projectId).basePath());
+    Project p = projects.get(projectId);
+    if (p.root()) {
+      gateway.removeServeEvents(eventsOf(p).stream().map(ServeEvent::getId).toList());
+    } else {
+      gateway.removeServeEventsUnder(p.basePath());
+    }
   }
 
   static boolean isUnder(String url, String base) {

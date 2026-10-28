@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { vi } from 'vitest';
@@ -72,9 +72,13 @@ describe('TeamPage', () => {
     await screen.findByText('Maria Lopez');
 
     // When
-    await userEvent.selectOptions(await screen.findByLabelText('Add a person'), 'u2');
-    await userEvent.selectOptions(screen.getByLabelText('Role'), 'viewer');
-    await userEvent.click(screen.getByRole('button', { name: 'Add' }));
+    await userEvent.click(screen.getAllByRole('button', { name: /Add people/ })[0]);
+    const dialog = within(screen.getByRole('dialog'));
+    expect(dialog.queryByText('Maria Lopez')).not.toBeInTheDocument();
+    await userEvent.click(dialog.getByLabelText('Sam Patel'));
+    await userEvent.click(dialog.getByLabelText('Viewer'));
+    expect(dialog.getByText('Sam Patel will see the projects of Checkout. Other teams stay hidden.')).toBeInTheDocument();
+    await userEvent.click(dialog.getByRole('button', { name: 'Add person' }));
 
     // Then
     await waitFor(() => expect(setTeamMember).toHaveBeenCalledWith('o1', 't1', 'u2', 'viewer'));
@@ -90,7 +94,7 @@ describe('TeamPage', () => {
 
     // Then
     expect(await screen.findByText('Maria Lopez')).toBeInTheDocument();
-    expect(screen.queryByLabelText('Add a person')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Add people/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Delete team/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'New project' })).not.toBeInTheDocument();
   });

@@ -177,6 +177,8 @@ All configuration is through environment variables.
 | `MOCKHUB_SSO_CLIENT_SECRET` | empty | Entra client secret. Overrides the one saved in the UI, so it can come from a secret store. |
 | `MOCKHUB_LOGIN_NOTE` | empty | Text shown on the sign-in page, e.g. demo credentials |
 | `MOCKHUB_JOURNAL_MAX_ENTRIES` | `5000` | How many requests the request log keeps in memory |
+| `MOCKHUB_AUDIT_RETENTION_DAYS` | `90` | Days the audit log keeps changes; older entries are deleted from disk |
+| `MOCKHUB_LOG_LEVEL` | `info` | Detail written to standard output |
 | `MOCKHUB_STUB_CORS` | `true` | Adds CORS headers to mock responses so browser apps can call them |
 | `MOCKHUB_FAKE_LOCALE` | `en` | Default language for `{{fake ...}}` data, e.g. `de`, `fr`, `en-GB` |
 | `MOCKHUB_PLAYGROUND_ALLOW_PRIVATE` | `false` | Let the Playground call private and local addresses (blocked by default so the server can't reach your internal network) |
@@ -344,6 +346,11 @@ curl -X POST "$MOCKHUB/__admin/mockhub/api/projects/$PROJECT/import/openapi" --d
 
 `deploy/terraform` is a tested Terraform module for Fargate (ARM64 or x86), an EFS volume for `/data`, and an ALB
 with optional HTTPS. See [docs/DEPLOYMENT-AWS.md](docs/DEPLOYMENT-AWS.md).
+
+All logs go to standard output with UTC timestamps, so the `awslogs` driver ships them to CloudWatch: startup,
+audit entries (`INFO audit`), sign-ins and failed sign-ins, refused requests and errors with stack traces. Add
+`--verbose` to `WIREMOCK_OPTIONS` to log every mock request as well. On your own ECS setup, point the health check at
+`/__admin/health`, mount `/data` on EFS and run a single task.
 
 ```bash
 cd deploy/terraform && cp terraform.tfvars.example terraform.tfvars && terraform init && terraform apply

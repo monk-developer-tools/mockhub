@@ -1,4 +1,4 @@
-import { Archive, BookOpenText, Buildings, CircleHalf, Eye, HardDrives, Key, List, MagnifyingGlass, Moon, PaperPlaneTilt, Plus, Sparkle, SquaresFour, Sun, UsersThree } from '@phosphor-icons/react';
+import { Archive, BookOpenText, ClockCounterClockwise, Buildings, CircleHalf, Eye, HardDrives, Key, List, MagnifyingGlass, Moon, PaperPlaneTilt, Plus, Sparkle, SquaresFour, Sun, UsersThree } from '@phosphor-icons/react';
 import { useMemo } from 'react';
 import { MOD_LABEL, useHotkeys } from '../state/hotkeys';
 import { CommandPalette } from './CommandPalette';
@@ -14,6 +14,7 @@ import { OrgDialog } from '../pages/OrgDialog';
 import { ProjectDialog } from '../pages/ProjectDialog';
 import { OrgSwitcher } from './OrgSwitcher';
 import { roleLabel } from './RoleBadge';
+import { canSeeAuditLog } from '../model/audit';
 
 const NEXT_THEME: Record<ThemeChoice, ThemeChoice> = { system: 'light', light: 'dark', dark: 'system' };
 const THEME_ICON = { system: CircleHalf, light: Sun, dark: Moon };
@@ -81,7 +82,12 @@ export function Layout() {
           </NavLink>
           {currentOrg && (
             <NavLink to="/org">
-              <Buildings size={18} weight="duotone" /> Teams & members
+              <Buildings size={18} weight="duotone" /> Teams & people
+            </NavLink>
+          )}
+          {canSeeAuditLog(session) && (
+            <NavLink to="/audit">
+              <ClockCounterClockwise size={18} weight="duotone" /> Audit log
             </NavLink>
           )}
           <NavLink to="/server">

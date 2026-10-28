@@ -1,5 +1,7 @@
 package io.mockhub.controller;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.tomakehurst.wiremock.http.ResponseDefinition;
@@ -24,6 +26,8 @@ import java.util.Base64;
 import java.util.Optional;
 
 public final class AuthController implements ApiController {
+  private static final Logger LOG = LoggerFactory.getLogger(AuthController.class);
+
   public static final String UI_PATH = "/__admin/mockhub/ui/";
 
   private final AuthService auth;
@@ -68,8 +72,11 @@ public final class AuthController implements ApiController {
     r.post("/auth/login", ctx -> {
       if (!auth.enabled()) return session(Principal.anonymousAdmin(), null);
       Credentials c = credentials(ctx);
-      User user = auth.login(c.username(), c.password())
-          .orElseThrow(() -> new ApiException(401, "Invalid username or password"));
+      User user = auth.login(c.username(), c.password()).orElseThrow(() -> {
+        LOG.warn("Failed sign-in for '{}'", c.username());
+        return new ApiException(401, "Invalid username or password");
+      });
+      LOG.info("{} signed in", user.username());
       SsoSettings s = ssoSettings.get();
       if (s.active() && !s.allowPasswordLogin() && user.source() == UserSource.LOCAL && !user.effectiveServerRole().atLeast(Role.ADMIN)) {
         throw new ApiException(403, "Password sign-in is turned off. Use " + s.buttonLabel() + ".");

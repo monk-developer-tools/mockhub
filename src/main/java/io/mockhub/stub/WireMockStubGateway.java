@@ -52,4 +52,9 @@ public final class WireMockStubGateway implements StubGateway {
     admin.removeServeEventsMatching(
         RequestPatternBuilder.newRequestPattern(RequestMethod.ANY, WireMock.urlMatching(basePath + "([/?].*)?")).build());
   }
+
+  @Override
+  public void removeServeEvents(List<UUID> ids) {
+    ids.forEach(admin::removeServeEvent);
+  }
 }

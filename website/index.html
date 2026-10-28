@@ -31,6 +31,7 @@
         <a href="#highlights">Highlights</a>
         <a href="#features">Features</a>
         <a href="#ai">AI assistant</a>
+        <a href="#migrate">Migrate</a>
         <a href="#teams">Teams</a>
         <a href="/tutorials/">Tutorials</a>
         <a href="/docs/">Docs</a>
@@ -104,6 +105,13 @@
           <picture>
             <source media="(prefers-color-scheme: dark)" srcset="/assets/img/shots/soap-dark.webp 1440w, /assets/img/shots/soap-dark@2x.webp 2880w" sizes="(max-width: 760px) 86vw, 760px">
             <img src="/assets/img/shots/soap-light.webp" srcset="/assets/img/shots/soap-light.webp 1440w, /assets/img/shots/soap-light@2x.webp 2880w" sizes="(max-width: 760px) 86vw, 760px" alt="Editing a SOAP stub that matches Add requests where a is 2 and b is 3" width="1440" height="900" loading="lazy">
+          </picture>
+        </figure>
+        <figure class="card">
+          <figcaption><strong>Add people in three choices.</strong> Who, where and what they can do, with the outcome in one plain sentence.</figcaption>
+          <picture>
+            <source media="(prefers-color-scheme: dark)" srcset="/assets/img/shots/people-dark.webp 1440w, /assets/img/shots/people-dark@2x.webp 2880w" sizes="(max-width: 760px) 86vw, 760px">
+            <img src="/assets/img/shots/people-light.webp" srcset="/assets/img/shots/people-light.webp 1440w, /assets/img/shots/people-light@2x.webp 2880w" sizes="(max-width: 760px) 86vw, 760px" alt="The Add people dialog with a person picked, Only some teams chosen and the Editor role selected" width="1440" height="900" loading="lazy">
           </picture>
         </figure>
         <figure class="card">
@@ -183,11 +191,12 @@
 
           <article class="tile span-3 reveal">
             <h3>Start from contracts.</h3>
-            <p>Import an OpenAPI or Swagger spec, a WSDL, or existing WireMock mappings, and get working stubs with realistic data in one step.</p>
+            <p>Import an OpenAPI or Swagger spec, a WSDL, WireMock mappings or a whole WireMock folder, and get working stubs in one step.</p>
             <div class="files" aria-label="Supported imports">
               <span class="file"><b>YAML</b>openapi.yaml</span>
               <span class="file"><b>WSDL</b>billing.wsdl</span>
               <span class="file"><b>JSON</b>mappings.json</span>
+              <span class="file"><b>ZIP</b>wiremock.zip</span>
             </div>
           </article>
 
@@ -230,21 +239,63 @@
       </div>
     </section>
 
+    <section id="migrate">
+      <div class="wrap">
+        <div class="section-head reveal">
+          <p class="product-name">Moving from WireMock</p>
+          <h2>Bring your WireMock.<br>Keep every URL.</h2>
+          <p>Zip the folder that holds <code>mappings</code> and <code>__files</code>, drop it into a project and switch on <em>Answer at the root</em>. Your services keep calling the same paths, and every template keeps working.</p>
+        </div>
+        <ol class="steps">
+          <li class="step reveal">
+            <span class="step-n">1</span>
+            <h3>Zip the folder</h3>
+            <p>The one your WireMock server or Spring app already reads.</p>
+            <div class="code"><pre>zip -r wiremock.zip \
+  src/test/resources/wiremock</pre></div>
+          </li>
+          <li class="step reveal">
+            <span class="step-n">2</span>
+            <h3>Drop it in</h3>
+            <p>Import &amp; export → <em>WireMock folder</em>. Body files in sub-folders come along.</p>
+            <div class="code"><pre><span class="k">Imported</span> 41 stubs and
+25 body files.</pre></div>
+          </li>
+          <li class="step reveal">
+            <span class="step-n">3</span>
+            <h3>Answer at the root</h3>
+            <p>One switch in settings. Paths stay exactly as they were.</p>
+            <div class="code"><pre><span class="k">GET</span> /orders/v1/orders/42
+<span class="s">200</span> {"id": "42"}</pre></div>
+          </li>
+        </ol>
+        <ul class="carry reveal" aria-label="What carries over">
+          <li>JSONPath and regex matchers</li>
+          <li>Priorities and fallbacks</li>
+          <li>Proxies to real services</li>
+          <li>Response templates and parameters</li>
+          <li>Body files in sub-folders</li>
+        </ul>
+        <p class="center reveal"><a class="link-chevron" href="/tutorials/#migrate">Read the migration tutorial</a></p>
+      </div>
+    </section>
+
     <section id="teams" class="alt">
       <div class="wrap split">
         <div class="reveal">
           <h2>One server for every team.</h2>
-          <p class="body-lg">Group projects into organisations. Owners invite people as viewers, editors or owners, and everyone sees only their teams' mocks.</p>
+          <p class="body-lg">An organisation holds teams, and each team owns its projects. Add people in three choices: who, where and what they can do.</p>
           <ul class="ticks">
-            <li>Microsoft Entra ID sign-in, set up from the UI in minutes</li>
-            <li>Entra groups and app roles mapped to MockHub roles</li>
+            <li>Give someone the whole organisation, or only the teams they work in</li>
+            <li>Viewer, editor or owner, each explained in plain words</li>
+            <li>Microsoft Entra ID sign-in, with groups mapped to roles</li>
             <li>Back up and restore whole organisations or single projects</li>
           </ul>
         </div>
         <div class="shot reveal">
           <picture>
-            <source media="(prefers-color-scheme: dark)" srcset="/assets/img/shots/dashboard-dark.webp 1440w, /assets/img/shots/dashboard-dark@2x.webp 2880w" sizes="(max-width: 900px) 94vw, 640px">
-            <img src="/assets/img/shots/dashboard-light.webp" srcset="/assets/img/shots/dashboard-light.webp 1440w, /assets/img/shots/dashboard-light@2x.webp 2880w" sizes="(max-width: 900px) 94vw, 640px" alt="The projects dashboard with stats, mock URLs and last-hour traffic" width="1440" height="900" loading="lazy">
+            <source media="(prefers-color-scheme: dark)" srcset="/assets/img/shots/teams-dark.webp 1440w, /assets/img/shots/teams-dark@2x.webp 2880w" sizes="(max-width: 900px) 94vw, 640px">
+            <img src="/assets/img/shots/teams-light.webp" srcset="/assets/img/shots/teams-light.webp 1440w, /assets/img/shots/teams-light@2x.webp 2880w" sizes="(max-width: 900px) 94vw, 640px" alt="The organisation page: Organisation, Teams and Projects shown as a map, with team cards below" width="1440" height="900" loading="lazy">
           </picture>
         </div>
       </div>

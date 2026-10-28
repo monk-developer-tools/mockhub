@@ -3,6 +3,7 @@ package io.mockhub.integration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.file.Path;
+import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,7 +31,7 @@ class ExamplesIntegrationTest {
 
   @Test
   void listsExamples() {
-    assertThat(api.get(API + "/examples").json()).hasSize(5);
+    assertThat(api.get(API + "/examples").json()).hasSize(6);
   }
 
   @Test
@@ -47,6 +48,33 @@ class ExamplesIntegrationTest {
     assertThat(api.post("/example-petstore/pets", "{\"name\":\"Rex\",\"type\":\"dog\"}").status()).isEqualTo(201);
     assertThat(api.post("/example-petstore/pets", "{\"name\":\"Rex\",\"type\":\"lion\"}").status()).isEqualTo(400);
     assertThat(api.delete("/example-petstore/pets/1").status()).isEqualTo(401);
+  }
+
+  @Test
+  void matchingPatternsExampleShowsEachPattern() {
+    // Given
+    api.post(API + "/examples/patterns/install", "");
+    String base = "/example-patterns";
+
+    // When
+    ApiClient.Result notFound = api.post(base + "/shipping/v1/labels", "{\"orderId\":\"ORDER-404\",\"returnUrl\":\"https://shop.example.com/x\"}");
+    ApiClient.Result created = api.post(base + "/shipping/v1/labels", "{\"orderId\":\"ORDER-7\",\"returnUrl\":\"https://shop.example.com/x\"}");
+    ApiClient.Result refused = api.post(base + "/shipping/v1/labels", "{\"orderId\":\"ORDER-7\",\"returnUrl\":\"https://other.example.net\"}");
+    ApiClient.Result gift = api.post(base + "/checkout/v1/quote", "{\"items\":[{\"sku\":\"BOOK\"},{\"sku\":\"GIFT-CARD\"}]}");
+    ApiClient.Result product = api.get(base + "/catalog/uat/v1/products/BOOK-42");
+    ApiClient.Result realCustomer = api.post(base + "/customers/v1/lookup", "{\"customerId\":\"C1000001\"}");
+    ApiClient.Result csv = api.send("GET", base + "/reports/v1/daily", null, null, Map.of("Accept", "text/csv"));
+
+    // Then
+    assertThat(notFound.status()).isEqualTo(404);
+    assertThat(created.status()).isEqualTo(201);
+    assertThat(created.json().get("orderId").asText()).isEqualTo("ORDER-7");
+    assertThat(refused.status()).isEqualTo(422);
+    assertThat(gift.json().get("shipping").asInt()).isZero();
+    assertThat(product.json().get("environment").asText()).isEqualTo("uat");
+    assertThat(product.json().get("sku").asText()).isEqualTo("BOOK-42");
+    assertThat(realCustomer.json().get("lastName").asText()).isEqualTo("Rivera");
+    assertThat(csv.body()).startsWith("date,orders");
   }
 
   @Test

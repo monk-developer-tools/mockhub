@@ -88,6 +88,8 @@ Everything is set with environment variables.
 | `MOCKHUB_SSO_CLIENT_SECRET` | empty | Entra ID client secret; overrides the one saved in the UI |
 | `MOCKHUB_LOGIN_NOTE` | empty | Text shown on the sign-in page |
 | `MOCKHUB_JOURNAL_MAX_ENTRIES` | `5000` | How many requests the request log keeps |
+| `MOCKHUB_AUDIT_RETENTION_DAYS` | `90` | Days the audit log keeps changes |
+| `MOCKHUB_LOG_LEVEL` | `info` | Detail written to standard output |
 | `MOCKHUB_STUB_CORS` | `true` | CORS headers on mock responses, for browser apps |
 | `MOCKHUB_FAKE_LOCALE` | `en` | Default language for `{{fake ...}}` data |
 | `MOCKHUB_PLAYGROUND_ALLOW_PRIVATE` | `false` | Let the Playground call private and local addresses |

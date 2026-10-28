@@ -57,11 +57,11 @@ export function SaveAsStubDialog({ entry, onClose }: { entry: PlaygroundEntry; o
           <label className="field">
             <span>Project</span>
             <select value={projectId} onChange={(e) => setProjectId(e.target.value)}>
-              {writable.map((p) => <option key={p.id} value={p.id}>{p.name} ({p.basePath})</option>)}
+              {writable.map((p) => <option key={p.id} value={p.id}>{p.name} ({p.basePath || '/'})</option>)}
             </select>
           </label>
           <label className="field">
-            <span>Path <span className="hint">relative to {project?.basePath ?? 'the project'}</span></span>
+            <span>Path <span className="hint">relative to {project?.basePath || (project ? '/' : 'the project')}</span></span>
             <input type="text" className="mono" value={path} onChange={(e) => setPath(e.target.value)} />
           </label>
           <label className="field">

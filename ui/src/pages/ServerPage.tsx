@@ -177,7 +177,7 @@ export function ServerPage() {
                 <label className="field" style={{ marginBottom: 10 }}>
                   <span>Add to project</span>
                   <select value={target} onChange={(e) => setTarget(e.target.value)}>
-                    {projects.map((p) => <option key={p.id} value={p.id}>{p.name} ({p.basePath})</option>)}
+                    {projects.map((p) => <option key={p.id} value={p.id}>{p.name} ({p.basePath || '/'})</option>)}
                   </select>
                 </label>
               )}

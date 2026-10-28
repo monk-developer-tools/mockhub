@@ -118,7 +118,7 @@ function BackupPanel() {
                         />
                         <span className="dot" style={{ background: p.color }} aria-hidden="true" />
                         {p.name}
-                        <code className="muted">{p.basePath}</code>
+                        <code className="muted">{p.basePath || '/'}</code>
                       </label>
                       <span className="muted small">{plural(p.stubCount, 'stub')}</span>
                     </li>

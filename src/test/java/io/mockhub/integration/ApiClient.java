@@ -65,8 +65,15 @@ final class ApiClient {
   }
 
   Result send(String method, String path, String body, String contentType, Map<String, String> headers) {
-    HttpRequest.Builder b = HttpRequest.newBuilder(URI.create(baseUrl + path))
-        .method(method, body == null ? HttpRequest.BodyPublishers.noBody() : HttpRequest.BodyPublishers.ofString(body));
+    return send(method, path, body == null ? HttpRequest.BodyPublishers.noBody() : HttpRequest.BodyPublishers.ofString(body), contentType, headers);
+  }
+
+  Result postBytes(String path, byte[] body, String contentType) {
+    return send("POST", path, HttpRequest.BodyPublishers.ofByteArray(body), contentType, Map.of());
+  }
+
+  private Result send(String method, String path, HttpRequest.BodyPublisher body, String contentType, Map<String, String> headers) {
+    HttpRequest.Builder b = HttpRequest.newBuilder(URI.create(baseUrl + path)).method(method, body);
     if (contentType != null) b.header("Content-Type", contentType);
     headers.forEach(b::header);
     if (authorization != null && path.startsWith("/__admin")) b.header("Authorization", authorization);

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.mockhub.support.Zips;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -13,6 +14,7 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Base64;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -101,6 +103,63 @@ class MockHubSystemTest {
       assertThat(start.statusCode()).isEqualTo(302);
       assertThat(start.headers().firstValue("Location").orElse(""))
           .startsWith("https://login.microsoftonline.com/contoso.onmicrosoft.com/oauth2/v2.0/authorize?client_id=abc");
+    }
+  }
+
+  @Test
+  void anImportedWireMockFolderAnswersAtTheRootAfterARestart() throws Exception {
+    Map<String, String> folder = new LinkedHashMap<>();
+    folder.put("wiremock/mappings/catalog.json",
+        "{\"request\":{\"method\":\"GET\",\"urlPath\":\"/catalog/v2/items\"},\"response\":{\"status\":200,\"bodyFileName\":\"catalog/items.json\"}}");
+    folder.put("wiremock/__files/catalog/items.json", "[{\"sku\":\"A-1\"}]");
+    try (MockHubProcess hub = MockHubProcess.start(data, AUTH_ENV)) {
+      // Given
+      String id = json(send(hub, "POST", API + "/projects", "{\"name\":\"Catalog\",\"root\":true}")).get("id").asText();
+
+      // When
+      HttpResponse<String> imported = http.send(HttpRequest.newBuilder(URI.create(hub.baseUrl() + API + "/projects/" + id + "/import/wiremock-zip"))
+          .POST(HttpRequest.BodyPublishers.ofByteArray(Zips.of(folder))).header("Authorization", AUTH).header("Content-Type", "application/zip").build(),
+          HttpResponse.BodyHandlers.ofString());
+
+      // Then
+      assertThat(json(imported).get("imported").asInt()).isEqualTo(1);
+      assertThat(send(hub, "GET", "/catalog/v2/items", null).body()).contains("A-1");
+    }
+
+    // When
+    try (MockHubProcess restarted = MockHubProcess.start(data, AUTH_ENV)) {
+      // Then
+      assertThat(send(restarted, "GET", "/catalog/v2/items", null).body()).contains("A-1");
+    }
+  }
+
+  @Test
+  void auditEntriesSurviveARestartAndAreWrittenToStdout() throws Exception {
+    try (MockHubProcess hub = MockHubProcess.start(data, AUTH_ENV)) {
+      // Given
+      String id = json(send(hub, "POST", API + "/projects", "{\"name\":\"Orders\"}")).get("id").asText();
+      String stubId = json(send(hub, "POST", API + "/projects/" + id + "/stubs",
+          "{\"name\":\"List orders\",\"request\":{\"method\":\"GET\",\"url\":\"/orders\"},\"response\":{\"status\":200}}")).get("id").asText();
+
+      // When
+      send(hub, "DELETE", API + "/projects/" + id + "/stubs/" + stubId, null);
+      http.send(HttpRequest.newBuilder(URI.create(hub.baseUrl() + API + "/auth/login")).header("Content-Type", "application/json")
+          .POST(HttpRequest.BodyPublishers.ofString("{\"username\":\"lead\",\"password\":\"wrong\"}")).build(), HttpResponse.BodyHandlers.ofString());
+
+      // Then
+      String stdout = hub.stdout();
+      assertThat(stdout).contains("INFO audit - lead: Deleted stub").contains("Deleted stub “List orders”").contains("Failed sign-in for 'lead'");
+    }
+
+    // When
+    try (MockHubProcess restarted = MockHubProcess.start(data, AUTH_ENV)) {
+      JsonNode entries = json(send(restarted, "GET", API + "/audit", null)).get("entries");
+
+      // Then
+      assertThat(entries).hasSize(3);
+      assertThat(entries.get(0).get("action").asText()).isEqualTo("deleted");
+      assertThat(entries.get(0).get("targetName").asText()).isEqualTo("List orders");
+      assertThat(entries.get(2).get("action").asText()).isEqualTo("created");
     }
   }
 

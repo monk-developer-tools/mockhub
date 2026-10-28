@@ -1,0 +1,337 @@
+{
+  "stubs": [
+    {
+      "name": "Create label: 404 for the magic order ORDER-404",
+      "priority": 1,
+      "request": {
+        "method": "POST",
+        "urlPath": "/shipping/v1/labels",
+        "bodyPatterns": [
+          {
+            "matchesJsonPath": "$[?(@.orderId == 'ORDER-404')]"
+          }
+        ]
+      },
+      "response": {
+        "status": 404,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": "{\n  \"errors\": [\n    {\n      \"code\": \"ORDER_NOT_FOUND\",\n      \"status\": 404,\n      \"title\": \"Order not found\"\n    }\n  ]\n}"
+      },
+      "metadata": {
+        "mockhub": {
+          "description": "Magic test data: one known id always returns an error, so testers can reach the error path on purpose.",
+          "sampleRequest": {
+            "method": "POST",
+            "path": "/shipping/v1/labels",
+            "body": "{\"orderId\":\"ORDER-404\",\"returnUrl\":\"https://shop.example.com/done\"}"
+          }
+        }
+      }
+    },
+    {
+      "name": "Create label: 503 for the magic order ORDER-503",
+      "priority": 1,
+      "request": {
+        "method": "POST",
+        "urlPath": "/shipping/v1/labels",
+        "bodyPatterns": [
+          {
+            "matchesJsonPath": "$[?(@.orderId == 'ORDER-503')]"
+          }
+        ]
+      },
+      "response": {
+        "status": 503,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": "{\n  \"errors\": [\n    {\n      \"code\": \"CARRIER_UNAVAILABLE\",\n      \"status\": 503,\n      \"title\": \"Carrier unavailable\"\n    }\n  ]\n}"
+      },
+      "metadata": {
+        "mockhub": {
+          "description": "A second magic id for the dependency-down case.",
+          "sampleRequest": {
+            "method": "POST",
+            "path": "/shipping/v1/labels",
+            "body": "{\"orderId\":\"ORDER-503\",\"returnUrl\":\"https://shop.example.com/done\"}"
+          }
+        }
+      }
+    },
+    {
+      "name": "Create label: 201 when returnUrl is on the allow-list",
+      "priority": 3,
+      "request": {
+        "method": "POST",
+        "urlPath": "/shipping/v1/labels",
+        "bodyPatterns": [
+          {
+            "matchesJsonPath": {
+              "expression": "$.returnUrl",
+              "matches": "^https://shop\\.example\\.com/.*"
+            }
+          }
+        ]
+      },
+      "response": {
+        "status": 201,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "transformers": [
+          "response-template"
+        ],
+        "body": "{\n  \"labelId\": \"{{randomValue type='UUID'}}\",\n  \"orderId\": \"{{jsonPath request.body '$.orderId'}}\",\n  \"trackingUrl\": \"https://track.example.com/{{jsonPath request.body '$.orderId'}}\"\n}"
+      },
+      "metadata": {
+        "mockhub": {
+          "description": "A regular expression on one JSON field, with values echoed back from the body.",
+          "sampleRequest": {
+            "method": "POST",
+            "path": "/shipping/v1/labels",
+            "body": "{\"orderId\":\"ORDER-1\",\"returnUrl\":\"https://shop.example.com/done\"}"
+          }
+        }
+      }
+    },
+    {
+      "name": "Create label: 422 fallback for any other returnUrl",
+      "priority": 4,
+      "request": {
+        "method": "POST",
+        "urlPath": "/shipping/v1/labels"
+      },
+      "response": {
+        "status": 422,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": "{\n  \"errors\": [\n    {\n      \"code\": \"INVALID_RETURN_URL\",\n      \"status\": 422,\n      \"title\": \"returnUrl is not allowed\"\n    }\n  ]\n}"
+      },
+      "metadata": {
+        "mockhub": {
+          "description": "Lowest priority: catches everything the stubs above did not. Priority 1 wins over 3, which wins over 4.",
+          "sampleRequest": {
+            "method": "POST",
+            "path": "/shipping/v1/labels",
+            "body": "{\"orderId\":\"ORDER-1\",\"returnUrl\":\"https://evil.example.net\"}"
+          }
+        }
+      }
+    },
+    {
+      "name": "Quote: no shipping when the basket holds a gift card",
+      "priority": 1,
+      "request": {
+        "method": "POST",
+        "urlPath": "/checkout/v1/quote",
+        "bodyPatterns": [
+          {
+            "matchesJsonPath": "$.items[?(@.sku == 'GIFT-CARD')]"
+          }
+        ]
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "jsonBody": {
+          "shipping": 0,
+          "note": "Gift cards ship by e-mail"
+        }
+      },
+      "metadata": {
+        "mockhub": {
+          "description": "A JSONPath filter that looks inside an array: matches when any item has this sku.",
+          "sampleRequest": {
+            "method": "POST",
+            "path": "/checkout/v1/quote",
+            "body": "{\"items\":[{\"sku\":\"BOOK-1\"},{\"sku\":\"GIFT-CARD\"}]}"
+          }
+        }
+      }
+    },
+    {
+      "name": "Quote: standard shipping",
+      "priority": 5,
+      "request": {
+        "method": "POST",
+        "urlPath": "/checkout/v1/quote"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "jsonBody": {
+          "shipping": 4.99
+        }
+      },
+      "metadata": {
+        "mockhub": {
+          "description": "The default answer when no gift card is in the basket.",
+          "sampleRequest": {
+            "method": "POST",
+            "path": "/checkout/v1/quote",
+            "body": "{\"items\":[{\"sku\":\"BOOK-1\"}]}"
+          }
+        }
+      }
+    },
+    {
+      "name": "Product by environment and id",
+      "request": {
+        "method": "GET",
+        "urlPathTemplate": "/catalog/{environment}/v1/products/{sku}"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "transformers": [
+          "response-template"
+        ],
+        "body": "{\n  \"environment\": \"{{request.path.environment}}\",\n  \"sku\": \"{{request.path.sku}}\",\n  \"name\": \"Sample product {{request.path.sku}}\"\n}"
+      },
+      "metadata": {
+        "mockhub": {
+          "description": "One stub for every environment. Named path variables keep working wherever the project lives; {{request.pathSegments.[n]}} counts the project's base path too, unless the project answers at the root.",
+          "sampleRequest": {
+            "method": "GET",
+            "path": "/catalog/test/v1/products/BOOK-42"
+          }
+        }
+      }
+    },
+    {
+      "name": "Customer lookup: send one real test customer to the real service",
+      "priority": 1,
+      "request": {
+        "method": "POST",
+        "urlPath": "/customers/v1/lookup",
+        "bodyPatterns": [
+          {
+            "matchesJsonPath": "$[?(@.customerId == 'C1000001')]"
+          }
+        ]
+      },
+      "response": {
+        "proxyBaseUrl": "https://test-api.example.com"
+      },
+      "metadata": {
+        "mockhub": {
+          "description": "Proxy chosen ids to a real test environment and mock everyone else. Switched off here: change proxyBaseUrl to your environment, then turn it on.",
+          "sampleRequest": {
+            "method": "POST",
+            "path": "/customers/v1/lookup",
+            "body": "{\"customerId\":\"C1000001\"}"
+          },
+          "disabled": true
+        }
+      }
+    },
+    {
+      "name": "Customer lookup: mock any well-formed id",
+      "priority": 5,
+      "request": {
+        "method": "POST",
+        "urlPath": "/customers/v1/lookup",
+        "bodyPatterns": [
+          {
+            "matchesJsonPath": {
+              "expression": "$.customerId",
+              "matches": "^C[0-9]{7}$"
+            }
+          }
+        ]
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "transformers": [
+          "response-template"
+        ],
+        "transformerParameters": {
+          "title": "Ms",
+          "lastName": "Rivera"
+        },
+        "body": "{\n  \"customerId\": \"{{jsonPath request.body '$.customerId'}}\",\n  \"title\": \"{{parameters.title}}\",\n  \"lastName\": \"{{parameters.lastName}}\"\n}"
+      },
+      "metadata": {
+        "mockhub": {
+          "description": "A regex on a body field, and transformerParameters: fixed values the template reads as {{parameters.name}}.",
+          "sampleRequest": {
+            "method": "POST",
+            "path": "/customers/v1/lookup",
+            "body": "{\"customerId\":\"C2000002\"}"
+          }
+        }
+      }
+    },
+    {
+      "name": "Daily report as CSV when asked for it",
+      "priority": 1,
+      "request": {
+        "method": "GET",
+        "urlPath": "/reports/v1/daily",
+        "headers": {
+          "Accept": {
+            "contains": "text/csv"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "text/csv"
+        },
+        "body": "date,orders\n2026-01-01,42\n"
+      },
+      "metadata": {
+        "mockhub": {
+          "description": "Content negotiation: the Accept header picks the format.",
+          "sampleRequest": {
+            "method": "GET",
+            "path": "/reports/v1/daily",
+            "headers": {
+              "Accept": "text/csv"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Daily report as JSON",
+      "priority": 5,
+      "request": {
+        "method": "GET",
+        "urlPath": "/reports/v1/daily"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "jsonBody": {
+          "date": "2026-01-01",
+          "orders": 42
+        }
+      },
+      "metadata": {
+        "mockhub": {
+          "description": "Everything else gets JSON.",
+          "sampleRequest": {
+            "method": "GET",
+            "path": "/reports/v1/daily"
+          }
+        }
+      }
+    }
+  ]
+}

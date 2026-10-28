@@ -53,6 +53,7 @@
       <a href="#proxy">Proxy &amp; record</a>
       <h4>Working with teams</h4>
       <a href="#import">Import</a>
+      <a href="#migrate">Moving from WireMock</a>
       <a href="#export">Postman &amp; Bruno</a>
       <a href="#requests">Request log</a>
       <a href="#playground">Playground</a>
@@ -60,6 +61,7 @@
       <a href="#sso">Single sign-on</a>
       <a href="#ai">AI assistant</a>
       <h4>Operations</h4>
+      <a href="#audit">Audit log</a>
       <a href="#config">Configuration</a>
       <a href="#api">API &amp; CI</a>
       <a href="#deploy">Deployment</a>
@@ -85,6 +87,7 @@
         <thead><tr><th>Term</th><th>Meaning</th></tr></thead>
         <tbody>
           <tr><td>Project</td><td>The mocks of one service. It owns a <strong>base path</strong> such as <code>/payment-service</code>, so its mock URL is <code>https://your-host/payment-service</code>.</td></tr>
+          <tr><td>Root project</td><td>At most one project per server can <strong>answer at the root</strong>: its stubs match without a base path, exactly like a plain WireMock server. Paths that start with another project's base path still go to that project.</td></tr>
           <tr><td>Stub</td><td>A rule: when a request matches, send this response. Stubs are plain <a href="https://wiremock.org/docs/stubbing/">WireMock stub mappings</a>, edited relative to the project's base path.</td></tr>
           <tr><td>Priority</td><td>When several stubs match, the lowest number wins (1 is highest, the default is 5). Use it for "specific case first, generic fallback last".</td></tr>
           <tr><td>Scenario</td><td>A named state machine that lets the same request get different answers over time.</td></tr>
@@ -146,6 +149,7 @@
         </tbody>
       </table>
       <p>Add conditions on query parameters, headers, cookies and the body. Every condition must match. Body matchers include <em>JSON equals</em> (optionally ignoring extra fields and array order), <em>JSONPath</em> (for example <code>$[?(@.amount &gt; 1000)]</code>), <em>XML equals</em>, <em>XPath</em>, <em>contains</em> and <em>regex</em>.</p>
+      <p>The patterns teams use most, like magic test ids for error paths, a regex on one body field with a low-priority fallback, filters inside arrays, one stub for every environment and proxying chosen ids to a real service, are explained step by step in <a href="/tutorials/#patterns">Matching patterns from real projects</a> and installed together as the <em>Matching patterns</em> example.</p>
 
       <h2 id="templating">Templating</h2>
       <p>Turn on <strong>Response templating</strong> to build responses from the request:</p>
@@ -248,8 +252,18 @@
           <tr><td>OpenAPI 3 / Swagger 2 (JSON or YAML)</td><td>One stub per operation. The response uses the spec's example, or sample data generated from the schema. Optionally strip a prefix such as <code>/api/v1</code>.</td></tr>
           <tr><td>WSDL 1.1</td><td>See <a href="#soap">SOAP &amp; WSDL</a>.</td></tr>
           <tr><td>WireMock mappings</td><td>A <code>{"mappings": [...]}</code> file, an array, or one stub. Exports from another project are re-rooted automatically.</td></tr>
+          <tr><td>WireMock folder (.zip)</td><td>A zip of a folder with <code>mappings</code> and <code>__files</code>, at any depth. Every mapping file is imported, body files are copied into the project (sub-folders included) and <code>bodyFileName</code> is updated. Files a mapping needs but the zip lacks are listed. Limits: 2,000 entries, 10 MB per file, 50 MB in total.</td></tr>
         </tbody>
       </table>
+
+      <h2 id="migrate">Moving from WireMock</h2>
+      <ol>
+        <li>Zip the folder that holds <code>mappings</code> and <code>__files</code>, for example <code>src/test/resources/wiremock</code>.</li>
+        <li>Create a project and import the zip under <strong>Import &amp; export → WireMock folder</strong>.</li>
+        <li>In the project's <strong>Settings</strong>, turn on <strong>Answer at the root</strong>. URLs, and templates that count path segments such as <code>{{request.pathSegments.[0]}}</code>, then behave exactly as before.</li>
+        <li>Point your services at MockHub instead of the old WireMock host.</li>
+      </ol>
+      <p>Stubs that relied on templating switched on for every stub need <code>"transformers": ["response-template"]</code>, or start MockHub with <code>WIREMOCK_OPTIONS=--global-response-templating</code>. Runtime calls to <code>/__admin/mappings</code> keep working with a MockHub token. Step by step: <a href="/tutorials/#migrate">Move from WireMock</a>.</p>
 
       <h2 id="export">Postman &amp; Bruno</h2>
       <p>On a project's <strong>Import &amp; export</strong> tab:</p>
@@ -274,7 +288,7 @@
       <h2 id="auth">Organisations, teams &amp; roles</h2>
       <p>Sign-in is off until the first user exists. Open <strong>Users</strong> and create an admin, or start with a break-glass account in <code>MOCKHUB_USERS</code>. Mock endpoints are never protected; only the UI and the admin API are.</p>
       <div class="code"><pre>MOCKHUB_USERS="root:change-me:admin"</pre></div>
-      <p>MockHub has three levels: <strong>organisation › teams › people</strong>. Organisations group everything; pick one with the switcher at the top of the sidebar. <strong>Teams</strong> live inside an organisation and own its projects. Every organisation has a <em>General</em> team, and projects from before teams existed move there. People get a role in single teams, an organisation-wide role that applies to every team, or both; the higher role wins, and team members only see their own teams' projects. Moving a project to another team or organisation doesn't change its mock URL. See the <a href="/tutorials/#teams">teams tutorial</a> for a walk-through.</p>
+      <p>An <strong>organisation</strong> is your company or department. It holds <strong>teams</strong>, and each team owns its <strong>projects</strong>. Add people under <strong>Teams &amp; people → Add people</strong> in three choices: who, where (the whole organisation or only some teams) and what they can do. Pick an organisation with the switcher at the top of the sidebar. <strong>Teams</strong> live inside an organisation and own its projects. Every organisation has a <em>General</em> team, and projects from before teams existed move there. People get a role in single teams, an organisation-wide role that applies to every team, or both; the higher role wins, and team members only see their own teams' projects. Moving a project to another team or organisation doesn't change its mock URL. See the <a href="/tutorials/#teams">teams tutorial</a> for a walk-through.</p>
       <table>
         <thead><tr><th>Role</th><th>In a team</th><th>Organisation-wide</th></tr></thead>
         <tbody>
@@ -283,6 +297,11 @@
           <tr><td>owner</td><td>also manage the team's members and settings</td><td>also create and delete teams, manage members and the organisation</td></tr>
         </tbody>
       </table>
+      <p>Only members see a team's projects. Someone in the Checkout team can't open, change or delete the Search team's projects, stubs, request log or activity, and the admin API answers <code>403</code>. Mock URLs are different: apps and tests call them without signing in, so turn on an <a href="#api-keys">API key</a> when a project's mocks must stay private.</p>
+      <h3 id="audit">Audit log</h3>
+      <p>MockHub records every change: who created, changed, turned off or deleted a project, stub, team, person or setting, and when. A deleted stub keeps the name it had, so you can still tell what was removed. Open a project's <strong>Activity</strong> tab to see its history. Admins see every change under <strong>Audit log</strong>; organisation and team owners see the changes in what they own. Failed attempts, such as a refused delete, aren't recorded.</p>
+      <p>Entries are kept for 90 days, then removed from disk to save space. Change this with <code>MOCKHUB_AUDIT_RETENTION_DAYS</code>. Each entry is also printed to standard output as one line, so your log platform keeps its own copy:</p>
+      <div class="code"><pre>2026-03-10T09:14:02.511Z INFO audit - Sam Patel: Deleted stub “GET /orders” {"actor":"Sam Patel","action":"deleted","target":"stub",...}</pre></div>
       <p>Each user also has a <strong>server role</strong>. <em>Viewer everywhere</em> and <em>editor everywhere</em> apply to every organisation. <em>Admin</em> also manages users, single sign-on, backups and the native WireMock API. Changing a password or disabling a user signs out that user's other sessions.</p>
 
       <h2 id="sso">Single sign-on with Microsoft Entra ID</h2>
@@ -320,6 +339,8 @@
           <tr><td><code>MOCKHUB_AI_API_KEY</code></td><td>empty</td><td>AI provider key; overrides the one saved in the UI</td></tr>
           <tr><td><code>MOCKHUB_SSO_CLIENT_SECRET</code></td><td>empty</td><td>Entra client secret; overrides the one saved in the UI</td></tr>
           <tr><td><code>MOCKHUB_JOURNAL_MAX_ENTRIES</code></td><td><code>5000</code></td><td>Requests kept in the log</td></tr>
+          <tr><td><code>MOCKHUB_AUDIT_RETENTION_DAYS</code></td><td><code>90</code></td><td>Days the <a href="#audit">audit log</a> keeps changes</td></tr>
+          <tr><td><code>MOCKHUB_LOG_LEVEL</code></td><td><code>info</code></td><td>Standard output detail: <code>error</code>, <code>warn</code>, <code>info</code>, <code>debug</code></td></tr>
           <tr><td><code>MOCKHUB_STUB_CORS</code></td><td><code>true</code></td><td>CORS headers on mock responses</td></tr>
           <tr><td><code>MOCKHUB_PLAYGROUND_ALLOW_PRIVATE</code></td><td><code>false</code></td><td>Let the Playground call private and local addresses</td></tr>
           <tr><td><code>WIREMOCK_OPTIONS</code></td><td>empty</td><td>Any extra <a href="https://wiremock.org/docs/standalone/java-jar/">WireMock flag</a></td></tr>
@@ -362,7 +383,11 @@ curl "$HUB/__admin/mockhub/api/projects/$ID/requests?unmatched=true"</pre></div>
           <tr><td><code>GET|DELETE /projects/{id}/requests</code></td><td>request log</td></tr>
           <tr><td><code>GET /projects/{id}/export/{postman|bruno|wiremock}</code></td><td>exports</td></tr>
           <tr><td><code>POST /projects/{id}/import/{openapi|wsdl|wiremock}</code></td><td>imports</td></tr>
+          <tr><td><code>POST /projects/{id}/import/wiremock-zip</code></td><td>import a zipped WireMock folder (send the zip as the body)</td></tr>
+          <tr><td><code>PUT /projects/{id}</code> with <code>{"root": true}</code></td><td>answer at the root (one project per server)</td></tr>
           <tr><td><code>GET /examples</code>, <code>POST /examples/{id}/install</code></td><td>built-in examples</td></tr>
+          <tr><td><code>GET /audit</code></td><td>recent changes; filter with <code>orgId</code>, <code>projectId</code>, <code>actorId</code>, <code>limit</code></td></tr>
+          <tr><td><code>GET /projects/{id}/audit</code></td><td>one project's changes</td></tr>
           <tr><td><code>GET /backup</code></td><td>everything as one file</td></tr>
           <tr><td><code>POST /backup</code></td><td>chosen organisations and projects as one file</td></tr>
           <tr><td><code>POST /restore/preview</code>, <code>POST /restore</code></td><td>see what a file holds, then restore all or part of it</td></tr>
@@ -385,6 +410,19 @@ curl "$HUB/__admin/mockhub/api/projects/$ID/requests?unmatched=true"</pre></div>
       <div class="code"><pre>cd deploy/terraform
 cp terraform.tfvars.example terraform.tfvars
 terraform init &amp;&amp; terraform apply</pre></div>
+      <p>Running on a platform you already have, such as ECS with your own Terraform modules? Point the load balancer health check at <code>/__admin/health</code>, give <code>/data</code> a persistent volume (EFS on Fargate), and run <strong>one task</strong>: MockHub keeps its data in files, so scale up rather than out. To attach an APM agent, mount it and add <code>-javaagent:/path/agent.jar</code> to <code>JAVA_TOOL_OPTIONS</code>.</p>
+      <h3 id="logs">Logs</h3>
+      <p>MockHub writes all of its logs to standard output, one line per event with a UTC timestamp, so the <code>awslogs</code> driver on Fargate sends them to CloudWatch with nothing to set up (the Terraform module already does this). You'll see:</p>
+      <ul>
+        <li>startup, with the port, data folder and how sign-in works</li>
+        <li>every change from the <a href="#audit">audit log</a>, as <code>INFO audit</code></li>
+        <li>sign-ins, failed sign-ins (<code>WARN</code>) and refused requests with the reason</li>
+        <li>errors with their stack trace (<code>ERROR</code>)</li>
+      </ul>
+      <p>To log every mock request too, add <code>--verbose</code> to <code>WIREMOCK_OPTIONS</code>. In CloudWatch Logs Insights, find who deleted something with:</p>
+      <div class="code"><pre>fields @timestamp, @message
+| filter @message like /INFO audit/ and @message like /Deleted/
+| sort @timestamp desc</pre></div>
       <h3>Behind nginx on a VM</h3>
       <div class="code"><pre><span class="k">location</span> / {
   <span class="k">proxy_pass</span>         http://127.0.0.1:8095;

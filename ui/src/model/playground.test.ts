@@ -78,3 +78,16 @@ describe('playground model', () => {
     });
   });
 });
+
+describe('projectFor with a project at the root', () => {
+  it('prefers the project whose base path matches over the root project', () => {
+    // Given
+    const root = { id: 'r', basePath: '', mockUrl: 'http://hub' } as Project;
+    const orders = { id: 'o', basePath: '/orders', mockUrl: 'http://hub/orders' } as Project;
+
+    // When / Then
+    expect(projectFor('http://hub/orders/1', 'http://hub', [root, orders])?.id).toBe('o');
+    expect(projectFor('http://hub/customers/1', 'http://hub', [root, orders])?.id).toBe('r');
+    expect(relativePath('http://hub/customers/1', root)).toBe('/customers/1');
+  });
+});

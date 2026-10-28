@@ -132,6 +132,17 @@
             <p class="usecase-example">Example: <strong>Dynamic responses — templating</strong></p>
           </article>
           <article class="usecase">
+            <h3>Move an existing WireMock server</h3>
+            <p class="usecase-who">Teams with a folder of WireMock mappings, maybe inside a Spring Boot app.</p>
+            <ol>
+              <li><a href="#migrate">Zip the mappings and __files folders and import them</a></li>
+              <li>Turn on <a href="#migrate">Answer at the root</a> so every URL stays the same</li>
+              <li>Learn the <a href="#patterns">matching patterns</a> your mappings already use</li>
+              <li><a href="#teams">Give each team its own projects</a> instead of one shared folder</li>
+            </ol>
+            <p class="usecase-example">Example: <strong>Matching patterns — from real projects</strong></p>
+          </article>
+          <article class="usecase">
             <h3>Share mocks across teams</h3>
             <p class="usecase-who">Platform teams running one MockHub for many squads.</p>
             <ol>
@@ -151,6 +162,7 @@
             <tbody>
               <tr><td><strong>Petstore — REST basics</strong></td><td>URL, path template, query, header and JSON body matching; priorities; status codes</td><td><a href="#first-stub">First stub</a>, <a href="#try-it">Try it</a>, <a href="#unmatched">Unmatched requests</a></td></tr>
               <tr><td><strong>Dynamic responses — templating</strong></td><td>Echoing the path, query, headers and body; random values; dates; conditionals</td><td><a href="#templating">Dynamic responses</a>, <a href="#fake-data">Fake data</a></td></tr>
+              <tr><td><strong>Matching patterns — from real projects</strong></td><td>Magic test ids for errors, JSONPath filters and regex on body fields, priority fallbacks, one stub for every environment, proxying chosen ids, transformer parameters, content negotiation</td><td><a href="#patterns">Matching patterns</a>, <a href="#migrate">Migrate from WireMock</a></td></tr>
               <tr><td><strong>Shopping cart — stateful scenarios</strong></td><td>A cart that moves from empty to item added to checked out</td><td><a href="#scenarios">Scenarios</a>, <a href="#crud">CRUD resources</a></td></tr>
               <tr><td><strong>Resilience testing — faults &amp; delays</strong></td><td>Slow and random latency, dropped connections, malformed bodies, 429 and 503 with Retry-After</td><td><a href="#chaos">Delays, faults &amp; failures</a></td></tr>
               <tr><td><strong>Calculator — SOAP from WSDL</strong></td><td>One stub per operation, the <span class="mono">?wsdl</span> endpoint, a fault for unknown operations, XPath matching</td><td><a href="#soap">SOAP from WSDL</a>, <a href="#api-key">API keys</a></td></tr>
@@ -176,6 +188,7 @@
         <div class="tut-group">
           <h2>Make mocks realistic</h2>
           <div class="tut-cards">
+            <a class="tut-card" href="#patterns"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h6"/><circle cx="18" cy="16" r="3"/><path d="M20.2 18.2L22 20"/></svg></span><strong>Matching patterns from real projects</strong><span>Magic ids, fallbacks, proxies and more.</span><em>6 min</em></a>
             <a class="tut-card" href="#templating"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M9 8l-4 4 4 4M15 8l4 4-4 4"/></svg></span><strong>Make responses dynamic</strong><span>Echo ids, read the body, generate data.</span><em>3 min</em></a>
             <a class="tut-card" href="#fake-data"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M5 19l9-9M14 5l1 2 2 1-2 1-1 2-1-2-2-1 2-1zM18 13l.6 1.4L20 15l-1.4.6L18 17l-.6-1.4L16 15l1.4-.6z"/></svg></span><strong>Generate realistic fake data</strong><span>Names, e-mails, cities, in any language.</span><em>2 min</em></a>
             <a class="tut-card" href="#data-generator"><span class="tut-ico"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M3 14h18M9 9v11"/></svg></span><strong>Generate a list of records</strong><span>20 customers in one click.</span><em>2 min</em></a>
@@ -191,6 +204,7 @@
           <div class="tut-cards">
             <a class="tut-card" href="#soap"><span class="tut-ico"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M4 9h16M8 13h8M8 16h5"/></svg></span><strong>Mock a SOAP service</strong><span>Straight from a WSDL.</span><em>3 min</em></a>
             <a class="tut-card" href="#openapi"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M12 11v6M9.5 14.5L12 17l2.5-2.5"/></svg></span><strong>Import an OpenAPI spec</strong><span>Working stubs in one step.</span><em>2 min</em></a>
+            <a class="tut-card" href="#migrate"><span class="tut-ico"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M12 3v4M10 7h4M10 11h4M12 15v3"/></svg></span><strong>Move from WireMock</strong><span>Your folder, your URLs, unchanged.</span><em>3 min</em></a>
             <a class="tut-card" href="#export"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19h14"/></svg></span><strong>Share with Postman and Bruno</strong><span>Collections that already work.</span><em>2 min</em></a>
             <a class="tut-card" href="#ai"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M18.5 15.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z"/></svg></span><strong>Let the AI assistant draft stubs</strong><span>Draft stubs or a single body.</span><em>5 min</em></a>
           </div>
@@ -198,7 +212,7 @@
         <div class="tut-group">
           <h2>Work as a team</h2>
           <div class="tut-cards">
-            <a class="tut-card" href="#teams"><span class="tut-ico"><svg viewBox="0 0 24 24"><circle cx="9" cy="9" r="3"/><circle cx="17" cy="10" r="2.5"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0M14.5 15.2A4.5 4.5 0 0 1 21 19"/></svg></span><strong>Organise people into teams</strong><span>Organisation › teams › people.</span><em>4 min</em></a>
+            <a class="tut-card" href="#teams"><span class="tut-ico"><svg viewBox="0 0 24 24"><circle cx="9" cy="9" r="3"/><circle cx="17" cy="10" r="2.5"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0M14.5 15.2A4.5 4.5 0 0 1 21 19"/></svg></span><strong>Organise people into teams</strong><span>Who, where and what they can do.</span><em>3 min</em></a>
             <a class="tut-card" href="#sso"><span class="tut-ico"><svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span><strong>Turn on Microsoft sign-in</strong><span>Entra ID, set up from the UI.</span><em>5 min</em></a>
             <a class="tut-card" href="#backup"><span class="tut-ico"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="4" rx="1"/><path d="M5 9v9a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9M10 13h4"/></svg></span><strong>Back up and restore</strong><span>All of it, or just one project.</span><em>2 min</em></a>
             <a class="tut-card" href="#keyboard"><span class="tut-ico"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h.01M11 10h.01M15 10h.01M7 14h10"/></svg></span><strong>Work faster with the keyboard</strong><span>Jump anywhere with ⌘K.</span><em>1 min</em></a>
@@ -218,6 +232,7 @@
         <a href="#unmatched">Unmatched requests</a>
         <a href="#stub-controls">On, off &amp; usage</a>
         <h4>Realistic mocks</h4>
+        <a href="#patterns">Matching patterns</a>
         <a href="#templating">Dynamic responses</a>
         <a href="#fake-data">Fake data</a>
         <a href="#data-generator">Data generator</a>
@@ -229,6 +244,7 @@
         <h4>Bring in what you have</h4>
         <a href="#soap">SOAP from WSDL</a>
         <a href="#openapi">OpenAPI import</a>
+        <a href="#migrate">Move from WireMock</a>
         <a href="#export">Postman &amp; Bruno</a>
         <a href="#ai">AI assistant</a>
         <h4>Teams</h4>
@@ -368,6 +384,88 @@
             </li>
           </ol>
           <p class="tip"><strong>Counts follow the request log.</strong> Clearing the log or restarting the server resets them. The log keeps the latest 5,000 requests by default (<code>MOCKHUB_JOURNAL_MAX_ENTRIES</code>).</p>
+          <a class="next" href="#patterns">Next: Matching patterns from real projects</a>
+        </article>
+
+        <article class="tut" id="patterns">
+          <p class="tut-meta"><span>Realistic mocks</span><span>6 min</span></p>
+          <h2>Matching patterns from real projects</h2>
+          <p class="tut-intro">The same handful of patterns turns up in almost every WireMock setup that teams use for years. Install <strong>Matching patterns — from real projects</strong> from <strong>Examples</strong> and follow along: every stub there shows one pattern, with an example request ready in <strong>Try it</strong>.</p>
+          <ol class="tut-steps">
+            <li>
+              <h3>Magic test ids for error paths</h3>
+              <p>Testers need to reach the error paths on purpose. Pick ids that always fail, and match them in the body with a JSONPath filter. Give these stubs <strong>Priority 1</strong> so they win over the normal answer.</p>
+              <pre class="tut-code"><code>{
+  "priority": 1,
+  "request": {
+    "method": "POST",
+    "urlPath": "/shipping/v1/labels",
+    "bodyPatterns": [{ "matchesJsonPath": "$[?(@.orderId == 'ORDER-404')]" }]
+  },
+  "response": { "status": 404, "jsonBody": { "errors": [{ "code": "ORDER_NOT_FOUND" }] } }
+}</code></pre>
+              <p>Write the ids down in the stub's <strong>Description</strong>, so everyone knows that <code>ORDER-404</code> returns 404 and <code>ORDER-503</code> returns 503.</p>
+            </li>
+            <li>
+              <h3>A regex on one field, then a fallback</h3>
+              <p>Check a single field with <code>expression</code> and <code>matches</code>. Anything that doesn't match falls through to a lower-priority stub that returns the validation error.</p>
+              <pre class="tut-code"><code>{ "priority": 3, "request": { "method": "POST", "urlPath": "/shipping/v1/labels",
+    "bodyPatterns": [{ "matchesJsonPath": {
+      "expression": "$.returnUrl", "matches": "^https://shop\\.example\\.com/.*" } }] },
+  "response": { "status": 201 } }
+
+{ "priority": 4, "request": { "method": "POST", "urlPath": "/shipping/v1/labels" },
+  "response": { "status": 422, "jsonBody": { "errors": [{ "code": "INVALID_RETURN_URL" }] } } }</code></pre>
+              <p><strong>Lower numbers win.</strong> Priority 1 beats 3, which beats 4. Leave gaps so you can slot a stub in later without renumbering.</p>
+            </li>
+            <li>
+              <h3>Look inside arrays</h3>
+              <p>A filter in square brackets matches when <em>any</em> item fits. Here, a basket that contains a gift card gets free shipping:</p>
+              <pre class="tut-code"><code>{ "matchesJsonPath": "$.items[?(@.sku == 'GIFT-CARD')]" }</code></pre>
+            </li>
+            <li>
+              <h3>One stub for every environment</h3>
+              <p>Paths often carry an environment or version, like <code>/catalog/test/v1/products/BOOK-42</code>. Use a path template and read the parts by name:</p>
+              <pre class="tut-code"><code>{ "request": { "method": "GET", "urlPathTemplate": "/catalog/{environment}/v1/products/{sku}" },
+  "response": { "transformers": ["response-template"],
+    "body": "{ \"environment\": \"{{request.path.environment}}\", \"sku\": \"{{request.path.sku}}\" }" } }</code></pre>
+              <p class="tip"><strong>Counting segments?</strong> <code>{{request.pathSegments.[4]}}</code> counts from the start of the whole path, and that includes the project's base path. Named variables don't care where the project lives. If you're moving mappings that count segments, turn on <a href="#migrate">Answer at the root</a> and they keep working unchanged.</p>
+            </li>
+            <li>
+              <h3>Send chosen ids to the real service</h3>
+              <p>Keep a few real test accounts working end to end and mock everyone else. The proxy stub matches only the chosen id at priority 1; a priority 5 stub answers any other well-formed id.</p>
+              <pre class="tut-code"><code>{ "priority": 1, "request": { "method": "POST", "urlPath": "/customers/v1/lookup",
+    "bodyPatterns": [{ "matchesJsonPath": "$[?(@.customerId == 'C1000001')]" }] },
+  "response": { "proxyBaseUrl": "https://test-api.example.com" } }</code></pre>
+              <p>In the example the proxy stub is switched off. Change <code>proxyBaseUrl</code> to your test environment and <a href="#stub-controls">turn it on</a>.</p>
+            </li>
+            <li>
+              <h3>Fixed values with transformer parameters</h3>
+              <p>Keep values out of the body file and in the stub, then read them with <code>{{parameters.name}}</code>. One body file can then serve several stubs with different values.</p>
+              <pre class="tut-code"><code>"response": {
+  "transformers": ["response-template"],
+  "transformerParameters": { "title": "Ms", "lastName": "Rivera" },
+  "body": "{ \"title\": \"{{parameters.title}}\", \"lastName\": \"{{parameters.lastName}}\" }"
+}</code></pre>
+            </li>
+            <li>
+              <h3>Pick the format from a header</h3>
+              <p>Match <code>Accept: text/csv</code> at priority 1 and answer JSON for everything else. The same works for API versions in a header, or a tenant id.</p>
+            </li>
+          </ol>
+          <div class="tut-table">
+            <table>
+              <thead><tr><th>You want to…</th><th>Use</th></tr></thead>
+              <tbody>
+                <tr><td>Return an error for one test id</td><td>A JSONPath filter, priority 1</td></tr>
+                <tr><td>Validate a field and reject the rest</td><td><code>expression</code> + <code>matches</code>, then a low-priority fallback</td></tr>
+                <tr><td>Match one item inside a list</td><td><code>$.items[?(@.field == 'value')]</code></td></tr>
+                <tr><td>Serve every environment from one stub</td><td><code>urlPathTemplate</code> with named variables</td></tr>
+                <tr><td>Keep a few real accounts working</td><td><code>proxyBaseUrl</code> on a high-priority stub</td></tr>
+                <tr><td>Reuse one body with different values</td><td><code>transformerParameters</code></td></tr>
+              </tbody>
+            </table>
+          </div>
           <a class="next" href="#templating">Next: Make responses dynamic</a>
         </article>
 
@@ -598,7 +696,48 @@
               <figure class="tut-shot"><img src="/assets/img/tutorials/openapi-1-import.webp" alt="The import panel with OpenAPI / Swagger selected" width="1176" height="900" loading="lazy"></figure>
             </li>
           </ol>
-          <p class="tip"><strong>Moving from plain WireMock?</strong> Choose <strong>WireMock mappings</strong> and drop your existing JSON mappings in.</p>
+          <p class="tip"><strong>Moving from plain WireMock?</strong> Choose <strong>WireMock mappings</strong> for a single JSON file, or bring a whole folder with body files as shown in <a href="#migrate">Move from WireMock</a>.</p>
+          <a class="next" href="#migrate">Next: Move from WireMock</a>
+        </article>
+
+        <article class="tut" id="migrate">
+          <p class="tut-meta"><span>Bring in what you have</span><span>3 min</span></p>
+          <h2>Move from WireMock</h2>
+          <p class="tut-intro">Already have a folder of WireMock mappings, maybe inside a Spring Boot app or a standalone server? Bring it over as it is. Your services keep calling the same URLs.</p>
+          <ol class="tut-steps">
+            <li>
+              <h3>Zip the folder</h3>
+              <p>Zip the folder that holds <code>mappings</code> and <code>__files</code>. Where it sits inside the zip doesn't matter, so you can zip a whole <code>src/test/resources</code> folder.</p>
+              <pre class="tut-code"><code>zip -r wiremock.zip src/test/resources/wiremock</code></pre>
+            </li>
+            <li>
+              <h3>Import it into a project</h3>
+              <p>Create a project, open <strong>Import &amp; export</strong>, choose <strong>WireMock folder</strong> and drop the zip in. Every mapping file becomes stubs, and every body file is copied into the project, sub-folders included. If a mapping points at a file that isn't in the zip, MockHub lists it so you can add it under <strong>Response files</strong>.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/migrate-1-import.webp" alt="The import panel with WireMock folder selected and the result: stubs and body files imported" width="1176" height="900" loading="lazy"></figure>
+            </li>
+            <li>
+              <h3>Answer at the root</h3>
+              <p>Normally a project answers under its base path, like <code>/orders/…</code>. A WireMock server answers at the root. In the project's <strong>Settings</strong>, turn on <strong>Answer at the root</strong>: stubs then match exactly the paths they had before, and templates like <code>{{request.pathSegments.[0]}}</code> count the same way. Paths that start with another project's base path still go to that project, and its request log stays separate.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/migrate-2-root.webp" alt="Project settings with the Answer at the root switch turned on" width="1176" height="900" loading="lazy"></figure>
+            </li>
+            <li>
+              <h3>Point your services at MockHub</h3>
+              <p>Swap the old WireMock host for MockHub. Nothing else changes: same paths, same bodies, same templates.</p>
+            </li>
+          </ol>
+          <div class="tut-table">
+            <table>
+              <thead><tr><th>Carries over</th><th>Notes</th></tr></thead>
+              <tbody>
+                <tr><td>Files with one mapping, or <code>{"mappings": [...]}</code></td><td>Both, in any sub-folder of <code>mappings</code></td></tr>
+                <tr><td>Body files</td><td>Copied into the project; <code>bodyFileName</code> is updated for you</td></tr>
+                <tr><td>Matchers, priorities, scenarios, faults</td><td>Unchanged</td></tr>
+                <tr><td>Response templates and <code>transformerParameters</code></td><td>Unchanged. Templating that ran globally needs <code>"transformers": ["response-template"]</code> on the stub</td></tr>
+                <tr><td>Proxies with <code>proxyBaseUrl</code></td><td>Unchanged; MockHub needs network access to the target</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="tip"><strong>One root project per server.</strong> Only one project can answer at the root. Everything else keeps its own base path. If the stubs used to be created at runtime through <code>/__admin/mappings</code>, that still works: send the same calls with a MockHub token.</p>
           <a class="next" href="#export">Next: Share with Postman and Bruno</a>
         </article>
 
@@ -652,36 +791,49 @@
         <article class="tut" id="teams">
           <p class="tut-meta"><span>Teams</span><span>4 min</span></p>
           <h2>Organise people into teams</h2>
-          <p class="tut-intro">MockHub has three levels: <strong>organisation › teams › people</strong>. Each project belongs to one team. People see the projects of the teams they're in, with the role you give them in each team.</p>
+          <p class="tut-intro">Three ideas are all you need. An <strong>organisation</strong> is your company or department. It holds <strong>teams</strong>, groups of people who work together. Each team owns its <strong>projects</strong>. People get access either to the whole organisation or to single teams.</p>
           <ol class="tut-steps">
             <li>
-              <h3>Create the teams</h3>
-              <p>Open <strong>Teams &amp; members</strong> in the sidebar. Under <strong>Teams</strong>, select <strong>New team</strong> and give it a name like <em>Checkout</em>. Every organisation starts with a <em>General</em> team, and projects from before teams existed live there.</p>
-              <figure class="tut-shot"><img src="/assets/img/tutorials/teams-1-org.webp" alt="The organisation page with the Teams panel outlined, listing Checkout, General, Platform and Search" width="1176" height="900" loading="lazy"></figure>
+              <h3>Create your organisation (admins)</h3>
+              <p>Select the organisation name at the top of the sidebar, then <strong>New organisation</strong>. Name it after your company or department, like <em>Acme</em>. It starts with a <em>General</em> team, and you become its owner. Only admins can create organisations; everyone else is added to one.</p>
             </li>
             <li>
-              <h3>Add people to a team</h3>
-              <p>Open a team. Under <strong>Add a person</strong>, choose a user and a role, then select <strong>Add</strong>. Team owners can do this for their own team, so organisation owners don't have to. People with organisation-wide access are listed underneath, because they can reach every team.</p>
-              <figure class="tut-shot"><img src="/assets/img/tutorials/teams-2-team.webp" alt="The Checkout team page with members, the projects it owns and the Add a person form outlined" width="1176" height="900" loading="lazy"></figure>
+              <h3>Add teams</h3>
+              <p>Open <strong>Teams &amp; people</strong> in the sidebar. The map at the top shows your organisation, its teams and its projects. Under <strong>Teams</strong>, select <strong>New team</strong> and name it after the people who'll use it, like <em>Checkout</em> or <em>Mobile app</em>.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/teams-1-org.webp" alt="The organisation page: a map of Organisation, Teams and Projects above team cards" width="1176" height="900" loading="lazy"></figure>
             </li>
             <li>
-              <h3>Or set everything from the Users page (admins)</h3>
-              <p>Under <strong>Administration → Users</strong>, create a user or open one. The <strong>Access</strong> tree shows every organisation and its teams: give an organisation-wide role, a role in single teams, or both. With <a href="#sso">Microsoft sign-in</a>, accounts are created at first sign-in, and Entra groups can map straight to teams.</p>
-              <figure class="tut-shot"><img src="/assets/img/tutorials/teams-3-users.webp" alt="Editing a user, with the access tree outlined: no organisation-wide role, editor in Checkout, viewer in Search" width="1176" height="900" loading="lazy"></figure>
+              <h3>Add a developer</h3>
+              <p>Select <strong>Add people</strong> and make three choices. <strong>Who:</strong> tick the developer. Not listed yet? Admins select <strong>Create an account</strong>, enter a name, username and temporary password, and share the password with them; with <a href="#sso">Microsoft sign-in</a> they only need to sign in once. <strong>Where:</strong> choose <strong>Only some teams</strong> and tick their team. <strong>What they can do:</strong> choose <strong>Editor</strong>. The sentence at the bottom says exactly what will happen, for example <em>Sam will change the projects of Checkout. Other teams stay hidden.</em></p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/teams-2-add.webp" alt="The Add people dialog with Sam picked, Only some teams with Checkout ticked and the Editor role selected" width="880" height="950" loading="lazy"></figure>
+            </li>
+            <li>
+              <h3>Check and change access</h3>
+              <p>The <strong>People</strong> tab shows where each person works in plain words: <em>Whole organisation · Owner</em> or <em>Checkout · Editor</em>. Select <strong>Change access</strong> to move someone between teams or to the whole organisation, or the bin to remove them.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/teams-3-people.webp" alt="The People tab listing each person with chips for their teams and roles" width="1176" height="900" loading="lazy"></figure>
+            </li>
+            <li>
+              <h3>Let team owners run their own team</h3>
+              <p>Open a team to see its people and projects. Its owners can add people to that team themselves, without asking an organisation owner. Members of one team never see another team's projects.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/teams-4-team.webp" alt="The Checkout team page with its people, its projects and the Add people button" width="1176" height="900" loading="lazy"></figure>
+            </li>
+            <li>
+              <h3>See who changed what</h3>
+              <p>Every create, change and delete is recorded with the person and the time. Open a project's <strong>Activity</strong> tab for its history. Admins, and owners of organisations and teams, also get <strong>Audit log</strong> in the sidebar. Entries are kept for 90 days.</p>
             </li>
           </ol>
           <div class="tut-table">
             <table>
-              <thead><tr><th>Role</th><th>In a team</th><th>Organisation-wide</th></tr></thead>
+              <thead><tr><th>Role</th><th>What they can do</th></tr></thead>
               <tbody>
-                <tr><td><strong>Viewer</strong></td><td>See the team's projects, stubs and requests</td><td>The same, in every team</td></tr>
-                <tr><td><strong>Editor</strong></td><td>Also create and change the team's projects and stubs</td><td>The same, in every team</td></tr>
-                <tr><td><strong>Owner</strong></td><td>Also manage the team's members and settings</td><td>Also create and delete teams and manage the organisation</td></tr>
-                <tr><td><strong>Admin</strong></td><td colspan="2">Everything, everywhere, plus users, sign-in, the AI assistant and backups</td></tr>
+                <tr><td><strong>Viewer</strong></td><td>Looks at projects, stubs and the request log. Changes nothing.</td></tr>
+                <tr><td><strong>Editor</strong></td><td>Creates and changes projects and stubs. The right choice for most developers and testers.</td></tr>
+                <tr><td><strong>Owner</strong></td><td>Everything an editor does, plus adding people and changing settings.</td></tr>
+                <tr><td><strong>Admin</strong></td><td>Everything, everywhere, plus accounts, sign-in, the AI assistant and backups. Set under <strong>Administration → Users</strong>.</td></tr>
               </tbody>
             </table>
           </div>
-          <p class="tip"><strong>The higher role wins.</strong> Someone who is a viewer across the organisation and an editor in Checkout can edit Checkout's projects and look at everything else. To move a project to another team, open its <strong>Settings</strong> and choose the team.</p>
+          <p class="tip"><strong>The higher role wins.</strong> A viewer across the organisation who is an editor in Checkout can change Checkout's projects and look at everything else. To move a project to another team, open its <strong>Settings</strong> and choose the team. With <a href="#sso">Microsoft sign-in</a>, accounts appear at first sign-in and Entra groups can map straight to teams.</p>
           <a class="next" href="#sso">Next: Turn on Microsoft sign-in</a>
         </article>
 

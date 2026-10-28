@@ -17,6 +17,7 @@ export interface Project {
   orgId: string;
   teamId: string;
   apiKey?: ApiKeyRule | null;
+  root?: boolean;
 }
 
 export interface ApiKeyRule {
@@ -411,4 +412,24 @@ export interface PlaygroundEntry {
 export interface GeneratorField {
   name: string;
   expression: string;
+}
+
+export interface AuditEntry {
+  id: string;
+  at: string;
+  actorId: string;
+  actor: string;
+  action: string;
+  target: string;
+  targetName: string;
+  details: string;
+  orgId: string | null;
+  teamId: string | null;
+  projectId: string | null;
+  projectName: string | null;
+}
+
+export interface AuditPage {
+  retentionDays: number;
+  entries: AuditEntry[];
 }

@@ -16,6 +16,13 @@ import io.mockhub.ai.JdkLlmTransport;
 import io.mockhub.controller.AiController;
 import io.mockhub.backup.BackupService;
 import io.mockhub.auth.AccessPolicy;
+import io.mockhub.audit.AuditLog;
+import io.mockhub.audit.AuditRecorder;
+import io.mockhub.audit.FileAuditLog;
+import io.mockhub.audit.LoggingAuditLog;
+import io.mockhub.audit.ServiceAuditNames;
+import io.mockhub.controller.AuditController;
+import java.time.Duration;
 import io.mockhub.data.CrudService;
 import io.mockhub.data.CrudTransformer;
 import io.mockhub.data.DataStore;
@@ -60,6 +67,7 @@ import io.mockhub.export.ExporterRegistry;
 import io.mockhub.export.PostmanExporter;
 import io.mockhub.export.WireMockMappingsExporter;
 import io.mockhub.importer.ImporterRegistry;
+import io.mockhub.importer.WireMockArchiveImporter;
 import io.mockhub.importer.OpenApiImporter;
 import io.mockhub.importer.WireMockJsonImporter;
 import io.mockhub.importer.WsdlStubImporter;
@@ -152,6 +160,9 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
       return t;
     }), clock);
 
+    AuditLog auditLog = new LoggingAuditLog(new FileAuditLog(dataDir, Duration.ofDays(config.auditRetentionDays), clock));
+    AuditRecorder auditRecorder = new AuditRecorder(auditLog, new ServiceAuditNames(projects, stubs, teams, orgs, users), clock);
+
     FakeData fakeData = new FakeData(config.fakeLocale);
     PlaygroundHistory playgroundHistory = new PlaygroundHistory(dataDir);
 
@@ -160,12 +171,14 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
         new CrudTransformer(crud),
         new ErrorRateTransformer(() -> ThreadLocalRandom.current().nextDouble()),
         new DisabledStubMatcher(),
-        new ApiKeyFilter(projects::findBySlug),
+        new ApiKeyFilter(projects::findForPath),
         new FakeHelpers(fakeData),
         new AuthFilter(auth, policy),
         new MockHubAdminExtension(
             request -> auth.principal(request.getHeader("Authorization")).orElse(null),
+            auditRecorder,
             List.of(
+                new AuditController(auditLog, config.auditRetentionDays),
                 new SystemController(auth, urls, dataDir.toString(), config.journalMaxEntries),
                 new AuthController(auth, users, userViews, sso, ssoSettings, urls, config.loginNote),
                 new OrganizationController(orgs, projects, users, userViews, teams),
@@ -176,7 +189,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
                 new ExampleController(examples, new ExampleInstaller(examples, projects, stubs, importers), views, teamChoice),
                 new StubController(stubs),
                 new RequestLogController(requestLog),
-                new ImportExportController(projects, stubs, exporters, importers, urls),
+                new ImportExportController(projects, stubs, exporters, importers, urls, new WireMockArchiveImporter(bodyFiles)),
                 new AiController(aiSettings, aiProviders, chat, assistant, assistantJobs, projects, urls, new BodyGenerator(aiSettings, chat)),
                 new BackupController(new BackupService(orgs, teams, projects, gateway, dataStore, bodyFiles, clock)),
                 new DataController(projects, stubs, dataStore, crud),

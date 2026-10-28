@@ -105,6 +105,7 @@ export function ProjectDialog({ project, teamId: presetTeam, onClose }: { projec
               {teams.length === 0 && <option value="">No team you can edit</option>}
               {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
             </select>
+            <span className="hint">The team's people see it, plus anyone with access to the whole organisation.</span>
           </label>
         </div>
         {project && (project.orgId !== orgId || project.teamId !== teamId) && (

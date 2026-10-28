@@ -20,4 +20,6 @@ public interface StubGateway {
   List<ServeEvent> serveEvents();
 
   void removeServeEventsUnder(String basePath);
+
+  void removeServeEvents(List<UUID> ids);
 }

@@ -4,7 +4,11 @@
     "name": "Petstore — REST basics",
     "slug": "example-petstore",
     "description": "CRUD endpoints showing URL, path-template, query, header and JSON body matching, priorities and status codes.",
-    "tags": ["REST", "Matching", "Beginner"],
+    "tags": [
+      "REST",
+      "Matching",
+      "Beginner"
+    ],
     "file": "rest-basics.json"
   },
   {
@@ -12,15 +16,35 @@
     "name": "Dynamic responses — templating",
     "slug": "example-templating",
     "description": "Responses built from the request with Handlebars: echo path, query, headers and JSON body, random data, dates and conditionals.",
-    "tags": ["REST", "Templating"],
+    "tags": [
+      "REST",
+      "Templating"
+    ],
     "file": "templating.json"
+  },
+  {
+    "id": "patterns",
+    "name": "Matching patterns — from real projects",
+    "slug": "example-patterns",
+    "description": "The patterns teams use most in real WireMock setups: magic test ids for errors, JSONPath filters and regex on body fields, priority fallbacks, one stub for every environment, proxying chosen ids to a real service, transformer parameters and content negotiation.",
+    "tags": [
+      "REST",
+      "Matching",
+      "Priorities",
+      "Proxy"
+    ],
+    "file": "patterns.json"
   },
   {
     "id": "stateful-cart",
     "name": "Shopping cart — stateful scenarios",
     "slug": "example-cart",
     "description": "A cart that changes state across calls using WireMock scenarios: empty → item added → checked out.",
-    "tags": ["REST", "Scenarios", "Stateful"],
+    "tags": [
+      "REST",
+      "Scenarios",
+      "Stateful"
+    ],
     "file": "stateful-cart.json"
   },
   {
@@ -28,7 +52,11 @@
     "name": "Resilience testing — faults & delays",
     "slug": "example-chaos",
     "description": "Slow responses, random latency, dropped connections, malformed responses, 429/503 with Retry-After. Test your timeouts and retries.",
-    "tags": ["REST", "Faults", "Delays"],
+    "tags": [
+      "REST",
+      "Faults",
+      "Delays"
+    ],
     "file": "chaos.json"
   },
   {
@@ -36,7 +64,11 @@
     "name": "Calculator — SOAP from WSDL",
     "slug": "example-soap",
     "description": "Generated from a WSDL: one stub per operation, the ?wsdl endpoint and a fault for unknown operations. Plus a hand-written stub matching on XPath values.",
-    "tags": ["SOAP", "WSDL", "XPath"],
+    "tags": [
+      "SOAP",
+      "WSDL",
+      "XPath"
+    ],
     "file": "soap-calculator.json"
   }
 ]

@@ -1,4 +1,5 @@
 import type {
+  AuditPage,
   AiSettings,
   AiStatus,
   AiTestResult,
@@ -232,6 +233,12 @@ export const api = {
   adoptStub: (projectId: string, stubId: string, prefix: boolean) =>
     request<Stub>(`${API}/projects/${projectId}/adopt/${stubId}?prefix=${prefix}`, { method: 'POST' }),
 
+  audit: (filter: { orgId?: string; projectId?: string; actorId?: string } = {}, limit = 300) => {
+    const query = new URLSearchParams({ ...Object.fromEntries(Object.entries(filter).filter(([, v]) => v)), limit: String(limit) }).toString();
+    return request<AuditPage>(`${API}/audit?${query}`);
+  },
+  projectAudit: (projectId: string, limit = 300) => request<AuditPage>(`${API}/projects/${projectId}/audit?limit=${limit}`),
+
   requests: (projectId: string, unmatched = false, limit = 300) =>
     request<ServeEvent[]>(`${API}/projects/${projectId}/requests?limit=${limit}&unmatched=${unmatched}`),
   clearRequests: (projectId: string) => request<void>(`${API}/projects/${projectId}/requests`, { method: 'DELETE' }),
@@ -244,6 +251,12 @@ export const api = {
       headers: { 'Content-Type': 'text/plain' },
     });
   },
+  importZip: (projectId: string, zip: Blob) =>
+    request<ImportResult & { files: number; missingFiles: string[] }>(`${API}/projects/${projectId}/import/wiremock-zip`, {
+      method: 'POST',
+      body: zip,
+      headers: { 'Content-Type': 'application/zip' },
+    }),
   exportProject: (projectId: string, format: string) => download(`${API}/projects/${projectId}/export/${format}`),
 
   examples: () => request<Example[]>(`${API}/examples`),

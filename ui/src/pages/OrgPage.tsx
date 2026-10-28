@@ -1,38 +1,45 @@
-import { CaretRight, Plus, Trash, UserPlus, UsersThree } from '@phosphor-icons/react';
+import { ArrowRight, Buildings, CaretRight, Folder, GearSix, MagnifyingGlass, Plus, Trash, UserPlus, UsersThree } from '@phosphor-icons/react';
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../api/client';
 import type { Member, Organization, OrgRole, Team, UserSummary } from '../api/types';
 import { PersonCell, TeamMark } from '../components/Avatar';
-import { Modal } from '../components/Modal';
+import { Confirm, Modal } from '../components/Modal';
+import { PeopleDialog } from '../components/PeopleDialog';
 import { RoleBadge } from '../components/RoleBadge';
 import { Skeleton } from '../components/Skeleton';
 import { useToast } from '../components/Toasts';
+import { ROLE_INFO, accessChips, currentAccessOf, planChanges } from '../model/access';
 import { useApp } from '../state/AppContext';
+import { ProjectDialog } from './ProjectDialog';
 import { SourceTag } from './UsersPage';
 
-export const ORG_ROLES: { value: OrgRole; label: string; hint: string }[] = [
-  { value: 'viewer', label: 'Viewer', hint: 'see projects, stubs and requests in every team' },
-  { value: 'editor', label: 'Editor', hint: 'also create and change projects and stubs in every team' },
-  { value: 'owner', label: 'Owner', hint: 'also manage teams, members and organisation settings' },
-];
+export const ORG_ROLES: { value: OrgRole; label: string; hint: string }[] = ROLE_INFO.map((r) => ({ value: r.value, label: r.label, hint: r.detail }));
 
-const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
+const plural = (n: number, word: string, many = `${word}s`) => `${n} ${n === 1 ? word : many}`;
+
+type Tab = 'teams' | 'people' | 'settings';
 
 export function OrgPage() {
-  const { currentOrg, isOwner, isAdmin, session, orgs, refreshSession, refreshProjects } = useApp();
+  const { currentOrg, isOwner, isAdmin, orgs, canEdit, refreshSession, refreshProjects } = useApp();
   const toast = useToast();
   const navigate = useNavigate();
+  const [params, setParams] = useSearchParams();
   const [org, setOrg] = useState<Organization | null>(null);
   const [members, setMembers] = useState<Member[] | null>(null);
   const [teams, setTeams] = useState<Team[] | null>(null);
-  const [creatingTeam, setCreatingTeam] = useState(false);
   const [directory, setDirectory] = useState<UserSummary[]>([]);
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [newMember, setNewMember] = useState('');
-  const [newRole, setNewRole] = useState<OrgRole>('editor');
+  const [creatingTeam, setCreatingTeam] = useState(false);
+  const [creatingProject, setCreatingProject] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [editingMember, setEditingMember] = useState<Member | null>(null);
+  const [removingMember, setRemovingMember] = useState<Member | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [query, setQuery] = useState('');
+
+  const requested = params.get('tab') as Tab | null;
+  const tab: Tab = requested === 'people' || (requested === 'settings' && isOwner) ? requested : 'teams';
+  const show = (next: Tab) => setParams(next === 'teams' ? {} : { tab: next }, { replace: true });
 
   const orgId = currentOrg?.id;
   const load = useCallback(async () => {
@@ -46,8 +53,6 @@ export function OrgPage() {
       setOrg(o);
       setMembers(m);
       setTeams(t);
-      setName(o?.name ?? '');
-      setDescription(o?.description ?? '');
     } catch (e) {
       toast.fail(e);
     }
@@ -61,10 +66,11 @@ export function OrgPage() {
     if (isOwner) api.users().then(setDirectory).catch(() => setDirectory([]));
   }, [isOwner]);
 
-  const candidates = useMemo(
-    () => directory.filter((u) => u.source !== 'env' && !members?.some((m) => m.id === u.id && m.role)),
-    [directory, members],
-  );
+  const people = useMemo(() => (members ?? []).filter((m) => m.role || m.groupRole || m.teams.some((t) => t.role)), [members]);
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return people.filter((m) => !q || `${m.displayName} ${m.username} ${m.email}`.toLowerCase().includes(q));
+  }, [people, query]);
 
   if (!currentOrg) {
     return (
@@ -77,44 +83,24 @@ export function OrgPage() {
     );
   }
 
-  const save = async (e: FormEvent) => {
-    e.preventDefault();
+  const afterAccessChange = async () => {
+    setAdding(false);
+    setEditingMember(null);
+    await Promise.all([load(), refreshSession()]);
+  };
+
+  const removeEverywhere = async (member: Member) => {
     try {
-      await api.updateOrg(currentOrg.id, { name, description });
-      await refreshSession();
-      toast.notify('Organisation saved');
-      load();
+      for (const change of planChanges(currentAccessOf(member), { scope: 'teams', teamIds: [], role: 'viewer' })) {
+        if (change.kind === 'removeOrg') await api.removeMember(currentOrg.id, member.id);
+        if (change.kind === 'removeTeam') await api.removeTeamMember(currentOrg.id, change.teamId, member.id);
+      }
+      toast.notify(`${member.displayName || member.username} no longer has access to ${currentOrg.name}`);
+      setRemovingMember(null);
+      await afterAccessChange();
     } catch (err) {
       toast.fail(err);
     }
-  };
-
-  const setRole = async (userId: string, role: OrgRole) => {
-    try {
-      await api.setMember(currentOrg.id, userId, role);
-      toast.notify('Role updated');
-      if (userId === session?.id) await refreshSession();
-      load();
-    } catch (err) {
-      toast.fail(err);
-    }
-  };
-
-  const remove = async (member: Member) => {
-    try {
-      await api.removeMember(currentOrg.id, member.id);
-      toast.notify(`${member.displayName || member.username} removed`);
-      load();
-    } catch (err) {
-      toast.fail(err);
-    }
-  };
-
-  const add = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!newMember) return;
-    await setRole(newMember, newRole);
-    setNewMember('');
   };
 
   const removeOrg = async () => {
@@ -129,101 +115,159 @@ export function OrgPage() {
     }
   };
 
+  const teamCount = teams?.length ?? org?.teamCount ?? 0;
+  const projectCount = org?.projectCount ?? 0;
+
   return (
     <div className="page">
       <div className="page-header">
         <div>
           <h1>{currentOrg.name}</h1>
-          <p className="muted">
-            {org ? `${plural(org.teamCount, 'team')}, ${plural(org.projectCount, 'project')} and ${plural(org.memberCount, 'person')}`.replace('persons', 'people') : ' '}
-          </p>
+          <p className="muted">{org?.description || 'Your organisation, its teams and the people who work in them.'}</p>
         </div>
-        <RoleBadge role={isAdmin ? 'admin' : currentOrg.role} />
+        <div className="btn-row">
+          <RoleBadge role={isAdmin ? 'admin' : currentOrg.role} />
+          {isOwner && <button className="btn primary" onClick={() => setAdding(true)}><UserPlus size={15} /> Add people</button>}
+        </div>
       </div>
 
-      <div className="split">
-        <div className="stack">
-          <div className="panel">
-            <div className="panel-head">
-              <h2><UsersThree size={16} weight="duotone" /> Teams</h2>
-              {isOwner && (
-                <button className="btn small" onClick={() => setCreatingTeam(true)}><Plus size={13} /> New team</button>
-              )}
-            </div>
+      <section className="access-map" aria-label="How it fits together">
+        <div className="access-map-row">
+          <div className="map-node">
+            <span className="map-icon org"><Buildings size={20} weight="duotone" /></span>
+            <span className="map-kicker">Organisation</span>
+            <strong>{currentOrg.name}</strong>
+            <span className="map-note">Your company or department. Holds every team.</span>
+          </div>
+          <ArrowRight size={18} className="map-arrow" aria-hidden="true" />
+          <button type="button" className="map-node" onClick={() => show('teams')}>
+            <span className="map-icon team"><UsersThree size={20} weight="duotone" /></span>
+            <span className="map-kicker">Teams</span>
+            <strong>{plural(teamCount, 'team')}</strong>
+            <span className="map-note">Groups of people who work together. Each team owns its projects.</span>
+          </button>
+          <ArrowRight size={18} className="map-arrow" aria-hidden="true" />
+          <div className="map-node">
+            <span className="map-icon project"><Folder size={20} weight="duotone" /></span>
+            <span className="map-kicker">Projects</span>
+            <strong>{plural(projectCount, 'project')}</strong>
+            <span className="map-note">One mocked service each, with its own URL and stubs.</span>
+          </div>
+        </div>
+        <button type="button" className="map-people" onClick={() => show('people')}>
+          <UserPlus size={16} weight="duotone" />
+          <span>
+            <strong>{plural(people.length, 'person', 'people')}</strong> can sign in here. Give someone the <em>whole organisation</em>, or only the <em>teams</em> they work in.
+          </span>
+          <CaretRight size={14} />
+        </button>
+      </section>
+
+      <div className="panel">
+        <div className="tabs-line" role="tablist" aria-label="Organisation sections">
+          <button role="tab" aria-selected={tab === 'teams'} onClick={() => show('teams')}>
+            <UsersThree size={15} /> Teams <span className="count">{teamCount}</span>
+          </button>
+          <button role="tab" aria-selected={tab === 'people'} onClick={() => show('people')}>
+            <UserPlus size={15} /> People <span className="count">{people.length}</span>
+          </button>
+          {isOwner && (
+            <button role="tab" aria-selected={tab === 'settings'} onClick={() => show('settings')}>
+              <GearSix size={15} /> Settings
+            </button>
+          )}
+        </div>
+
+        {tab === 'teams' && (
+          <div className="panel-body">
             {teams === null ? (
-              <div className="panel-body"><Skeleton rows={2} label="Loading teams" /></div>
+              <Skeleton rows={2} label="Loading teams" />
             ) : (
-              <ul className="team-list">
+              <div className="team-grid">
                 {teams.map((t) => (
-                  <li key={t.id}>
-                    <Link to={`/org/teams/${t.id}`} className="team-row">
-                      <TeamMark name={t.name} seed={t.id} size={34} />
-                      <span className="team-row-text">
-                        <strong>{t.name}</strong>
-                        <span className="muted small">{t.description || 'No description'}</span>
-                      </span>
-                      <span className="muted small team-row-counts">{plural(t.projectCount, 'project')}, {t.memberCount} {t.memberCount === 1 ? 'person' : 'people'}</span>
-                      <RoleBadge role={t.role} />
-                      <CaretRight size={14} className="muted" />
-                    </Link>
-                  </li>
+                  <Link key={t.id} to={`/org/teams/${t.id}`} className="team-card">
+                    <span className="team-card-head">
+                      <TeamMark name={t.name} seed={t.id} size={36} />
+                      {!isAdmin && <RoleBadge role={t.role} />}
+                    </span>
+                    <strong>{t.name}</strong>
+                    <span className="muted small team-card-desc">{t.description || 'No description yet'}</span>
+                    <span className="team-card-stats">
+                      <span><Folder size={13} /> {plural(t.projectCount, 'project')}</span>
+                      <span><UsersThree size={13} /> {plural(t.memberCount, 'person', 'people')}</span>
+                    </span>
+                  </Link>
                 ))}
-              </ul>
+                {isOwner && (
+                  <button type="button" className="team-card add" onClick={() => setCreatingTeam(true)}>
+                    <Plus size={20} />
+                    <strong>New team</strong>
+                    <span className="muted small">For example Checkout, Mobile app or QA</span>
+                  </button>
+                )}
+              </div>
+            )}
+            {canEdit && teams !== null && teams.length > 0 && (
+              <p className="muted small team-grid-foot">
+                Projects live inside a team.{' '}
+                <button type="button" className="link-button" onClick={() => setCreatingProject(true)}>Create a project</button>{' '}and pick its team.
+              </p>
             )}
           </div>
-          <div className="panel">
-            <div className="panel-head">
-              <h2>Organisation-wide access</h2>
+        )}
+
+        {tab === 'people' && (
+          <>
+            <div className="panel-body people-toolbar">
+              <div className="search-field">
+                <MagnifyingGlass size={14} />
+                <input type="search" aria-label="Search people" placeholder="Search by name or e-mail" value={query} onChange={(e) => setQuery(e.target.value)} />
+              </div>
+              {isOwner && <button className="btn" onClick={() => setAdding(true)}><UserPlus size={14} /> Add people</button>}
             </div>
-            <p className="panel-body muted small" style={{ paddingBottom: 0 }}>
-              These roles apply to every team in {currentOrg.name}. To give someone access to one team only, add them on that team's page.
-            </p>
             {members === null ? (
-              <div className="panel-body"><Skeleton rows={3} label="Loading members" /></div>
+              <div className="panel-body"><Skeleton rows={3} label="Loading people" /></div>
             ) : (
               <table className="data-table">
                 <thead>
                   <tr>
                     <th>Person</th>
-                    <th>Role</th>
+                    <th>Where and what they can do</th>
                     {isOwner && <th><span className="sr-only">Actions</span></th>}
                   </tr>
                 </thead>
                 <tbody>
-                  {members.length === 0 && (
-                    <tr><td colSpan={3} className="muted">No members yet. Admins can still see this organisation.</td></tr>
+                  {filtered.length === 0 && (
+                    <tr><td colSpan={3} className="muted">{query ? 'Nobody matches.' : 'Nobody has been added yet. Admins can always see this organisation.'}</td></tr>
                   )}
-                  {members.map((m) => (
+                  {filtered.map((m) => (
                     <tr key={m.id}>
                       <td>
                         <PersonCell name={m.displayName || m.username} detail={m.email || m.username} seed={m.id} />
                         <SourceTag source={m.source} />
                         {m.disabled && <span className="tag">disabled</span>}
-                        {m.teams.length > 0 && (
-                          <div className="chip-row">
-                            {m.teams.map((t) => <span key={t.id} className="tag">{t.name}{t.role ? `: ${t.role}` : ''}</span>)}
-                          </div>
-                        )}
                       </td>
                       <td>
-                        {isOwner && m.role ? (
-                          <select aria-label={`Role of ${m.username}`} value={m.role} onChange={(e) => setRole(m.id, e.target.value as OrgRole)}>
-                            {ORG_ROLES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
-                          </select>
-                        ) : m.role || m.groupRole ? (
-                          <RoleBadge role={m.effectiveRole} />
-                        ) : (
-                          <span className="muted small">Team access only</span>
-                        )}
-                        {m.groupRole && <div className="muted small">{m.role ? 'also ' : ''}{m.groupRole} from an Entra group</div>}
+                        <span className="access-chips">
+                          {accessChips(m).map((c) => (
+                            <span key={c.label} className={`access-chip${c.wide ? ' wide' : ''}`} title={c.fromGroup ? 'From an Entra group' : undefined}>
+                              {c.wide ? <Buildings size={13} weight="duotone" /> : <UsersThree size={13} weight="duotone" />}
+                              {c.label}
+                              <RoleBadge role={c.role} />
+                            </span>
+                          ))}
+                        </span>
                       </td>
                       {isOwner && (
                         <td className="actions">
-                          {m.role && (
-                            <button className="btn ghost icon small" aria-label={`Remove ${m.username}`} title="Remove from organisation" onClick={() => remove(m)}>
-                              <Trash size={14} />
-                            </button>
-                          )}
+                          <span className="btn-row">
+                            <button className="btn small" onClick={() => setEditingMember(m)} aria-label={`Change access for ${m.username}`}>Change access</button>
+                            {(m.role || m.teams.some((t) => t.role)) && (
+                              <button className="btn ghost icon small" aria-label={`Remove ${m.username}`} title="Remove from organisation" onClick={() => setRemovingMember(m)}>
+                                <Trash size={14} />
+                              </button>
+                            )}
+                          </span>
                         </td>
                       )}
                     </tr>
@@ -231,72 +275,56 @@ export function OrgPage() {
                 </tbody>
               </table>
             )}
-            {isOwner && (
-              <form className="panel-body add-member" onSubmit={add}>
-                <label className="field">
-                  <span>Add a person</span>
-                  <select value={newMember} onChange={(e) => setNewMember(e.target.value)}>
-                    <option value="">Choose a user…</option>
-                    {candidates.map((u) => (
-                      <option key={u.id} value={u.id}>{u.displayName || u.username} ({u.email || u.username})</option>
-                    ))}
-                  </select>
-                </label>
-                <label className="field">
-                  <span>Role</span>
-                  <select value={newRole} onChange={(e) => setNewRole(e.target.value as OrgRole)}>
-                    {ORG_ROLES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
-                  </select>
-                </label>
-                <button className="btn primary" type="submit" disabled={!newMember}><UserPlus size={14} /> Add</button>
-                <p className="muted small" style={{ gridColumn: '1 / -1' }}>
-                  {ORG_ROLES.find((r) => r.value === newRole)?.label}s {ORG_ROLES.find((r) => r.value === newRole)?.hint}.
-                  {isAdmin ? ' Create new people under Users.' : ' Missing someone? Ask an admin to create their account, or have them sign in with Microsoft once.'}
-                </p>
-              </form>
-            )}
-          </div>
-        </div>
+            <div className="panel-body role-legend">
+              {ROLE_INFO.map((r) => (
+                <span key={r.value}><RoleBadge role={r.value} /> {r.detail}</span>
+              ))}
+            </div>
+          </>
+        )}
 
-        <div className="stack">
-          {isOwner && (
-            <form className="panel" onSubmit={save}>
-              <div className="panel-head"><h2>Settings</h2></div>
-              <div className="panel-body stack">
-                <label className="field">
-                  <span>Name</span>
-                  <input type="text" value={name} onChange={(e) => setName(e.target.value)} required />
-                </label>
-                <label className="field">
-                  <span>Description</span>
-                  <input type="text" value={description} onChange={(e) => setDescription(e.target.value)} />
-                </label>
-                <div><button className="btn" type="submit">Save</button></div>
+        {tab === 'settings' && isOwner && (
+          <div className="panel-body stack">
+            <OrgSettings org={org} orgId={currentOrg.id} onSaved={async () => { await refreshSession(); load(); }} />
+            <div className="callout small">
+              Mock URLs answer for anyone who can reach MockHub. Roles only decide who can see and change the mocks in this app.
+            </div>
+            <div className="danger-zone section-block">
+              <h3>Delete organisation</h3>
+              <p className="small">Deletes {currentOrg.name}, its {plural(projectCount, 'project')} and all their stubs. This can't be undone.</p>
+              <div>
+                <button className="btn danger" onClick={() => setDeleting(true)} disabled={orgs.length < 2 && !isAdmin}>
+                  <Trash size={14} /> Delete organisation
+                </button>
               </div>
-            </form>
-          )}
-          <div className="panel">
-            <div className="panel-head"><h2>Who can see this organisation</h2></div>
-            <div className="panel-body stack small">
-              <p>People with organisation-wide access, members of its teams, admins, and people with a server-wide role set under Users. Team members only see their own teams' projects.</p>
-              <p className="muted">Mock URLs are public either way. Roles only control who can change the mocks.</p>
             </div>
           </div>
-          {isOwner && (
-            <div className="panel danger-zone">
-              <div className="panel-head"><h2>Delete organisation</h2></div>
-              <div className="panel-body stack">
-                <p className="small">Deletes {currentOrg.name}, its {org?.projectCount ?? 0} projects and all their stubs. This can't be undone.</p>
-                <div>
-                  <button className="btn danger" onClick={() => setDeleting(true)} disabled={orgs.length < 2 && !isAdmin}>
-                    <Trash size={14} /> Delete organisation
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+        )}
       </div>
+
+      {(adding || editingMember) && teams && (
+        <PeopleDialog
+          orgId={currentOrg.id}
+          orgName={currentOrg.name}
+          teams={teams}
+          directory={directory}
+          canPickOrg={isOwner}
+          canCreateUsers={isAdmin}
+          member={editingMember ?? undefined}
+          excludeIds={people.map((p) => p.id)}
+          onClose={() => { setAdding(false); setEditingMember(null); }}
+          onDone={afterAccessChange}
+        />
+      )}
+      {removingMember && (
+        <Confirm
+          title={`Remove ${removingMember.displayName || removingMember.username}?`}
+          message={`They lose access to ${currentOrg.name} and all of its teams. Their account stays, so you can add them again later.`}
+          confirmLabel="Remove"
+          onConfirm={() => removeEverywhere(removingMember)}
+          onCancel={() => setRemovingMember(null)}
+        />
+      )}
       {deleting && <DeleteOrgDialog name={currentOrg.name} onConfirm={removeOrg} onCancel={() => setDeleting(false)} />}
       {creatingTeam && (
         <NewTeamDialog
@@ -309,7 +337,44 @@ export function OrgPage() {
           }}
         />
       )}
+      {creatingProject && <ProjectDialog onClose={() => { setCreatingProject(false); load(); }} />}
     </div>
+  );
+}
+
+function OrgSettings({ org, orgId, onSaved }: { org: Organization | null; orgId: string; onSaved: () => void }) {
+  const toast = useToast();
+  const [name, setName] = useState(org?.name ?? '');
+  const [description, setDescription] = useState(org?.description ?? '');
+
+  useEffect(() => {
+    setName(org?.name ?? '');
+    setDescription(org?.description ?? '');
+  }, [org]);
+
+  const save = async (e: FormEvent) => {
+    e.preventDefault();
+    try {
+      await api.updateOrg(orgId, { name, description });
+      toast.notify('Organisation saved');
+      onSaved();
+    } catch (err) {
+      toast.fail(err);
+    }
+  };
+
+  return (
+    <form className="stack" onSubmit={save} style={{ maxWidth: 520 }}>
+      <label className="field">
+        <span>Name</span>
+        <input type="text" value={name} onChange={(e) => setName(e.target.value)} required />
+      </label>
+      <label className="field">
+        <span>Description</span>
+        <input type="text" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What this organisation is for" />
+      </label>
+      <div><button className="btn" type="submit">Save</button></div>
+    </form>
   );
 }
 
@@ -346,7 +411,7 @@ function NewTeamDialog({ orgId, onClose, onCreated }: { orgId: string; onClose: 
     setBusy(true);
     try {
       const team = await api.createTeam(orgId, { name, description });
-      toast.notify(`Team ${team.name} created`);
+      toast.notify(`Team ${team.name} created. Add its people next.`);
       onCreated(team);
     } catch (err) {
       toast.fail(err);
@@ -356,7 +421,7 @@ function NewTeamDialog({ orgId, onClose, onCreated }: { orgId: string; onClose: 
   };
 
   return (
-    <Modal title="New team" description="A team owns projects. Its members get the role you give them in this team only." onClose={onClose}>
+    <Modal title="New team" description="A team is a group of people who work together. It owns projects, and only its members (and people with access to the whole organisation) see them." onClose={onClose}>
       <form className="stack" onSubmit={submit}>
         <label className="field">
           <span>Name</span>

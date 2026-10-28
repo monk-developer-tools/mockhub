@@ -54,6 +54,14 @@ public final class ProjectService implements OrganizationListener {
     return repository.findBySlug(slug);
   }
 
+  public Optional<Project> findRoot() {
+    return repository.findAll().stream().filter(Project::root).findFirst();
+  }
+
+  public Optional<Project> findForPath(String firstSegment) {
+    return repository.findBySlug(firstSegment).filter(p -> !p.root()).or(this::findRoot);
+  }
+
   public Optional<Project> find(String id) {
     return repository.findById(id);
   }
@@ -79,7 +87,9 @@ public final class ProjectService implements OrganizationListener {
         now,
         requiredText(body, "orgId"),
         body.path("teamId").asText("").isBlank() ? null : body.get("teamId").asText(),
-        ApiKey.parse(body.get("apiKey")));
+        ApiKey.parse(body.get("apiKey")),
+        body.path("root").asBoolean(false));
+    validateRoot(project);
     repository.save(project);
     return project;
   }
@@ -98,8 +108,10 @@ public final class ProjectService implements OrganizationListener {
         Instant.now(clock).toString(),
         body.hasNonNull("orgId") && !body.get("orgId").asText().isBlank() ? body.get("orgId").asText() : before.orgId(),
         body.hasNonNull("teamId") && !body.get("teamId").asText().isBlank() ? body.get("teamId").asText() : before.teamId(),
-        body.has("apiKey") ? ApiKey.parse(body.get("apiKey")) : before.apiKey());
-    if (!before.slug().equals(after.slug())) {
+        body.has("apiKey") ? ApiKey.parse(body.get("apiKey")) : before.apiKey(),
+        body.hasNonNull("root") ? body.get("root").asBoolean() : before.root());
+    validateRoot(after);
+    if (!before.basePath().equals(after.basePath())) {
       listeners.forEach(l -> l.onBasePathChanged(before, after));
     }
     repository.save(after);
@@ -137,6 +149,13 @@ public final class ProjectService implements OrganizationListener {
     }
     repository.findBySlug(slug).filter(other -> !other.id().equals(selfId)).ifPresent(other -> {
       throw new ApiException(409, "Base path /" + slug + " is already used by project '" + other.name() + "'");
+    });
+  }
+
+  private void validateRoot(Project project) {
+    if (!project.root()) return;
+    findRoot().filter(other -> !other.id().equals(project.id())).ifPresent(other -> {
+      throw new ApiException(409, "Project '" + other.name() + "' already answers at the root. Turn that off first.");
     });
   }
 

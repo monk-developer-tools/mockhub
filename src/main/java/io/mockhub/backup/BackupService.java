@@ -206,8 +206,9 @@ public final class BackupService {
       if (!slug.equals(p.slug())) renamed.add(new Renamed(p.name(), p.basePath(), "/" + slug));
       if (!options.asCopy()) removeStubsOf(id);
       String now = Instant.now(clock).toString();
+      boolean root = p.root() && projects.findRoot().filter(r -> !r.id().equals(id)).isEmpty();
       Project saved = new Project(id, p.name(), slug, p.description(), p.color(),
-          options.asCopy() ? now : p.createdAt(), now, orgId, teamId, p.apiKey());
+          options.asCopy() ? now : p.createdAt(), now, orgId, teamId, p.apiKey(), root);
       projects.restore(List.of(saved));
       file.path("files").path(p.id()).fields().forEachRemaining(e -> files.save(saved.id(), e.getKey(), Base64.getDecoder().decode(e.getValue().asText())));
       JsonNode stored = file.path("data").path(p.id());

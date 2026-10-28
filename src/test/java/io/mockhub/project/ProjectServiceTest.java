@@ -116,4 +116,51 @@ class ProjectServiceTest {
   void unknownProjectIsNotFound() {
     assertThatThrownBy(() -> service.get("nope")).extracting("status").isEqualTo(404);
   }
+
+  @Test
+  void aProjectCanAnswerAtTheRoot() {
+    // When
+    Project legacy = service.create(tree("{'orgId':'org1','name':'Legacy','slug':'legacy','root':true}"));
+
+    // Then
+    assertThat(legacy.basePath()).isEmpty();
+    assertThat(service.findRoot()).contains(legacy);
+  }
+
+  @Test
+  void onlyOneProjectCanAnswerAtTheRoot() {
+    // Given
+    service.create(tree("{'orgId':'org1','name':'Legacy','root':true}"));
+    Project other = service.create(tree("{'orgId':'org1','name':'Other'}"));
+
+    // When / Then
+    assertThatThrownBy(() -> service.update(other.id(), tree("{'root':true}")))
+        .isInstanceOf(ApiException.class)
+        .hasMessageContaining("already answers at the root");
+  }
+
+  @Test
+  void movingAProjectToTheRootTellsListenersTheBasePathChanged() {
+    // Given
+    Project orders = service.create(tree("{'orgId':'org1','name':'Orders','slug':'orders'}"));
+
+    // When
+    Project moved = service.update(orders.id(), tree("{'root':true}"));
+
+    // Then
+    assertThat(moved.basePath()).isEmpty();
+    assertThat(events).containsExactly("moved orders->orders");
+  }
+
+  @Test
+  void pathsThatNoOtherProjectOwnsBelongToTheRootProject() {
+    // Given
+    Project legacy = service.create(tree("{'orgId':'org1','name':'Legacy','slug':'legacy','root':true}"));
+    Project orders = service.create(tree("{'orgId':'org1','name':'Orders','slug':'orders'}"));
+
+    // When / Then
+    assertThat(service.findForPath("orders")).contains(orders);
+    assertThat(service.findForPath("customers")).contains(legacy);
+    assertThat(service.findForPath("legacy")).contains(legacy);
+  }
 }

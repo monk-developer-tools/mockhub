@@ -87,6 +87,7 @@ public final class AccessPolicy {
     }
 
     if (path.equals("/users") && read) return need(p.highestRole(), Role.OWNER, "list users");
+    if (path.equals("/audit") && read) return need(p.highestRole(), Role.OWNER, "see the audit log");
     return Decision.deny("Only admins can do this");
   }
 

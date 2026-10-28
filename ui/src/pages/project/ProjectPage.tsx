@@ -1,4 +1,4 @@
-import { ArrowsDownUp, BracketsCurly, Database, FlowArrow, Gauge, GearSix, Pulse, Sparkle, Warning } from '@phosphor-icons/react';
+import { ArrowsDownUp, ClockCounterClockwise, BracketsCurly, Database, FlowArrow, Gauge, GearSix, Pulse, Sparkle, Warning } from '@phosphor-icons/react';
 import { useCallback, useEffect, useState } from 'react';
 import { NavLink, Outlet, useOutletContext, useParams } from 'react-router-dom';
 import { api } from '../../api/client';
@@ -69,6 +69,7 @@ export function ProjectPage() {
     { to: 'requests', label: 'Requests', icon: Pulse, count: project.requestCount, alert: project.unmatchedCount },
     { to: 'scenarios', label: 'Scenarios', icon: FlowArrow },
     { to: 'import-export', label: 'Import & export', icon: ArrowsDownUp },
+    { to: 'activity', label: 'Activity', icon: ClockCounterClockwise },
     { to: 'settings', label: 'Settings', icon: GearSix },
   ];
 
@@ -87,6 +88,7 @@ export function ProjectPage() {
               {project.mockUrl.slice(0, project.mockUrl.length - project.basePath.length)}
               <strong>{project.basePath}</strong>
             </span>
+            {project.root && <span className="tag" title="This project answers without a path prefix">root</span>}
             <CopyButton text={project.mockUrl} label="Copy mock URL" />
           </div>
           {project.description && <p className="muted" style={{ marginTop: 4 }}>{project.description}</p>}

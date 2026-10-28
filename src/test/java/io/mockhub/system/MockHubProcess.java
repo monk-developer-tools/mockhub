@@ -19,23 +19,31 @@ final class MockHubProcess implements AutoCloseable {
   private final Process process;
   private final int port;
 
-  private MockHubProcess(Process process, int port) {
+  private final Path output;
+
+  private MockHubProcess(Process process, int port, Path output) {
     this.process = process;
     this.port = port;
+    this.output = output;
   }
 
   static MockHubProcess start(Path dataDir, Map<String, String> env) throws IOException, InterruptedException {
     int port = freePort();
     String java = ProcessHandle.current().info().command().orElse("java");
+    Path output = dataDir.resolveSibling(dataDir.getFileName() + "-" + port + ".log");
     ProcessBuilder builder = new ProcessBuilder(List.of(java, "-jar", jarPath()))
-        .redirectErrorStream(true)
-        .redirectOutput(dataDir.resolveSibling(dataDir.getFileName() + "-" + port + ".log").toFile());
+        .redirectError(ProcessBuilder.Redirect.DISCARD)
+        .redirectOutput(output.toFile());
     builder.environment().putAll(env);
     builder.environment().put("PORT", String.valueOf(port));
     builder.environment().put("MOCKHUB_DATA_DIR", dataDir.toString());
-    MockHubProcess started = new MockHubProcess(builder.start(), port);
+    MockHubProcess started = new MockHubProcess(builder.start(), port, output);
     started.awaitHealthy();
     return started;
+  }
+
+  String stdout() throws IOException {
+    return java.nio.file.Files.readString(output);
   }
 
   String baseUrl() {

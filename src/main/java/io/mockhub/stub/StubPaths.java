@@ -26,14 +26,14 @@ public final class StubPaths {
       }
     }
     if (!hasUrl) {
-      request.put("urlPattern", basePath + "(/.*)?");
+      request.put("urlPattern", catchAll(basePath));
     }
   }
 
   public static void toRelative(ObjectNode stub, String basePath) {
     hideDefaultProxyPrefix(stub, basePath);
     ObjectNode request = request(stub);
-    if (request.path("urlPattern").asText("").equals(basePath + "(/.*)?")) {
+    if (request.path("urlPattern").asText("").equals(catchAll(basePath))) {
       request.remove("urlPattern");
       return;
     }
@@ -45,7 +45,12 @@ public final class StubPaths {
     }
   }
 
+  private static String catchAll(String basePath) {
+    return basePath.isEmpty() ? "/.*" : basePath + "(/.*)?";
+  }
+
   private static void stripBasePathBeforeProxying(ObjectNode stub, String basePath) {
+    if (basePath.isEmpty()) return;
     if (stub.get("response") instanceof ObjectNode response && response.hasNonNull("proxyBaseUrl") && !response.has("proxyUrlPrefixToRemove")) {
       response.put("proxyUrlPrefixToRemove", basePath);
     }
@@ -68,12 +73,13 @@ public final class StubPaths {
   }
 
   static String joinLiteral(String base, String path) {
-    if (path.isEmpty() || path.equals("/")) return base;
+    if (path.isEmpty() || path.equals("/")) return base.isEmpty() ? "/" : base;
     if (path.startsWith("?")) return base + path;
     return base + (path.startsWith("/") ? path : "/" + path);
   }
 
   static String stripLiteral(String base, String path) {
+    if (base.isEmpty()) return path;
     if (path.equals(base)) return "/";
     if (path.startsWith(base + "/")) return path.substring(base.length());
     if (path.startsWith(base + "?")) return "/" + path.substring(base.length());
@@ -87,6 +93,7 @@ public final class StubPaths {
   }
 
   static String stripRegex(String base, String regex) {
+    if (base.isEmpty()) return regex;
     if (regex.startsWith("^")) return "^" + stripRegex(base, regex.substring(1));
     if (regex.startsWith(base + "/")) return regex.substring(base.length());
     return regex;
