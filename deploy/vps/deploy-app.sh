@@ -40,12 +40,33 @@ docker run -d --name mockhub \
   --memory 768m --cpus 1 \
   mockhub:latest >/dev/null
 
+healthy=false
 for _ in $(seq 1 60); do
   if curl -fsS "http://127.0.0.1:$PORT/__admin/health" >/dev/null 2>&1; then
-    echo "MockHub is up on 127.0.0.1:$PORT"
-    exit 0
+    healthy=true
+    break
   fi
   sleep 1
 done
-echo "MockHub did not become healthy; check: docker logs mockhub" >&2
-exit 1
+if [ "$healthy" != true ]; then
+  echo "MockHub did not become healthy; check: docker logs mockhub" >&2
+  exit 1
+fi
+echo "MockHub is up on 127.0.0.1:$PORT"
+
+api="http://127.0.0.1:$PORT/__admin/mockhub/api"
+admin=$(grep '^MOCKHUB_USERS=' "$BASE/mockhub.env" | cut -d= -f2- | tr ',' '\n' | grep ':admin$' | head -1 | sed 's/:admin$//' || true)
+if [ -z "$admin" ]; then
+  echo "No admin in MOCKHUB_USERS; skipping example installs."
+  exit 0
+fi
+as_admin() { printf 'user = "%s"\n' "$admin" | curl -fsS -K - "$@"; }
+installed=$(as_admin "$api/projects" | jq -r '.[].slug')
+for example in $(as_admin "$api/examples" | jq -r '.[] | "\(.id)=\(.slug)"'); do
+  id=${example%%=*}
+  slug=${example#*=}
+  if ! grep -qx "$slug" <<<"$installed"; then
+    as_admin -X POST "$api/examples/$id/install" >/dev/null && echo "Installed example $id at /$slug"
+  fi
+done
+exit 0
