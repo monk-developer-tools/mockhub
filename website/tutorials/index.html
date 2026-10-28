@@ -904,7 +904,7 @@ curl -X POST $MOCK/example-soap/ws/calculator -H "Content-Type: text/xml" -d \
           <ol class="tut-steps">
             <li>
               <h3>Create your organisation (admins)</h3>
-              <p>Select the organisation name at the top of the sidebar, then <strong>New organisation</strong>. Name it after your company or department, like <em>Acme</em>. It starts with a <em>General</em> team, and you become its owner. Only admins can create organisations; everyone else is added to one.</p>
+              <p>Select the organisation name at the top of the sidebar, then <strong>New organisation</strong>. Name it after your company or department, like <em>Acme</em>. It starts with a <em>General</em> team, and you become its manager. Only admins can create organisations; everyone else is added to one.</p>
               <figure class="tut-shot"><img src="/assets/img/tutorials/teams-0-new-org.webp" alt="The New organisation dialog with the name Acme Europe filled in" width="1176" height="900" loading="lazy"></figure>
             </li>
             <li>
@@ -919,17 +919,17 @@ curl -X POST $MOCK/example-soap/ws/calculator -H "Content-Type: text/xml" -d \
             </li>
             <li>
               <h3>Check and change access</h3>
-              <p>The <strong>People</strong> tab shows where each person works in plain words: <em>Whole organisation · Owner</em> or <em>Checkout · Editor</em>. Select <strong>Change access</strong> to move someone between teams or to the whole organisation, or the bin to remove them.</p>
+              <p>The <strong>People</strong> tab shows where each person works in plain words: <em>Whole organisation · Manager</em> or <em>Checkout · Editor</em>. Select <strong>Change access</strong> to move someone between teams or to the whole organisation, or the bin to remove them.</p>
               <figure class="tut-shot"><img src="/assets/img/tutorials/teams-3-people.webp" alt="The People tab listing each person with chips for their teams and roles" width="1176" height="900" loading="lazy"></figure>
             </li>
             <li>
-              <h3>Let team owners run their own team</h3>
-              <p>Open a team to see its people and projects. Its owners can add people to that team themselves, without asking an organisation owner. Members of one team never see another team's projects.</p>
+              <h3>Let team managers run their own team</h3>
+              <p>Open a team to see its people and projects. Its managers create the team's projects and add people to it themselves, without asking an organisation manager. Members of one team never see another team's projects.</p>
               <figure class="tut-shot"><img src="/assets/img/tutorials/teams-4-team.webp" alt="The Checkout team page with its people, its projects and the Add people button" width="1176" height="900" loading="lazy"></figure>
             </li>
             <li>
               <h3>See who changed what</h3>
-              <p>Every create, change and delete is recorded with the person and the time. Open a project's <strong>Activity</strong> tab for its history. Admins, and owners of organisations and teams, also get <strong>Audit log</strong> in the sidebar. Entries are kept for 90 days.</p>
+              <p>Every create, change and delete is recorded with the person and the time. Open a project's <strong>Activity</strong> tab for its history. Admins, and managers of organisations and teams, also get <strong>Audit log</strong> in the sidebar. Entries are kept for 90 days.</p>
               <figure class="tut-shot"><img src="/assets/img/tutorials/teams-5-audit.webp" alt="The audit log for today: Sam created and turned off stubs, Maria deleted one and gave Riley access, Li changed a project" width="1176" height="900" loading="lazy"></figure>
             </li>
           </ol>
@@ -938,9 +938,9 @@ curl -X POST $MOCK/example-soap/ws/calculator -H "Content-Type: text/xml" -d \
               <thead><tr><th>Role</th><th>What they can do</th></tr></thead>
               <tbody>
                 <tr><td><strong>Viewer</strong></td><td>Looks at projects, stubs and the request log. Changes nothing.</td></tr>
-                <tr><td><strong>Editor</strong></td><td>Creates and changes projects and stubs. The right choice for most developers and testers.</td></tr>
-                <tr><td><strong>Owner</strong></td><td>Everything an editor does, plus adding people and changing settings.</td></tr>
-                <tr><td><strong>Admin</strong></td><td>Everything, everywhere, plus accounts, sign-in, the AI assistant and backups. Set under <strong>Administration → Users</strong>.</td></tr>
+                <tr><td><strong>Editor</strong></td><td>Changes stubs, imports, data and scenarios in existing projects. The right choice for most developers and testers.</td></tr>
+                <tr><td><strong>Manager</strong></td><td>Everything an editor does, plus creating projects, adding people and changing settings. Never sees API keys.</td></tr>
+                <tr><td><strong>Admin</strong></td><td>Everything, everywhere, plus organisations, accounts, sign-in, the AI assistant, backups and every secret such as project API keys. Set under <strong>Administration → Users</strong>.</td></tr>
               </tbody>
             </table>
           </div>

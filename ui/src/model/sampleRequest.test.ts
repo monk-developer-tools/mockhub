@@ -1,5 +1,5 @@
 import { emptyForm } from './stubForm';
-import { samplePath } from './sampleRequest';
+import { sampleRequest, samplePath } from './sampleRequest';
 
 describe('samplePath', () => {
   it('fills path template variables and equal query parameters', () => {
@@ -24,5 +24,29 @@ describe('samplePath', () => {
 
   it('uses the base path for any-URL stubs', () => {
     expect(samplePath({ ...emptyForm(), urlMatch: 'any' })).toBe('/');
+  });
+});
+
+describe('sampleRequest', () => {
+  it('sends the project API key when the viewer may see it', () => {
+    // Given
+    const form = { ...emptyForm(), url: '/ping' };
+
+    // When
+    const request = sampleRequest(form, { header: 'X-API-Key', value: 'k-123' });
+
+    // Then
+    expect(request.headers).toContainEqual(['X-API-Key', 'k-123']);
+  });
+
+  it('uses a placeholder when only admins may see the key', () => {
+    // Given
+    const form = { ...emptyForm(), url: '/ping' };
+
+    // When
+    const request = sampleRequest(form, { header: 'X-API-Key', set: true });
+
+    // Then
+    expect(request.headers).toContainEqual(['X-API-Key', '{{apiKey}}']);
   });
 });

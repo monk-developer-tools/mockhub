@@ -92,7 +92,7 @@ class UserServiceTest {
     // Given
     User first = users.upsertExternal(new ExternalProfile(UserSource.AZURE, "t:oid", "Ana@Contoso.com", "Ana", "ana@contoso.com",
         Role.NONE, List.of(new Membership("o1", Role.VIEWER))));
-    users.setMembership(first.id(), "o2", Role.OWNER);
+    users.setMembership(first.id(), "o2", Role.MANAGER);
 
     // When
     User second = users.upsertExternal(new ExternalProfile(UserSource.AZURE, "t:oid", "ana@contoso.com", "Ana T", "ana@contoso.com",
@@ -103,7 +103,7 @@ class UserServiceTest {
     assertThat(second.username()).isEqualTo("ana@contoso.com");
     assertThat(second.displayName()).isEqualTo("Ana T");
     assertThat(second.roleIn("o1")).isEqualTo(Role.EDITOR);
-    assertThat(second.roleIn("o2")).isEqualTo(Role.OWNER);
+    assertThat(second.roleIn("o2")).isEqualTo(Role.MANAGER);
     assertThat(second.passwordHash()).isNull();
     assertThat(users.authenticate("ana@contoso.com", "")).isEmpty();
   }
@@ -141,11 +141,11 @@ class UserServiceTest {
         + "'teamMemberships':[{'teamId':'t1','orgId':'o1','role':'editor'}]}"));
 
     // When
-    User owner = users.setTeamMembership(ana.id(), "t2", "o1", Role.OWNER);
+    User owner = users.setTeamMembership(ana.id(), "t2", "o1", Role.MANAGER);
 
     // Then
     assertThat(owner.roleInTeam("o1", "t1")).isEqualTo(Role.EDITOR);
-    assertThat(owner.roleInTeam("o1", "t2")).isEqualTo(Role.OWNER);
+    assertThat(owner.roleInTeam("o1", "t2")).isEqualTo(Role.MANAGER);
     assertThat(owner.roleInTeam("o1", "t3")).isEqualTo(Role.VIEWER);
     assertThat(users.teamMembersOf("t2")).extracting(User::username).containsExactly("ana");
     assertThat(users.removeTeamMembership(ana.id(), "t2").inTeam("t2")).isFalse();

@@ -23,10 +23,11 @@ vi.mock('../state/AppContext', () => ({
     info: { version: '1', wiremockVersion: '3', authEnabled: true },
     session: { id: 'u1', username: 'demo', displayName: 'Demo', orgs },
     signOut,
-    canEdit: role === 'editor' || role === 'owner' || role === 'admin',
+    canEdit: role === 'editor' || role === 'manager' || role === 'admin',
     isAdmin,
     roleIn: () => role,
     teamsIn: () => teams,
+    writableTeams: () => (role === 'manager' || role === 'admin' ? teams : []),
     setCurrentOrg: vi.fn(),
   }),
 }));
@@ -83,7 +84,7 @@ describe('Layout', () => {
     expect(screen.getByText(/aren't a member of any organisation yet/)).toBeInTheDocument();
   });
 
-  it('shows no banner and offers new projects to editors', () => {
+  it('shows editors no banner and no new project button', () => {
     // Given
     role = 'editor';
 
@@ -92,8 +93,19 @@ describe('Layout', () => {
 
     // Then
     expect(screen.queryByText(/but not change anything/)).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'New project' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'New project' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Users' })).not.toBeInTheDocument();
+  });
+
+  it('offers new projects to team managers', () => {
+    // Given
+    role = 'manager';
+
+    // When
+    renderWithShell(<Layout />);
+
+    // Then
+    expect(screen.getByRole('button', { name: 'New project' })).toBeInTheDocument();
   });
 
   it('shows the administration links to admins', () => {

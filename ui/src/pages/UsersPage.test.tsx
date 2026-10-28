@@ -11,7 +11,7 @@ const ana: UserRecord = {
   id: 'u1', username: 'ana@contoso.com', displayName: 'Ana Tester', email: 'ana@contoso.com', source: 'azure',
   serverRole: 'none', groupServerRole: 'none', effectiveServerRole: 'none', disabled: false, hasPassword: false,
   lastLoginAt: new Date().toISOString(), memberships: [], groupMemberships: [{ orgId: 'o1', role: 'editor', orgName: 'QA' }],
-  teamMemberships: [{ teamId: 't1', orgId: 'o1', role: 'owner', teamName: 'Checkout', orgName: 'QA' }], groupTeamMemberships: [],
+  teamMemberships: [{ teamId: 't1', orgId: 'o1', role: 'manager', teamName: 'Checkout', orgName: 'QA' }], groupTeamMemberships: [],
 };
 vi.mock('../state/AppContext', () => ({
   useApp: () => ({ info: { authEnabled }, acceptToken, session: { id: 'me' }, refreshSession: vi.fn(), currentOrg: { id: 'o1' } }),
@@ -74,12 +74,12 @@ describe('UsersPage', () => {
     renderWithShell(<UsersPage />);
 
     // When
-    await userEvent.type(screen.getByLabelText('Username'), 'owner');
+    await userEvent.type(screen.getByLabelText('Username'), 'manager');
     await userEvent.type(screen.getByLabelText(/Password/), 'longenough');
     await userEvent.click(screen.getByRole('button', { name: 'Create admin and turn on sign-in' }));
 
     // Then
     await waitFor(() => expect(acceptToken).toHaveBeenCalledWith('tok'));
-    expect(created[0]).toMatchObject({ username: 'owner', serverRole: 'admin' });
+    expect(created[0]).toMatchObject({ username: 'manager', serverRole: 'admin' });
   });
 });

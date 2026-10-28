@@ -191,7 +191,7 @@ export function SsoPage() {
                     <option value="none">No role</option>
                     <option value="viewer">Viewer</option>
                     <option value="editor">Editor</option>
-                    <option value="owner">Owner</option>
+                    <option value="manager">Manager</option>
                   </select>
                 </label>
                 <label className="field">
@@ -252,7 +252,7 @@ export function SsoPage() {
                             <>
                               <option value="viewer">Viewer</option>
                               <option value="editor">Editor</option>
-                              <option value="owner">Owner</option>
+                              <option value="manager">Manager</option>
                             </>
                           ) : (
                             <>

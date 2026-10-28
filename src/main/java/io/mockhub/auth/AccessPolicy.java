@@ -66,6 +66,7 @@ public final class AccessPolicy {
       Optional<ProjectScope> scope = scopeOfProject.apply(project.group(1));
       if (scope.isEmpty()) return Decision.allow();
       Role role = p.roleInTeam(scope.get().orgId(), scope.get().teamId());
+      if (!read && project.group(2) == null) return need(role, Role.MANAGER, "change or delete this project");
       boolean askOnly = read || ASK_ONLY.contains(String.valueOf(project.group(2)));
       return need(role, askOnly ? Role.VIEWER : Role.EDITOR, askOnly ? "view this project" : "change this project");
     }
@@ -76,18 +77,18 @@ public final class AccessPolicy {
       if (read) return p.belongsTo(orgId) ? Decision.allow() : Decision.deny("You need to belong to this organisation to see its teams");
       boolean manageTeam = RequestMethod.PUT.equals(method) || String.valueOf(team.group(3)).startsWith("/members");
       Role role = manageTeam ? p.roleInTeam(orgId, team.group(2)) : p.roleIn(orgId);
-      return need(role, Role.OWNER, manageTeam ? "manage this team" : "delete teams");
+      return need(role, Role.MANAGER, manageTeam ? "manage this team" : "delete teams");
     }
 
     Matcher org = ORG.matcher(path);
     if (org.matches()) {
       String orgId = org.group(1);
       if (read) return p.belongsTo(orgId) ? Decision.allow() : Decision.deny("You need to belong to this organisation to see it");
-      return need(p.roleIn(orgId), Role.OWNER, "manage this organisation");
+      return need(p.roleIn(orgId), Role.MANAGER, "manage this organisation");
     }
 
-    if (path.equals("/users") && read) return need(p.highestRole(), Role.OWNER, "list users");
-    if (path.equals("/audit") && read) return need(p.highestRole(), Role.OWNER, "see the audit log");
+    if (path.equals("/users") && read) return need(p.highestRole(), Role.MANAGER, "list users");
+    if (path.equals("/audit") && read) return need(p.highestRole(), Role.MANAGER, "see the audit log");
     return Decision.deny("Only admins can do this");
   }
 

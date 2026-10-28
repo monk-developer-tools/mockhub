@@ -12,7 +12,7 @@ import { ExampleGrid } from './ExamplesPage';
 import { ProjectDialog } from './ProjectDialog';
 
 export function DashboardPage() {
-  const { orgProjects: allProjects, currentOrg, canEdit, info, refreshProjects, teamsIn } = useApp();
+  const { orgProjects: allProjects, currentOrg, canManage, info, refreshProjects, teamsIn } = useApp();
   const teams = teamsIn(currentOrg?.id);
   const [teamFilter, setTeamFilter] = useState('all');
   const projects = teamFilter === 'all' ? allProjects : allProjects.filter((p) => p.teamId === teamFilter);
@@ -44,7 +44,7 @@ export function DashboardPage() {
             or test at that URL instead of the real dependency.
           </p>
         </div>
-        {canEdit && (
+        {canManage && (
           <button className="btn primary" onClick={() => setCreating(true)}>
             <Plus size={16} /> New project
           </button>
@@ -60,7 +60,7 @@ export function DashboardPage() {
               Start empty, import an OpenAPI spec, WSDL or WireMock mappings, or install an example below to see how REST, SOAP,
               templating and stateful mocks look.
             </p>
-            {canEdit && (
+            {canManage && (
               <button className="btn primary" onClick={() => setCreating(true)}>
                 <Plus size={16} /> New project
               </button>

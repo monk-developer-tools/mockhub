@@ -14,8 +14,8 @@ export interface Access {
 
 export const NO_ACCESS: Access = { memberships: [], teamMemberships: [] };
 
-const ROLES: OrgRole[] = ['viewer', 'editor', 'owner'];
-const LABEL: Record<OrgRole, string> = { viewer: 'Viewer', editor: 'Editor', owner: 'Owner' };
+const ROLES: OrgRole[] = ['viewer', 'editor', 'manager'];
+const LABEL: Record<OrgRole, string> = { viewer: 'Viewer', editor: 'Editor', manager: 'Manager' };
 
 export function summarise(access: Access) {
   const teams = access.teamMemberships.length;

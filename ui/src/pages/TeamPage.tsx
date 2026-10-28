@@ -17,7 +17,7 @@ export const TEAM_ROLES: { value: OrgRole; label: string; hint: string }[] = ROL
 
 export function TeamPage() {
   const { teamId = '' } = useParams();
-  const { currentOrg, isOwner, isAdmin, session, projects, roleInTeam, refreshSession, refreshProjects } = useApp();
+  const { currentOrg, isManager, isAdmin, session, projects, roleInTeam, refreshSession, refreshProjects } = useApp();
   const toast = useToast();
   const navigate = useNavigate();
   const [team, setTeam] = useState<Team | null>(null);
@@ -30,8 +30,8 @@ export function TeamPage() {
   const [creating, setCreating] = useState(false);
 
   const orgId = currentOrg?.id ?? '';
-  const canManage = atLeast(roleInTeam(orgId, teamId), 'owner');
-  const canAddProjects = atLeast(roleInTeam(orgId, teamId), 'editor');
+  const canManage = atLeast(roleInTeam(orgId, teamId), 'manager');
+  const canAddProjects = atLeast(roleInTeam(orgId, teamId), 'manager');
 
   const load = useCallback(async () => {
     if (!orgId) return;
@@ -238,7 +238,7 @@ export function TeamPage() {
               </div>
             </form>
           )}
-          {isOwner && (
+          {isManager && (
             <div className="panel danger-zone">
               <div className="panel-head"><h2>Delete team</h2></div>
               <div className="panel-body stack">

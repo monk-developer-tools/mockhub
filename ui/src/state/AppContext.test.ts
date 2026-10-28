@@ -10,8 +10,8 @@ describe('AppContext helpers', () => {
 
   it('orders roles from none to admin', () => {
     // Then
-    expect(atLeast('owner', 'editor')).toBe(true);
-    expect(atLeast('admin', 'owner')).toBe(true);
+    expect(atLeast('manager', 'editor')).toBe(true);
+    expect(atLeast('admin', 'manager')).toBe(true);
     expect(atLeast('viewer', 'editor')).toBe(false);
     expect(atLeast(undefined, 'viewer')).toBe(false);
   });

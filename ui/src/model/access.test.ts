@@ -45,7 +45,7 @@ describe('access', () => {
   });
 
   it('starts editing from what the person has today', () => {
-    expect(wantedFrom({ orgRole: 'owner', teams: [] })).toEqual({ scope: 'org', teamIds: [], role: 'owner' });
+    expect(wantedFrom({ orgRole: 'manager', teams: [] })).toEqual({ scope: 'org', teamIds: [], role: 'manager' });
     expect(wantedFrom({ orgRole: '', teams: [{ id: 't1', role: 'viewer' }, { id: 't2', role: 'editor' }] })).toEqual({ scope: 'teams', teamIds: ['t1', 't2'], role: 'editor' });
     expect(wantedFrom({ orgRole: '', teams: [] }, ['t9'])).toEqual({ scope: 'teams', teamIds: ['t9'], role: 'editor' });
   });
@@ -62,7 +62,7 @@ describe('access', () => {
     expect(sentence(['Kim'], { scope: 'org', teamIds: [], role: 'viewer' }, 'Acme', {})).toBe('Kim will see every project in Acme, including teams added later.');
     expect(sentence(['Kim', 'Sam'], { scope: 'teams', teamIds: ['t1', 't2'], role: 'editor' }, 'Acme', { t1: 'Checkout', t2: 'Search' }))
       .toBe('Kim and Sam will change the projects of Checkout and Search. Other teams stay hidden.');
-    expect(sentence(['A', 'B', 'C'], { scope: 'org', teamIds: [], role: 'owner' }, 'Acme', {}))
+    expect(sentence(['A', 'B', 'C'], { scope: 'org', teamIds: [], role: 'manager' }, 'Acme', {}))
       .toBe('3 people will change every project in Acme, add people and change settings, including teams added later.');
     expect(sentence(['Kim'], { scope: 'teams', teamIds: [], role: 'editor' }, 'Acme', {})).toBe('Choose at least one team.');
   });
@@ -81,6 +81,6 @@ describe('access', () => {
 
   it('joins names and picks the highest role', () => {
     expect(listOf(['a', 'b', 'c'])).toBe('a, b and c');
-    expect(highest(['viewer', 'owner', 'editor'])).toBe('owner');
+    expect(highest(['viewer', 'manager', 'editor'])).toBe('manager');
   });
 });

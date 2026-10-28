@@ -1,4 +1,5 @@
-import { Key, TreeStructure } from '@phosphor-icons/react';
+import { Key, Lock, TreeStructure } from '@phosphor-icons/react';
+import { API_KEY_PLACEHOLDER } from '../../model/sampleRequest';
 import { useEffect, useState } from 'react';
 import { CopyButton } from '../../components/CopyButton';
 import { useNavigate } from 'react-router-dom';
@@ -11,7 +12,7 @@ import { useProject } from './ProjectPage';
 
 export function ProjectSettingsTab() {
   const { project, reloadProject } = useProject();
-  const { canEdit, refreshProjects } = useApp();
+  const { canManage, refreshProjects } = useApp();
   const toast = useToast();
   const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
@@ -34,7 +35,7 @@ export function ProjectSettingsTab() {
         <div className="section">
           <h3>
             Details
-            {canEdit && <button className="btn small" onClick={() => setEditing(true)}>Edit</button>}
+            {canManage && <button className="btn small" onClick={() => setEditing(true)}>Edit</button>}
           </h3>
           <table className="kv-table">
             <tbody>
@@ -56,7 +57,7 @@ export function ProjectSettingsTab() {
       </div>
       <RootPanel />
       <ApiKeyPanel />
-      {canEdit && (
+      {canManage && (
         <div className="panel">
           <div className="section">
             <h3>Delete project</h3>
@@ -91,7 +92,7 @@ export function ProjectSettingsTab() {
 
 function RootPanel() {
   const { project, reloadProject } = useProject();
-  const { canEdit, refreshProjects } = useApp();
+  const { canManage, refreshProjects } = useApp();
   const toast = useToast();
   const [busy, setBusy] = useState(false);
   const root = Boolean(project.root);
@@ -116,7 +117,7 @@ function RootPanel() {
         <h3>
           <span><TreeStructure size={15} weight="duotone" style={{ verticalAlign: -2, marginRight: 6 }} />Answer at the root</span>
           <label className="switch">
-            <input type="checkbox" role="switch" checked={root} disabled={!canEdit || busy} aria-label="Answer at the root" onChange={(e) => toggle(e.target.checked)} />
+            <input type="checkbox" role="switch" checked={root} disabled={!canManage || busy} aria-label="Answer at the root" onChange={(e) => toggle(e.target.checked)} />
           </label>
         </h3>
         <p className="muted small">
@@ -139,7 +140,7 @@ export function randomKey() {
 
 function ApiKeyPanel() {
   const { project, reloadProject } = useProject();
-  const { canEdit } = useApp();
+  const { isAdmin } = useApp();
   const toast = useToast();
   const current = project.apiKey ?? null;
   const [on, setOn] = useState(Boolean(current));
@@ -168,7 +169,8 @@ function ApiKeyPanel() {
     }
   };
 
-  const example = `curl ${project.mockUrl}/… -H '${header || 'X-API-Key'}: ${value || 'your-key'}'`;
+  const shownKey = isAdmin ? value || 'your-key' : API_KEY_PLACEHOLDER;
+  const example = `curl ${project.mockUrl}/… -H '${header || 'X-API-Key'}: ${shownKey}'`;
 
   return (
     <div className="panel">
@@ -176,7 +178,7 @@ function ApiKeyPanel() {
         <h3>
           <span><Key size={15} weight="duotone" style={{ verticalAlign: -2, marginRight: 6 }} />Require an API key</span>
           <label className="switch">
-            <input type="checkbox" role="switch" checked={on} disabled={!canEdit} aria-label="Require an API key"
+            <input type="checkbox" role="switch" checked={on} disabled={!isAdmin} aria-label="Require an API key"
               onChange={(e) => {
                 setOn(e.target.checked);
                 if (e.target.checked && !value) setValue(randomKey());
@@ -185,22 +187,28 @@ function ApiKeyPanel() {
         </h3>
         <p className="muted small" style={{ marginBottom: 10 }}>
           Every call to {project.root ? 'this project' : project.basePath} must send this header, like the real service would. Calls without it get a 401
-          (a SOAP fault for SOAP calls). <span className="mono" style={{ whiteSpace: 'nowrap' }}>?wsdl</span> stays open. Try it, code snippets and Postman / Bruno
-          exports include the key automatically.
+          (a SOAP fault for SOAP calls). <span className="mono" style={{ whiteSpace: 'nowrap' }}>?wsdl</span> stays open.
+          {isAdmin
+            ? ' Try it, code snippets and Postman / Bruno exports include the key automatically.'
+            : ` Only admins can see or change the key. Try it, code snippets and exports use the ${API_KEY_PLACEHOLDER} placeholder instead.`}
         </p>
         {on && (
           <div className="stack">
             <div className="grid two">
               <label className="field">
                 <span>Header</span>
-                <input type="text" className="mono" value={header} disabled={!canEdit} onChange={(e) => setHeader(e.target.value)} />
+                <input type="text" className="mono" value={header} disabled={!isAdmin} onChange={(e) => setHeader(e.target.value)} />
               </label>
               <label className="field">
                 <span>Key</span>
-                <span className="input-suffix">
-                  <input type="text" className="mono" style={{ width: '100%' }} value={value} disabled={!canEdit} onChange={(e) => setValue(e.target.value)} />
-                  {canEdit && <button type="button" className="btn small" onClick={() => setValue(randomKey())}>New</button>}
-                </span>
+                {isAdmin ? (
+                  <span className="input-suffix">
+                    <input type="text" className="mono" style={{ width: '100%' }} value={value} onChange={(e) => setValue(e.target.value)} />
+                    <button type="button" className="btn small" onClick={() => setValue(randomKey())}>New</button>
+                  </span>
+                ) : (
+                  <span className="secret-set"><Lock size={13} weight="bold" /> Set · ask an admin for it</span>
+                )}
               </label>
             </div>
             <div className="copy-field">
@@ -209,7 +217,7 @@ function ApiKeyPanel() {
             </div>
           </div>
         )}
-        {canEdit && changed && (
+        {isAdmin && changed && (
           <div className="btn-row" style={{ marginTop: 12 }}>
             <button className="btn primary" disabled={busy || (on && !value.trim())} onClick={save}>{busy ? 'Saving…' : 'Save'}</button>
           </div>

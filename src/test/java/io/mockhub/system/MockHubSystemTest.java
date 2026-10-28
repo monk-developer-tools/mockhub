@@ -78,7 +78,7 @@ class MockHubSystemTest {
       // Given
       orgId = json(send(hub, "POST", API + "/orgs", "{\"name\":\"Payments\"}")).get("id").asText();
       String userId = json(send(hub, "POST", API + "/users", "{\"username\":\"ana\",\"password\":\"longenough\"}")).get("id").asText();
-      send(hub, "PUT", API + "/orgs/" + orgId + "/members/" + userId, "{\"role\":\"editor\"}");
+      send(hub, "PUT", API + "/orgs/" + orgId + "/members/" + userId, "{\"role\":\"owner\"}");
       send(hub, "PUT", API + "/sso", "{\"tenantId\":\"contoso.onmicrosoft.com\",\"clientId\":\"abc\",\"clientSecret\":\"s\",\"enabled\":true}");
 
       // When
@@ -97,6 +97,7 @@ class MockHubSystemTest {
       // Then
       assertThat(me.get("username").asText()).isEqualTo("ana");
       assertThat(me.at("/orgs/0/id").asText()).isEqualTo(orgId);
+      assertThat(me.at("/orgs/0/role").asText()).isEqualTo("manager");
       assertThat(json(sendAs(restarted, "Bearer " + token, "GET", API + "/projects", null))).hasSize(1);
       assertThat(info.at("/sso/enabled").asBoolean()).isTrue();
       HttpResponse<String> start = sendAnonymously(restarted, "GET", API + "/auth/sso/azure/start", null);

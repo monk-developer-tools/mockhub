@@ -12,7 +12,7 @@ export function SaveAsStubDialog({ entry, onClose }: { entry: PlaygroundEntry; o
   const { orgProjects, roleInTeam, refreshProjects } = useApp();
   const toast = useToast();
   const navigate = useNavigate();
-  const writable = orgProjects.filter((p) => ['editor', 'owner', 'admin'].includes(roleInTeam(p.orgId, p.teamId)));
+  const writable = orgProjects.filter((p) => ['editor', 'manager', 'admin'].includes(roleInTeam(p.orgId, p.teamId)));
   const guessed = projectFor(entry.request.url, window.location.origin, writable);
   const [projectId, setProjectId] = useState(guessed?.id ?? writable[0]?.id ?? '');
   const project = writable.find((p) => p.id === projectId);
@@ -51,7 +51,7 @@ export function SaveAsStubDialog({ entry, onClose }: { entry: PlaygroundEntry; o
       }
     >
       {writable.length === 0 ? (
-        <p className="muted">You need the editor role in a project to save stubs. Ask a team owner to add you.</p>
+        <p className="muted">You need the editor role in a project to save stubs. Ask a team manager to add you.</p>
       ) : (
         <div className="stack">
           <label className="field">

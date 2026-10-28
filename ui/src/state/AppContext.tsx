@@ -3,7 +3,7 @@ import { api, credentials, setUnauthorizedHandler } from '../api/client';
 import type { AiStatus, AuthInfo, OrgAccess, Project, Role, ServerInfo, Session, TeamAccess } from '../api/types';
 
 const ORG_KEY = 'mockhub.org';
-const RANK: Record<Role, number> = { none: 0, viewer: 1, editor: 2, owner: 3, admin: 4 };
+const RANK: Record<Role, number> = { none: 0, viewer: 1, editor: 2, manager: 3, admin: 4 };
 
 export function atLeast(role: Role | undefined, needed: Role) {
   return RANK[role ?? 'none'] >= RANK[needed];
@@ -27,7 +27,8 @@ interface AppState {
   needsLogin: boolean;
   loginError: string;
   canEdit: boolean;
-  isOwner: boolean;
+  canManage: boolean;
+  isManager: boolean;
   isAdmin: boolean;
   roleIn: (orgId: string | undefined) => Role;
   roleInTeam: (orgId: string | undefined, teamId: string | undefined) => Role;
@@ -186,7 +187,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   );
 
   const writableTeams = useCallback(
-    (orgId: string | undefined) => teamsIn(orgId).filter((t) => atLeast(roleInTeam(orgId, t.id), 'editor')),
+    (orgId: string | undefined) => teamsIn(orgId).filter((t) => atLeast(roleInTeam(orgId, t.id), 'manager')),
     [teamsIn, roleInTeam],
   );
 
@@ -210,7 +211,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     needsLogin,
     loginError,
     canEdit: atLeast(role, 'editor'),
-    isOwner: atLeast(orgRole, 'owner'),
+    canManage: atLeast(role, 'manager'),
+    isManager: atLeast(orgRole, 'manager'),
     isAdmin: Boolean(session?.isAdmin),
     roleIn,
     roleInTeam,

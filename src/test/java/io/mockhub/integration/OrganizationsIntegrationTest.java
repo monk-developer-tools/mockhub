@@ -65,7 +65,7 @@ class OrganizationsIntegrationTest {
     assertThat(added.status()).isEqualTo(200);
     JsonNode me = ana.get(API + "/auth/me").json();
     assertThat(me.get("orgs")).hasSize(1);
-    assertThat(me.at("/orgs/0/role").asText()).isEqualTo("owner");
+    assertThat(me.at("/orgs/0/role").asText()).isEqualTo("manager");
     assertThat(containsName(ana.get(API + "/projects").json(), "Cards")).isTrue();
     assertThat(containsName(ana.get(API + "/projects").json(), "Legacy")).isFalse();
     assertThat(qa.post(API + "/projects/" + paymentsProject + "/stubs", "{\"request\":{\"urlPath\":\"/x\"}}").status()).isEqualTo(201);

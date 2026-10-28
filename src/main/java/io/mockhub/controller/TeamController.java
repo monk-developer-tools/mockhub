@@ -91,8 +91,8 @@ public final class TeamController implements ApiController {
 
   private void guardSelfDemotion(Ctx ctx, Team team, Role newRole) {
     Principal p = ctx.principal();
-    if (p.isAdmin() || !p.id().equals(ctx.path("userId")) || newRole.atLeast(Role.OWNER)) return;
-    if (p.roleIn(team.orgId()).atLeast(Role.OWNER)) return;
+    if (p.isAdmin() || !p.id().equals(ctx.path("userId")) || newRole.atLeast(Role.MANAGER)) return;
+    if (p.roleIn(team.orgId()).atLeast(Role.MANAGER)) return;
     throw ApiException.badRequest("You can't remove your own owner role in this team. Ask another owner.");
   }
 

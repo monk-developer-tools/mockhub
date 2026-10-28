@@ -8,7 +8,7 @@ import { useToast } from '../components/Toasts';
 import { useApp } from '../state/AppContext';
 
 export function ExampleGrid({ compact }: { compact?: boolean }) {
-  const { canEdit, refreshProjects, currentOrg } = useApp();
+  const { canManage, refreshProjects, currentOrg } = useApp();
   const toast = useToast();
   const navigate = useNavigate();
   const [examples, setExamples] = useState<Example[] | null>(null);
@@ -44,7 +44,7 @@ export function ExampleGrid({ compact }: { compact?: boolean }) {
             ))}
           </div>
           <p>{ex.description}</p>
-          {canEdit && (
+          {canManage && (
             <div>
               <button className="btn small" onClick={() => install(ex)} disabled={installing !== null}>
                 <DownloadSimple size={14} /> {installing === ex.id ? 'Installing…' : 'Install as project'}

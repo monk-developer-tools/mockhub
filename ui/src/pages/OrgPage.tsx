@@ -21,7 +21,7 @@ const plural = (n: number, word: string, many = `${word}s`) => `${n} ${n === 1 ?
 type Tab = 'teams' | 'people' | 'settings';
 
 export function OrgPage() {
-  const { currentOrg, isOwner, isAdmin, orgs, canEdit, refreshSession, refreshProjects } = useApp();
+  const { currentOrg, isManager, isAdmin, orgs, canEdit, refreshSession, refreshProjects } = useApp();
   const toast = useToast();
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
@@ -38,7 +38,7 @@ export function OrgPage() {
   const [query, setQuery] = useState('');
 
   const requested = params.get('tab') as Tab | null;
-  const tab: Tab = requested === 'people' || (requested === 'settings' && isOwner) ? requested : 'teams';
+  const tab: Tab = requested === 'people' || (requested === 'settings' && isManager) ? requested : 'teams';
   const show = (next: Tab) => setParams(next === 'teams' ? {} : { tab: next }, { replace: true });
 
   const orgId = currentOrg?.id;
@@ -63,8 +63,8 @@ export function OrgPage() {
   }, [load]);
 
   useEffect(() => {
-    if (isOwner) api.users().then(setDirectory).catch(() => setDirectory([]));
-  }, [isOwner]);
+    if (isManager) api.users().then(setDirectory).catch(() => setDirectory([]));
+  }, [isManager]);
 
   const people = useMemo(() => (members ?? []).filter((m) => m.role || m.groupRole || m.teams.some((t) => t.role)), [members]);
   const filtered = useMemo(() => {
@@ -77,7 +77,7 @@ export function OrgPage() {
       <div className="page">
         <div className="panel empty">
           <h2>No organisation yet</h2>
-          <p>Ask an admin or an organisation owner to add you to one.</p>
+          <p>Ask an admin or an organisation manager to add you to one.</p>
         </div>
       </div>
     );
@@ -127,7 +127,7 @@ export function OrgPage() {
         </div>
         <div className="btn-row">
           <RoleBadge role={isAdmin ? 'admin' : currentOrg.role} />
-          {isOwner && <button className="btn primary" onClick={() => setAdding(true)}><UserPlus size={15} /> Add people</button>}
+          {isManager && <button className="btn primary" onClick={() => setAdding(true)}><UserPlus size={15} /> Add people</button>}
         </div>
       </div>
 
@@ -171,7 +171,7 @@ export function OrgPage() {
           <button role="tab" aria-selected={tab === 'people'} onClick={() => show('people')}>
             <UserPlus size={15} /> People <span className="count">{people.length}</span>
           </button>
-          {isOwner && (
+          {isManager && (
             <button role="tab" aria-selected={tab === 'settings'} onClick={() => show('settings')}>
               <GearSix size={15} /> Settings
             </button>
@@ -198,7 +198,7 @@ export function OrgPage() {
                     </span>
                   </Link>
                 ))}
-                {isOwner && (
+                {isManager && (
                   <button type="button" className="team-card add" onClick={() => setCreatingTeam(true)}>
                     <Plus size={20} />
                     <strong>New team</strong>
@@ -223,7 +223,7 @@ export function OrgPage() {
                 <MagnifyingGlass size={14} />
                 <input type="search" aria-label="Search people" placeholder="Search by name or e-mail" value={query} onChange={(e) => setQuery(e.target.value)} />
               </div>
-              {isOwner && <button className="btn" onClick={() => setAdding(true)}><UserPlus size={14} /> Add people</button>}
+              {isManager && <button className="btn" onClick={() => setAdding(true)}><UserPlus size={14} /> Add people</button>}
             </div>
             {members === null ? (
               <div className="panel-body"><Skeleton rows={3} label="Loading people" /></div>
@@ -233,7 +233,7 @@ export function OrgPage() {
                   <tr>
                     <th>Person</th>
                     <th>Where and what they can do</th>
-                    {isOwner && <th><span className="sr-only">Actions</span></th>}
+                    {isManager && <th><span className="sr-only">Actions</span></th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -258,7 +258,7 @@ export function OrgPage() {
                           ))}
                         </span>
                       </td>
-                      {isOwner && (
+                      {isManager && (
                         <td className="actions">
                           <span className="btn-row">
                             <button className="btn small" onClick={() => setEditingMember(m)} aria-label={`Change access for ${m.username}`}>Change access</button>
@@ -283,7 +283,7 @@ export function OrgPage() {
           </>
         )}
 
-        {tab === 'settings' && isOwner && (
+        {tab === 'settings' && isManager && (
           <div className="panel-body stack">
             <OrgSettings org={org} orgId={currentOrg.id} onSaved={async () => { await refreshSession(); load(); }} />
             <div className="callout small">
@@ -308,7 +308,7 @@ export function OrgPage() {
           orgName={currentOrg.name}
           teams={teams}
           directory={directory}
-          canPickOrg={isOwner}
+          canPickOrg={isManager}
           canCreateUsers={isAdmin}
           member={editingMember ?? undefined}
           excludeIds={people.map((p) => p.id)}

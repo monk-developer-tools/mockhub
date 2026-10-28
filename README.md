@@ -125,7 +125,7 @@ screenshots, and the [live demo](https://mockhub.devops-monk.com/__admin/mockhub
 - **Turn stubs on and off, and see what's used.** Pause a stub without deleting it. The stub list shows how many
   calls each stub answered and when it was last called.
 - **Random failures.** Make a share of calls fail (say 10% with a 503, or a connection reset) to test retries.
-- **API keys.** Require a header such as `X-API-Key` on every call to a project, like the real service would.
+- **API keys.** Require a header such as `X-API-Key` on every call to a project, like the real service would. Only admins see or change the key.
 - **Live request log** per project, with near misses for unmatched requests and *create stub from request*.
 - **CRUD resources with a data store.** One click gives you `/customers` with list (filter, sort, page), read,
   create, replace, patch and delete, backed by real stored records. A **Data** tab shows and edits the records, and
@@ -144,7 +144,7 @@ screenshots, and the [live demo](https://mockhub.devops-monk.com/__admin/mockhub
   need in plain English or paste a spec. The assistant stages stubs, and you review each change as a diff before
   applying it. *Generate with AI* in the editor writes a single response body from a description.
 - **Organisations, teams and people.** Organisations hold teams, and teams own projects. People get a role per team
-  or across the whole organisation, and see only their teams' projects. Owners add people as viewers, editors or owners,
+  or across the whole organisation, and see only their teams' projects. Managers add people as viewers, editors or managers,
   and each person sees only their organisations.
 - **Users and single sign-on.** Create users in the UI, or let people sign in with **Microsoft Entra ID** (Azure AD).
   Entra groups and app roles can map to organisation roles. Mock endpoints always stay open.
@@ -201,15 +201,21 @@ MockHub has three levels: **organisation › teams › people**.
 - **Organisations** group everything. On first start, MockHub creates one called *Default*. Admins create more from
   the organisation switcher at the top of the sidebar.
 - **Teams** live inside an organisation and own its projects. Every organisation has a *General* team; projects from
-  before teams existed move there on startup. Owners create more teams under **Teams & members**.
+  before teams existed move there on startup. Organisation managers create more teams under **Teams & members**.
 - **People** get a role per team, an organisation-wide role that applies to every team, or both. The higher role
   wins. Team members only see their own teams' projects.
 
 | Role | In a team | Organisation-wide |
 |---|---|---|
 | viewer | see the team's projects, stubs and request logs, and download exports | the same, in every team |
-| editor | also create, edit and delete the team's projects and stubs, import, and record | the same, in every team |
-| owner | also manage the team's members and settings | also create and delete teams, manage members and the organisation |
+| editor | also add, change and delete stubs, import, record, and edit data and scenarios | the same, in every team |
+| manager | also create, rename, move and delete projects, and manage the team's members | also create and delete teams, manage members and the organisation |
+| admin (server role) | everything | also create organisations, and see and change every secret |
+
+**Secrets stay with admins.** Only admins create organisations, see or change a project's API key, and configure the
+AI assistant, single sign-on and backups. Everyone else sees *X-API-Key · set*; Try it, code snippets and Postman /
+Bruno exports use a `{{apiKey}}` placeholder instead of the key. Existing *owner* memberships and SSO mappings become
+*manager* automatically.
 
 A team can only be deleted once its projects are moved or deleted. Mock URLs don't change when a project moves between
 teams or organisations, and base paths stay unique across the server. Admins set organisation and team roles for

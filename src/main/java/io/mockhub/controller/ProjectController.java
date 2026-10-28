@@ -3,6 +3,8 @@ package io.mockhub.controller;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.mockhub.api.ApiRouter;
+import io.mockhub.api.Ctx;
+import io.mockhub.api.ApiException;
 import io.mockhub.api.Jsons;
 import io.mockhub.api.Response;
 import io.mockhub.auth.Principal;
@@ -39,6 +41,7 @@ public final class ProjectController implements ApiController {
     });
     r.post("/projects", ctx -> {
       ObjectNode body = (ObjectNode) ctx.json();
+      requireAdminForApiKey(ctx, body);
       Team team = teamChoice.writable(ctx.principal(), body.path("orgId").asText(""), body.path("teamId").asText(""));
       body.put("orgId", team.orgId()).put("teamId", team.id());
       return Response.json(201, views.view(ctx, projects.create(body)));
@@ -46,6 +49,7 @@ public final class ProjectController implements ApiController {
     r.get("/projects/{id}", ctx -> views.view(ctx, projects.get(ctx.path("id"))));
     r.put("/projects/{id}", ctx -> {
       ObjectNode body = (ObjectNode) ctx.json();
+      requireAdminForApiKey(ctx, body);
       Project current = projects.get(ctx.path("id"));
       String targetTeam = body.path("teamId").asText("");
       String targetOrg = body.path("orgId").asText("");
@@ -63,5 +67,9 @@ public final class ProjectController implements ApiController {
       projects.delete(ctx.path("id"));
       return null;
     });
+  }
+
+  private static void requireAdminForApiKey(Ctx ctx, ObjectNode body) {
+    if (body.has("apiKey") && !ctx.principal().isAdmin()) throw new ApiException(403, "Only admins can set or change a project's API key");
   }
 }

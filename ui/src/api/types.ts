@@ -22,7 +22,8 @@ export interface Project {
 
 export interface ApiKeyRule {
   header: string;
-  value: string;
+  value?: string;
+  set?: boolean;
 }
 
 export interface StubUsage {
@@ -45,7 +46,7 @@ export interface ServerInfo {
 }
 
 export type ServerRole = 'none' | 'viewer' | 'editor' | 'admin';
-export type OrgRole = 'viewer' | 'editor' | 'owner';
+export type OrgRole = 'viewer' | 'editor' | 'manager';
 export type Role = ServerRole | OrgRole;
 export type UserSource = 'env' | 'local' | 'azure';
 

@@ -3,7 +3,7 @@ import type { AuditEntry, Session } from '../api/types';
 export function canSeeAuditLog(session: Session | null | undefined): boolean {
   if (!session) return false;
   if (session.isAdmin) return true;
-  return session.orgs.some((o) => o.role === 'owner' || o.teams.some((t) => t.member && t.role === 'owner'));
+  return session.orgs.some((o) => o.role === 'manager' || o.teams.some((t) => t.member && t.role === 'manager'));
 }
 
 export function whatHappened(e: AuditEntry): string {

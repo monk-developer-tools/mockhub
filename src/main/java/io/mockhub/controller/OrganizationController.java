@@ -87,7 +87,7 @@ public final class OrganizationController implements ApiController {
 
   private void guardSelfDemotion(Ctx ctx, String orgId, Role newRole) {
     Principal p = ctx.principal();
-    if (p.isAdmin() || !p.id().equals(ctx.path("userId")) || newRole.atLeast(Role.OWNER)) return;
+    if (p.isAdmin() || !p.id().equals(ctx.path("userId")) || newRole.atLeast(Role.MANAGER)) return;
     throw ApiException.badRequest("You can't remove your own owner role. Ask another owner or an admin.");
   }
 

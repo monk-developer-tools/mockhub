@@ -47,7 +47,7 @@ public final class AuditController implements ApiController {
 
   private static boolean canManage(Principal p, AuditEntry e) {
     if (e.orgId() == null) return false;
-    if (p.can(e.orgId(), Role.OWNER)) return true;
-    return e.teamId() != null && p.canInTeam(e.orgId(), e.teamId(), Role.OWNER);
+    if (p.can(e.orgId(), Role.MANAGER)) return true;
+    return e.teamId() != null && p.canInTeam(e.orgId(), e.teamId(), Role.MANAGER);
   }
 }

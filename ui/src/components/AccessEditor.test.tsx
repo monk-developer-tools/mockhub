@@ -21,10 +21,10 @@ describe('AccessEditor', () => {
 
     // When
     await userEvent.selectOptions(screen.getByLabelText('Organisation-wide role in Payments'), 'viewer');
-    await userEvent.selectOptions(screen.getByLabelText('Role in team Checkout'), 'owner');
+    await userEvent.selectOptions(screen.getByLabelText('Role in team Checkout'), 'manager');
 
     // Then
-    expect(last).toEqual({ memberships: [{ orgId: 'o1', role: 'viewer' }], teamMemberships: [{ teamId: 't1', role: 'owner' }] });
+    expect(last).toEqual({ memberships: [{ orgId: 'o1', role: 'viewer' }], teamMemberships: [{ teamId: 't1', role: 'manager' }] });
     expect(screen.getByLabelText('Role in team Search')).toHaveTextContent('Viewer through Payments');
     expect(summarise(last)).toBe('1 organisation-wide role and 1 team role');
   });

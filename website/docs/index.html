@@ -226,7 +226,7 @@
       <div class="code"><pre>"metadata": { "mockhub": { "errorRate": { "percent": 10, "status": 503 } } }</pre></div>
 
       <h2 id="api-keys">API keys</h2>
-      <p>In a project's <strong>Settings</strong>, turn on <strong>Require an API key</strong> and choose the header (default <code>X-API-Key</code>) and the key. Every call under the project's base path must then send it. Calls without the right key get a <code>401</code>: JSON for REST, a SOAP 1.1 or 1.2 fault for SOAP. <code>OPTIONS</code> preflights and <code>?wsdl</code> stay open. Try it, code snippets and the Postman and Bruno exports send the key automatically. Anyone who can see the project can see the key: it's a mock credential, not a secret.</p>
+      <p>In a project's <strong>Settings</strong>, turn on <strong>Require an API key</strong> and choose the header (default <code>X-API-Key</code>) and the key. Every call under the project's base path must then send it. Calls without the right key get a <code>401</code>: JSON for REST, a SOAP 1.1 or 1.2 fault for SOAP. <code>OPTIONS</code> preflights and <code>?wsdl</code> stay open. Only admins can see, set or change the key. For admins, Try it, code snippets and the Postman and Bruno exports send the key automatically; everyone else sees <em>X-API-Key · set</em> and gets a <code>{{apiKey}}</code> placeholder to fill in with the key an admin shares.</p>
 
       <h2 id="stub-controls">On, off &amp; usage</h2>
       <p>Flip the switch at the top of a stub to turn it <strong>off</strong>. Requests then skip it as if it were deleted, but it stays saved, in exports and in backups. The number next to each stub in the list, and the line under the switch, show how many calls it answered and when, counted from the request log. Clearing the log or restarting resets the counts.</p>
@@ -293,13 +293,15 @@
         <thead><tr><th>Role</th><th>In a team</th><th>Organisation-wide</th></tr></thead>
         <tbody>
           <tr><td>viewer</td><td>see the team's projects, stubs and request logs, and download exports</td><td>the same, in every team</td></tr>
-          <tr><td>editor</td><td>also create, edit and delete the team's projects and stubs, import, record</td><td>the same, in every team</td></tr>
-          <tr><td>owner</td><td>also manage the team's members and settings</td><td>also create and delete teams, manage members and the organisation</td></tr>
+          <tr><td>editor</td><td>also add, change and delete stubs, import, record, and edit data and scenarios</td><td>the same, in every team</td></tr>
+          <tr><td>manager</td><td>also create, rename, move and delete projects, and manage the team's members</td><td>also create and delete teams, manage members and the organisation</td></tr>
+          <tr><td>admin</td><td colspan="2">a server role: everything, plus creating organisations and seeing or changing every secret</td></tr>
         </tbody>
       </table>
       <p>Only members see a team's projects. Someone in the Checkout team can't open, change or delete the Search team's projects, stubs, request log or activity, and the admin API answers <code>403</code>. Mock URLs are different: apps and tests call them without signing in, so turn on an <a href="#api-keys">API key</a> when a project's mocks must stay private.</p>
+      <p><strong>Secrets stay with admins.</strong> Only admins create organisations, see or change a project's API key, and configure the AI assistant, single sign-on and backups. Managers and editors see <em>X-API-Key · set</em>; Try it, code snippets and Postman / Bruno exports use a <code>{{apiKey}}</code> placeholder, which Postman and Bruno mark as a secret variable to fill in. Existing <em>owner</em> memberships and SSO mappings become <em>manager</em> automatically.</p>
       <h3 id="audit">Audit log</h3>
-      <p>MockHub records every change: who created, changed, turned off or deleted a project, stub, team, person or setting, and when. A deleted stub keeps the name it had, so you can still tell what was removed. Open a project's <strong>Activity</strong> tab to see its history. Admins see every change under <strong>Audit log</strong>; organisation and team owners see the changes in what they own. Failed attempts, such as a refused delete, aren't recorded.</p>
+      <p>MockHub records every change: who created, changed, turned off or deleted a project, stub, team, person or setting, and when. A deleted stub keeps the name it had, so you can still tell what was removed. Open a project's <strong>Activity</strong> tab to see its history. Admins see every change under <strong>Audit log</strong>; organisation and team managers see the changes in what they own. Failed attempts, such as a refused delete, aren't recorded.</p>
       <p>Entries are kept for 90 days, then removed from disk to save space. Change this with <code>MOCKHUB_AUDIT_RETENTION_DAYS</code>. Each entry is also printed to standard output as one line, so your log platform keeps its own copy:</p>
       <div class="code"><pre>2026-03-10T09:14:02.511Z INFO audit - Sam Patel: Deleted stub “GET /orders” {"actor":"Sam Patel","action":"deleted","target":"stub",...}</pre></div>
       <p>Each user also has a <strong>server role</strong>. <em>Viewer everywhere</em> and <em>editor everywhere</em> apply to every organisation. <em>Admin</em> also manages users, single sign-on, backups and the native WireMock API. Changing a password or disabling a user signs out that user's other sessions.</p>

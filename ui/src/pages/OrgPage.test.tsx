@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
 import { renderWithShell } from '../test/render';
 
-let isOwner = true;
+let isManager = true;
 const createTeam = vi.fn((_org: string, body: { name: string }) => Promise.resolve({ id: 't3', name: body.name }));
 const setMember = vi.fn((..._a: unknown[]) => Promise.resolve({}));
 const removeMember = vi.fn((..._a: unknown[]) => Promise.resolve());
@@ -11,10 +11,10 @@ const setTeamMember = vi.fn((..._a: unknown[]) => Promise.resolve({}));
 const removeTeamMember = vi.fn((..._a: unknown[]) => Promise.resolve());
 vi.mock('../state/AppContext', () => ({
   useApp: () => ({
-    currentOrg: { id: 'o1', name: 'Payments', role: isOwner ? 'owner' : 'viewer' },
-    isOwner,
+    currentOrg: { id: 'o1', name: 'Payments', role: isManager ? 'manager' : 'viewer' },
+    isManager,
     isAdmin: false,
-    canEdit: isOwner,
+    canEdit: isManager,
     session: { id: 'me' },
     orgs: [{ id: 'o1' }, { id: 'o2' }],
     refreshSession: vi.fn(),
@@ -25,12 +25,12 @@ vi.mock('../api/client', () => ({
   api: {
     orgs: () => Promise.resolve([{ id: 'o1', name: 'Payments', description: '', projectCount: 2, memberCount: 2, teamCount: 2 }]),
     teams: () => Promise.resolve([
-      { id: 't1', orgId: 'o1', name: 'General', slug: 'general', description: '', projectCount: 1, memberCount: 0, role: 'owner' },
-      { id: 't2', orgId: 'o1', name: 'Checkout', slug: 'checkout', description: 'Cart pages', projectCount: 1, memberCount: 3, role: 'owner' },
+      { id: 't1', orgId: 'o1', name: 'General', slug: 'general', description: '', projectCount: 1, memberCount: 0, role: 'manager' },
+      { id: 't2', orgId: 'o1', name: 'Checkout', slug: 'checkout', description: 'Cart pages', projectCount: 1, memberCount: 3, role: 'manager' },
     ]),
     createTeam: (org: string, body: { name: string }) => createTeam(org, body),
     members: () => Promise.resolve([
-      { id: 'me', username: 'me', displayName: 'Me', email: '', source: 'local', role: 'owner', groupRole: '', effectiveRole: 'owner', disabled: false, teams: [] },
+      { id: 'me', username: 'me', displayName: 'Me', email: '', source: 'local', role: 'manager', groupRole: '', effectiveRole: 'manager', disabled: false, teams: [] },
       { id: 'u3', username: 'kim', displayName: 'Kim Lee', email: 'kim@x.com', source: 'local', role: '', groupRole: '', effectiveRole: 'editor', disabled: false,
         teams: [{ id: 't2', name: 'Checkout', role: 'editor' }] },
     ]),
@@ -51,7 +51,7 @@ const { OrgPage } = await import('./OrgPage');
 describe('OrgPage', () => {
   beforeEach(() => {
     [setMember, removeMember, setTeamMember, removeTeamMember].forEach((f) => f.mockClear());
-    isOwner = true;
+    isManager = true;
   });
 
   it('explains how organisations, teams and projects fit together', async () => {
@@ -118,7 +118,7 @@ describe('OrgPage', () => {
     expect(removeTeamMember).toHaveBeenCalledWith('o1', 't2', 'u3');
   });
 
-  it('lists teams as cards and lets owners create one', async () => {
+  it('lists teams as cards and lets managers create one', async () => {
     // Given
     renderWithShell(<OrgPage />);
     expect(await screen.findByRole('link', { name: /Checkout/ })).toHaveAttribute('href', '/org/teams/t2');
@@ -134,7 +134,7 @@ describe('OrgPage', () => {
 
   it('shows viewers the people without management controls', async () => {
     // Given
-    isOwner = false;
+    isManager = false;
 
     // When
     renderWithShell(<OrgPage />, '/org?tab=people');

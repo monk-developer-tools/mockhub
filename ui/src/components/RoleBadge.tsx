@@ -1,6 +1,6 @@
 import type { Role } from '../api/types';
 
-const LABELS: Record<Role, string> = { none: 'None', viewer: 'Viewer', editor: 'Editor', owner: 'Owner', admin: 'Admin' };
+const LABELS: Record<Role, string> = { none: 'None', viewer: 'Viewer', editor: 'Editor', manager: 'Manager', admin: 'Admin' };
 
 export function roleLabel(role: Role) {
   return LABELS[role] ?? role;

@@ -38,6 +38,10 @@ public final class PostmanExporter implements CollectionExporter {
 
     ArrayNode vars = root.putArray("variable");
     vars.addObject().put("key", "baseUrl").put("value", mockUrl).put("type", "string");
+    if (project.apiKey() != null && project.apiKey().isHidden()) {
+      vars.addObject().put("key", "apiKey").put("value", "").put("type", "secret")
+          .put("description", "Ask an admin for this project's API key");
+    }
 
     Map<String, ArrayNode> folders = new LinkedHashMap<>();
     ArrayNode items = root.putArray("item");

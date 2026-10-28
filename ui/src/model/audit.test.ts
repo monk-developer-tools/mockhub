@@ -18,14 +18,14 @@ describe('audit model', () => {
     expect(whatHappened(entry({ action: 'cleared', target: 'request log', targetName: '' }))).toBe('cleared request log');
   });
 
-  it('shows the audit log to admins and owners only', () => {
+  it('shows the audit log to admins and managers only', () => {
     // Given
     const editor = session({ orgs: [{ id: 'o1', name: 'Acme', slug: 'acme', role: 'editor', teams: [] }] });
-    const teamOwner = session({ orgs: [{ id: 'o1', name: 'Acme', slug: 'acme', role: 'none', teams: [{ id: 't1', name: 'Shop', slug: 'shop', role: 'owner', member: true }] }] });
+    const teamManager = session({ orgs: [{ id: 'o1', name: 'Acme', slug: 'acme', role: 'none', teams: [{ id: 't1', name: 'Shop', slug: 'shop', role: 'manager', member: true }] }] });
 
     // Then
     expect(canSeeAuditLog(session({ isAdmin: true }))).toBe(true);
-    expect(canSeeAuditLog(teamOwner)).toBe(true);
+    expect(canSeeAuditLog(teamManager)).toBe(true);
     expect(canSeeAuditLog(editor)).toBe(false);
     expect(canSeeAuditLog(null)).toBe(false);
   });

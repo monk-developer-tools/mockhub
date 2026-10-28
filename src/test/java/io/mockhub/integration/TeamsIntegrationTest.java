@@ -64,14 +64,20 @@ class TeamsIntegrationTest {
     String checkout = team("Checkout");
     String search = team("Search");
     admin.post(API + "/users", "{\"username\":\"dev\",\"password\":\"longenough\",\"teamMemberships\":[{\"teamId\":\"" + checkout + "\",\"role\":\"editor\"}]}");
+    admin.post(API + "/users", "{\"username\":\"lead\",\"password\":\"longenough\",\"teamMemberships\":[{\"teamId\":\"" + checkout + "\",\"role\":\"manager\"}]}");
     String cart = admin.post(API + "/projects", "{\"name\":\"Cart\",\"teamId\":\"" + checkout + "\"}").json().get("id").asText();
     String index = admin.post(API + "/projects", "{\"name\":\"Index\",\"teamId\":\"" + search + "\"}").json().get("id").asText();
     ApiClient dev = server.api().login("dev", "longenough");
 
     // When
     JsonNode visible = dev.get(API + "/projects").json();
-    ApiClient.Result own = dev.post(API + "/projects", "{\"name\":\"Basket\",\"teamId\":\"" + checkout + "\"}");
-    ApiClient.Result foreign = dev.post(API + "/projects", "{\"name\":\"Ranker\",\"teamId\":\"" + search + "\"}");
+    ApiClient lead = server.api().login("lead", "longenough");
+    ApiClient.Result own = lead.post(API + "/projects", "{\"name\":\"Basket\",\"teamId\":\"" + checkout + "\"}");
+    ApiClient.Result foreign = lead.post(API + "/projects", "{\"name\":\"Ranker\",\"teamId\":\"" + search + "\"}");
+    ApiClient.Result editorCreates = dev.post(API + "/projects", "{\"name\":\"Wishlist\",\"teamId\":\"" + checkout + "\"}");
+    ApiClient.Result editorRenames = dev.put(API + "/projects/" + cart, "{\"description\":\"Renamed\"}");
+    ApiClient.Result editorDeletes = dev.delete(API + "/projects/" + cart);
+    ApiClient.Result managerRenames = lead.put(API + "/projects/" + cart, "{\"description\":\"Cart and checkout\"}");
     JsonNode me = dev.get(API + "/auth/me").json();
 
     // Then
@@ -80,6 +86,10 @@ class TeamsIntegrationTest {
     assertThat(own.status()).isEqualTo(201);
     assertThat(own.json().get("teamId").asText()).isEqualTo(checkout);
     assertThat(foreign.status()).isEqualTo(403);
+    assertThat(editorCreates.status()).isEqualTo(403);
+    assertThat(editorRenames.status()).isEqualTo(403);
+    assertThat(editorDeletes.status()).isEqualTo(403);
+    assertThat(managerRenames.status()).isEqualTo(200);
     assertThat(dev.post(API + "/projects/" + cart + "/stubs", "{\"request\":{\"method\":\"GET\",\"url\":\"/x\"}}").status()).isEqualTo(201);
     assertThat(dev.get(API + "/projects/" + index).status()).isEqualTo(403);
     assertThat(me.get("orgs")).hasSize(1);

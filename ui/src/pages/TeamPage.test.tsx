@@ -5,17 +5,17 @@ import { vi } from 'vitest';
 import type { Role } from '../api/types';
 import { renderWithShell } from '../test/render';
 
-let teamRole: Role = 'owner';
-let isOwner = true;
+let teamRole: Role = 'manager';
+let isManager = true;
 const setTeamMember = vi.fn((..._a: unknown[]) => Promise.resolve({}));
 const removeTeamMember = vi.fn((..._a: unknown[]) => Promise.resolve());
-const team = { id: 't1', orgId: 'o1', name: 'Checkout', slug: 'checkout', description: 'Cart pages', projectCount: 1, memberCount: 1, role: 'owner' };
+const team = { id: 't1', orgId: 'o1', name: 'Checkout', slug: 'checkout', description: 'Cart pages', projectCount: 1, memberCount: 1, role: 'manager' };
 
 vi.mock('../state/AppContext', async (original) => ({
   ...(await original<typeof import('../state/AppContext')>()),
   useApp: () => ({
     currentOrg: { id: 'o1', name: 'Payments', role: 'viewer', teams: [] },
-    isOwner,
+    isManager,
     isAdmin: false,
     session: { id: 'me' },
     projects: [{ id: 'p1', name: 'Cart', basePath: '/cart', color: '#f00', stubCount: 3, teamId: 't1', orgId: 'o1' }],
@@ -29,7 +29,7 @@ vi.mock('../api/client', () => ({
     teams: () => Promise.resolve([team]),
     teamMembers: () => Promise.resolve([
       { id: 'u1', username: 'maria', displayName: 'Maria Lopez', email: 'maria@x.com', source: 'local', role: 'editor', groupRole: '', orgRole: '', effectiveRole: 'editor', member: true, disabled: false },
-      { id: 'u9', username: 'li', displayName: 'Li Wei', email: '', source: 'local', role: '', groupRole: '', orgRole: 'owner', effectiveRole: 'owner', member: false, disabled: false },
+      { id: 'u9', username: 'li', displayName: 'Li Wei', email: '', source: 'local', role: '', groupRole: '', orgRole: 'manager', effectiveRole: 'manager', member: false, disabled: false },
     ]),
     users: () => Promise.resolve([
       { id: 'u1', username: 'maria', displayName: 'Maria Lopez', email: 'maria@x.com', source: 'local' },
@@ -48,8 +48,8 @@ function show() {
 
 describe('TeamPage', () => {
   beforeEach(() => {
-    teamRole = 'owner';
-    isOwner = true;
+    teamRole = 'manager';
+    isManager = true;
     setTeamMember.mockClear();
   });
 
@@ -66,7 +66,7 @@ describe('TeamPage', () => {
     expect(screen.getByRole('button', { name: /Delete team/ })).toBeDisabled();
   });
 
-  it('lets team owners add people with a team role', async () => {
+  it('lets team managers add people with a team role', async () => {
     // Given
     show();
     await screen.findByText('Maria Lopez');
@@ -87,7 +87,7 @@ describe('TeamPage', () => {
   it('hides management from team viewers', async () => {
     // Given
     teamRole = 'viewer';
-    isOwner = false;
+    isManager = false;
 
     // When
     show();

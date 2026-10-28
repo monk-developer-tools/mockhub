@@ -25,8 +25,8 @@ public final class TeamChoice {
       if (orgId != null && !orgId.isBlank() && !team.orgId().equals(orgId)) {
         throw ApiException.badRequest("Team '" + team.name() + "' is not in that organisation");
       }
-      if (!principal.canInTeam(team.orgId(), team.id(), Role.EDITOR)) {
-        throw new ApiException(403, "You need the editor role in team '" + team.name() + "' to add projects there");
+      if (!principal.canInTeam(team.orgId(), team.id(), Role.MANAGER)) {
+        throw new ApiException(403, "You need to be a manager of team '" + team.name() + "' to add projects there");
       }
       return team;
     }
@@ -35,11 +35,11 @@ public final class TeamChoice {
       Optional<Team> team = writableIn(principal, org.id());
       if (team.isPresent()) return team.get();
     }
-    throw new ApiException(403, "You need the editor role in a team to create projects");
+    throw new ApiException(403, "You need to be a team manager to create projects");
   }
 
   private Optional<Team> writableIn(Principal principal, String orgId) {
-    if (principal.can(orgId, Role.EDITOR)) return Optional.of(teams.ensureDefault(orgId));
-    return teams.findByOrg(orgId).stream().filter(t -> principal.canInTeam(orgId, t.id(), Role.EDITOR)).findFirst();
+    if (principal.can(orgId, Role.MANAGER)) return Optional.of(teams.ensureDefault(orgId));
+    return teams.findByOrg(orgId).stream().filter(t -> principal.canInTeam(orgId, t.id(), Role.MANAGER)).findFirst();
   }
 }

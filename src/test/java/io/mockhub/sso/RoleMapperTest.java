@@ -25,7 +25,7 @@ class RoleMapperTest {
     // Given
     SsoSettings s = settings(List.of(), List.of(
         new RoleMapping("g-dev", "o1", Role.EDITOR),
-        new RoleMapping("g-lead", "o1", Role.OWNER),
+        new RoleMapping("g-lead", "o1", Role.MANAGER),
         new RoleMapping("MockHub.Admin", "", Role.ADMIN),
         new RoleMapping("g-other", "o2", Role.EDITOR),
         new RoleMapping("g-dev", "gone", Role.EDITOR)));
@@ -35,7 +35,7 @@ class RoleMapperTest {
 
     // Then
     assertThat(result.serverRole()).isEqualTo(Role.ADMIN);
-    assertThat(result.memberships()).containsExactly(new Membership("o1", Role.OWNER));
+    assertThat(result.memberships()).containsExactly(new Membership("o1", Role.MANAGER));
   }
 
   @Test
@@ -67,14 +67,14 @@ class RoleMapperTest {
     RoleMapper teamAware = new RoleMapper(Set.of("o1")::contains, team -> team.equals("t1") ? java.util.Optional.of("o1") : java.util.Optional.empty());
     SsoSettings s = settings(List.of(), List.of(
         new RoleMapping("g-checkout", "o1", Role.EDITOR, "t1"),
-        new RoleMapping("g-checkout-leads", "o1", Role.OWNER, "t1"),
+        new RoleMapping("g-checkout-leads", "o1", Role.MANAGER, "t1"),
         new RoleMapping("g-gone", "o1", Role.EDITOR, "t-gone")));
 
     // When
     RoleMapper.Result result = teamAware.map(s, identity("ana@contoso.com", List.of("g-checkout", "g-checkout-leads", "g-gone"), List.of()));
 
     // Then
-    assertThat(result.teamMemberships()).containsExactly(new io.mockhub.user.TeamMembership("t1", "o1", Role.OWNER));
+    assertThat(result.teamMemberships()).containsExactly(new io.mockhub.user.TeamMembership("t1", "o1", Role.MANAGER));
     assertThat(result.memberships()).containsExactly(new Membership("o1", Role.VIEWER));
   }
 }

@@ -11,11 +11,12 @@ public enum Role {
   NONE,
   VIEWER,
   EDITOR,
-  OWNER,
+  MANAGER,
   ADMIN;
 
   public static final Set<Role> SERVER_ROLES = EnumSet.of(NONE, VIEWER, EDITOR, ADMIN);
-  public static final Set<Role> ORG_ROLES = EnumSet.of(VIEWER, EDITOR, OWNER);
+  private static final String LEGACY_MANAGER = "OWNER";
+  public static final Set<Role> ORG_ROLES = EnumSet.of(VIEWER, EDITOR, MANAGER);
 
   public boolean atLeast(Role other) {
     return compareTo(other) >= 0;
@@ -33,8 +34,10 @@ public enum Role {
   @JsonCreator
   public static Role parse(String value) {
     if (value == null || value.isBlank()) return NONE;
+    String name = value.trim().toUpperCase(Locale.ROOT);
+    if (name.equals(LEGACY_MANAGER)) return MANAGER;
     try {
-      return valueOf(value.trim().toUpperCase(Locale.ROOT));
+      return valueOf(name);
     } catch (IllegalArgumentException e) {
       throw ApiException.badRequest("Unknown role '" + value + "'");
     }
@@ -48,13 +51,13 @@ public enum Role {
 
   public static Role teamRole(String value) {
     Role role = parse(value);
-    if (!ORG_ROLES.contains(role)) throw ApiException.badRequest("Team role must be viewer, editor or owner");
+    if (!ORG_ROLES.contains(role)) throw ApiException.badRequest("Team role must be viewer, editor or manager");
     return role;
   }
 
   public static Role orgRole(String value) {
     Role role = parse(value);
-    if (!ORG_ROLES.contains(role)) throw ApiException.badRequest("Organisation role must be viewer, editor or owner");
+    if (!ORG_ROLES.contains(role)) throw ApiException.badRequest("Organisation role must be viewer, editor or manager");
     return role;
   }
 }

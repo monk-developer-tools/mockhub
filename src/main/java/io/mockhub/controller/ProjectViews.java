@@ -34,6 +34,9 @@ public final class ProjectViews {
 
   public ObjectNode view(Ctx ctx, Project p) {
     ObjectNode node = Jsons.MAPPER.valueToTree(p);
+    if (p.apiKey() != null && !ctx.principal().isAdmin()) {
+      node.putObject("apiKey").put("header", p.apiKey().header()).put("set", true);
+    }
     List<StubMapping> list = stubs.stubsOf(p.id());
     node.put("basePath", p.basePath());
     node.put("mockUrl", urls.mock(ctx, p));

@@ -2149,7 +2149,7 @@ kbd {
   color: var(--accent);
 }
 
-.role-badge.role-owner,
+.role-badge.role-manager,
 .role-badge.role-admin {
   border-color: transparent;
   background: var(--ink);
@@ -2406,6 +2406,18 @@ kbd {
 .check-row input {
   margin-top: 3px;
   accent-color: var(--accent);
+}
+
+.secret-set {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 13px;
 }
 
 .copy-field {

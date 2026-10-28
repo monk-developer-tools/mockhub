@@ -39,7 +39,8 @@ public final class ImportExportController implements ApiController {
     r.get("/projects/{id}/export/{format}", ctx -> {
       Project p = projects.get(ctx.path("id"));
       CollectionExporter exporter = exporters.get(ctx.path("format"));
-      byte[] content = exporter.export(p, stubs.stubsOf(p.id()), urls.mock(ctx, p));
+      Project shared = p.apiKey() == null || ctx.principal().isAdmin() ? p : p.withApiKey(p.apiKey().hidden());
+      byte[] content = exporter.export(shared, stubs.stubsOf(p.id()), urls.mock(ctx, p));
       return Response.download(exporter.fileName(p), exporter.contentType(), content);
     });
     r.post("/projects/{id}/import/wiremock-zip", ctx -> {

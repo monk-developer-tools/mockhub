@@ -28,6 +28,8 @@ export function samplePath(form: StubForm): string {
   return path.startsWith('/') ? path : `/${path}`;
 }
 
+export const API_KEY_PLACEHOLDER = '{{apiKey}}';
+
 export function sampleRequest(form: StubForm, apiKey?: ApiKeyRule | null): SampleRequest {
   const headers: [string, string][] = form.headers
     .filter((h) => h.key && (h.operator === 'equalTo' || h.operator === 'contains'))
@@ -38,7 +40,7 @@ export function sampleRequest(form: StubForm, apiKey?: ApiKeyRule | null): Sampl
   } else if (!headers.some(([k]) => k.toLowerCase() === 'content-type') && form.body.some((b) => b.operator === 'equalToJson' || b.operator === 'matchesJsonPath')) {
     headers.push(['Content-Type', 'application/json']);
   }
-  if (apiKey && !headers.some(([k]) => k.toLowerCase() === apiKey.header.toLowerCase())) headers.push([apiKey.header, apiKey.value]);
+  if (apiKey && !headers.some(([k]) => k.toLowerCase() === apiKey.header.toLowerCase())) headers.push([apiKey.header, apiKey.value ?? API_KEY_PLACEHOLDER]);
   const exact = form.body.find((b) => b.operator === 'equalToJson' || b.operator === 'equalToXml' || b.operator === 'equalTo');
   const method = form.method === 'ANY' ? (form.kind === 'soap' ? 'POST' : 'GET') : form.method;
   return { method, path: samplePath(form), headers, body: form.sampleBody || exact?.value || '' };

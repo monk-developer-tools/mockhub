@@ -20,7 +20,8 @@ const NEXT_THEME: Record<ThemeChoice, ThemeChoice> = { system: 'light', light: '
 const THEME_ICON = { system: CircleHalf, light: Sun, dark: Moon };
 
 export function Layout() {
-  const { projects, orgProjects, currentOrg, role, info, session, signOut, canEdit, isAdmin, teamsIn } = useApp();
+  const { projects, orgProjects, currentOrg, role, info, session, signOut, canEdit, isAdmin, teamsIn, writableTeams, orgs } = useApp();
+  const canCreateProjects = orgs.some((o) => writableTeams(o.id).length > 0);
   const [theme, setTheme] = useState<ThemeChoice>(readTheme);
   const [open, setOpen] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -115,7 +116,7 @@ export function Layout() {
         )}
         <div className="sidebar-section">
           <span>Projects in {currentOrg?.name ?? 'this organisation'}</span>
-          {canEdit && (
+          {canCreateProjects && (
             <button className="btn ghost icon small" onClick={() => setCreating(true)} aria-label="New project" title="New project">
               <Plus size={15} />
             </button>
@@ -178,9 +179,9 @@ export function Layout() {
             <Eye size={15} />
             <span>
               {role === 'none' ? (
-                <>You're signed in as <strong>{session.username}</strong>, but you aren't a member of any organisation yet. Ask an admin or an organisation owner to add you.</>
+                <>You're signed in as <strong>{session.username}</strong>, but you aren't a member of any organisation yet. Ask an admin or an organisation manager to add you.</>
               ) : (
-                <>You're signed in as <strong>{session.username}</strong>, who can look at {currentOrg?.name ?? 'this organisation'} but not change anything. Ask an owner for the editor role, or sign in as an editor.</>
+                <>You're signed in as <strong>{session.username}</strong>, who can look at {currentOrg?.name ?? 'this organisation'} but not change anything. Ask a manager for the editor role, or sign in as an editor.</>
               )}
             </span>
             <button className="btn small" onClick={signOut}>Switch account</button>
@@ -192,7 +193,7 @@ export function Layout() {
       {palette && (
         <CommandPalette
           projects={projects}
-          canEdit={canEdit}
+          canEdit={canCreateProjects}
           onClose={() => setPalette(false)}
           onNewProject={() => setCreating(true)}
           onToggleTheme={cycleTheme}

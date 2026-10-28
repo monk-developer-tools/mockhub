@@ -20,6 +20,10 @@ public record Project(
     return new Project(id, name, slug, description, color, createdAt, updatedAt, newOrgId, teamId, apiKey, root);
   }
 
+  public Project withApiKey(ApiKey newApiKey) {
+    return new Project(id, name, slug, description, color, createdAt, updatedAt, orgId, teamId, newApiKey, root);
+  }
+
   public Project withTeam(String newOrgId, String newTeamId) {
     return new Project(id, name, slug, description, color, createdAt, updatedAt, newOrgId, newTeamId, apiKey, root);
   }

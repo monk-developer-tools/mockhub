@@ -6,7 +6,7 @@ import { renderWithShell } from '../test/render';
 const refreshProjects = vi.fn();
 const examples = vi.fn();
 const installExample = vi.fn();
-vi.mock('../state/AppContext', () => ({ useApp: () => ({ canEdit: true, refreshProjects }) }));
+vi.mock('../state/AppContext', () => ({ useApp: () => ({ canManage: true, refreshProjects }) }));
 vi.mock('../api/client', () => ({ api: { examples: () => examples(), installExample: (id: string) => installExample(id) } }));
 
 const { ExamplesPage } = await import('./ExamplesPage');

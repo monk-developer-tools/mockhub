@@ -17,7 +17,7 @@ import { PersonCell, TeamMark } from './Avatar';
 import { Modal } from './Modal';
 import { useToast } from './Toasts';
 
-const ROLE_ICONS: Record<OrgRole, typeof Eye> = { viewer: Eye, editor: PencilSimple, owner: Crown };
+const ROLE_ICONS: Record<OrgRole, typeof Eye> = { viewer: Eye, editor: PencilSimple, manager: Crown };
 
 interface Props {
   orgId: string;

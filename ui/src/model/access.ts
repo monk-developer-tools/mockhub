@@ -9,8 +9,8 @@ export interface RoleInfo {
 
 export const ROLE_INFO: RoleInfo[] = [
   { value: 'viewer', label: 'Viewer', verb: 'see', detail: 'Looks at projects, stubs and the request log. Changes nothing.' },
-  { value: 'editor', label: 'Editor', verb: 'change', detail: 'Creates and changes projects and stubs. The right choice for most developers and testers.' },
-  { value: 'owner', label: 'Owner', verb: 'change', detail: 'Everything an editor does, plus adding people and changing settings.' },
+  { value: 'editor', label: 'Editor', verb: 'change', detail: 'Changes stubs, imports, data and scenarios in existing projects. The right choice for most developers and testers.' },
+  { value: 'manager', label: 'Manager', verb: 'change', detail: 'Everything an editor does, plus creating projects, adding people and changing settings. Never sees API keys.' },
 ];
 
 export const roleInfo = (role: OrgRole) => ROLE_INFO.find((r) => r.value === role)!;
@@ -79,7 +79,7 @@ export function listOf(items: string[]): string {
 export function sentence(people: string[], wanted: WantedAccess, orgName: string, teamNames: Record<string, string>): string {
   const who = people.length === 0 ? 'Nobody' : people.length > 2 ? `${people.length} people` : listOf(people);
   const verb = roleInfo(wanted.role).verb;
-  const manage = wanted.role === 'owner' ? ', add people and change settings' : '';
+  const manage = wanted.role === 'manager' ? ', add people and change settings' : '';
   if (wanted.scope === 'org') return `${who} will ${verb} every project in ${orgName}${manage}, including teams added later.`;
   const teams = wanted.teamIds.map((id) => teamNames[id] ?? id);
   if (teams.length === 0) return 'Choose at least one team.';

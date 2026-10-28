@@ -146,7 +146,7 @@ Ticked as each item is implemented and verified.
 ### Phase 10 — Organisations, users and single sign-on
 Design:
 - **Organisation → projects.** Every project belongs to one organisation (`orgId`). Mock URLs stay `/<base-path>/…` and base paths stay unique on the server, so existing clients keep working. On first start an organisation called "Default" is created and projects without an organisation move into it.
-- **Roles.** Organisation roles: viewer < editor < owner. Each user also has a server role: none, viewer, editor or admin. A user's role in an organisation is the higher of the server role and the organisation membership. Admins manage everything (users, SSO, server, backups). Owners manage their organisation's settings and members.
+- **Roles.** Organisation roles: viewer < editor < manager (stored data may still say owner, read as manager). Each user also has a server role: none, viewer, editor or admin. A user's role in an organisation is the higher of the server role and the organisation membership. Admins manage everything (users, SSO, server, backups). Managers create projects and manage their organisation's settings and members. Only admins create organisations or see and change secrets (project API keys, AI, SSO).
 - **Users.** There are three sources:
   - **env:** `MOCKHUB_USERS`, read-only, the break-glass admin.
   - **local:** created in the UI, passwords stored as PBKDF2.
@@ -215,7 +215,7 @@ Checklist:
 
 ### Phase 13 — Teams inside organisations, avatars
 - Organisation › teams › people. Teams own projects; roles are set per team, and organisation-wide roles still apply
-  to every team. Effective role on a project = max(organisation-wide, team role). Team owners manage their team.
+  to every team. Effective role on a project = max(organisation-wide, team role). Team managers create the team's projects and manage its members.
 - Startup migration: every organisation gets a *General* team and projects without a team move there.
 - Users page: access tree to set organisation-wide and per-team roles when creating or editing a user.
 - Entra group mappings can target a team; backups carry teams and restore can place projects in a chosen team.
