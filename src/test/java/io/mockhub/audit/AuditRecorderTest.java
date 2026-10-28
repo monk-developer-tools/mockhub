@@ -144,6 +144,21 @@ class AuditRecorderTest {
     assertThat(e.teamId()).isEqualTo("team2");
   }
 
+  @Test
+  void namesTheProjectAnInstalledExampleCreated() {
+    // Given
+    ChangeAudit.Pending pending = recorder.begin(change(RequestMethod.POST, "/examples/{id}/install", Map.of("id", "chaos"), null));
+
+    // When
+    pending.succeeded("{\"id\":\"p-ex\",\"name\":\"Resilience testing\",\"orgId\":\"org1\",\"teamId\":\"team1\"}");
+
+    // Then
+    AuditEntry e = written.get(0);
+    assertThat(e.summary()).isEqualTo("Installed example “Resilience testing”");
+    assertThat(e.projectId()).isEqualTo("p-ex");
+    assertThat(e.projectName()).isEqualTo("Resilience testing");
+  }
+
   private final class ListLog implements AuditLog {
     @Override
     public void append(AuditEntry entry) {

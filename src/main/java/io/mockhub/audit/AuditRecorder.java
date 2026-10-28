@@ -18,7 +18,11 @@ public final class AuditRecorder implements ChangeAudit {
 
   enum Name { PROJECT, STUB, ORG, TEAM, USER, BODY_NAME, BODY_USERNAME, BODY_RESOURCE, PARAM_FORMAT, NONE }
 
-  record Rule(String action, String target, Name name) {}
+  record Rule(String action, String target, Name name) {
+    boolean createsProject() {
+      return target.equals("project") && action.equals("created") || target.equals("example");
+    }
+  }
 
   private static final Map<String, Rule> RULES = Map.ofEntries(
       Map.entry("POST /projects", new Rule("created", "project", Name.BODY_NAME)),
@@ -89,11 +93,11 @@ public final class AuditRecorder implements ChangeAudit {
   }
 
   private static AuditEntry createdProject(AuditEntry e, Rule rule, Object result) {
-    if (!rule.target().equals("project") || !rule.action().equals("created") || result == null) return e;
+    if (!rule.createsProject() || result == null) return e;
     JsonNode node = asJson(result);
     String id = text(node, "id");
     if (id.isEmpty()) return e;
-    return new AuditEntry(e.id(), e.at(), e.actorId(), e.actor(), e.action(), e.target(), e.targetName(), e.details(),
+    return new AuditEntry(e.id(), e.at(), e.actorId(), e.actor(), e.action(), e.target(), or(e.targetName(), text(node, "name")), e.details(),
         or(text(node, "orgId"), e.orgId()), or(text(node, "teamId"), e.teamId()), id, or(text(node, "name"), e.targetName()));
   }
 

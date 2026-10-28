@@ -34,9 +34,10 @@ describe('AuditPage', () => {
     // Then
     const rows = await screen.findAllByRole('listitem');
     expect(rows[0]).toHaveTextContent('Sam Patel deleted stub “GET /orders”');
-    expect(rows[0]).toHaveTextContent('in Shop');
-    expect(rows[1]).toHaveTextContent('Maria Lopez gave team access to person “Li Wei” · as editor');
-    expect(screen.getByText('Kept for 90 days')).toBeInTheDocument();
+    expect(rows[0]).toHaveTextContent('Shop');
+    expect(rows[1]).toHaveTextContent('Maria Lopez gave team access to person “Li Wei”');
+    expect(rows[1]).toHaveTextContent('as editor');
+    expect(screen.getByText(/kept for 90 days/)).toBeInTheDocument();
   });
 
   it('filters by project and by search text', async () => {

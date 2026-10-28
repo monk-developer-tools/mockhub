@@ -31,30 +31,34 @@ export function AuditPage() {
           <p className="muted">
             {isAdmin
               ? 'Every change anyone made: projects, stubs, teams, people and settings.'
-              : 'Changes in the organisations and teams you own.'}
+              : 'Changes in the organisations and teams you manage.'}
           </p>
         </div>
       </div>
       <div className="panel panel-body">
-        <div className="audit-filters">
-          {orgs.length > 1 && (
-            <label className="field">
-              <span>Organisation</span>
-              <select value={orgId} onChange={(e) => { setOrgId(e.target.value); setProjectId(''); }}>
-                <option value="">All organisations</option>
-                {orgs.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
-              </select>
-            </label>
-          )}
-          <label className="field">
-            <span>Project</span>
-            <select value={projectId} onChange={(e) => setProjectId(e.target.value)}>
-              <option value="">All projects</option>
-              {choices.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-          </label>
-        </div>
-        {data ? <AuditList entries={data.entries} retentionDays={data.retentionDays} showProject={!projectId} /> : <Skeleton rows={6} label="Loading audit log" />}
+        {data ? (
+          <AuditList
+            entries={data.entries}
+            retentionDays={data.retentionDays}
+            showProject={!projectId}
+            scope={
+              <>
+                {orgs.length > 1 && (
+                  <select aria-label="Organisation" value={orgId} onChange={(e) => { setOrgId(e.target.value); setProjectId(''); }}>
+                    <option value="">All organisations</option>
+                    {orgs.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+                  </select>
+                )}
+                <select aria-label="Project" value={projectId} onChange={(e) => setProjectId(e.target.value)}>
+                  <option value="">All projects</option>
+                  {choices.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+              </>
+            }
+          />
+        ) : (
+          <Skeleton rows={6} label="Loading audit log" />
+        )}
       </div>
     </div>
   );
