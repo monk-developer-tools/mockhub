@@ -1,0 +1,35 @@
+{
+  "crud": [
+    {
+      "resource": "orders",
+      "idType": "number",
+      "description": "A complete REST resource from one stub. GET /orders lists, POST creates, GET, PUT, PATCH and DELETE /orders/{id} work on one order. Records are saved and shown in the Data tab.",
+      "seed": [
+        { "customer": "Jordan Rivera", "status": "PAID", "total": 42.5, "city": "London" },
+        { "customer": "Sam Okafor", "status": "SHIPPED", "total": 18.0, "city": "Leeds" },
+        { "customer": "Mia Novak", "status": "PAID", "total": 99.9, "city": "London" }
+      ]
+    },
+    {
+      "resource": "customers",
+      "idType": "uuid",
+      "description": "A second resource with UUID ids. POST /customers without an id and one is generated for you.",
+      "seed": [
+        { "name": "Jordan Rivera", "email": "jordan@example.com" }
+      ]
+    }
+  ],
+  "stubs": [
+    {
+      "name": "Order summary next to the CRUD resource",
+      "priority": 1,
+      "request": { "method": "GET", "urlPath": "/orders/summary" },
+      "response": {
+        "status": 200,
+        "headers": { "Content-Type": "application/json" },
+        "jsonBody": { "open": 2, "shipped": 1, "currency": "GBP" }
+      },
+      "metadata": { "mockhub": { "description": "A normal stub can live beside a CRUD resource. Priority 1 wins over the CRUD stub, so /orders/summary isn't treated as an order id." } }
+    }
+  ]
+}

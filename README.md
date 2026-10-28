@@ -135,7 +135,7 @@ screenshots, and the [live demo](https://mockhub.devops-monk.com/__admin/mockhub
 - **Webhooks.** A stub can call other services after it answers (a payment callback, for example), with data from
   the request, set up in the editor's *Then call* section.
 - **Response files.** Upload PDFs, images or large JSON (up to 10 MB) and serve them as response bodies.
-- **Built-in examples:** REST basics, templating, stateful cart, faults and delays, and a SOAP calculator from WSDL.
+- **Built-in examples:** ten ready-made projects that cover every feature: REST matching, fake data, templating, real-world matching patterns, CRUD with saved data, stateful scenarios, webhooks, faults and failure rates, an OpenAPI import with response files, and a SOAP calculator from WSDL. The [tour of the examples](https://mockhub.devops-monk.com/tutorials/#tour) has commands to try with each.
   Install one with a click and copy what you need. The editor also has a template gallery.
 - **Persistence.** Every stub, including ones created through the native `/__admin` API, is written to `/data`.
   Admins can back up everything, whole organisations or single projects to one file, and later restore all of it

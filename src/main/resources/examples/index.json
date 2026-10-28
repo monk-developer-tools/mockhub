@@ -12,6 +12,19 @@
     "file": "rest-basics.json"
   },
   {
+    "id": "fake-data",
+    "name": "Fake data — realistic test data",
+    "slug": "example-fake-data",
+    "description": "Names, e-mails, addresses, products, prices and dates that change on every call. Lists built with a loop and data in other languages.",
+    "tags": [
+      "REST",
+      "Fake data",
+      "Templating",
+      "Beginner"
+    ],
+    "file": "fake-data.json"
+  },
+  {
     "id": "templating",
     "name": "Dynamic responses — templating",
     "slug": "example-templating",
@@ -36,6 +49,18 @@
     "file": "patterns.json"
   },
   {
+    "id": "crud",
+    "name": "Orders — CRUD with saved data",
+    "slug": "example-orders",
+    "description": "A full REST resource from one stub: list, filter, create, update and delete orders. Records are saved, survive restarts and can be edited in the Data tab.",
+    "tags": [
+      "REST",
+      "CRUD",
+      "Data"
+    ],
+    "file": "orders-crud.json"
+  },
+  {
     "id": "stateful-cart",
     "name": "Shopping cart — stateful scenarios",
     "slug": "example-cart",
@@ -48,16 +73,41 @@
     "file": "stateful-cart.json"
   },
   {
+    "id": "webhooks",
+    "name": "Payments — webhooks and callbacks",
+    "slug": "example-webhooks",
+    "description": "Answer at once, then call back later like a real payment provider. A callback receiver lets you watch each webhook arrive in the request log.",
+    "tags": [
+      "REST",
+      "Webhooks",
+      "Async"
+    ],
+    "file": "webhooks.json"
+  },
+  {
     "id": "chaos",
     "name": "Resilience testing — faults & delays",
     "slug": "example-chaos",
-    "description": "Slow responses, random latency, dropped connections, malformed responses, 429/503 with Retry-After. Test your timeouts and retries.",
+    "description": "Slow responses, random latency, dropped connections, 429/503 with Retry-After, a stub that fails 1 call in 5 and a maintenance switch you turn on and off. Test your timeouts and retries.",
     "tags": [
       "REST",
       "Faults",
-      "Delays"
+      "Delays",
+      "On/off"
     ],
     "file": "chaos.json"
+  },
+  {
+    "id": "bookshop",
+    "name": "Bookshop — from an OpenAPI file",
+    "slug": "example-bookshop",
+    "description": "Stubs generated from an OpenAPI spec, plus hand-written error cases and response files: a CSV price list and a cover image.",
+    "tags": [
+      "REST",
+      "OpenAPI",
+      "Response files"
+    ],
+    "file": "bookshop.json"
   },
   {
     "id": "soap-calculator",

@@ -186,7 +186,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
                 new UserController(users, userViews, auth, orgs, teams),
                 new SsoController(ssoSettings, sso, orgs, teams, urls),
                 new ProjectController(projects, views, teamChoice),
-                new ExampleController(examples, new ExampleInstaller(examples, projects, stubs, importers), views, teamChoice),
+                new ExampleController(examples, new ExampleInstaller(examples, projects, stubs, importers, crud, bodyFiles), views, teamChoice),
                 new StubController(stubs),
                 new RequestLogController(requestLog),
                 new ImportExportController(projects, stubs, exporters, importers, urls, new WireMockArchiveImporter(bodyFiles)),

@@ -2,52 +2,111 @@
   "stubs": [
     {
       "name": "Slow — fixed 3s delay",
-      "request": { "method": "GET", "urlPath": "/slow" },
-      "response": { "status": 200, "fixedDelayMilliseconds": 3000, "jsonBody": { "ok": true } },
-      "metadata": { "mockhub": { "description": "Always waits 3 seconds. Use it to test client timeouts." } }
+      "request": {
+        "method": "GET",
+        "urlPath": "/slow"
+      },
+      "response": {
+        "status": 200,
+        "fixedDelayMilliseconds": 3000,
+        "jsonBody": {
+          "ok": true
+        }
+      },
+      "metadata": {
+        "mockhub": {
+          "description": "Always waits 3 seconds. Use it to test client timeouts."
+        }
+      }
     },
     {
       "name": "Jittery — random latency",
-      "request": { "method": "GET", "urlPath": "/jittery" },
+      "request": {
+        "method": "GET",
+        "urlPath": "/jittery"
+      },
       "response": {
         "status": 200,
-        "delayDistribution": { "type": "lognormal", "median": 200, "sigma": 0.6 },
-        "jsonBody": { "ok": true }
+        "delayDistribution": {
+          "type": "lognormal",
+          "median": 200,
+          "sigma": 0.6
+        },
+        "jsonBody": {
+          "ok": true
+        }
       },
-      "metadata": { "mockhub": { "description": "Realistic latency: log-normal around 200 ms with a long tail." } }
+      "metadata": {
+        "mockhub": {
+          "description": "Realistic latency: log-normal around 200 ms with a long tail."
+        }
+      }
     },
     {
       "name": "Trickle — slow chunked body",
-      "request": { "method": "GET", "urlPath": "/trickle" },
+      "request": {
+        "method": "GET",
+        "urlPath": "/trickle"
+      },
       "response": {
         "status": 200,
         "body": "This response arrives in 5 chunks over 2 seconds.",
-        "chunkedDribbleDelay": { "numberOfChunks": 5, "totalDuration": 2000 }
+        "chunkedDribbleDelay": {
+          "numberOfChunks": 5,
+          "totalDuration": 2000
+        }
       }
     },
     {
       "name": "Connection reset",
-      "request": { "method": "GET", "urlPath": "/reset" },
-      "response": { "fault": "CONNECTION_RESET_BY_PEER" },
-      "metadata": { "mockhub": { "description": "The server drops the connection." } }
+      "request": {
+        "method": "GET",
+        "urlPath": "/reset"
+      },
+      "response": {
+        "fault": "CONNECTION_RESET_BY_PEER"
+      },
+      "metadata": {
+        "mockhub": {
+          "description": "The server drops the connection."
+        }
+      }
     },
     {
       "name": "Garbage response",
-      "request": { "method": "GET", "urlPath": "/garbage" },
-      "response": { "fault": "RANDOM_DATA_THEN_CLOSE" }
+      "request": {
+        "method": "GET",
+        "urlPath": "/garbage"
+      },
+      "response": {
+        "fault": "RANDOM_DATA_THEN_CLOSE"
+      }
     },
     {
       "name": "Empty response",
-      "request": { "method": "GET", "urlPath": "/empty" },
-      "response": { "fault": "EMPTY_RESPONSE" }
+      "request": {
+        "method": "GET",
+        "urlPath": "/empty"
+      },
+      "response": {
+        "fault": "EMPTY_RESPONSE"
+      }
     },
     {
       "name": "Rate limited (429)",
-      "request": { "method": "GET", "urlPath": "/rate-limited" },
+      "request": {
+        "method": "GET",
+        "urlPath": "/rate-limited"
+      },
       "response": {
         "status": 429,
-        "headers": { "Retry-After": "5", "Content-Type": "application/json" },
-        "jsonBody": { "error": "too many requests" }
+        "headers": {
+          "Retry-After": "5",
+          "Content-Type": "application/json"
+        },
+        "jsonBody": {
+          "error": "too many requests"
+        }
       }
     },
     {
@@ -55,16 +114,88 @@
       "scenarioName": "Flaky",
       "requiredScenarioState": "Started",
       "newScenarioState": "Recovered",
-      "request": { "method": "GET", "urlPath": "/flaky" },
-      "response": { "status": 503, "headers": { "Retry-After": "1" }, "jsonBody": { "error": "temporarily unavailable" } },
-      "metadata": { "mockhub": { "description": "First call 503, next calls 200 — ideal for testing retry logic." } }
+      "request": {
+        "method": "GET",
+        "urlPath": "/flaky"
+      },
+      "response": {
+        "status": 503,
+        "headers": {
+          "Retry-After": "1"
+        },
+        "jsonBody": {
+          "error": "temporarily unavailable"
+        }
+      },
+      "metadata": {
+        "mockhub": {
+          "description": "First call 503, next calls 200 — ideal for testing retry logic."
+        }
+      }
     },
     {
       "name": "Flaky — recovered",
       "scenarioName": "Flaky",
       "requiredScenarioState": "Recovered",
-      "request": { "method": "GET", "urlPath": "/flaky" },
-      "response": { "status": 200, "jsonBody": { "ok": true } }
+      "request": {
+        "method": "GET",
+        "urlPath": "/flaky"
+      },
+      "response": {
+        "status": 200,
+        "jsonBody": {
+          "ok": true
+        }
+      }
+    },
+    {
+      "name": "Unreliable — about 1 in 5 calls fails",
+      "request": {
+        "method": "GET",
+        "urlPath": "/unreliable"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "jsonBody": {
+          "status": "ok"
+        }
+      },
+      "metadata": {
+        "mockhub": {
+          "errorRate": {
+            "percent": 20,
+            "status": 503
+          },
+          "description": "Random failures: 20% of calls get a 503 with the header X-MockHub-Simulated-Error. Change the rate under Delays & faults in the editor."
+        }
+      }
+    },
+    {
+      "name": "Maintenance page — switched off",
+      "priority": 1,
+      "request": {
+        "method": "ANY",
+        "urlPathPattern": "/.*"
+      },
+      "response": {
+        "status": 503,
+        "headers": {
+          "Content-Type": "application/json",
+          "Retry-After": "120"
+        },
+        "jsonBody": {
+          "error": "Down for maintenance"
+        }
+      },
+      "metadata": {
+        "mockhub": {
+          "disabled": true,
+          "description": "Switched off. Turn it on in the Stubs list and every URL in this project answers 503, like a maintenance window. Turn it off again to go back to normal."
+        }
+      }
     }
   ]
 }

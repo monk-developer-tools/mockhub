@@ -1,0 +1,65 @@
+openapi: 3.0.3
+info:
+  title: Bookshop
+  version: 1.0.0
+paths:
+  /books:
+    get:
+      tags: [Books]
+      summary: List books
+      description: Generated from the OpenAPI file. The body is the example in the spec.
+      responses:
+        '200':
+          description: Books
+          content:
+            application/json:
+              example:
+                - { isbn: "978-0-00-000001-1", title: "The Quiet Harbour", author: "E. Marsh", price: 12.99 }
+                - { isbn: "978-0-00-000002-8", title: "Maps of Small Places", author: "R. Okoye", price: 9.5 }
+    post:
+      tags: [Books]
+      summary: Add a book
+      description: Generated from the OpenAPI file. No example in the spec, so MockHub built one from the schema.
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Book' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Book' }
+  /books/{isbn}:
+    get:
+      tags: [Books]
+      summary: Get a book
+      description: Generated from the OpenAPI file. The path variable becomes a URL template.
+      parameters:
+        - { name: isbn, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: One book
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Book' }
+  /orders:
+    post:
+      tags: [Orders]
+      summary: Place an order
+      description: Generated from the OpenAPI file.
+      responses:
+        '201':
+          description: Order placed
+          content:
+            application/json:
+              example: { orderId: "B-1001", status: "PLACED" }
+components:
+  schemas:
+    Book:
+      type: object
+      properties:
+        isbn: { type: string, example: "978-0-00-000001-1" }
+        title: { type: string, example: "The Quiet Harbour" }
+        author: { type: string, example: "E. Marsh" }
+        price: { type: number, example: 12.99 }

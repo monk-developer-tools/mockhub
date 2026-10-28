@@ -1,0 +1,77 @@
+{
+  "stubs": [
+    {
+      "name": "Take a payment, then call back when it settles",
+      "priority": 5,
+      "request": {
+        "method": "POST",
+        "urlPath": "/payments",
+        "bodyPatterns": [{ "matchesJsonPath": "$.callbackUrl" }]
+      },
+      "response": {
+        "status": 202,
+        "headers": { "Content-Type": "application/json" },
+        "body": "{ \"reference\": \"{{jsonPath request.body '$.reference'}}\", \"status\": \"PENDING\" }",
+        "transformers": ["response-template"]
+      },
+      "serveEventListeners": [
+        {
+          "name": "webhook",
+          "parameters": {
+            "method": "POST",
+            "url": "{{jsonPath originalRequest.body '$.callbackUrl'}}",
+            "headers": { "Content-Type": "application/json", "X-Signature": "demo-signature" },
+            "body": "{ \"reference\": \"{{jsonPath originalRequest.body '$.reference'}}\", \"status\": \"SETTLED\", \"amount\": {{jsonPath originalRequest.body '$.amount'}} }",
+            "delay": { "type": "fixed", "milliseconds": 2000 }
+          }
+        }
+      ],
+      "metadata": { "mockhub": { "folder": "Payments", "description": "Answers 202 at once, then two seconds later POSTs SETTLED to the callbackUrl from the request. Send callbackUrl = this project's mock URL + /partner/callbacks to watch it arrive in Requests." } }
+    },
+    {
+      "name": "Large payments are declined by callback",
+      "priority": 1,
+      "request": {
+        "method": "POST",
+        "urlPath": "/payments",
+        "bodyPatterns": [{ "matchesJsonPath": "$[?(@.amount > 1000)]" }, { "matchesJsonPath": "$.callbackUrl" }]
+      },
+      "response": {
+        "status": 202,
+        "headers": { "Content-Type": "application/json" },
+        "body": "{ \"reference\": \"{{jsonPath request.body '$.reference'}}\", \"status\": \"PENDING\" }",
+        "transformers": ["response-template"]
+      },
+      "serveEventListeners": [
+        {
+          "name": "webhook",
+          "parameters": {
+            "method": "POST",
+            "url": "{{jsonPath originalRequest.body '$.callbackUrl'}}",
+            "headers": { "Content-Type": "application/json" },
+            "body": "{ \"reference\": \"{{jsonPath originalRequest.body '$.reference'}}\", \"status\": \"DECLINED\", \"reason\": \"Amount over limit\" }",
+            "delay": { "type": "fixed", "milliseconds": 1000 }
+          }
+        }
+      ],
+      "metadata": { "mockhub": { "folder": "Payments", "description": "Same request, different callback: amounts over 1000 get DECLINED. Priority 1 is checked before the normal payment stub." } }
+    },
+    {
+      "name": "Payment without a callbackUrl",
+      "priority": 9,
+      "request": { "method": "POST", "urlPath": "/payments" },
+      "response": {
+        "status": 400,
+        "headers": { "Content-Type": "application/json" },
+        "jsonBody": { "error": "callbackUrl is required" }
+      },
+      "metadata": { "mockhub": { "folder": "Payments", "description": "The fallback when no other payment stub matched." } }
+    },
+    {
+      "name": "Callback receiver",
+      "request": { "method": "POST", "urlPath": "/partner/callbacks" },
+      "response": { "status": 204 },
+      "metadata": { "mockhub": { "folder": "Partner", "description": "Stands in for your service's callback endpoint. Every webhook that arrives here shows up in the Requests tab with its body." } }
+    }
+  ]
+}

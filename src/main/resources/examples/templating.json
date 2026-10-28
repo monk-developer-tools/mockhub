@@ -49,7 +49,7 @@
       "response": {
         "status": 200,
         "headers": { "Content-Type": "text/plain" },
-        "body": "{{#eq request.headers.Accept-Language 'de'}}Hallo{{else}}Hello{{/eq}}, {{request.query.name}}!",
+        "body": "{{#eq request.headers.Accept-Language.[0] 'de'}}Hallo{{else}}Hello{{/eq}}, {{request.query.name}}!",
         "transformers": ["response-template"]
       },
       "metadata": {

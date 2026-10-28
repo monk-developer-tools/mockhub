@@ -1,0 +1,30 @@
+{
+  "imports": [
+    { "format": "openapi", "file": "bookshop-openapi.yaml" }
+  ],
+  "files": [
+    { "name": "price-list.csv", "file": "bookshop-price-list.csv" },
+    { "name": "cover.svg", "file": "bookshop-cover.svg" }
+  ],
+  "stubs": [
+    {
+      "name": "Book not found",
+      "priority": 1,
+      "request": { "method": "GET", "urlPath": "/books/000" },
+      "response": { "status": 404, "headers": { "Content-Type": "application/json" }, "jsonBody": { "error": "No book with ISBN 000" } },
+      "metadata": { "mockhub": { "folder": "Books", "description": "Added by hand after the import: an error case the spec didn't describe. Priority 1 beats the generated /books/{isbn}." } }
+    },
+    {
+      "name": "Price list as a CSV file",
+      "request": { "method": "GET", "urlPath": "/price-list.csv" },
+      "response": { "status": 200, "headers": { "Content-Type": "text/csv" }, "bodyFileName": "price-list.csv" },
+      "metadata": { "mockhub": { "folder": "Files", "description": "The body is a response file. Open Import & export → Response files to see, replace or download it." } }
+    },
+    {
+      "name": "Book cover image",
+      "request": { "method": "GET", "urlPathTemplate": "/covers/{isbn}" },
+      "response": { "status": 200, "headers": { "Content-Type": "image/svg+xml" }, "bodyFileName": "cover.svg" },
+      "metadata": { "mockhub": { "folder": "Files", "description": "Response files can be images, PDFs or anything else too. Open /covers/123 in a browser." } }
+    }
+  ]
+}

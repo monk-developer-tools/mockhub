@@ -1,0 +1,61 @@
+{
+  "stubs": [
+    {
+      "name": "Customer by id with fake details",
+      "request": { "method": "GET", "urlPathTemplate": "/customers/{id}" },
+      "response": {
+        "status": 200,
+        "headers": { "Content-Type": "application/json" },
+        "body": "{\n  \"id\": \"{{request.path.id}}\",\n  \"name\": \"{{fake 'Name.fullName'}}\",\n  \"email\": \"{{fake 'Internet.emailAddress'}}\",\n  \"phone\": \"{{fake 'PhoneNumber.cellPhone'}}\",\n  \"company\": \"{{fake 'Company.name'}}\",\n  \"address\": {\n    \"street\": \"{{fake 'Address.streetAddress'}}\",\n    \"city\": \"{{fake 'Address.city'}}\",\n    \"postcode\": \"{{fake 'Address.zipCode'}}\",\n    \"country\": \"{{fake 'Address.country'}}\"\n  },\n  \"customerSince\": \"{{now offset='-400 days' format='yyyy-MM-dd'}}\"\n}",
+        "transformers": ["response-template"]
+      },
+      "metadata": { "mockhub": { "folder": "People", "description": "The id comes from the URL; everything else is new fake data on every call. Try GET /customers/C-1001 twice." } }
+    },
+    {
+      "name": "List of five customers",
+      "priority": 1,
+      "request": { "method": "GET", "urlPath": "/customers" },
+      "response": {
+        "status": 200,
+        "headers": { "Content-Type": "application/json" },
+        "body": "[\n{{#each (range 1 5) as |n|}}  { \"id\": \"C-100{{n}}\", \"name\": \"{{fake 'Name.fullName'}}\", \"city\": \"{{fake 'Address.city'}}\", \"vip\": {{pickRandom true false}} }{{#unless @last}},{{/unless}}\n{{/each}}]",
+        "transformers": ["response-template"]
+      },
+      "metadata": { "mockhub": { "folder": "People", "description": "A loop builds a list: range 1 5 gives five rows, each with its own fake name and city." } }
+    },
+    {
+      "name": "Customer in German",
+      "priority": 1,
+      "request": { "method": "GET", "urlPath": "/de/customers/random" },
+      "response": {
+        "status": 200,
+        "headers": { "Content-Type": "application/json" },
+        "body": "{\n  \"name\": \"{{fake 'Name.fullName' locale='de'}}\",\n  \"street\": \"{{fake 'Address.streetAddress' locale='de'}}\",\n  \"city\": \"{{fake 'Address.city' locale='de'}}\"\n}",
+        "transformers": ["response-template"]
+      },
+      "metadata": { "mockhub": { "folder": "People", "description": "Add locale='de' (or fr, es, nl, ja and more) for names and addresses from another country." } }
+    },
+    {
+      "name": "Random product",
+      "request": { "method": "GET", "urlPath": "/products/random" },
+      "response": {
+        "status": 200,
+        "headers": { "Content-Type": "application/json" },
+        "body": "{\n  \"sku\": \"SKU-{{randomValue length=6 type='NUMERIC'}}\",\n  \"name\": \"{{fake 'Commerce.productName'}}\",\n  \"department\": \"{{fake 'Commerce.department'}}\",\n  \"price\": {{fake 'Commerce.price'}},\n  \"inStock\": {{randomInt lower=0 upper=50}},\n  \"id\": \"{{randomValue type='UUID'}}\"\n}",
+        "transformers": ["response-template"]
+      },
+      "metadata": { "mockhub": { "folder": "Shop", "description": "Mixes fake helpers with WireMock's own random helpers: randomValue, randomInt and pickRandom." } }
+    },
+    {
+      "name": "Order with dates relative to today",
+      "request": { "method": "GET", "urlPathTemplate": "/orders/{id}" },
+      "response": {
+        "status": 200,
+        "headers": { "Content-Type": "application/json" },
+        "body": "{\n  \"id\": \"{{request.path.id}}\",\n  \"placedAt\": \"{{now offset='-2 days'}}\",\n  \"deliveryDate\": \"{{now offset='3 days' format='yyyy-MM-dd'}}\",\n  \"total\": {{numberFormat (randomDecimal lower=10 upper=250) '0.00'}},\n  \"items\": {{randomInt lower=1 upper=6}}\n}",
+        "transformers": ["response-template"]
+      },
+      "metadata": { "mockhub": { "folder": "Shop", "description": "Dates move with the calendar, so tests that check 'delivered in the future' keep passing." } }
+    }
+  ]
+}

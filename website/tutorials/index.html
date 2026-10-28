@@ -156,16 +156,21 @@
         </div>
 
         <h3 class="examples-title">What each built-in example shows</h3>
+        <p class="examples-intro">Install any of them from <strong>Examples</strong> in the sidebar. The <a href="#tour">tour of the examples</a> gives you commands to try with each one.</p>
         <div class="tut-table">
           <table>
             <thead><tr><th>Example</th><th>Shows</th><th>Related tutorials</th></tr></thead>
             <tbody>
-              <tr><td><strong>Petstore — REST basics</strong></td><td>URL, path template, query, header and JSON body matching; priorities; status codes</td><td><a href="#first-stub">First stub</a>, <a href="#try-it">Try it</a>, <a href="#unmatched">Unmatched requests</a></td></tr>
-              <tr><td><strong>Dynamic responses — templating</strong></td><td>Echoing the path, query, headers and body; random values; dates; conditionals</td><td><a href="#templating">Dynamic responses</a>, <a href="#fake-data">Fake data</a></td></tr>
-              <tr><td><strong>Matching patterns — from real projects</strong></td><td>Magic test ids for errors, JSONPath filters and regex on body fields, priority fallbacks, one stub for every environment, proxying chosen ids, transformer parameters, content negotiation</td><td><a href="#patterns">Matching patterns</a>, <a href="#migrate">Migrate from WireMock</a></td></tr>
-              <tr><td><strong>Shopping cart — stateful scenarios</strong></td><td>A cart that moves from empty to item added to checked out</td><td><a href="#scenarios">Scenarios</a>, <a href="#crud">CRUD resources</a></td></tr>
-              <tr><td><strong>Resilience testing — faults &amp; delays</strong></td><td>Slow and random latency, dropped connections, malformed bodies, 429 and 503 with Retry-After</td><td><a href="#chaos">Delays, faults &amp; failures</a></td></tr>
-              <tr><td><strong>Calculator — SOAP from WSDL</strong></td><td>One stub per operation, the <span class="mono">?wsdl</span> endpoint, a fault for unknown operations, XPath matching</td><td><a href="#soap">SOAP from WSDL</a>, <a href="#api-key">API keys</a></td></tr>
+              <tr><td><strong>Petstore — REST basics</strong></td><td>URL, path template, query, header and JSON body matching; priorities; status codes</td><td><a href="#tour">Tour</a>, <a href="#first-stub">First stub</a>, <a href="#unmatched">Unmatched requests</a></td></tr>
+              <tr><td><strong>Fake data — realistic test data</strong></td><td>Names, e-mails, addresses, products and prices that change on every call; lists from a loop; other languages; dates relative to today</td><td><a href="#tour">Tour</a>, <a href="#fake-data">Fake data</a></td></tr>
+              <tr><td><strong>Dynamic responses — templating</strong></td><td>Echoing the path, query, headers and body; random values; dates; conditionals</td><td><a href="#tour">Tour</a>, <a href="#templating">Dynamic responses</a></td></tr>
+              <tr><td><strong>Matching patterns — from real projects</strong></td><td>Magic test ids for errors, JSONPath filters and regex on body fields, priority fallbacks, one stub for every environment, proxying chosen ids, transformer parameters, content negotiation</td><td><a href="#tour">Tour</a>, <a href="#patterns">Matching patterns</a></td></tr>
+              <tr><td><strong>Orders — CRUD with saved data</strong></td><td>A full REST resource from one stub: list, filter, create, patch and delete; records in the Data tab; a normal stub beside it</td><td><a href="#tour">Tour</a>, <a href="#crud">CRUD resources</a></td></tr>
+              <tr><td><strong>Shopping cart — stateful scenarios</strong></td><td>A cart that moves from empty to item added to checked out</td><td><a href="#tour">Tour</a>, <a href="#scenarios">Scenarios</a></td></tr>
+              <tr><td><strong>Payments — webhooks and callbacks</strong></td><td>Answer at once, call back later; a different callback for large amounts; a receiver that shows each webhook in the request log</td><td><a href="#tour">Tour</a>, <a href="#webhooks">Webhooks</a></td></tr>
+              <tr><td><strong>Resilience testing — faults &amp; delays</strong></td><td>Slow and random latency, dropped connections, 429 and 503 with Retry-After, 1 call in 5 failing, a maintenance switch</td><td><a href="#tour">Tour</a>, <a href="#chaos">Delays, faults &amp; failures</a>, <a href="#stub-controls">On &amp; off</a></td></tr>
+              <tr><td><strong>Bookshop — from an OpenAPI file</strong></td><td>Stubs generated from a spec, hand-written error cases, response files (a CSV and an image)</td><td><a href="#tour">Tour</a>, <a href="#openapi">OpenAPI</a>, <a href="#webhooks">Files</a></td></tr>
+              <tr><td><strong>Calculator — SOAP from WSDL</strong></td><td>One stub per operation, the <span class="mono">?wsdl</span> endpoint, a fault for unknown operations, XPath matching</td><td><a href="#tour">Tour</a>, <a href="#soap">SOAP from WSDL</a></td></tr>
             </tbody>
           </table>
         </div>
@@ -177,6 +182,7 @@
         <div class="tut-group">
           <h2>The basics</h2>
           <div class="tut-cards">
+            <a class="tut-card" href="#tour"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M4 5h7v7H4zM13 5h7v7h-7zM4 14h7v5H4zM13 14h7v5h-7z"/></svg></span><strong>Tour of the examples</strong><span>Every feature, ready to try.</span><em>10 min</em></a>
             <a class="tut-card" href="#first-project"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M4 7a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M12 11v5M9.5 13.5h5"/></svg></span><strong>Create your first project</strong><span>One base URL for one service.</span><em>2 min</em></a>
             <a class="tut-card" href="#first-stub"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M8 4H7a2 2 0 0 0-2 2v3.5a2 2 0 0 1-2 2 2 2 0 0 1 2 2V17a2 2 0 0 0 2 2h1M16 4h1a2 2 0 0 1 2 2v3.5a2 2 0 0 0 2 2 2 2 0 0 0-2 2V17a2 2 0 0 1-2 2h-1"/></svg></span><strong>Add your first stub</strong><span>Match a request, send a response.</span><em>4 min</em></a>
             <a class="tut-card" href="#try-it"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M7 5l12 7-12 7z"/></svg></span><strong>Test a stub in the editor</strong><span>Send a real request in one click.</span><em>2 min</em></a>
@@ -225,6 +231,7 @@
       <aside class="tut-toc" aria-label="Tutorials">
         <a href="#use-cases">Use cases</a>
         <h4>The basics</h4>
+        <a href="#tour">Tour of the examples</a>
         <a href="#first-project">Your first project</a>
         <a href="#first-stub">Your first stub</a>
         <a href="#try-it">Test a stub</a>
@@ -255,6 +262,108 @@
       </aside>
 
       <div class="tut-body">
+
+        <article class="tut" id="tour">
+          <p class="tut-meta"><span>The basics</span><span>10 min</span><span>Needs the editor role</span></p>
+          <h2>Tour of the examples</h2>
+          <p class="tut-intro">The quickest way to learn MockHub is to install the examples and call them. Each one is a normal project, so you can open every stub, read the note that says what it shows, change it and see what happens. Together they cover every feature.</p>
+          <ol class="tut-steps">
+            <li>
+              <h3>Install an example</h3>
+              <p>Open <strong>Examples</strong> in the sidebar and select <strong>Install as project</strong> on a card. MockHub creates a project with the example's stubs in your team. Open <strong>Stubs</strong>: each stub has a short note saying what it shows. The commands below use your server's address; set it once:</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/tour-1-examples.webp" alt="The Examples page with a card for each built-in example and its Install button" width="1176" height="900" loading="lazy"></figure>
+              <pre class="tut-code"><code>MOCK=https://mockhub.example.com</code></pre>
+            </li>
+            <li>
+              <h3>Petstore: how matching works</h3>
+              <p>The same URL can give different answers. A query, a header or a field in the body decides which stub wins, and <strong>priority</strong> breaks ties (1 is checked first).</p>
+              <pre class="tut-code"><code>curl $MOCK/example-petstore/pets               <span class="c"># every pet</span>
+curl "$MOCK/example-petstore/pets?status=sold"  <span class="c"># query matcher wins</span>
+curl $MOCK/example-petstore/pets/999            <span class="c"># 404 beats the template</span>
+curl -X DELETE $MOCK/example-petstore/pets/1    <span class="c"># 401 without a token</span></code></pre>
+              <p>Now call a URL that doesn't exist, like <code>/example-petstore/owners</code>, and open the project's <strong>Requests</strong> tab. Unmatched calls are marked, with the closest stub and why it missed.</p>
+            </li>
+            <li>
+              <h3>Fake data: realistic, different every time</h3>
+              <p>Call the same URL twice and get a new person each time. The id still comes from the URL.</p>
+              <pre class="tut-code"><code>curl $MOCK/example-fake-data/customers/C-1001
+curl $MOCK/example-fake-data/customers           <span class="c"># five rows from a loop</span>
+curl $MOCK/example-fake-data/de/customers/random <span class="c"># German names and streets</span>
+curl $MOCK/example-fake-data/orders/A-1          <span class="c"># delivery date is always 3 days ahead</span></code></pre>
+              <p>Open a stub and look at its body: <code>{{fake 'Name.fullName'}}</code>, <code>{{now offset='3 days'}}</code>. In the editor, <strong>Fake data</strong> lists what you can use.</p>
+            </li>
+            <li>
+              <h3>Dynamic responses: answers built from the request</h3>
+              <pre class="tut-code"><code>curl "$MOCK/example-templating/echo/anything?q=hello" -H "X-Trace: 42"
+curl -X POST $MOCK/example-templating/quotes \
+  -d '{"sku":"A-1","quantity":12,"tags":["gift","express"]}'
+curl "$MOCK/example-templating/greeting?name=Ana" -H "Accept-Language: de"</code></pre>
+              <p>The quote reads fields from the body, loops over the tags and picks a tier with a condition. See <a href="#templating">Dynamic responses</a> for the helpers.</p>
+            </li>
+            <li>
+              <h3>Matching patterns: what real projects use</h3>
+              <p>Magic test ids that always fail, regular expressions and JSONPath filters on body fields, a fallback for everything else, one stub for every environment, and content negotiation.</p>
+              <pre class="tut-code"><code>curl -X POST $MOCK/example-patterns/shipping/v1/labels \
+  -d '{"orderId":"ORDER-404","returnUrl":"https://shop.example.com/r"}'   <span class="c"># 404</span>
+curl $MOCK/example-patterns/catalog/test/v1/products/BOOK-42
+curl $MOCK/example-patterns/reports/v1/daily -H "Accept: text/csv"</code></pre>
+              <p>The <a href="#patterns">matching patterns tutorial</a> explains each one.</p>
+            </li>
+            <li>
+              <h3>Orders: a REST API that remembers</h3>
+              <p>One CRUD stub handles the whole resource. What you POST is saved, so the next GET returns it, even after a restart.</p>
+              <pre class="tut-code"><code>curl "$MOCK/example-orders/orders?city=London"
+curl -X POST $MOCK/example-orders/orders -d '{"customer":"Ana Silva","total":12}'
+curl -X PATCH $MOCK/example-orders/orders/4 -d '{"status":"SHIPPED"}'
+curl -X DELETE $MOCK/example-orders/orders/1
+curl $MOCK/example-orders/orders/summary         <span class="c"># a normal stub beside the CRUD one</span></code></pre>
+              <p>Open the project's <strong>Data</strong> tab to see, edit or clear the saved orders.</p>
+            </li>
+            <li>
+              <h3>Shopping cart: answers that change over time</h3>
+              <pre class="tut-code"><code>curl $MOCK/example-cart/cart                     <span class="c"># empty</span>
+curl -X POST $MOCK/example-cart/cart/items -d '{"sku":"A-1"}'
+curl $MOCK/example-cart/cart                     <span class="c"># now holds the item</span>
+curl -X POST $MOCK/example-cart/cart/checkout</code></pre>
+              <p>Open <strong>Scenarios</strong> to see the current state and reset it to start again.</p>
+            </li>
+            <li>
+              <h3>Payments: webhooks</h3>
+              <p>Like a real payment provider, the mock answers <em>PENDING</em> straight away and calls you back later. Point the callback at the example's own receiver to watch it arrive:</p>
+              <pre class="tut-code"><code>curl -X POST $MOCK/example-webhooks/payments -d '{"reference":"ORDER-7","amount":25,
+  "callbackUrl":"'$MOCK'/example-webhooks/partner/callbacks"}'
+curl -X POST $MOCK/example-webhooks/payments -d '{"reference":"ORDER-8","amount":5000,
+  "callbackUrl":"'$MOCK'/example-webhooks/partner/callbacks"}'</code></pre>
+              <p>Two seconds later the <strong>Requests</strong> tab shows the callbacks: <em>SETTLED</em> for the first and <em>DECLINED</em> for the large amount. In your own tests, use your service's callback URL instead.</p>
+            </li>
+            <li>
+              <h3>Resilience: slow, failing and switched-off services</h3>
+              <pre class="tut-code"><code>curl -m 2 $MOCK/example-chaos/slow              <span class="c"># times out: it waits 3 s</span>
+curl $MOCK/example-chaos/flaky; curl $MOCK/example-chaos/flaky   <span class="c"># 503, then 200</span>
+for i in $(seq 10); do curl -s -o /dev/null -w "%{http_code} " $MOCK/example-chaos/unreliable; done</code></pre>
+              <p>About one call in five fails. Then open <strong>Stubs</strong>, turn on <em>Maintenance page — switched off</em> and call any URL: everything answers 503 until you turn it off again. The <strong>Calls</strong> column shows how often each stub was used.</p>
+            </li>
+            <li>
+              <h3>Bookshop: from an OpenAPI file, with response files</h3>
+              <p>The stubs were generated from an OpenAPI spec, then an error case was added by hand. Two stubs send files instead of a typed body.</p>
+              <pre class="tut-code"><code>curl $MOCK/example-bookshop/books
+curl $MOCK/example-bookshop/books/000            <span class="c"># hand-written 404</span>
+curl $MOCK/example-bookshop/price-list.csv       <span class="c"># a response file</span></code></pre>
+              <p>Open <strong>Import &amp; export → Response files</strong> to replace the CSV or upload your own, and <code>/covers/123</code> in a browser for the image.</p>
+            </li>
+            <li>
+              <h3>Calculator: SOAP</h3>
+              <pre class="tut-code"><code>curl "$MOCK/example-soap/ws/calculator?wsdl"
+curl -X POST $MOCK/example-soap/ws/calculator -H "Content-Type: text/xml" -d \
+  '&lt;s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/"&gt;&lt;s:Body&gt;
+   &lt;c:Add xmlns:c="http://example.com/calculator"&gt;&lt;c:a&gt;2&lt;/c:a&gt;&lt;c:b&gt;3&lt;/c:b&gt;&lt;/c:Add&gt;
+   &lt;/s:Body&gt;&lt;/s:Envelope&gt;'</code></pre>
+              <p>One stub per operation came from the WSDL. A hand-written stub matches on the values inside the envelope with XPath and returns a SOAP fault for negative numbers.</p>
+            </li>
+          </ol>
+          <p class="tip"><strong>Make it yours.</strong> Change a stub and select <strong>Try it</strong> in the editor to see the new answer. Download any example as a Postman or Bruno collection from <strong>Import &amp; export</strong>. Delete the project from its <strong>Settings</strong> when you're done.</p>
+          <a class="next" href="#first-project">Next: Create your first project</a>
+        </article>
 
         <article class="tut" id="first-project">
           <p class="tut-meta"><span>The basics</span><span>2 min</span><span>Needs the editor role</span></p>
