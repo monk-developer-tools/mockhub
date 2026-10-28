@@ -78,6 +78,41 @@ volumes:
   mockhub-data:
 ```
 
+## Moving from WireMock
+
+Bring your mappings over as they are. Your services keep calling the same URLs.
+
+**A whole repository of mappings.** Start MockHub on a copy of the folder that holds `mappings` and `__files`.
+Every stub answers at once:
+
+```bash
+cp -R acme-mocks/mock /srv/mockhub-data
+docker run -d --name mockhub -p 8080:8080 \
+  -e MOCKHUB_USERS="admin:change-me:admin" \
+  -v /srv/mockhub-data:/data abhaypratap/mockhub
+```
+
+Use a copy rather than your Git checkout, because changes made in MockHub are written back to these files. To manage
+the stubs in the UI, move them into a project that answers at the root. The
+[tutorial](https://mockhub.devops-monk.com/tutorials/#migrate-repo) has a short script for this.
+
+**Or import a zip.** Zip the folder, create a project, turn on **Answer at the root**, and import it under
+**Import & export → WireMock folder** (up to 20,000 files and 200 MB). Mappings that sit inside an app, such as
+`src/test/resources/wiremock`, work the same way.
+
+What carries over:
+
+- Files that hold many stubs (`{"mappings": [...]}`). MockHub splits such a file into one file per stub, in the same
+  folder, the first time you change one of its stubs.
+- Body files in folders, `./` paths and file names built from the request, such as
+  `./orders/{{request.pathSegments.[1]}}.json`. Empty files work too.
+- Matchers, priorities, scenarios, faults, delays, proxies, templates and `transformerParameters`.
+- Which stub wins when several match with the same priority. This stays the same after edits and restarts.
+
+Changes go live immediately, so a pipeline job that restarts WireMock after each merge isn't needed any more.
+Step by step: [Move from WireMock](https://mockhub.devops-monk.com/tutorials/#migrate) and
+[Move a whole mock repository](https://mockhub.devops-monk.com/tutorials/#migrate-repo).
+
 ## Configuration
 
 Everything is set with environment variables.
