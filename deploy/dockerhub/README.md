@@ -44,7 +44,11 @@ Point your service or tests at `http://<host>:8080/<base path>` instead of the r
 - **Import and export.** OpenAPI 3, Swagger 2, WSDL and WireMock mappings in; Postman and Bruno collections out.
 - **AI assistant.** Bring your own model through OpenRouter, Hugging Face, a LiteLLM proxy or any OpenAI-compatible API. It drafts
   stubs, and you review the diff before anything changes.
-- **Teams.** Organisation › teams › people, with viewer, editor and manager roles, admin-only secrets, and Microsoft Entra ID sign-in.
+- **Teams.** Organisation › teams › people, with viewer, editor and manager roles, and Microsoft Entra ID sign-in.
+- **Secrets stay with admins.** Only admins create organisations or see and change project API keys and the AI,
+  sign-in and backup settings. Everyone else gets a `{{apiKey}}` placeholder in Try it, snippets and exports.
+- **Audit log.** Who changed what, to the second: a timeline with filters by kind, person and date, full details
+  in local and UTC time, and a CSV download. Kept for 90 days and also written to standard output.
 - **CRUD resources.** `/customers` with list, read, create, update and delete backed by real stored records, editable
   in a Data tab.
 - **Realistic fake data.** `{{fake 'Name.fullName'}}` and hundreds more, in many languages.
@@ -94,6 +98,17 @@ Everything is set with environment variables.
 | `MOCKHUB_FAKE_LOCALE` | `en` | Default language for `{{fake ...}}` data |
 | `MOCKHUB_PLAYGROUND_ALLOW_PRIVATE` | `false` | Let the Playground call private and local addresses |
 | `WIREMOCK_OPTIONS` | empty | Extra WireMock options, e.g. `--async-response-enabled true` |
+
+## Roles
+
+| Role | What they can do |
+|---|---|
+| Viewer | See projects, stubs and request logs, and download exports |
+| Editor | Also add, change and delete stubs, import, record, and edit data and scenarios |
+| Manager | Also create, rename, move and delete projects and manage people, in one team or the whole organisation |
+| Admin | Everything, plus organisations, accounts, sign-in, the AI assistant, backups and every secret |
+
+![The audit log with one change opened](https://mockhub.devops-monk.com/assets/img/dockerhub-audit.jpg)
 
 Sign-in is off until the first user exists. Create an admin in the UI, or set `MOCKHUB_USERS`. Mock endpoints never
 need a password; only managing them does.
