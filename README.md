@@ -132,6 +132,10 @@ screenshots, and the [live demo](https://mockhub.devops-monk.com/__admin/mockhub
   **WSDL import**. Import creates one stub per operation with sample envelopes generated from the schema, serves
   `?wsdl` pointing at the mock, and adds a fault stub for operations that aren't mocked.
 - **Import** OpenAPI 3 / Swagger 2 (JSON or YAML), WSDL, or WireMock mappings.
+- **Move a whole WireMock repository.** Start MockHub on a copy of the folder, or import it as one zip (up to 20,000
+  files): files with many stubs, `./` body file paths, folders and templated file names all keep working, and the stub
+  that wins a tie stays the same after edits and restarts. See
+  [Move a whole mock repository](https://mockhub.devops-monk.com/tutorials/#migrate-repo).
 - **Export** a Postman v2.1 collection (with a status test per request), a Bruno collection, or WireMock mappings.
   A single `baseUrl` variable switches between the mock and the real service.
 - **Try it.** Send a request to a stub from the editor and see the response. *Call it from your code* gives the

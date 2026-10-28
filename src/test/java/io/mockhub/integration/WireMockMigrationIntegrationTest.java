@@ -57,7 +57,7 @@ class WireMockMigrationIntegrationTest {
     ApiClient.Result order = api.get("/shop/v1/orders/ab12");
     assertThat(order.status()).isEqualTo(200);
     assertThat(order.json().get("id").asText()).isEqualTo("ab12");
-    assertThat(api.get(API + "/projects/" + id + "/files").json()).extracting(f -> f.get("name").asText()).containsExactly("orders-order.json");
+    assertThat(api.get(API + "/projects/" + id + "/files").json()).extracting(f -> f.get("name").asText()).containsExactly("orders/order.json");
   }
 
   @Test

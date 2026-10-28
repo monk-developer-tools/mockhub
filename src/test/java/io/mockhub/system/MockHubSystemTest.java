@@ -12,6 +12,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Base64;
 import java.util.LinkedHashMap;
@@ -131,6 +132,47 @@ class MockHubSystemTest {
     try (MockHubProcess restarted = MockHubProcess.start(data, AUTH_ENV)) {
       // Then
       assertThat(send(restarted, "GET", "/catalog/v2/items", null).body()).contains("A-1");
+    }
+  }
+
+  @Test
+  void aWireMockRootFolderServesAsIsAndItsStubsCanBeMovedIntoAProjectAndEdited() throws Exception {
+    // Given
+    Files.createDirectories(data.resolve("mappings/acme/orders"));
+    Files.createDirectories(data.resolve("__files/acme/orders"));
+    Files.writeString(data.resolve("mappings/acme/orders/all.json"), """
+        {"mappings":[
+          {"request":{"method":"GET","urlPath":"/orders/1"},"response":{"status":200,"bodyFileName":"./acme/orders/1.json"}},
+          {"request":{"method":"GET","urlPathPattern":"/orders/[0-9]+/status"},"response":{"status":200,"body":"{{request.pathSegments.[1]}} shipped","transformers":["response-template"]}}]}""");
+    Files.writeString(data.resolve("__files/acme/orders/1.json"), "{\"id\":1}");
+
+    try (MockHubProcess hub = MockHubProcess.start(data, AUTH_ENV)) {
+      assertThat(send(hub, "GET", "/orders/1", null).body()).isEqualTo("{\"id\":1}");
+      String projectId = json(send(hub, "POST", API + "/projects", "{\"name\":\"Legacy\",\"root\":true}")).get("id").asText();
+
+      // When
+      for (JsonNode stub : json(send(hub, "GET", API + "/stubs/unassigned", null))) {
+        assertThat(send(hub, "POST", API + "/projects/" + projectId + "/adopt/" + stub.get("id").asText() + "?prefix=false", null).statusCode()).isEqualTo(200);
+      }
+      JsonNode first = null;
+      for (JsonNode stub : json(send(hub, "GET", API + "/projects/" + projectId + "/stubs", null))) if (stub.at("/response/bodyFileName").isTextual()) first = stub;
+      HttpResponse<String> edited = send(hub, "PUT", API + "/projects/" + projectId + "/stubs/" + first.get("id").asText(),
+          "{\"request\":{\"method\":\"GET\",\"urlPath\":\"/orders/1\"},\"response\":{\"status\":201,\"bodyFileName\":\"./acme/orders/1.json\"}}");
+
+      // Then
+      assertThat(edited.statusCode()).isEqualTo(200);
+      assertThat(json(send(hub, "GET", API + "/stubs/unassigned", null))).isEmpty();
+      assertThat(Files.exists(data.resolve("mappings/acme/orders/all.json"))).isFalse();
+    }
+
+    // When
+    try (MockHubProcess restarted = MockHubProcess.start(data, AUTH_ENV)) {
+      // Then
+      HttpResponse<String> order = send(restarted, "GET", "/orders/1", null);
+      assertThat(order.statusCode()).isEqualTo(201);
+      assertThat(order.body()).isEqualTo("{\"id\":1}");
+      assertThat(send(restarted, "GET", "/orders/7/status", null).body()).isEqualTo("7 shipped");
+      assertThat(json(send(restarted, "GET", API + "/stubs/unassigned", null))).isEmpty();
     }
   }
 

@@ -12,8 +12,8 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 public record WireMockArchive(Map<String, String> mappings, Map<String, byte[]> files) {
-  public static final int MAX_ENTRIES = 2000;
-  public static final long MAX_TOTAL_BYTES = 50L * 1024 * 1024;
+  public static final int MAX_ENTRIES = 20_000;
+  public static final long MAX_TOTAL_BYTES = 200L * 1024 * 1024;
   public static final long MAX_ENTRY_BYTES = 10L * 1024 * 1024;
   private static final String MAPPINGS = "mappings/";
   private static final String FILES = "__files/";
@@ -32,7 +32,7 @@ public record WireMockArchive(Map<String, String> mappings, Map<String, byte[]> 
         if (entry.isDirectory() || ignored(name)) continue;
         byte[] content = readLimited(in, name);
         total += content.length;
-        if (total > MAX_TOTAL_BYTES) throw new ApiException(413, "The archive unpacks to more than 50 MB");
+        if (total > MAX_TOTAL_BYTES) throw new ApiException(413, "The archive unpacks to more than 200 MB");
         int filesAt = name.lastIndexOf(FILES);
         int mappingsAt = name.lastIndexOf(MAPPINGS);
         if (filesAt >= 0 && filesAt >= mappingsAt && atSegmentStart(name, filesAt)) {

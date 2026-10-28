@@ -252,7 +252,7 @@
           <tr><td>OpenAPI 3 / Swagger 2 (JSON or YAML)</td><td>One stub per operation. The response uses the spec's example, or sample data generated from the schema. Optionally strip a prefix such as <code>/api/v1</code>.</td></tr>
           <tr><td>WSDL 1.1</td><td>See <a href="#soap">SOAP &amp; WSDL</a>.</td></tr>
           <tr><td>WireMock mappings</td><td>A <code>{"mappings": [...]}</code> file, an array, or one stub. Exports from another project are re-rooted automatically.</td></tr>
-          <tr><td>WireMock folder (.zip)</td><td>A zip of a folder with <code>mappings</code> and <code>__files</code>, at any depth. Every mapping file is imported, body files are copied into the project (sub-folders included) and <code>bodyFileName</code> is updated. Files a mapping needs but the zip lacks are listed. Limits: 2,000 entries, 10 MB per file, 50 MB in total.</td></tr>
+          <tr><td>WireMock folder (.zip)</td><td>A zip of a folder with <code>mappings</code> and <code>__files</code>, at any depth. Every mapping file is imported, body files are copied into the project (sub-folders included) and <code>bodyFileName</code> is updated. Folders are kept, and <code>./</code> paths and file names built with templates keep working. Files a mapping needs but the zip lacks are listed. Limits: 20,000 entries, 10 MB per file, 200 MB in total.</td></tr>
         </tbody>
       </table>
 
@@ -264,6 +264,7 @@
         <li>Point your services at MockHub instead of the old WireMock host.</li>
       </ol>
       <p>Stubs that relied on templating switched on for every stub need <code>"transformers": ["response-template"]</code>, or start MockHub with <code>WIREMOCK_OPTIONS=--global-response-templating</code>. Runtime calls to <code>/__admin/mappings</code> keep working with a MockHub token. Step by step: <a href="/tutorials/#migrate">Move from WireMock</a>.</p>
+      <p><strong>A whole repository of mappings.</strong> Start MockHub with a copy of the folder that holds <code>mappings</code> and <code>__files</code> as its data folder (<code>-v /srv/mockhub-data:/data</code>) and every stub answers at once, or import it as a zip into a project that answers at the root. Files with many stubs are served as they are; when one of their stubs changes, MockHub splits that file into one file per stub in the same folder. When several stubs match with the same priority, the winner stays the same across edits and restarts. Step by step: <a href="/tutorials/#migrate-repo">Move a whole mock repository</a>.</p>
 
       <h2 id="export">Postman &amp; Bruno</h2>
       <p>On a project's <strong>Import &amp; export</strong> tab:</p>

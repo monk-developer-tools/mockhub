@@ -3,6 +3,7 @@ package io.mockhub.integration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import org.junit.jupiter.api.AfterEach;
@@ -34,7 +35,7 @@ class BodyFilesIntegrationTest {
   }
 
   private ApiClient.Result upload(String name, byte[] bytes) {
-    return api.send("POST", API + "/projects/" + projectId + "/files?name=" + name, new String(bytes, StandardCharsets.ISO_8859_1), "application/pdf");
+    return api.send("POST", API + "/projects/" + projectId + "/files?name=" + URLEncoder.encode(name, StandardCharsets.UTF_8), new String(bytes, StandardCharsets.ISO_8859_1), "application/pdf");
   }
 
   @Test
@@ -68,6 +69,11 @@ class BodyFilesIntegrationTest {
 
     // Then
     assertThat(upload("../escape.txt", PDF).status()).isEqualTo(400);
+    assertThat(upload("invoices/../../escape.txt", PDF).status()).isEqualTo(400);
+    assertThat(upload("invoices\\42.pdf", PDF).status()).isEqualTo(400);
+    assertThat(upload("invoices//42.pdf", PDF).status()).isEqualTo(400);
+    assertThat(upload("invoices/2026/42.pdf", PDF).json().get("path").asText()).isEqualTo("projects/" + projectId + "/invoices/2026/42.pdf");
+    assertThat(api.delete(API + "/projects/" + projectId + "/files?name=invoices%2F2026%2F42.pdf").status()).isEqualTo(204);
     assertThat(upload("empty.txt", new byte[0]).status()).isEqualTo(400);
     assertThat(api.delete(API + "/projects/" + projectId + "/files?name=logo.png").status()).isEqualTo(204);
     assertThat(api.delete(API + "/projects/" + projectId + "/files?name=logo.png").status()).isEqualTo(404);

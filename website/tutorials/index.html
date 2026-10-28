@@ -137,6 +137,7 @@
             <ol>
               <li><a href="#migrate">Zip the mappings and __files folders and import them</a></li>
               <li>Turn on <a href="#migrate">Answer at the root</a> so every URL stays the same</li>
+              <li>A whole Git repository of mappings? <a href="#migrate-repo">Move it in one go</a></li>
               <li>Learn the <a href="#patterns">matching patterns</a> your mappings already use</li>
               <li><a href="#teams">Give each team its own projects</a> instead of one shared folder</li>
             </ol>
@@ -211,6 +212,7 @@
             <a class="tut-card" href="#soap"><span class="tut-ico"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M4 9h16M8 13h8M8 16h5"/></svg></span><strong>Mock a SOAP service</strong><span>Straight from a WSDL.</span><em>3 min</em></a>
             <a class="tut-card" href="#openapi"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M12 11v6M9.5 14.5L12 17l2.5-2.5"/></svg></span><strong>Import an OpenAPI spec</strong><span>Working stubs in one step.</span><em>2 min</em></a>
             <a class="tut-card" href="#migrate"><span class="tut-ico"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M12 3v4M10 7h4M10 11h4M12 15v3"/></svg></span><strong>Move from WireMock</strong><span>Your folder, your URLs, unchanged.</span><em>3 min</em></a>
+            <a class="tut-card" href="#migrate-repo"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M4 6h6l2 2h8v11H4z"/><path d="M9 14h6M12 11v6"/></svg></span><strong>Move a whole mock repository</strong><span>Thousands of stubs, same responses.</span><em>5 min</em></a>
             <a class="tut-card" href="#export"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19h14"/></svg></span><strong>Share with Postman and Bruno</strong><span>Collections that already work.</span><em>2 min</em></a>
             <a class="tut-card" href="#ai"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M18.5 15.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z"/></svg></span><strong>Let the AI assistant draft stubs</strong><span>Draft stubs or a single body.</span><em>5 min</em></a>
           </div>
@@ -252,6 +254,7 @@
         <a href="#soap">SOAP from WSDL</a>
         <a href="#openapi">OpenAPI import</a>
         <a href="#migrate">Move from WireMock</a>
+        <a href="#migrate-repo">Move a mock repository</a>
         <a href="#export">Postman &amp; Bruno</a>
         <a href="#ai">AI assistant</a>
         <h4>Teams</h4>
@@ -847,6 +850,73 @@ curl -X POST $MOCK/example-soap/ws/calculator -H "Content-Type: text/xml" -d \
             </table>
           </div>
           <p class="tip"><strong>One root project per server.</strong> Only one project can answer at the root. Everything else keeps its own base path. If the stubs used to be created at runtime through <code>/__admin/mappings</code>, that still works: send the same calls with a MockHub token.</p>
+          <a class="next" href="#migrate-repo">Next: Move a whole mock repository</a>
+        </article>
+
+        <article class="tut" id="migrate-repo">
+          <p class="tut-meta"><span>Bring in what you have</span><span>5 min</span></p>
+          <h2>Move a whole mock repository</h2>
+          <p class="tut-intro">Many teams keep a Git repository of WireMock mappings: thousands of stubs in a folder per team, files that hold many stubs each, body files referenced as <code>./team/service/file.json</code>, and a pipeline that restarts WireMock after every merge. MockHub takes it over as it is. Every response stays the same, and changes go live without a restart.</p>
+          <div class="tut-table">
+            <table>
+              <thead><tr><th>A typical repository</th><th>Example</th></tr></thead>
+              <tbody>
+                <tr><td>Mappings in a folder per team or service</td><td><code>mock/mappings/acme/orders/orders.json</code></td></tr>
+                <tr><td>Several stubs in one file</td><td><code>{"mappings": [ … ]}</code></td></tr>
+                <tr><td>Body files with relative paths</td><td><code>"bodyFileName": "./acme/orders/order-42.json"</code></td></tr>
+                <tr><td>File names built from the request</td><td><code>"./acme/orders/{{request.pathSegments.[1]}}.json"</code></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <ol class="tut-steps">
+            <li>
+              <h3>Choose how to bring it over</h3>
+              <p><strong>Run on the folder</strong> if you want the quickest switch: MockHub serves the stubs straight away. <strong>Import a zip</strong> if MockHub is already running for other teams: the stubs go into a project of their own. Both give the same responses as your old WireMock.</p>
+            </li>
+            <li>
+              <h3>Option 1: run MockHub on the folder</h3>
+              <p>Copy the folder that holds <code>mappings</code> and <code>__files</code> and start MockHub with the copy as its data folder. Use a copy, not your Git checkout, because changes made in MockHub are written back to these files.</p>
+              <pre class="tut-code"><code>cp -R acme-mocks/mock /srv/mockhub-data
+docker run -d --name mockhub -p 8080:8080 \
+  -e MOCKHUB_USERS="admin:change-me:admin" \
+  -v /srv/mockhub-data:/data abhaypratap/mockhub</code></pre>
+              <p>Every stub answers at once on the same URLs. They're listed under <strong>Server → Stubs outside any project</strong>. To manage them in the UI, move them into a project that answers at the root. One request per stub does it:</p>
+              <pre class="tut-code"><code>API=http://localhost:8080/__admin/mockhub/api
+AUTH="admin:change-me"
+PROJECT=$(curl -s -u $AUTH $API/projects -H 'Content-Type: application/json' \
+  -d '{"name":"Acme mocks","root":true}' | jq -r .id)
+curl -s -u $AUTH $API/stubs/unassigned | jq -r '.[].id' | while read id; do
+  curl -s -u $AUTH -o /dev/null -X POST "$API/projects/$PROJECT/adopt/$id?prefix=false"
+done</code></pre>
+            </li>
+            <li>
+              <h3>Option 2: import it as a zip</h3>
+              <p>Zip the folder, create a project, turn on <strong>Answer at the root</strong> in its <strong>Settings</strong>, then open <strong>Import &amp; export → WireMock folder</strong> and drop the zip in. A zip can hold up to 20,000 files and 200 MB.</p>
+              <pre class="tut-code"><code>cd acme-mocks &amp;&amp; zip -r ../acme-mocks.zip mock</code></pre>
+              <p>Folders are kept, so <code>./acme/orders/order-42.json</code> and file names built from the request keep working. Empty body files are fine. If a mapping points at a file the repository doesn't have, MockHub lists it, so you can fix it before anyone notices.</p>
+            </li>
+            <li>
+              <h3>Check that nothing changed</h3>
+              <p>Run the old WireMock and MockHub side by side for a day and send the same calls to both, or point one test suite at each. The <strong>Requests</strong> tab shows every call, and near misses explain any request that didn't match.</p>
+            </li>
+            <li>
+              <h3>Switch over and drop the restart step</h3>
+              <p>Point your services and tests at MockHub. Changes made in the UI or through <code>/__admin/mappings</code> go live immediately, so the pipeline job that restarted WireMock after each merge isn't needed any more. Keep a copy with <a href="#backup">Backup &amp; restore</a>, or export the project as WireMock mappings whenever you want it back in Git.</p>
+            </li>
+          </ol>
+          <div class="tut-table">
+            <table>
+              <thead><tr><th>Carries over</th><th>How</th></tr></thead>
+              <tbody>
+                <tr><td>Files with many stubs</td><td>Served as they are. When you change one of their stubs, MockHub splits that file into one file per stub in the same folder.</td></tr>
+                <tr><td>Which stub wins a tie</td><td>When several stubs match with the same priority, the winner stays the same after edits and restarts.</td></tr>
+                <tr><td><code>./</code> and <code>/</code> paths, folders, templated file names</td><td>Unchanged</td></tr>
+                <tr><td>Very long URLs</td><td>Saved with a shortened file name; the stub itself is unchanged</td></tr>
+                <tr><td>Scenarios, faults, delays, proxies, <code>transformerParameters</code></td><td>Unchanged</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="tip"><strong>Tried on a real repository.</strong> We moved a team's repository with more than 2,000 stubs and 2,000 body files both ways and sent the same request for every stub to the old WireMock and to MockHub: every response matched, before and after a restart.</p>
           <a class="next" href="#export">Next: Share with Postman and Bruno</a>
         </article>
 

@@ -40,7 +40,9 @@ public final class FilesController implements ApiController {
     });
     r.post("/projects/{id}/files", ctx -> {
       Project project = projects.get(ctx.path("id"));
-      return Response.json(201, Jsons.MAPPER.valueToTree(files.save(project.id(), name(ctx), ctx.bytes())));
+      byte[] content = ctx.bytes();
+      if (content == null || content.length == 0) throw ApiException.badRequest("The file is empty");
+      return Response.json(201, Jsons.MAPPER.valueToTree(files.save(project.id(), name(ctx), content)));
     });
     r.get("/projects/{id}/files/content", ctx -> {
       Project project = projects.get(ctx.path("id"));

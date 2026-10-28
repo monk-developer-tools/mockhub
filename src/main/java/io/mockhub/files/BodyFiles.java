@@ -17,7 +17,8 @@ import java.util.stream.Stream;
 
 public final class BodyFiles {
   public static final long MAX_BYTES = 10L * 1024 * 1024;
-  private static final Pattern NAME = Pattern.compile("[A-Za-z0-9][A-Za-z0-9._-]{0,120}");
+  private static final Pattern SEGMENT = Pattern.compile("[^/\\\\\\x00-\\x1f]{1,200}");
+  private static final int MAX_NAME_LENGTH = 1000;
   private static final Pattern PROJECT = Pattern.compile("[A-Za-z0-9_-]+");
 
   private final Path filesRoot;
@@ -35,9 +36,9 @@ public final class BodyFiles {
   public List<Info> list(String projectId) {
     Path dir = dir(projectId);
     if (!Files.isDirectory(dir)) return List.of();
-    try (Stream<Path> files = Files.list(dir)) {
+    try (Stream<Path> files = Files.walk(dir)) {
       List<Info> out = new ArrayList<>();
-      files.filter(Files::isRegularFile).sorted(Comparator.comparing(p -> p.getFileName().toString().toLowerCase())).forEach(p -> out.add(info(projectId, p)));
+      files.filter(Files::isRegularFile).map(p -> info(projectId, dir, p)).sorted(Comparator.comparing(i -> i.name().toLowerCase())).forEach(out::add);
       return out;
     } catch (IOException e) {
       throw new UncheckedIOException(e);
@@ -45,22 +46,21 @@ public final class BodyFiles {
   }
 
   public Info save(String projectId, String name, byte[] content) {
-    checkName(name);
-    if (content == null || content.length == 0) throw ApiException.badRequest("The file is empty");
+    if (content == null) throw ApiException.badRequest("Send the file as the request body");
     if (content.length > MAX_BYTES) throw new ApiException(413, "Files can be at most 10 MB");
-    Path file = dir(projectId).resolve(name);
+    Path dir = dir(projectId);
+    Path file = resolve(dir, name);
     try {
       Files.createDirectories(file.getParent());
       Files.write(file, content);
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     }
-    return info(projectId, file);
+    return info(projectId, dir, file);
   }
 
   public byte[] read(String projectId, String name) {
-    checkName(name);
-    Path file = dir(projectId).resolve(name);
+    Path file = resolve(dir(projectId), name);
     if (!Files.isRegularFile(file)) throw ApiException.notFound("File " + name);
     try {
       return Files.readAllBytes(file);
@@ -70,9 +70,9 @@ public final class BodyFiles {
   }
 
   public boolean delete(String projectId, String name) {
-    checkName(name);
+    Path file = resolve(dir(projectId), name);
     try {
-      return Files.deleteIfExists(dir(projectId).resolve(name));
+      return Files.deleteIfExists(file);
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     }
@@ -106,9 +106,9 @@ public final class BodyFiles {
     return "application/octet-stream";
   }
 
-  private Info info(String projectId, Path file) {
+  private Info info(String projectId, Path dir, Path file) {
     try {
-      String name = file.getFileName().toString();
+      String name = dir.relativize(file).toString().replace('\\', '/');
       return new Info(name, Files.size(file), contentType(name), Instant.ofEpochMilli(Files.getLastModifiedTime(file).toMillis()).toString(),
           bodyFileName(projectId, name));
     } catch (IOException e) {
@@ -121,9 +121,19 @@ public final class BodyFiles {
     return filesRoot.resolve("projects").resolve(projectId);
   }
 
+  private static Path resolve(Path dir, String name) {
+    checkName(name);
+    Path file = dir.resolve(name).normalize();
+    if (!file.startsWith(dir) || file.equals(dir)) throw ApiException.badRequest("File names must stay inside the project, e.g. invoices/42.pdf");
+    return file;
+  }
+
   private static void checkName(String name) {
-    if (name == null || !NAME.matcher(name).matches()) {
-      throw ApiException.badRequest("File names can use letters, digits, dots, dashes and underscores, e.g. invoice-42.pdf");
+    if (name == null || name.isEmpty() || name.length() > MAX_NAME_LENGTH) throw ApiException.badRequest("Give the file a name, e.g. invoices/42.pdf");
+    for (String segment : name.split("/", -1)) {
+      if (!SEGMENT.matcher(segment).matches() || segment.equals(".") || segment.equals("..")) {
+        throw ApiException.badRequest("File names can't contain empty folders, '.', '..', backslashes or control characters, e.g. invoices/42.pdf");
+      }
     }
   }
 }

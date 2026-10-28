@@ -6,7 +6,6 @@ import io.mockhub.api.ApiException;
 import io.mockhub.files.BodyFiles;
 import io.mockhub.project.Project;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -24,8 +23,8 @@ public final class WireMockArchiveImporter {
 
   public Result parse(Project project, byte[] zip) {
     WireMockArchive archive = WireMockArchive.read(zip);
-    Map<String, String> saved = new LinkedHashMap<>();
-    archive.files().keySet().forEach(path -> saved.put(path, BodyFiles.bodyFileName(project.id(), flatName(path))));
+    Set<String> available = new LinkedHashSet<>();
+    archive.files().keySet().forEach(path -> available.add(normalise(path)));
     List<ObjectNode> stubs = new ArrayList<>();
     Set<String> missing = new LinkedHashSet<>();
     archive.mappings().forEach((path, json) -> {
@@ -36,29 +35,28 @@ public final class WireMockArchiveImporter {
         throw ApiException.badRequest("mappings/" + path + ": " + e.getMessage());
       }
       for (ObjectNode stub : parsed) {
-        relinkBodyFile(stub, saved, missing);
+        relinkBodyFile(project, stub, available, missing);
         stubs.add(stub);
       }
     });
-    archive.files().forEach((path, content) -> bodyFiles.save(project.id(), flatName(path), content));
-    return new Result(stubs, saved.size(), missing);
+    archive.files().forEach((path, content) -> bodyFiles.save(project.id(), normalise(path), content));
+    return new Result(stubs, available.size(), missing);
   }
 
-  static String flatName(String path) {
-    String flat = path.replaceAll("^/+", "").replace('/', '-').replaceAll("[^A-Za-z0-9._-]", "_");
-    if (flat.length() > 120) flat = flat.substring(flat.length() - 120);
-    return flat.isEmpty() || !Character.isLetterOrDigit(flat.charAt(0)) ? "f" + flat : flat;
+  static String normalise(String reference) {
+    String path = reference;
+    while (path.startsWith("./") || path.startsWith("/")) path = path.startsWith("./") ? path.substring(2) : path.substring(1);
+    return path.replace("/./", "/");
   }
 
-  private static void relinkBodyFile(ObjectNode stub, Map<String, String> saved, Set<String> missing) {
+  private static void relinkBodyFile(Project project, ObjectNode stub, Set<String> available, Set<String> missing) {
     JsonNode response = stub.get("response");
     if (!(response instanceof ObjectNode r) || !r.hasNonNull("bodyFileName")) return;
-    String reference = r.get("bodyFileName").asText().replaceAll("^/+", "");
-    String target = saved.get(reference);
-    if (target == null) {
+    String reference = normalise(r.get("bodyFileName").asText());
+    if (!reference.contains("{{") && !available.contains(reference)) {
       missing.add(reference);
       return;
     }
-    r.put("bodyFileName", target);
+    r.put("bodyFileName", BodyFiles.bodyFileName(project.id(), reference));
   }
 }

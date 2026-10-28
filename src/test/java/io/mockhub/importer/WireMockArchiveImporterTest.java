@@ -36,9 +36,9 @@ class WireMockArchiveImporterTest {
     // Then
     assertThat(result.files()).isEqualTo(1);
     assertThat(result.stubs()).extracting(s -> s.at("/response/bodyFileName").asText())
-        .containsExactly("projects/p-shop/orders-order-1.json", "order-2.json");
+        .containsExactly("projects/p-shop/orders/order-1.json", "order-2.json");
     assertThat(result.missingFiles()).containsExactly("order-2.json");
-    assertThat(new String(files.read(shop.id(), "orders-order-1.json"), StandardCharsets.UTF_8)).isEqualTo("{\"id\":1}");
+    assertThat(new String(files.read(shop.id(), "orders/order-1.json"), StandardCharsets.UTF_8)).isEqualTo("{\"id\":1}");
   }
 
   @Test
@@ -52,9 +52,36 @@ class WireMockArchiveImporterTest {
   }
 
   @Test
-  void flattensFolderPathsIntoSafeFileNames() {
-    assertThat(WireMockArchiveImporter.flatName("orders/2024/list.json")).isEqualTo("orders-2024-list.json");
-    assertThat(WireMockArchiveImporter.flatName("/_private/a b.json")).isEqualTo("f_private-a_b.json");
-    assertThat(WireMockArchiveImporter.flatName("x".repeat(200) + ".json")).hasSize(120);
+  void keepsFoldersAndFollowsDotSlashAndTemplatedReferences() {
+    // Given
+    BodyFiles files = new BodyFiles(data);
+    Project shop = project("shop");
+    Map<String, String> entries = new LinkedHashMap<>();
+    entries.put("mock/mappings/acme/orders.json",
+        "{\"mappings\":["
+            + "{\"request\":{\"urlPath\":\"/a\"},\"response\":{\"bodyFileName\":\"./acme/orders/list.json\"}},"
+            + "{\"request\":{\"urlPathPattern\":\"/orders/.*\"},\"response\":{\"bodyFileName\":\"./acme/orders/{{request.pathSegments.[1]}}.json\",\"transformers\":[\"response-template\"]}}]}");
+    entries.put("mock/__files/acme/orders/list.json", "[]");
+    entries.put("mock/__files/acme/orders/42.json", "{\"id\":42}");
+    entries.put("mock/__files/acme/empty.txt", "");
+
+    // When
+    WireMockArchiveImporter.Result result = new WireMockArchiveImporter(files).parse(shop, Zips.of(entries));
+
+    // Then
+    assertThat(result.missingFiles()).isEmpty();
+    assertThat(result.stubs()).extracting(s -> s.at("/response/bodyFileName").asText())
+        .containsExactly("projects/p-shop/acme/orders/list.json", "projects/p-shop/acme/orders/{{request.pathSegments.[1]}}.json");
+    assertThat(files.list(shop.id())).extracting(BodyFiles.Info::name).containsExactly("acme/empty.txt", "acme/orders/42.json", "acme/orders/list.json");
+    assertThat(files.read(shop.id(), "acme/empty.txt")).isEmpty();
+  }
+
+  @Test
+  void normalisesTheWaysWireMockMappingsReferToBodyFiles() {
+    assertThat(WireMockArchiveImporter.normalise("./orders/list.json")).isEqualTo("orders/list.json");
+    assertThat(WireMockArchiveImporter.normalise("/orders/list.json")).isEqualTo("orders/list.json");
+    assertThat(WireMockArchiveImporter.normalise("orders/./2024/list.json")).isEqualTo("orders/2024/list.json");
+    assertThat(WireMockArchiveImporter.normalise("./orders/{{regexExtract request.path 'id-(\\d+)'}}.json"))
+        .isEqualTo("orders/{{regexExtract request.path 'id-(\\d+)'}}.json");
   }
 }
