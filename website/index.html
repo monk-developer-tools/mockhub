@@ -251,7 +251,7 @@
         <div class="section-head reveal">
           <p class="product-name">Moving from WireMock</p>
           <h2>Bring your WireMock.<br>Keep every URL.</h2>
-          <p>Zip the folder that holds <code>mappings</code> and <code>__files</code>, drop it into a project and switch on <em>Answer at the root</em>. Your services keep calling the same paths, and every template keeps working.</p>
+          <p>Zip the folder that holds <code>mappings</code> and <code>__files</code>, drop it into a project and switch on <em>Answer at the root</em>. Your services keep calling the same paths, and every template keeps working. A whole Git repository of mappings? Start MockHub on a copy of the folder and every stub answers at once.</p>
         </div>
         <ol class="steps">
           <li class="step reveal">
@@ -264,7 +264,7 @@
           <li class="step reveal">
             <span class="step-n">2</span>
             <h3>Drop it in</h3>
-            <p>Import &amp; export → <em>WireMock folder</em>. Body files in sub-folders come along.</p>
+            <p>Import &amp; export → <em>WireMock folder</em>. Up to 20,000 files, folders kept.</p>
             <div class="code"><pre><span class="k">Imported</span> 41 stubs and
 25 body files.</pre></div>
           </li>
@@ -281,9 +281,11 @@
           <li>Priorities and fallbacks</li>
           <li>Proxies to real services</li>
           <li>Response templates and parameters</li>
-          <li>Body files in sub-folders</li>
+          <li>Body files in sub-folders and <code>./</code> paths</li>
+          <li>Files with many stubs</li>
+          <li>Which stub wins a tie, across restarts</li>
         </ul>
-        <p class="center reveal"><a class="link-chevron" href="/tutorials/#migrate">Read the migration tutorial</a></p>
+        <p class="center reveal"><a class="link-chevron" href="/tutorials/#migrate">Read the migration tutorial</a> &nbsp; <a class="link-chevron" href="/tutorials/#migrate-repo">Move a whole mock repository</a></p>
       </div>
     </section>
 
