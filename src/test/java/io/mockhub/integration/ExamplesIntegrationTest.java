@@ -164,7 +164,7 @@ class ExamplesIntegrationTest {
     assertThat(list).hasSize(5);
     assertThat(list.get(4).get("id").asText()).isEqualTo("C-1005");
     assertThat(product.get("price").isNumber()).isTrue();
-    assertThat(api.get("/example-fake-data/orders/A-1").json().get("total").asText()).matches("\\d+\\.\\d{2}");
+    assertThat(api.get("/example-fake-data/orders/A-1").body()).containsPattern("\"total\": \\d+\\.\\d{2},");
     assertThat(api.get("/example-fake-data/de/customers/random").json().get("name").asText()).isNotBlank();
     assertThat(api.get("/example-fake-data/orders/A-1").json().get("deliveryDate").asText()).matches("\\d{4}-\\d{2}-\\d{2}");
   }
