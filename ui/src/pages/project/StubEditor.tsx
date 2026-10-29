@@ -317,7 +317,7 @@ export function StubEditor({ project, projects, stub, isNew, canEdit, onSaved, o
             </div>
           )}
           <p className="muted small" style={{ marginBottom: 8 }}>
-            URLs are relative to <span className="mono">{project.basePath}</span>. See the{' '}
+            {project.basePath ? <>URLs are relative to <span className="mono">{project.basePath}</span>.</> : 'URLs start at the server root.'} See the{' '}
             <a href="https://wiremock.org/docs/stubbing/" target="_blank" rel="noreferrer">WireMock stubbing reference</a>.
           </p>
           <CodeEditor

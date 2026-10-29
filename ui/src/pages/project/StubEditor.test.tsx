@@ -58,6 +58,19 @@ describe('StubEditor', () => {
     expect(screen.getByText('3 calls in the request log, last just now')).toBeInTheDocument();
   });
 
+  it('says where JSON urls start for a project at the root', () => {
+    // Given
+    const root = { ...project, basePath: '', root: true } as Project;
+    renderWithShell(<StubEditor project={root} projects={[root]} stub={stub} isNew={false} canEdit onSaved={() => undefined}
+      onDeleted={() => undefined} onDirtyChange={() => undefined} />);
+
+    // When
+    fireEvent.click(screen.getAllByRole('button', { name: 'JSON' })[0]);
+
+    // Then
+    expect(screen.getByText(/URLs start at the server root/)).toBeInTheDocument();
+  });
+
   it('marks a disabled stub as off', () => {
     // Given
     const off: Stub = { ...stub, metadata: { mockhub: { disabled: true } } };

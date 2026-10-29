@@ -893,7 +893,9 @@ done</code></pre>
               <h3>Option 2: import it as a zip</h3>
               <p>Zip the folder, create a project, turn on <strong>Answer at the root</strong> in its <strong>Settings</strong>, then open <strong>Import &amp; export → WireMock folder</strong> and drop the zip in. A zip can hold up to 20,000 files and 200 MB.</p>
               <pre class="tut-code"><code>cd acme-mocks &amp;&amp; zip -r ../acme-mocks.zip mock</code></pre>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/migrate-repo-1-import.webp" alt="The Acme mocks project after dropping acme-mocks.zip into WireMock folder: 156 stubs and 108 body files imported, with the files listed in their folders" width="1176" height="900" loading="lazy"></figure>
               <p>Folders are kept, so <code>./acme/orders/order-42.json</code> and file names built from the request keep working. Empty body files are fine. If a mapping points at a file the repository doesn't have, MockHub lists it, so you can fix it before anyone notices.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/migrate-repo-2-stubs.webp" alt="An imported stub in JSON view, with its bodyFileName still pointing into the accounts/customer folder" width="1176" height="900" loading="lazy"></figure>
             </li>
             <li>
               <h3>Check that nothing changed</h3>
