@@ -1,4 +1,4 @@
-import { ArrowsDownUp, ClockCounterClockwise, BracketsCurly, Database, FlowArrow, Gauge, GearSix, Pulse, Sparkle, Warning } from '@phosphor-icons/react';
+import { ArrowBendUpRight, ArrowsDownUp, ClockCounterClockwise, BracketsCurly, Database, FlowArrow, Gauge, GearSix, Pulse, Sparkle, Warning } from '@phosphor-icons/react';
 import { useCallback, useEffect, useState } from 'react';
 import { NavLink, Outlet, useOutletContext, useParams } from 'react-router-dom';
 import { api } from '../../api/client';
@@ -67,6 +67,7 @@ export function ProjectPage() {
     { to: 'data', label: 'Data', icon: Database },
     { to: 'assistant', label: 'Assistant', icon: Sparkle },
     { to: 'requests', label: 'Requests', icon: Pulse, count: project.requestCount, alert: project.unmatchedCount },
+    { to: 'callouts', label: 'Callouts', icon: ArrowBendUpRight },
     { to: 'scenarios', label: 'Scenarios', icon: FlowArrow },
     { to: 'import-export', label: 'Import & export', icon: ArrowsDownUp },
     { to: 'activity', label: 'Activity', icon: ClockCounterClockwise },

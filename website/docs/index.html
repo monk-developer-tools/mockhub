@@ -44,7 +44,7 @@
       <a href="#data-generator">Data generator</a>
       <a href="#crud">CRUD resources</a>
       <a href="#scenarios">Scenarios</a>
-      <a href="#webhooks">Webhooks</a>
+      <a href="#webhooks">Webhooks &amp; callouts</a>
       <a href="#files">Response files</a>
       <a href="#faults">Delays &amp; faults</a>
       <a href="#api-keys">API keys</a>
@@ -168,7 +168,7 @@
           <tr><td><code>{{#if …}} {{#eq a 'b'}} {{#each …}}</code></td><td>conditionals and loops</td></tr>
         </tbody>
       </table>
-      <p>See the <a href="https://wiremock.org/docs/response-templating/">WireMock templating reference</a> for the full list.</p>
+      <p>You don't need to remember these. Above the body, <strong>Insert dynamic value</strong> opens a searchable menu of every helper, grouped as request components, control flow, data manipulation, stateful helpers, comparison, string, arithmetic and date operators, array helpers, random values and Faker. A click inserts the helper at the cursor and turns templating on. See the <a href="https://wiremock.org/docs/response-templating/">WireMock templating reference</a> for the full list.</p>
 
       <h2 id="fake-data">Fake data</h2>
       <p>Templated responses can use <code>{{fake '…'}}</code> with any <a href="https://www.datafaker.net/documentation/providers/">Datafaker expression</a>. In the editor, <strong>Fake data</strong> lists the common ones.</p>
@@ -208,8 +208,23 @@
       <h2 id="scenarios">Scenarios</h2>
       <p>Give stubs the same <strong>scenario name</strong>. Each stub answers only in its <em>required state</em> and can move the scenario to a <em>new state</em>. Every scenario starts in <code>Started</code>. Reset or jump between states from the project's <strong>Scenarios</strong> tab. The <em>Shopping cart</em> example shows a complete flow.</p>
 
-      <h2 id="webhooks">Webhooks</h2>
-      <p>In the editor's <strong>Then call</strong> section, add one or more webhooks: method, URL, headers, body and an optional delay. They are sent after the stub answers. Use <code>{{originalRequest.body}}</code>, <code>{{jsonPath originalRequest.body '$.id'}}</code> or <code>{{originalRequest.headers.X-Id}}</code> to pass data from the request. They're stored as standard WireMock <code>serveEventListeners</code>, so existing WireMock webhook mappings work unchanged.</p>
+      <h2 id="webhooks">Webhooks &amp; callouts</h2>
+      <p>Many APIs answer at once and report the result later by calling you back. MockHub mocks both sides.</p>
+      <p><strong>Then call.</strong> In a stub's <strong>Then call</strong> section, add one or more webhooks with a method, URL, headers, body and delay. They're sent after the stub answers. The URL, headers and body are templates, and <strong>Insert dynamic value</strong> lists what you can use:</p>
+      <table>
+        <thead><tr><th>In a webhook</th><th>Gives</th></tr></thead>
+        <tbody>
+          <tr><td><code>{{jsonPath originalRequest.body '$.callbackUrl'}}</code></td><td>a value from the request, here a callback URL to call</td></tr>
+          <tr><td><code>{{{originalRequest.body}}}</code>, <code>{{originalRequest.headers.X-Id}}</code>, <code>{{originalRequest.path.id}}</code></td><td>the rest of the request</td></tr>
+          <tr><td><code>{{jsonPath originalResponse.body '$.id'}}</code>, <code>{{originalResponse.status}}</code></td><td>the mock response the stub just sent</td></tr>
+          <tr><td><code>{{now}}</code>, <code>{{randomValue type='UUID'}}</code>, <code>{{fake 'Name.fullName'}}</code></td><td>any other templating helper</td></tr>
+        </tbody>
+      </table>
+      <p>Choose <strong>Forward incoming request</strong> to send the request as it arrived (method, headers and body) instead of a custom body.</p>
+      <p><strong>Wait for callout.</strong> As the response type, <strong>Wait for callout</strong> calls the URL while the caller waits and answers with the target's status, headers and body. If the call fails, the caller gets <code>502</code> with the reason.</p>
+      <p><strong>Callouts tab.</strong> Every callout shows up live with what was sent, the answer, the time it took and any error. On a failed one, <strong>Ask the assistant to fix it</strong> hands it to the <a href="#ai">AI assistant</a>.</p>
+      <p><strong>Catch all webhooks.</strong> On the Requests tab, this adds a low-priority stub that answers <code>200</code> to anything no other stub matched. Point a third-party webhook at <code>&lt;mock URL&gt;/webhooks</code> and inspect each call in the <a href="#requests">request log</a>.</p>
+      <p>Calls to MockHub's own mock URLs always work. Private and local addresses are blocked unless an admin sets <code>MOCKHUB_CALLOUT_ALLOW_PRIVATE=true</code>. Webhooks are stored as <code>mockhub-callout</code> serve event listeners. WireMock's own <code>webhook</code> mappings still run, and they become <code>mockhub-callout</code> when you save them in the editor. The WireMock mappings export turns them back into <code>webhook</code>.</p>
 
       <h2 id="files">Response files</h2>
       <p>On <strong>Import &amp; export</strong>, upload files up to 10 MB under <strong>Response files</strong>: PDFs, images, large JSON. In a stub, choose <strong>File</strong> as the body type and pick the file; the <code>Content-Type</code> is set for you. Files are kept per project, removed with the project, and included in backups.</p>
@@ -324,7 +339,7 @@ done</pre></div>
       <p>Request bodies come from each stub's matchers, or from the <em>Example request body</em> you set in the editor. Change <code>baseUrl</code> to run the same collection against the real service.</p>
 
       <h2 id="requests">Request log</h2>
-      <p>The <strong>Requests</strong> tab updates live. Filter to <em>Unmatched</em> to find missing stubs. Click a request to see headers and bodies, the closest stubs and how near they came, a button that creates a stub from that request, and <strong>Replay in Playground</strong>.</p>
+      <p>The <strong>Requests</strong> tab updates live. To inspect a third-party webhook, select <strong>Catch all webhooks</strong> and give the service the URL shown. Filter to <em>Unmatched</em> to find missing stubs. Click a request to see headers and bodies, the closest stubs and how near they came, a button that creates a stub from that request, and <strong>Replay in Playground</strong>.</p>
 
       <h2 id="playground">Playground</h2>
       <p>The <strong>Playground</strong> (sidebar) sends requests to your mocks or to public APIs from the server, so browser CORS rules don't get in the way. It shows status, time, size, headers and a formatted body, and can copy the request as cURL or save the response as a stub in any project you can edit. It needs the editor role.</p>
@@ -375,7 +390,8 @@ done</pre></div>
           <tr><td>OpenAI-compatible</td><td>e.g. <code>https://api.openai.com/v1</code></td><td>OpenAI, Azure OpenAI, Ollama, vLLM, LM Studio.</td></tr>
         </tbody>
       </table>
-      <p>In a project, open <strong>Assistant</strong> and describe what you need, or paste an OpenAPI spec, a WSDL or curl commands. The assistant reads the stubs and recent requests and <em>stages</em> changes. You review each one as a diff and apply or discard it, so nothing changes until an editor applies it. Viewers can draft changes but not apply them.</p>
+      <p>In a project, open <strong>Assistant</strong> and describe what you need, or paste an OpenAPI spec, a WSDL or curl commands. The assistant reads the stubs, recent requests and recent <a href="#webhooks">callouts</a> and <em>stages</em> changes. It can set up webhooks and wait-for-callout stubs from a sentence, such as <em>“after POST /payments, call the callbackUrl from the request 2 seconds later with status SETTLED”</em>, and it can explain and fix a failing one. You review each one as a diff and apply or discard it, so nothing changes until an editor applies it. Viewers can draft changes but not apply them.</p>
+      <p>In a stub's <strong>Then call</strong> section, <strong>Ask the assistant</strong> takes a description of a webhook for that stub. In the Callouts tab, <strong>Ask the assistant to fix it</strong> sends it a failed callout.</p>
       <p>For a single response, select <strong>Generate with AI</strong> next to a stub's body. Describe it, check the result and select <strong>Use this body</strong>. This needs the editor role.</p>
       <div class="callout">The conversation, the project's stubs and, when needed, recent requests go to the provider you configure. Choose one your organisation allows, or run models yourself behind LiteLLM.</div>
 
@@ -394,6 +410,8 @@ done</pre></div>
           <tr><td><code>MOCKHUB_LOG_LEVEL</code></td><td><code>info</code></td><td>Standard output detail: <code>error</code>, <code>warn</code>, <code>info</code>, <code>debug</code></td></tr>
           <tr><td><code>MOCKHUB_STUB_CORS</code></td><td><code>true</code></td><td>CORS headers on mock responses</td></tr>
           <tr><td><code>MOCKHUB_PLAYGROUND_ALLOW_PRIVATE</code></td><td><code>false</code></td><td>Let the Playground call private and local addresses</td></tr>
+          <tr><td><code>MOCKHUB_CALLOUT_ALLOW_PRIVATE</code></td><td><code>false</code></td><td>Let webhooks and wait-for-callout stubs call private and local addresses (MockHub's own mock URLs always work)</td></tr>
+          <tr><td><code>MOCKHUB_CALLOUT_LOG_SIZE</code></td><td><code>2000</code></td><td>How many callouts the Callouts tab keeps in memory</td></tr>
           <tr><td><code>WIREMOCK_OPTIONS</code></td><td>empty</td><td>Any extra <a href="https://wiremock.org/docs/standalone/java-jar/">WireMock flag</a></td></tr>
         </tbody>
       </table>
@@ -489,7 +507,8 @@ terraform init &amp;&amp; terraform apply</pre></div>
       <h2 id="limits">Limits</h2>
       <ul>
         <li>Run one instance per data directory. WireMock keeps stubs in memory and reads the files only at startup.</li>
-        <li>Scenario states and the request log are in memory and reset on restart.</li>
+        <li>Scenario states, the request log and the callout log are in memory and reset on restart.</li>
+        <li>A webhook is sent once. Failed callouts are logged, not retried.</li>
         <li>Project base paths can't collide with each other or with <code>/__admin</code>.</li>
       </ul>
     </article>

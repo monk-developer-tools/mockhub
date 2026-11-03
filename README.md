@@ -154,8 +154,15 @@ screenshots, and the [live demo](https://mockhub.devops-monk.com/__admin/mockhub
   they survive restarts and travel in backups.
 - **Realistic fake data.** `{{fake 'Name.fullName'}}`, `{{fake 'Internet.emailAddress'}}`, `{{fake 'Address.city'}}`
   and hundreds more in any templated response, in many languages. OpenAPI imports fill fields by name and format.
-- **Webhooks.** A stub can call other services after it answers (a payment callback, for example), with data from
-  the request, set up in the editor's *Then call* section.
+- **Webhooks and callouts.** A stub can call other services after it answers, like a payment callback. It can send a
+  custom body built from the request and from the response it just sent, or forward the incoming request as is.
+  **Wait for callout** goes further: the stub calls a partner while the caller waits, then answers with the partner's
+  status, headers and body. The **Callouts** tab logs every call: what was sent, the answer, the time and any error.
+  **Catch all webhooks** adds a receiver that answers 200 to anything, so you can point a third-party webhook at
+  MockHub and inspect it. See [Webhooks and callouts](#webhooks-and-callouts).
+- **Insert dynamic value.** Response and webhook bodies have a searchable menu of every template helper, grouped like
+  request components, control flow, data manipulation, dates, arrays, state and Faker. A click inserts the helper at
+  the cursor and turns templating on.
 - **Response files.** Upload PDFs, images or large JSON (up to 10 MB) and serve them as response bodies.
 - **Built-in examples:** ten ready-made projects that cover every feature: REST matching, fake data, templating, real-world matching patterns, CRUD with saved data, stateful scenarios, webhooks, faults and failure rates, an OpenAPI import with response files, and a SOAP calculator from WSDL. The [tour of the examples](https://mockhub.devops-monk.com/tutorials/#tour) has commands to try with each.
   Install one with a click and copy what you need. The editor also has a template gallery.
@@ -206,7 +213,71 @@ All configuration is through environment variables.
 | `MOCKHUB_STUB_CORS` | `true` | Adds CORS headers to mock responses so browser apps can call them |
 | `MOCKHUB_FAKE_LOCALE` | `en` | Default language for `{{fake ...}}` data, e.g. `de`, `fr`, `en-GB` |
 | `MOCKHUB_PLAYGROUND_ALLOW_PRIVATE` | `false` | Let the Playground call private and local addresses (blocked by default so the server can't reach your internal network) |
+| `MOCKHUB_CALLOUT_ALLOW_PRIVATE` | `false` | Let webhooks and *wait for callout* stubs call private and local addresses. Calls to MockHub's own mock URLs always work. Set it to `true` for callbacks to services on your own network, e.g. `host.docker.internal` |
+| `MOCKHUB_CALLOUT_LOG_SIZE` | `2000` | How many callouts the Callouts tab keeps in memory, across all projects |
 | `WIREMOCK_OPTIONS` | empty | Any extra [WireMock CLI option](https://wiremock.org/docs/standalone/java-jar/), e.g. `--async-response-enabled true --verbose` |
+
+## Webhooks and callouts
+
+Many APIs answer at once and report the result later by calling you back: payment providers, shipping, KYC, async
+jobs. MockHub mocks both sides of that.
+
+**Then call (webhooks).** In a stub's *Then call* section, add one or more webhooks. Each one has a method, a URL, headers,
+a body and a delay. The URL, headers and body are templates:
+
+```json
+"serveEventListeners": [{
+  "name": "mockhub-callout",
+  "parameters": {
+    "method": "POST",
+    "url": "{{jsonPath originalRequest.body '$.callbackUrl'}}",
+    "headers": { "Content-Type": "application/json" },
+    "body": "{ \"reference\": \"{{jsonPath originalRequest.body '$.reference'}}\", \"id\": \"{{jsonPath originalResponse.body '$.id'}}\", \"status\": \"SETTLED\" }",
+    "delay": { "type": "fixed", "milliseconds": 2000 }
+  }
+}]
+```
+
+| In a webhook template | Means |
+|---|---|
+| `{{originalRequest.body}}`, `{{jsonPath originalRequest.body '$.x'}}`, `{{originalRequest.headers.X-Id}}`, `{{originalRequest.query.x}}`, `{{originalRequest.path.id}}`, `{{originalRequest.baseUrl}}` | the request that hit the stub |
+| `{{originalResponse.body}}`, `{{jsonPath originalResponse.body '$.id'}}`, `{{originalResponse.status}}`, `{{originalResponse.headers.X}}` | the mock response the stub just sent |
+| every other helper: `{{now}}`, `{{randomValue type='UUID'}}`, `{{fake 'Name.fullName'}}`, `#if`, `#each` … | as in response templating |
+
+Pick **Forward incoming request** (`"forward": true`) to send the request as it arrived (method, headers, body) instead
+of a custom body. Headers you add are put on top.
+
+**Wait for callout.** Choose *Wait for callout* as the response type. MockHub calls the URL while the caller waits,
+then answers with the target's status, headers and body. Use it to put a mock in front of a real or mocked partner and
+reshape the request on the way. If the call fails, the caller gets `502` with the reason, and the header
+`X-MockHub-Callout-Error: true`.
+
+```json
+"response": {
+  "status": 200,
+  "transformers": ["mockhub-sync-callout"],
+  "transformerParameters": { "callout": { "method": "POST", "url": "https://issuer.example.com/authorize",
+    "headers": { "Content-Type": "application/json" }, "body": "{ \"pan\": \"{{jsonPath originalRequest.body '$.card'}}\" }" } }
+}
+```
+
+**Callouts tab.** Every webhook and wait-for-callout call shows up with its target, what was sent, the answer, the
+time it took and any error, such as a template mistake, a refused connection or a blocked address. It updates live.
+
+**Catch all webhooks.** On the Requests tab, *Catch all webhooks* adds a low-priority stub that answers `200` to any
+request no other stub matched. Give a third-party service `<mock URL>/webhooks` (or any path) and watch its calls
+arrive in the request log.
+
+**Where callouts may go.** Calls to MockHub's own mock URLs always work, including relative URLs like
+`/payments/partner/callbacks`. Private and local addresses (`10.x`, `192.168.x`, `localhost` services other than
+MockHub, cloud metadata) are blocked unless an admin sets `MOCKHUB_CALLOUT_ALLOW_PRIVATE=true`. MockHub's admin API can't
+be called.
+
+**WireMock compatibility.** WireMock's own `webhook` listener still works, and the editor opens it. When you save, it's
+stored as `mockhub-callout` so it shows up in the Callouts tab. The *WireMock mappings* export turns `mockhub-callout`
+back into `webhook` for plain WireMock. Wait-for-callout is MockHub-only.
+
+The [Payments — webhooks and callbacks](https://mockhub.devops-monk.com/tutorials/#tour) example shows all of this.
 
 ## Organisations, users and sign-in
 
@@ -292,14 +363,19 @@ Then, in any project, open **Assistant** and say what you need. For example:
 - *Create stubs for the requests that matched nothing*
 - *Make every POST answer after 2 seconds*
 - *Add a SOAP GetCustomer operation*
+- *After POST /payments, call the callbackUrl from the request 2 seconds later with status SETTLED*
+- *Why are my webhooks failing? Check the recent callouts and fix them*
 
 You can also paste an OpenAPI spec, a WSDL or curl commands. The new-project dialog has a **Describe the API** box
 that starts the conversation for you.
 
-The assistant uses tool calling. It reads the project's stubs and recent requests, and it **stages** creates,
+The stub editor's *Then call* section has an **Ask the assistant** box for describing a webhook in words, and the
+Callouts tab has **Ask the assistant to fix it** on any failed callout.
+
+The assistant uses tool calling. It reads the project's stubs, recent requests and recent callouts, and it **stages** creates,
 updates and deletes. Each staged change appears as a diff. You apply or discard each one, so nothing changes until
-someone with the editor role applies it. Viewers can draft changes but can't apply them. Request log contents are
-treated as data, not instructions.
+someone with the editor role applies it. Viewers can draft changes but can't apply them. Request log and callout log
+contents are treated as data, not instructions.
 
 The conversation, the project's stubs and, when the assistant asks for them, recent requests are sent to the
 provider you configure. Choose one your organisation allows, or run models yourself behind LiteLLM.
@@ -342,6 +418,7 @@ MockHub is a WireMock extension running inside a regular WireMock server:
 | PUT | `/__admin/mockhub/api/projects/{id}/stubs/{stubId}/enabled` | `{enabled}` → turn a stub on or off |
 | GET | `/__admin/mockhub/api/projects/{id}/usage` | calls and last call time per stub, from the request log |
 | GET/DELETE | `/__admin/mockhub/api/projects/{id}/requests?unmatched=&limit=` | request log |
+| GET/DELETE | `/__admin/mockhub/api/projects/{id}/callouts?limit=` | callout log: webhooks and *wait for callout* calls with what was sent, the answer, timing and errors |
 | GET | `/__admin/mockhub/api/projects/{id}/export/{postman,bruno,wiremock}` | download an export |
 | POST | `/__admin/mockhub/api/projects/{id}/import/{openapi,wsdl,wiremock}` | import a document (request body) |
 | GET/POST | `/__admin/mockhub/api/examples`, `/examples/{id}/install` | built-in examples |
@@ -416,6 +493,7 @@ src/main/java/io/mockhub
   ai/                            AI assistant: provider strategy (OpenRouter, Hugging Face, LiteLLM, OpenAI-compatible), tool loop
   stub/                          project stubs: gateway port to WireMock, path re-rooting, metadata
   journal/                       request log per project
+  callout/                       webhooks and wait-for-callout: listener, transformer, templating, target guard, log
   importer/ export/ soap/        import and export strategies, WSDL/XSD sampling
   example/                       bundled example catalog and installer
 ui/src
@@ -443,4 +521,5 @@ multi-arch (amd64 and arm64). The pipeline needs two repository secrets: `DOCKER
 
 - Run **one** task per data directory. WireMock keeps stubs in memory and only reads the files at startup, so two
   replicas would drift apart. One task handles thousands of requests per second, which is plenty for test environments.
-- Scenario states and the request log live in memory and reset on restart.
+- Scenario states, the request log and the callout log live in memory and reset on restart.
+- A webhook is sent once. Failed callouts are logged but not retried.

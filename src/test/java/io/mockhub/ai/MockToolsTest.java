@@ -6,6 +6,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import io.mockhub.api.Jsons;
+import io.mockhub.callout.CalloutEntry;
+import io.mockhub.callout.InMemoryCalloutLog;
+import io.mockhub.callout.OutboundRequest;
 import io.mockhub.journal.RequestLogService;
 import io.mockhub.project.Project;
 import io.mockhub.project.ProjectService;
@@ -22,6 +25,7 @@ class MockToolsTest {
 
   private StubService stubs;
   private RequestLogService requestLog;
+  private InMemoryCalloutLog callouts;
   private Project orders;
   private String existingId;
 
@@ -33,6 +37,7 @@ class MockToolsTest {
     ProjectService projects = new ProjectService(new InMemoryProjectRepository(), List.of(stubs), Clock.systemUTC());
     ref.set(projects);
     requestLog = new RequestLogService(gateway, projects);
+    callouts = new InMemoryCalloutLog(100);
     orders = projects.create(tree("{'orgId':'org1','name':'Orders','slug':'orders'}"));
     existingId = stubs.create(orders.id(), json("{'name':'List','request':{'method':'GET','urlPath':'/items'},'response':{'status':200}}")).get("id").asText();
   }
@@ -48,7 +53,7 @@ class MockToolsTest {
   @Test
   void stagesNewStubsWithoutTouchingTheServer() {
     // Given
-    MockTools tools = new MockTools(stubs, requestLog, orders.id(), List.of());
+    MockTools tools = new MockTools(stubs, requestLog, callouts, orders.id(), List.of());
 
     // When
     JsonNode result = run(tools, "create_stub", "{'stub':{'name':'Get','request':{'method':'GET','urlPathTemplate':'/items/{id}'},'response':{'status':200}},'summary':'Get one item'}");
@@ -66,7 +71,7 @@ class MockToolsTest {
   @Test
   void reportsInvalidStubsAsToolErrors() {
     // Given
-    MockTools tools = new MockTools(stubs, requestLog, orders.id(), List.of());
+    MockTools tools = new MockTools(stubs, requestLog, callouts, orders.id(), List.of());
 
     // Then
     assertThat(run(tools, "create_stub", "{'stub':{'response':{'status':200}},'summary':'x'}").get("error").asText()).contains("request");
@@ -79,7 +84,7 @@ class MockToolsTest {
   @Test
   void updatesKeepTheOriginalForReviewAndReplaceEarlierProposals() {
     // Given
-    MockTools tools = new MockTools(stubs, requestLog, orders.id(), List.of());
+    MockTools tools = new MockTools(stubs, requestLog, callouts, orders.id(), List.of());
     String updated = "{'id':'" + existingId + "','stub':{'name':'List','request':{'method':'GET','urlPath':'/items'},'response':{'status':503}},'summary':'Make it fail'}";
 
     // When
@@ -99,7 +104,7 @@ class MockToolsTest {
   @Test
   void revisesOrDropsStagedStubsByChangeId() {
     // Given
-    MockTools tools = new MockTools(stubs, requestLog, orders.id(), List.of());
+    MockTools tools = new MockTools(stubs, requestLog, callouts, orders.id(), List.of());
     String changeId = run(tools, "create_stub", "{'stub':{'request':{'method':'POST','urlPath':'/items'},'response':{'status':201}},'summary':'Create'}").get("changeId").asText();
 
     // When
@@ -115,7 +120,7 @@ class MockToolsTest {
   void stagesDeletionsAndContinuesFromPendingChanges() {
     // Given
     ProposedChange pending = new ProposedChange("c-1", "create", null, json("{'request':{'urlPath':'/a'}}"), null, "earlier");
-    MockTools tools = new MockTools(stubs, requestLog, orders.id(), List.of(pending));
+    MockTools tools = new MockTools(stubs, requestLog, callouts, orders.id(), List.of(pending));
 
     // When
     run(tools, "delete_stub", "{'id':'" + existingId + "','summary':'obsolete'}");
@@ -123,5 +128,30 @@ class MockToolsTest {
     // Then
     assertThat(tools.changes()).extracting(ProposedChange::action).containsExactly("create", "delete");
     assertThat(run(tools, "list_stubs", "{}").findValuesAsText("staged")).containsExactlyInAnyOrder("delete", "create");
+  }
+
+  @Test
+  void listsFailedCalloutsSoTheAssistantCanDebugWebhooks() {
+    // Given
+    callouts.add(new CalloutEntry("1", "2026-11-03T10:00:00Z", orders.id(), existingId, "List", "async",
+        new CalloutEntry.Trigger("GET", "/orders/items"), new OutboundRequest("POST", "https://partner.test/cb", List.of(), "{}"),
+        new CalloutEntry.Result(204, List.of(), "", false), null, 12));
+    callouts.add(new CalloutEntry("2", "2026-11-03T10:00:01Z", orders.id(), existingId, "List", "async",
+        new CalloutEntry.Trigger("GET", "/orders/items"), new OutboundRequest("POST", "http://10.0.0.5/cb", List.of(), "{}"),
+        null, "10.0.0.5 is a private or local address", 3));
+    callouts.add(new CalloutEntry("3", "2026-11-03T10:00:02Z", "other-project", null, null, "async", null, null, null, "elsewhere", 1));
+    MockTools tools = new MockTools(stubs, requestLog, callouts, orders.id(), List.of());
+
+    // When
+    JsonNode all = run(tools, "list_callouts", "{}");
+    JsonNode failed = run(tools, "list_callouts", "{'failed_only':true}");
+
+    // Then
+    assertThat(all).hasSize(2);
+    assertThat(failed).singleElement().satisfies(row -> {
+      assertThat(row.get("url").asText()).isEqualTo("http://10.0.0.5/cb");
+      assertThat(row.get("error").asText()).contains("private");
+      assertThat(row.get("stub").asText()).isEqualTo("List");
+    });
   }
 }

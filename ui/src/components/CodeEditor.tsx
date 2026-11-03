@@ -4,7 +4,7 @@ import { json } from '@codemirror/lang-json';
 import { xml } from '@codemirror/lang-xml';
 import { EditorView } from '@codemirror/view';
 import { tags } from '@lezer/highlight';
-import { useMemo } from 'react';
+import { useMemo, type MutableRefObject } from 'react';
 
 export type CodeLanguage = 'json' | 'xml' | 'text';
 
@@ -33,9 +33,17 @@ interface Props {
   maxHeight?: string;
   readOnly?: boolean;
   label: string;
+  editorRef?: MutableRefObject<EditorView | null>;
 }
 
-export function CodeEditor({ value, onChange, language = 'json', minHeight = '120px', maxHeight = '420px', readOnly, label }: Props) {
+export function insertAtCursor(view: EditorView | null | undefined, text: string): boolean {
+  if (!view) return false;
+  view.dispatch(view.state.replaceSelection(text));
+  view.focus();
+  return true;
+}
+
+export function CodeEditor({ value, onChange, language = 'json', minHeight = '120px', maxHeight = '420px', readOnly, label, editorRef }: Props) {
   const extensions = useMemo(() => {
     const lang = language === 'json' ? [json()] : language === 'xml' ? [xml()] : [];
     return [...lang, theme, highlight, EditorView.lineWrapping, EditorView.contentAttributes.of({ 'aria-label': label })];
@@ -51,6 +59,9 @@ export function CodeEditor({ value, onChange, language = 'json', minHeight = '12
         minHeight={minHeight}
         maxHeight={maxHeight}
         theme="none"
+        onCreateEditor={(view) => {
+          if (editorRef) editorRef.current = view;
+        }}
         basicSetup={{ foldGutter: false, highlightActiveLine: false, autocompletion: false }}
       />
     </div>

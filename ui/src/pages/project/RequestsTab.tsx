@@ -1,4 +1,6 @@
-import { ArrowClockwise, MagicWand, PaperPlaneTilt, Trash, X } from '@phosphor-icons/react';
+import { ArrowClockwise, Broadcast, MagicWand, PaperPlaneTilt, Trash, X } from '@phosphor-icons/react';
+import { catchAllStub, hasCatchAll } from '../../model/callouts';
+import { CopyButton } from '../../components/CopyButton';
 import { replayOf } from '../../model/playground';
 import { EmptyArt } from '../../components/Illustrations';
 import { useCallback, useEffect, useState } from 'react';
@@ -69,6 +71,22 @@ export function RequestsTab() {
   const [selected, setSelected] = useState<ServeEvent | null>(null);
   const [nearMisses, setNearMisses] = useState<{ stubMapping: Stub; matchResult: { distance: number } }[]>([]);
   const [auto, setAuto] = useState(true);
+  const [catching, setCatching] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    api.stubs(project.id).then((stubs) => setCatching(hasCatchAll(stubs))).catch(() => setCatching(null));
+  }, [project.id]);
+
+  const catchEverything = async () => {
+    try {
+      await api.createStub(project.id, catchAllStub());
+      setCatching(true);
+      toast.notify('Every request to this project now gets 200 and shows up here');
+      reloadProject();
+    } catch (e) {
+      toast.fail(e);
+    }
+  };
 
   const load = useCallback(async () => {
     try {
@@ -118,6 +136,11 @@ export function RequestsTab() {
           <button className="btn ghost icon" onClick={load} aria-label="Refresh" title="Refresh">
             <ArrowClockwise size={15} />
           </button>
+          {canEdit && catching === false && (
+            <button className="btn" onClick={catchEverything} title="Add a low-priority stub that answers 200 to any request no other stub matched">
+              <Broadcast size={15} /> Catch all webhooks
+            </button>
+          )}
           {canEdit && (
             <button className="btn" onClick={clear} disabled={events.length === 0}>
               <Trash size={15} /> Clear log
@@ -132,6 +155,10 @@ export function RequestsTab() {
           <p>
             Requests sent to <span className="mono">{project.mockUrl}</span> show up here as they arrive. Unmatched ones are the
             quickest way to find a missing or wrong stub.
+          </p>
+          <p className="muted small webhook-url">
+            Testing a third-party webhook? Give it <span className="mono">{project.mockUrl}/webhooks</span> <CopyButton text={`${project.mockUrl}/webhooks`} label="Copy webhook URL" />
+            {catching === false && canEdit ? ' and turn on Catch all webhooks so it gets 200.' : ' and watch it arrive here.'}
           </p>
         </div>
       ) : (

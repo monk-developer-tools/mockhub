@@ -76,7 +76,7 @@
     "id": "webhooks",
     "name": "Payments — webhooks and callbacks",
     "slug": "example-webhooks",
-    "description": "Answer at once, then call back later like a real payment provider. A callback receiver lets you watch each webhook arrive in the request log.",
+    "description": "Answer at once and call back later, forward a request to a partner, or wait for a partner and answer with its response. Every callout shows up in the Callouts tab, and a catch-all receiver catches any webhook.",
     "tags": [
       "REST",
       "Webhooks",

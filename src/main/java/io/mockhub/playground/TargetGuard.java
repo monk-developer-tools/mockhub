@@ -13,10 +13,16 @@ public final class TargetGuard {
 
   private final boolean allowPrivate;
   private final Resolver resolver;
+  private final String allowSetting;
 
   public TargetGuard(boolean allowPrivate, Resolver resolver) {
+    this(allowPrivate, resolver, "MOCKHUB_PLAYGROUND_ALLOW_PRIVATE");
+  }
+
+  public TargetGuard(boolean allowPrivate, Resolver resolver, String allowSetting) {
     this.allowPrivate = allowPrivate;
     this.resolver = resolver;
+    this.allowSetting = allowSetting;
   }
 
   public void check(URI uri) {
@@ -33,7 +39,7 @@ public final class TargetGuard {
     }
     for (InetAddress address : addresses) {
       if (isInternal(address)) {
-        throw new PlaygroundException(host + " is a private or local address. An admin can allow these with MOCKHUB_PLAYGROUND_ALLOW_PRIVATE=true.");
+        throw new PlaygroundException(host + " is a private or local address. An admin can allow these with " + allowSetting + "=true.");
       }
     }
   }

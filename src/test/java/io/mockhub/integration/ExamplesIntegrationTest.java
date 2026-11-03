@@ -212,6 +212,30 @@ class ExamplesIntegrationTest {
     assertThat(callbacks).anySatisfy(b -> assertThat(b).contains("ORDER-8").contains("DECLINED"));
   }
 
+  @Test
+  void webhooksExampleForwardsWaitsForPartnersAndCatchesEverythingElse() throws InterruptedException {
+    // Given
+    String id = api.post(API + "/examples/webhooks/install", "").json().get("id").asText();
+
+    // When
+    ApiClient.Result check = api.post("/example-webhooks/cards/check", "{\"card\":\"4242\"}");
+    ApiClient.Result refund = api.post("/example-webhooks/refunds", "{\"reference\":\"ORDER-11\",\"amount\":25}");
+    ApiClient.Result caught = api.post("/example-webhooks/anything/at/all", "{\"event\":\"ping\"}");
+    List<String> forwarded = waitForCallbacks(id, 1);
+
+    // Then
+    assertThat(check.status()).isEqualTo(201);
+    assertThat(check.header("X-Issuer")).isEqualTo("Demo Bank");
+    assertThat(check.json().get("pan").asText()).isEqualTo("4242");
+    assertThat(refund.status()).isEqualTo(202);
+    assertThat(caught.status()).isEqualTo(200);
+    assertThat(caught.json().get("received").asBoolean()).isTrue();
+    assertThat(forwarded).anySatisfy(b -> assertThat(b).contains("ORDER-11"));
+    assertThat(api.get(API + "/projects/" + id + "/callouts").json())
+        .extracting(e -> e.get("mode").asText())
+        .contains("sync", "async");
+  }
+
   private List<String> waitForCallbacks(String projectId, int expected) throws InterruptedException {
     Instant deadline = Instant.now().plus(Duration.ofSeconds(10));
     List<String> bodies = List.of();

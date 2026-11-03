@@ -1,17 +1,19 @@
 import { Copy, Database, FloppyDisk, FolderSimplePlus, LockSimple, Plus, Sparkle, Table, Trash, Warning } from '@phosphor-icons/react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { crudOf } from '../../model/crud';
-import { FakeDataMenu } from '../../components/FakeDataMenu';
+import { DynamicValueMenu } from '../../components/DynamicValueMenu';
+import { CalloutFields } from './CalloutFields';
+import type { EditorView } from '@codemirror/view';
 import { DataGeneratorDialog } from '../../components/DataGeneratorDialog';
 import { formatSize } from '../../model/files';
 import { UploadButton, useProjectFiles } from './ResponseFiles';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useHotkeys } from '../../state/hotkeys';
 import { api } from '../../api/client';
 import type { Project, Stub, StubUsage } from '../../api/types';
 import { timeAgo } from '../../model/time';
 import { AiBodyDialog, type BodyFormat } from './AiBodyDialog';
-import { CodeEditor } from '../../components/CodeEditor';
+import { CodeEditor, insertAtCursor } from '../../components/CodeEditor';
 import { Confirm, Modal } from '../../components/Modal';
 import { StubRoute } from '../../components/StubRoute';
 import { useToast } from '../../components/Toasts';
@@ -26,12 +28,10 @@ import {
   soapFault,
   toStub,
   validate,
-  WEBHOOK_METHODS,
   type BodyType,
   type DelayType,
   type ResponseMode,
   type StubForm,
-  type Webhook,
   type UrlMatchType,
 } from '../../model/stubForm';
 import { BodyMatcherRows, KeyValueRows, ValueMatcherRows } from './MatcherRows';
@@ -56,6 +56,17 @@ const BODY_TYPES: { value: BodyType; label: string }[] = [
   { value: 'base64', label: 'Binary' },
   { value: 'none', label: 'None' },
 ];
+
+const RESPONSE_MODE_LABELS: Record<ResponseMode, string> = {
+  direct: 'Respond',
+  callout: 'Wait for callout',
+  proxy: 'Proxy',
+  fault: 'Fault',
+};
+
+function describeUrlOf(form: StubForm) {
+  return `${form.method} ${form.urlMatch === 'any' ? '*' : form.url}`;
+}
 
 const DELAYS: { value: DelayType; label: string }[] = [
   { value: 'none', label: 'None' },
@@ -104,6 +115,9 @@ export function StubEditor({ project, projects, stub, isNew, canEdit, onSaved, o
   const [busy, setBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [moving, setMoving] = useState(false);
+  const [webhookIdea, setWebhookIdea] = useState('');
+  const bodyRef = useRef<EditorView | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const next = fromStub(stub);
@@ -462,9 +476,9 @@ export function StubEditor({ project, projects, stub, isNew, canEdit, onSaved, o
             <h3>
               Response
               <div className="segmented" role="group" aria-label="Response type">
-                {(['direct', 'proxy', 'fault'] as ResponseMode[]).map((m) => (
+                {(['direct', 'callout', 'proxy', 'fault'] as ResponseMode[]).map((m) => (
                   <button type="button" key={m} aria-pressed={form.responseMode === m} onClick={() => update({ responseMode: m })}>
-                    {m === 'direct' ? 'Respond' : m === 'proxy' ? 'Proxy' : 'Fault'}
+                    {RESPONSE_MODE_LABELS[m]}
                   </button>
                 ))}
               </div>
@@ -490,6 +504,15 @@ export function StubEditor({ project, projects, stub, isNew, canEdit, onSaved, o
                   <span style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                     Body
                     <span className="btn-row">
+                      {canEdit && ['json', 'xml', 'text'].includes(form.bodyType) && (
+                        <DynamicValueMenu
+                          scope="response"
+                          onInsert={(expression) => {
+                            if (!insertAtCursor(bodyRef.current, expression)) update({ responseBody: form.responseBody + expression });
+                            update({ templating: true });
+                          }}
+                        />
+                      )}
                       {aiEnabled && canEdit && ['json', 'xml', 'text'].includes(form.bodyType) && (
                         <button type="button" className="btn small" onClick={() => setGenerating(true)}>
                           <Sparkle size={13} /> Generate with AI
@@ -533,7 +556,7 @@ export function StubEditor({ project, projects, stub, isNew, canEdit, onSaved, o
                   ) : form.bodyType === 'base64' ? (
                     <textarea className="mono" rows={3} placeholder="Base64-encoded bytes" value={form.responseBody} onChange={(e) => update({ responseBody: e.target.value })} />
                   ) : form.bodyType !== 'none' ? (
-                    <CodeEditor label="Response body" value={form.responseBody} language={bodyLanguage} readOnly={readOnly} minHeight="160px" onChange={(responseBody) => update({ responseBody })} />
+                    <CodeEditor label="Response body" value={form.responseBody} language={bodyLanguage} readOnly={readOnly} minHeight="160px" editorRef={bodyRef} onChange={(responseBody) => update({ responseBody })} />
                   ) : null}
                 </div>
                 <label className="check">
@@ -546,12 +569,27 @@ export function StubEditor({ project, projects, stub, isNew, canEdit, onSaved, o
                 </label>
                 {!readOnly && (
                   <div className="btn-row">
-                    <FakeDataMenu onPick={() => update({ templating: true })} />
                     <button type="button" className="btn small" onClick={() => setGeneratingData(true)}>
                       <Table size={14} /> Generate data
                     </button>
                   </div>
                 )}
+              </div>
+            )}
+
+            {form.responseMode === 'callout' && (
+              <div className="rows" style={{ gap: 10 }}>
+                <p className="muted small">
+                  MockHub calls this URL while the caller waits, then answers with its status, headers and body. Use it to reshape a
+                  request for a real or mocked partner. If the call fails the caller gets 502 and the error is in the Callouts tab.
+                </p>
+                <CalloutFields
+                  label="Callout"
+                  value={form.syncCallout}
+                  readOnly={readOnly}
+                  withDelay={false}
+                  onChange={(patch) => update({ syncCallout: { ...form.syncCallout, ...patch } })}
+                />
               </div>
             )}
 
@@ -699,41 +737,60 @@ export function StubEditor({ project, projects, stub, isNew, canEdit, onSaved, o
           <div className="section">
             <h3>
               Then call <span className="muted small">optional: send webhooks after responding</span>
+              {!isNew && (
+                <Link className="small" to={`/projects/${project.id}/callouts`}>Callout log</Link>
+              )}
             </h3>
             {form.webhooks.length === 0 && (
               <p className="muted small">
-                Call another service when this stub answers, e.g. to simulate a payment callback. Use{' '}
-                <span className="mono">{'{{originalRequest.body}}'}</span> or <span className="mono">{"{{jsonPath originalRequest.body '$.id'}}"}</span>{' '}
-                to pass data from the request.
+                Call another service after this stub answers, e.g. a payment callback. Build the payload from the request
+                and from the response this stub sent with <strong>Insert dynamic value</strong>, or forward the incoming request as is.
+                Every call, its answer and any error show up in the Callouts tab.
               </p>
             )}
-            {form.webhooks.map((w, i) => {
-              const set = (patch: Partial<Webhook>) => update({ webhooks: form.webhooks.map((x, j) => (j === i ? { ...x, ...patch } : x)) });
-              return (
-                <div key={i} className="webhook">
-                  <div className="webhook-head">
-                    <select aria-label={`Webhook ${i + 1} method`} value={w.method} disabled={readOnly} onChange={(e) => set({ method: e.target.value })}>
-                      {WEBHOOK_METHODS.map((m) => <option key={m}>{m}</option>)}
-                    </select>
-                    <input type="text" className="mono" aria-label={`Webhook ${i + 1} URL`} placeholder="https://partner.example.com/callbacks" value={w.url} disabled={readOnly} onChange={(e) => set({ url: e.target.value })} />
-                    <input type="number" min={0} aria-label={`Webhook ${i + 1} delay`} placeholder="delay ms" value={w.delay} disabled={readOnly} onChange={(e) => set({ delay: e.target.value })} />
-                    {!readOnly && (
-                      <button type="button" className="btn ghost icon small" aria-label={`Remove webhook ${i + 1}`} onClick={() => update({ webhooks: form.webhooks.filter((_, j) => j !== i) })}>
-                        <Trash size={14} />
-                      </button>
-                    )}
-                  </div>
-                  <KeyValueRows rows={w.headers} onChange={(headers) => set({ headers })} disabled={readOnly} />
-                  {w.method !== 'GET' && (
-                    <CodeEditor label={`Webhook ${i + 1} body`} value={w.body} language="json" readOnly={readOnly} minHeight="70px" maxHeight="220px" onChange={(body) => set({ body })} />
-                  )}
-                </div>
-              );
-            })}
+            {form.webhooks.map((w, i) => (
+              <CalloutFields
+                key={i}
+                label={`Webhook ${i + 1}`}
+                value={w}
+                readOnly={readOnly}
+                withDelay
+                onChange={(patch) => update({ webhooks: form.webhooks.map((x, j) => (j === i ? { ...x, ...patch } : x)) })}
+                onRemove={() => update({ webhooks: form.webhooks.filter((_, j) => j !== i) })}
+              />
+            ))}
             {!readOnly && (
-              <button type="button" className="btn small" onClick={() => update({ webhooks: [...form.webhooks, emptyWebhook()] })}>
-                <Plus size={13} /> Add webhook
-              </button>
+              <div className="btn-row" style={{ marginTop: 8 }}>
+                <button type="button" className="btn small" onClick={() => update({ webhooks: [...form.webhooks, emptyWebhook()] })}>
+                  <Plus size={13} /> Add webhook
+                </button>
+              </div>
+            )}
+            {!readOnly && aiEnabled && !isNew && (
+              <form
+                className="ask-ai"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!webhookIdea.trim()) return;
+                  if (dirty) {
+                    toast.notify('Save your changes first, then ask the assistant');
+                    return;
+                  }
+                  navigate(`/projects/${project.id}/assistant`, {
+                    state: { prompt: `For the stub "${form.name || describeUrlOf(form)}" (id ${String(stub.id)}): ${webhookIdea.trim()}` },
+                  });
+                }}
+              >
+                <Sparkle size={14} aria-hidden="true" />
+                <input
+                  type="text"
+                  aria-label="Describe a webhook for the assistant"
+                  placeholder="Or describe it: “2 s later POST status SHIPPED with the order id to the callbackUrl”"
+                  value={webhookIdea}
+                  onChange={(e) => setWebhookIdea(e.target.value)}
+                />
+                <button type="submit" className="btn small" disabled={!webhookIdea.trim()}>Ask the assistant</button>
+              </form>
             )}
           </div>
 

@@ -410,6 +410,20 @@ export interface PlaygroundEntry {
   local: boolean;
 }
 
+export interface CalloutEntry {
+  id: string;
+  at: string;
+  projectId: string | null;
+  stubId: string | null;
+  stubName: string | null;
+  mode: 'async' | 'sync';
+  trigger: { method: string; url: string } | null;
+  request: { method: string; url: string; headers: HeaderPair[]; body: string } | null;
+  response: { status: number; headers: HeaderPair[]; body: string; truncated: boolean } | null;
+  error: string | null;
+  durationMs: number;
+}
+
 export interface GeneratorField {
   name: string;
   expression: string;

@@ -230,6 +230,49 @@ class MockHubSystemTest {
   }
 
   @Test
+  void stubsCallBackWaitForPartnersAndKeepWorkingAfterARestart() throws Exception {
+    String projectId;
+    try (MockHubProcess hub = MockHubProcess.start(data, AUTH_ENV)) {
+      // Given
+      projectId = json(send(hub, "POST", API + "/projects", "{\"name\":\"Payments\",\"slug\":\"pay\"}")).get("id").asText();
+      send(hub, "POST", API + "/projects/" + projectId + "/stubs",
+          "{\"request\":{\"method\":\"POST\",\"urlPath\":\"/issuer\"},\"response\":{\"status\":201,\"jsonBody\":{\"approved\":true}}}");
+      send(hub, "POST", API + "/projects/" + projectId + "/stubs",
+          "{\"request\":{\"method\":\"POST\",\"urlPath\":\"/check\"},\"response\":{\"status\":200,\"transformers\":[\"mockhub-sync-callout\"],"
+              + "\"transformerParameters\":{\"callout\":{\"url\":\"{{originalRequest.baseUrl}}/pay/issuer\",\"forward\":true}}},"
+              + "\"serveEventListeners\":[{\"name\":\"mockhub-callout\",\"parameters\":{\"method\":\"POST\",\"url\":\"/pay/issuer\",\"body\":\"{{originalResponse.status}}\"}}]}");
+
+      // When
+      HttpResponse<String> check = send(hub, "POST", "/pay/check", "{\"card\":\"4242\"}");
+
+      // Then
+      assertThat(check.statusCode()).isEqualTo(201);
+      assertThat(json(check).get("approved").asBoolean()).isTrue();
+      JsonNode log = waitForCallouts(hub, projectId, 2);
+      assertThat(log).extracting(e -> e.get("mode").asText()).containsExactlyInAnyOrder("sync", "async");
+      assertThat(log).filteredOn(e -> e.get("mode").asText().equals("async"))
+          .singleElement().satisfies(e -> assertThat(e.at("/request/body").asText()).isEqualTo("201"));
+    }
+
+    // When
+    try (MockHubProcess restarted = MockHubProcess.start(data, AUTH_ENV)) {
+      // Then
+      assertThat(send(restarted, "POST", "/pay/check", "{}").statusCode()).isEqualTo(201);
+      assertThat(waitForCallouts(restarted, projectId, 2)).hasSize(2);
+    }
+  }
+
+  private JsonNode waitForCallouts(MockHubProcess hub, String projectId, int count) throws Exception {
+    long deadline = System.currentTimeMillis() + 10_000;
+    JsonNode log = json(send(hub, "GET", API + "/projects/" + projectId + "/callouts", null));
+    while (log.size() < count && System.currentTimeMillis() < deadline) {
+      Thread.sleep(100);
+      log = json(send(hub, "GET", API + "/projects/" + projectId + "/callouts", null));
+    }
+    return log;
+  }
+
+  @Test
   void servesTheUiEntryPoint() throws Exception {
     try (MockHubProcess hub = MockHubProcess.start(data, Map.of())) {
       // When

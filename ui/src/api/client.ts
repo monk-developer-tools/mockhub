@@ -1,4 +1,5 @@
 import type {
+  CalloutEntry,
   AuditPage,
   AiSettings,
   AiStatus,
@@ -242,6 +243,8 @@ export const api = {
   requests: (projectId: string, unmatched = false, limit = 300) =>
     request<ServeEvent[]>(`${API}/projects/${projectId}/requests?limit=${limit}&unmatched=${unmatched}`),
   clearRequests: (projectId: string) => request<void>(`${API}/projects/${projectId}/requests`, { method: 'DELETE' }),
+  callouts: (projectId: string, limit = 300) => request<CalloutEntry[]>(`${API}/projects/${projectId}/callouts?limit=${limit}`),
+  clearCallouts: (projectId: string) => request<void>(`${API}/projects/${projectId}/callouts`, { method: 'DELETE' }),
 
   importInto: (projectId: string, format: string, body: string, options: Record<string, string> = {}) => {
     const query = new URLSearchParams(options).toString();

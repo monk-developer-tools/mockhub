@@ -141,7 +141,7 @@ describe('stub form conversion', () => {
     expect(unsupported).toEqual(['Header "A" uses and', 'Transformers custom', 'Serve event listener recordState']);
   });
 
-  it('reads and writes webhooks without touching other listeners', () => {
+  it('reads WireMock webhooks and writes them as logged MockHub callouts without touching other listeners', () => {
     // Given
     const original: Stub = {
       request: { method: 'POST', urlPath: '/payments' },
@@ -149,22 +149,66 @@ describe('stub form conversion', () => {
       serveEventListeners: [
         { name: 'recordState', parameters: { context: 'x' } },
         { name: 'webhook', parameters: { method: 'POST', url: 'https://partner/cb', headers: { 'Content-Type': 'application/json' }, body: '{"ok":true}', delay: { type: 'fixed', milliseconds: 250 } } },
+        { name: 'mockhub-callout', parameters: { url: 'https://partner/fwd', forward: true } },
       ],
     };
 
     // When
-    const { form } = fromStub(original);
-    const changed = { ...form, webhooks: [...form.webhooks, { method: 'GET', url: 'https://partner/ping', headers: [], body: 'ignored', delay: '' }] };
+    const { form, unsupported } = fromStub(original);
+    const changed = { ...form, webhooks: [...form.webhooks, { method: 'GET', url: 'https://partner/ping', headers: [], body: 'ignored', delay: '', forward: false }] };
     const written = toStub(changed, original);
 
     // Then
-    expect(form.webhooks).toEqual([{ method: 'POST', url: 'https://partner/cb', headers: [{ key: 'Content-Type', value: 'application/json' }], body: '{"ok":true}', delay: '250' }]);
+    expect(unsupported).toEqual(['Serve event listener recordState']);
+    expect(form.webhooks).toEqual([
+      { method: 'POST', url: 'https://partner/cb', headers: [{ key: 'Content-Type', value: 'application/json' }], body: '{"ok":true}', delay: '250', forward: false },
+      { method: 'POST', url: 'https://partner/fwd', headers: [], body: '', delay: '', forward: true },
+    ]);
     expect(written.serveEventListeners).toEqual([
       { name: 'recordState', parameters: { context: 'x' } },
-      { name: 'webhook', parameters: { method: 'POST', url: 'https://partner/cb', headers: { 'Content-Type': 'application/json' }, body: '{"ok":true}', delay: { type: 'fixed', milliseconds: 250 } } },
-      { name: 'webhook', parameters: { method: 'GET', url: 'https://partner/ping' } },
+      { name: 'mockhub-callout', parameters: { method: 'POST', url: 'https://partner/cb', headers: { 'Content-Type': 'application/json' }, body: '{"ok":true}', delay: { type: 'fixed', milliseconds: 250 } } },
+      { name: 'mockhub-callout', parameters: { url: 'https://partner/fwd', forward: true } },
+      { name: 'mockhub-callout', parameters: { method: 'GET', url: 'https://partner/ping' } },
     ]);
     expect(toStub({ ...form, webhooks: [] }, { request: {}, response: {} }).serveEventListeners).toBeUndefined();
+  });
+
+  it('round-trips a stub that waits for a callout and answers with its response', () => {
+    // Given
+    const original: Stub = {
+      request: { method: 'POST', urlPath: '/authorize' },
+      response: {
+        status: 200,
+        fixedDelayMilliseconds: 100,
+        transformers: ['mockhub-sync-callout'],
+        transformerParameters: { callout: { method: 'PUT', url: 'https://issuer/auth', headers: { 'X-Key': 'k' }, body: '{"card":"{{jsonPath originalRequest.body \'$.card\'}}"}' } },
+      },
+    };
+
+    // When
+    const { form, unsupported } = fromStub(original);
+    const written = toStub(form, original);
+    const backToDirect = toStub({ ...form, responseMode: 'direct', bodyType: 'json', responseBody: '{}' }, original);
+
+    // Then
+    expect(unsupported).toEqual([]);
+    expect(form.responseMode).toBe('callout');
+    expect(form.syncCallout).toMatchObject({ method: 'PUT', url: 'https://issuer/auth', forward: false, headers: [{ key: 'X-Key', value: 'k' }] });
+    expect(written.response).toEqual(original.response);
+    expect(backToDirect.response).toEqual({ status: 200, jsonBody: {}, fixedDelayMilliseconds: 100 });
+  });
+
+  it('keeps other transformer parameters but still flags them for the JSON editor', () => {
+    // Given
+    const original: Stub = { request: {}, response: { status: 200, transformers: ['mockhub-crud'], transformerParameters: { resource: 'orders' } } };
+
+    // When
+    const { form, unsupported } = fromStub(original);
+    const written = toStub(form, original);
+
+    // Then
+    expect(unsupported).toContain('Response transformerParameters resource');
+    expect((written.response as { transformerParameters: unknown }).transformerParameters).toEqual({ resource: 'orders' });
   });
 });
 
@@ -264,5 +308,16 @@ describe('validation', () => {
 
     // Then
     expect(isDisabled(saved)).toBe(true);
+  });
+
+  it('asks for a URL when the stub waits for a callout', () => {
+    // Given
+    const form = { ...emptyForm(), responseMode: 'callout' as const };
+
+    // When
+    const errors = validate(form);
+
+    // Then
+    expect(errors).toContain('Enter the URL to call, e.g. https://partner.example.com/authorize');
   });
 });

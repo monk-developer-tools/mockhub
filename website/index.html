@@ -229,6 +229,22 @@
    "email": "priya.raman@example.com",
    "address": { "city": "Leeds" } }, …]</pre>
           </article>
+
+          <article class="tile span-3 reveal">
+            <h3>Webhooks that call back.</h3>
+            <p>After a stub answers, call your service back, forward the request to a partner, or wait for the partner's reply. Every call is logged with what was sent and what came back.</p>
+            <div class="routes" aria-label="Example webhook callouts">
+              <div class="route"><span class="jack post">POST</span><span class="path">partner.example.com/callbacks</span><span class="wire"></span><span class="plug s2">204</span></div>
+              <div class="route"><span class="jack post">POST</span><span class="path">issuer.example.com/authorize</span><span class="wire"></span><span class="plug s2">201</span></div>
+            </div>
+          </article>
+
+          <article class="tile span-3 reveal">
+            <h3>Insert a dynamic value.</h3>
+            <p>Search 180 helpers for request fields, dates, maths, arrays, state and fake data, and drop one in at the cursor.</p>
+            <div class="code mini" data-nocopy><pre>{ <span class="s">"ref"</span>: <span class="v">"{{jsonPath originalRequest.body '$.ref'}}"</span>,
+  <span class="s">"email"</span>: <span class="v">"{{fake 'Internet.emailAddress'}}"</span> }</pre></div>
+          </article>
         </div>
       </div>
     </section>

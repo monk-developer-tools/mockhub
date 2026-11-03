@@ -6,27 +6,46 @@
       "request": {
         "method": "POST",
         "urlPath": "/payments",
-        "bodyPatterns": [{ "matchesJsonPath": "$.callbackUrl" }]
+        "bodyPatterns": [
+          {
+            "matchesJsonPath": "$.callbackUrl"
+          }
+        ]
       },
       "response": {
         "status": 202,
-        "headers": { "Content-Type": "application/json" },
+        "headers": {
+          "Content-Type": "application/json"
+        },
         "body": "{ \"reference\": \"{{jsonPath request.body '$.reference'}}\", \"status\": \"PENDING\" }",
-        "transformers": ["response-template"]
+        "transformers": [
+          "response-template"
+        ]
       },
       "serveEventListeners": [
         {
-          "name": "webhook",
+          "name": "mockhub-callout",
           "parameters": {
             "method": "POST",
             "url": "{{jsonPath originalRequest.body '$.callbackUrl'}}",
-            "headers": { "Content-Type": "application/json", "X-Signature": "demo-signature" },
+            "headers": {
+              "Content-Type": "application/json",
+              "X-Signature": "demo-signature"
+            },
             "body": "{ \"reference\": \"{{jsonPath originalRequest.body '$.reference'}}\", \"status\": \"SETTLED\", \"amount\": {{jsonPath originalRequest.body '$.amount'}} }",
-            "delay": { "type": "fixed", "milliseconds": 2000 }
+            "delay": {
+              "type": "fixed",
+              "milliseconds": 2000
+            }
           }
         }
       ],
-      "metadata": { "mockhub": { "folder": "Payments", "description": "Answers 202 at once, then two seconds later POSTs SETTLED to the callbackUrl from the request. Send callbackUrl = this project's mock URL + /partner/callbacks to watch it arrive in Requests." } }
+      "metadata": {
+        "mockhub": {
+          "folder": "Payments",
+          "description": "Answers 202 at once, then two seconds later POSTs SETTLED to the callbackUrl from the request. Send callbackUrl = this project's mock URL + /partner/callbacks and watch it in the Callouts and Requests tabs."
+        }
+      }
     },
     {
       "name": "Large payments are declined by callback",
@@ -34,44 +53,204 @@
       "request": {
         "method": "POST",
         "urlPath": "/payments",
-        "bodyPatterns": [{ "matchesJsonPath": "$[?(@.amount > 1000)]" }, { "matchesJsonPath": "$.callbackUrl" }]
+        "bodyPatterns": [
+          {
+            "matchesJsonPath": "$[?(@.amount > 1000)]"
+          },
+          {
+            "matchesJsonPath": "$.callbackUrl"
+          }
+        ]
       },
       "response": {
         "status": 202,
-        "headers": { "Content-Type": "application/json" },
+        "headers": {
+          "Content-Type": "application/json"
+        },
         "body": "{ \"reference\": \"{{jsonPath request.body '$.reference'}}\", \"status\": \"PENDING\" }",
-        "transformers": ["response-template"]
+        "transformers": [
+          "response-template"
+        ]
       },
       "serveEventListeners": [
         {
-          "name": "webhook",
+          "name": "mockhub-callout",
           "parameters": {
             "method": "POST",
             "url": "{{jsonPath originalRequest.body '$.callbackUrl'}}",
-            "headers": { "Content-Type": "application/json" },
+            "headers": {
+              "Content-Type": "application/json"
+            },
             "body": "{ \"reference\": \"{{jsonPath originalRequest.body '$.reference'}}\", \"status\": \"DECLINED\", \"reason\": \"Amount over limit\" }",
-            "delay": { "type": "fixed", "milliseconds": 1000 }
+            "delay": {
+              "type": "fixed",
+              "milliseconds": 1000
+            }
           }
         }
       ],
-      "metadata": { "mockhub": { "folder": "Payments", "description": "Same request, different callback: amounts over 1000 get DECLINED. Priority 1 is checked before the normal payment stub." } }
+      "metadata": {
+        "mockhub": {
+          "folder": "Payments",
+          "description": "Same request, different callback: amounts over 1000 get DECLINED. Priority 1 is checked before the normal payment stub."
+        }
+      }
     },
     {
       "name": "Payment without a callbackUrl",
       "priority": 9,
-      "request": { "method": "POST", "urlPath": "/payments" },
+      "request": {
+        "method": "POST",
+        "urlPath": "/payments"
+      },
       "response": {
         "status": 400,
-        "headers": { "Content-Type": "application/json" },
-        "jsonBody": { "error": "callbackUrl is required" }
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "jsonBody": {
+          "error": "callbackUrl is required"
+        }
       },
-      "metadata": { "mockhub": { "folder": "Payments", "description": "The fallback when no other payment stub matched." } }
+      "metadata": {
+        "mockhub": {
+          "folder": "Payments",
+          "description": "The fallback when no other payment stub matched."
+        }
+      }
+    },
+    {
+      "name": "Refund: forward the request to the partner",
+      "request": {
+        "method": "POST",
+        "urlPath": "/refunds"
+      },
+      "response": {
+        "status": 202,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": "{ \"refundId\": \"{{randomValue type='UUID'}}\", \"status\": \"QUEUED\" }",
+        "transformers": [
+          "response-template"
+        ]
+      },
+      "serveEventListeners": [
+        {
+          "name": "mockhub-callout",
+          "parameters": {
+            "url": "{{originalRequest.baseUrl}}/example-webhooks/partner/callbacks",
+            "headers": {
+              "X-Event": "refund.requested"
+            },
+            "forward": true
+          }
+        }
+      ],
+      "metadata": {
+        "mockhub": {
+          "folder": "Payments",
+          "description": "Answers 202, then forwards the incoming refund request as is (method, headers, body) to the callback receiver. The X-Event header is added on top.",
+          "sampleRequest": {
+            "body": "{\n  \"reference\": \"ORDER-7\",\n  \"amount\": 25\n}"
+          }
+        }
+      }
+    },
+    {
+      "name": "Card check: wait for the issuer's answer",
+      "request": {
+        "method": "POST",
+        "urlPath": "/cards/check"
+      },
+      "response": {
+        "status": 200,
+        "transformers": [
+          "mockhub-sync-callout"
+        ],
+        "transformerParameters": {
+          "callout": {
+            "method": "POST",
+            "url": "{{originalRequest.baseUrl}}/example-webhooks/issuer/authorize",
+            "headers": {
+              "Content-Type": "application/json"
+            },
+            "body": "{ \"pan\": \"{{jsonPath originalRequest.body '$.card'}}\", \"merchant\": \"MockHub demo shop\" }"
+          }
+        }
+      },
+      "metadata": {
+        "mockhub": {
+          "folder": "Payments",
+          "description": "Waits for the callout: calls the issuer stub with a new body and answers with the issuer's status, headers and body.",
+          "sampleRequest": {
+            "body": "{\n  \"card\": \"4242424242424242\"\n}"
+          }
+        }
+      }
+    },
+    {
+      "name": "Issuer authorizes the card",
+      "request": {
+        "method": "POST",
+        "urlPath": "/issuer/authorize"
+      },
+      "response": {
+        "status": 201,
+        "headers": {
+          "Content-Type": "application/json",
+          "X-Issuer": "Demo Bank"
+        },
+        "body": "{ \"approved\": true, \"authCode\": \"{{randomValue length=6 type='ALPHANUMERIC' uppercase=true}}\", \"pan\": \"{{jsonPath request.body '$.pan'}}\" }",
+        "transformers": [
+          "response-template"
+        ]
+      },
+      "metadata": {
+        "mockhub": {
+          "folder": "Partner",
+          "description": "Stands in for the card issuer that the card check calls."
+        }
+      }
     },
     {
       "name": "Callback receiver",
-      "request": { "method": "POST", "urlPath": "/partner/callbacks" },
-      "response": { "status": 204 },
-      "metadata": { "mockhub": { "folder": "Partner", "description": "Stands in for your service's callback endpoint. Every webhook that arrives here shows up in the Requests tab with its body." } }
+      "request": {
+        "method": "POST",
+        "urlPath": "/partner/callbacks"
+      },
+      "response": {
+        "status": 204
+      },
+      "metadata": {
+        "mockhub": {
+          "folder": "Partner",
+          "description": "Stands in for your service's callback endpoint. Every webhook that arrives here shows up in the Requests tab with its body."
+        }
+      }
+    },
+    {
+      "name": "Catch every other webhook",
+      "priority": 10,
+      "request": {
+        "method": "ANY"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": "{ \"received\": true, \"id\": \"{{randomValue type='UUID'}}\" }",
+        "transformers": [
+          "response-template"
+        ]
+      },
+      "metadata": {
+        "mockhub": {
+          "folder": "Partner",
+          "description": "A catch-all receiver: any request no other stub matched gets 200, and shows up in the Requests tab. Point a third-party webhook here to inspect it."
+        }
+      }
     }
   ]
 }

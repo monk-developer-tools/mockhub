@@ -168,7 +168,7 @@
               <tr><td><strong>Matching patterns — from real projects</strong></td><td>Magic test ids for errors, JSONPath filters and regex on body fields, priority fallbacks, one stub for every environment, proxying chosen ids, transformer parameters, content negotiation</td><td><a href="#tour">Tour</a>, <a href="#patterns">Matching patterns</a></td></tr>
               <tr><td><strong>Orders — CRUD with saved data</strong></td><td>A full REST resource from one stub: list, filter, create, patch and delete; records in the Data tab; a normal stub beside it</td><td><a href="#tour">Tour</a>, <a href="#crud">CRUD resources</a></td></tr>
               <tr><td><strong>Shopping cart — stateful scenarios</strong></td><td>A cart that moves from empty to item added to checked out</td><td><a href="#tour">Tour</a>, <a href="#scenarios">Scenarios</a></td></tr>
-              <tr><td><strong>Payments — webhooks and callbacks</strong></td><td>Answer at once, call back later; a different callback for large amounts; a receiver that shows each webhook in the request log</td><td><a href="#tour">Tour</a>, <a href="#webhooks">Webhooks</a></td></tr>
+              <tr><td><strong>Payments — webhooks and callbacks</strong></td><td>Answer at once, call back later; a different callback for large amounts; forward a request; wait for a partner and answer with its response; a catch-all receiver</td><td><a href="#tour">Tour</a>, <a href="#webhooks">Webhooks</a></td></tr>
               <tr><td><strong>Resilience testing — faults &amp; delays</strong></td><td>Slow and random latency, dropped connections, 429 and 503 with Retry-After, 1 call in 5 failing, a maintenance switch</td><td><a href="#tour">Tour</a>, <a href="#chaos">Delays, faults &amp; failures</a>, <a href="#stub-controls">On &amp; off</a></td></tr>
               <tr><td><strong>Bookshop — from an OpenAPI file</strong></td><td>Stubs generated from a spec, hand-written error cases, response files (a CSV and an image)</td><td><a href="#tour">Tour</a>, <a href="#openapi">OpenAPI</a>, <a href="#webhooks">Files</a></td></tr>
               <tr><td><strong>Calculator — SOAP from WSDL</strong></td><td>One stub per operation, the <span class="mono">?wsdl</span> endpoint, a fault for unknown operations, XPath matching</td><td><a href="#tour">Tour</a>, <a href="#soap">SOAP from WSDL</a></td></tr>
@@ -337,7 +337,11 @@ curl -X POST $MOCK/example-cart/cart/checkout</code></pre>
   "callbackUrl":"'$MOCK'/example-webhooks/partner/callbacks"}'
 curl -X POST $MOCK/example-webhooks/payments -d '{"reference":"ORDER-8","amount":5000,
   "callbackUrl":"'$MOCK'/example-webhooks/partner/callbacks"}'</code></pre>
-              <p>Two seconds later the <strong>Requests</strong> tab shows the callbacks: <em>SETTLED</em> for the first and <em>DECLINED</em> for the large amount. In your own tests, use your service's callback URL instead.</p>
+              <p>Two seconds later the <strong>Callouts</strong> tab shows each callback with the body sent and the answer, and the <strong>Requests</strong> tab shows them arriving: <em>SETTLED</em> for the first and <em>DECLINED</em> for the large amount. In your own tests, use your service's callback URL instead.</p>
+              <p>Two more stubs show the other modes. The refund is forwarded to the partner as is, and the card check waits for the issuer and answers with the issuer's response:</p>
+              <pre class="tut-code"><code>curl -X POST $MOCK/example-webhooks/refunds -d '{"reference":"ORDER-7","amount":25}'
+curl -X POST $MOCK/example-webhooks/cards/check -d '{"card":"4242424242424242"}'   <span class="c"># 201 from the issuer</span>
+curl -X POST $MOCK/example-webhooks/anything -d '{"event":"ping"}'                 <span class="c"># caught: 200</span></code></pre>
             </li>
             <li>
               <h3>Resilience: slow, failing and switched-off services</h3>
@@ -742,8 +746,17 @@ curl -X POST $MOCK/example-soap/ws/calculator -H "Content-Type: text/xml" -d \
           <ol class="tut-steps">
             <li>
               <h3>Add a webhook under Then call</h3>
-              <p>In a stub's <strong>Then call</strong> section, select <strong>Add webhook</strong>. Set the method, the URL to call, headers, a body and an optional delay, for example a payment callback two seconds after <code>POST /payments</code>. Use <code>{{jsonPath originalRequest.body '$.id'}}</code> to pass values from the request.</p>
+              <p>In a stub's <strong>Then call</strong> section, select <strong>Add webhook</strong>. Set the method, the URL to call, headers, a body and an optional delay, for example a payment callback two seconds after <code>POST /payments</code>. Use <strong>Insert dynamic value</strong> to pass values from the request, such as <code>{{jsonPath originalRequest.body '$.id'}}</code>, or from the response the stub sent, such as <code>{{jsonPath originalResponse.body '$.id'}}</code>. Choose <strong>Forward incoming request</strong> to pass the request on unchanged.</p>
               <figure class="tut-shot"><img src="/assets/img/tutorials/webhook-1-editor.webp" alt="The Then call section with a POST webhook to a partner callback URL, a 2000 ms delay and a templated JSON body" width="1176" height="900" loading="lazy"></figure>
+            </li>
+            <li>
+              <h3>Check what was sent</h3>
+              <p>Call the stub, then open the project's <strong>Callouts</strong> tab. Each callout shows the URL, the body sent, the answer and the time it took. A blocked address or a template mistake shows up in red. With the AI assistant on, <strong>Ask the assistant to fix it</strong> explains the problem and stages a fix.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/webhook-2-callouts.webp" alt="The Callouts tab with three delivered callbacks and one blocked call to a private address, its details open" width="1176" height="900" loading="lazy"></figure>
+            </li>
+            <li>
+              <h3>Or wait for the partner's answer</h3>
+              <p>To mock a service that calls a partner and returns what it says, choose <strong>Wait for callout</strong> as the response type. The caller gets the partner's status, headers and body.</p>
             </li>
             <li>
               <h3>Upload response files</h3>

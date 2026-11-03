@@ -81,7 +81,7 @@ final class ApiClient {
       HttpResponse<byte[]> r = http.send(b.build(), HttpResponse.BodyHandlers.ofByteArray());
       return new Result(r.statusCode(), r.body(), r.headers().firstValue("Content-Type").orElse(""),
           r.headers().firstValue("Content-Disposition").orElse(""), r.headers().firstValue("Location").orElse(""),
-          r.headers().firstValue("X-MockHub-Simulated-Error").orElse(""));
+          r.headers().firstValue("X-MockHub-Simulated-Error").orElse(""), r.headers());
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     } catch (InterruptedException e) {
@@ -90,7 +90,12 @@ final class ApiClient {
     }
   }
 
-  record Result(int status, byte[] bytes, String contentType, String contentDisposition, String location, String simulatedError) {
+  record Result(int status, byte[] bytes, String contentType, String contentDisposition, String location, String simulatedError,
+      java.net.http.HttpHeaders headers) {
+    String header(String name) {
+      return headers.firstValue(name).orElse(null);
+    }
+
     String body() {
       return new String(bytes, StandardCharsets.UTF_8);
     }

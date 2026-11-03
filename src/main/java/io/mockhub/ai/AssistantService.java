@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.mockhub.api.ApiException;
 import io.mockhub.api.Jsons;
+import io.mockhub.callout.CalloutLog;
 import io.mockhub.journal.RequestLogService;
 import io.mockhub.project.Project;
 import io.mockhub.stub.StubService;
@@ -22,12 +23,14 @@ public final class AssistantService {
   private final ChatCompletions chat;
   private final StubService stubs;
   private final RequestLogService requestLog;
+  private final CalloutLog callouts;
 
-  public AssistantService(AiSettingsStore settings, ChatCompletions chat, StubService stubs, RequestLogService requestLog) {
+  public AssistantService(AiSettingsStore settings, ChatCompletions chat, StubService stubs, RequestLogService requestLog, CalloutLog callouts) {
     this.settings = settings;
     this.chat = chat;
     this.stubs = stubs;
     this.requestLog = requestLog;
+    this.callouts = callouts;
   }
 
   public record Message(String role, String content) {}
@@ -59,7 +62,7 @@ public final class AssistantService {
     List<Message> trimmed = prepare(history);
     AiSettings s = settings.get();
 
-    MockTools tools = new MockTools(stubs, requestLog, project.id(), pending);
+    MockTools tools = new MockTools(stubs, requestLog, callouts, project.id(), pending);
     ArrayNode messages = Jsons.MAPPER.createArrayNode();
     messages.addObject().put("role", "system").put("content", SystemPrompt.forProject(project, mockUrl, stubs.stubsOf(project.id()).size()));
     if (!pending.isEmpty()) {

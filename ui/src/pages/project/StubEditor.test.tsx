@@ -1,4 +1,6 @@
-import { fireEvent, screen } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { Route, Routes, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import type { Project, Stub } from '../../api/types';
 import { renderWithShell } from '../../test/render';
@@ -103,5 +105,82 @@ describe('StubEditor', () => {
 
     // Then
     expect(screen.queryByRole('button', { name: /Generate with AI/ })).not.toBeInTheDocument();
+  });
+
+  it('waits for a callout and shows it in the JSON', async () => {
+    // Given
+    renderWithShell(<Host />);
+
+    // When
+    fireEvent.click(screen.getByRole('button', { name: 'Wait for callout' }));
+    fireEvent.change(screen.getByRole('textbox', { name: 'Callout URL' }), { target: { value: 'https://issuer.test/auth' } });
+    fireEvent.click(screen.getAllByRole('button', { name: 'JSON' })[0]);
+
+    // Then
+    const json = screen.getByRole('textbox', { name: 'Stub JSON' }).textContent ?? '';
+    expect(json).toContain('"mockhub-sync-callout"');
+    expect(json).toContain('"url": "https://issuer.test/auth"');
+    expect(json).toContain('"forward": true');
+  });
+
+  it('adds a webhook that forwards the request or sends a custom body built with dynamic values', async () => {
+    // Given
+    renderWithShell(<Host />);
+    fireEvent.click(screen.getByRole('button', { name: /Add webhook/ }));
+    fireEvent.change(screen.getByRole('textbox', { name: 'Webhook 1 URL' }), { target: { value: 'https://partner.test/' } });
+
+    // When
+    const group = screen.getByRole('group', { name: 'Webhook 1 payload' });
+    await userEvent.click(screen.getAllByRole('button', { name: /Insert in URL/ })[0]);
+    await userEvent.type(screen.getByRole('searchbox', { name: 'Search dynamic values' }), 'path variable');
+    await userEvent.click(screen.getByRole('button', { name: /Path variable/ }));
+
+    // Then
+    expect(screen.getByRole('textbox', { name: 'Webhook 1 URL' })).toHaveValue('https://partner.test/{{originalRequest.path.id}}');
+    expect(within(group).getByRole('button', { name: 'Custom request' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('textbox', { name: 'Webhook 1 body' })).toBeInTheDocument();
+
+    // When
+    fireEvent.click(within(group).getByRole('button', { name: 'Forward incoming request' }));
+
+    // Then
+    expect(screen.queryByRole('textbox', { name: 'Webhook 1 body' })).not.toBeInTheDocument();
+    expect(screen.getByText(/sent as they arrived/)).toBeInTheDocument();
+  });
+
+  it('inserts a dynamic value into the response body and turns templating on', async () => {
+    // Given
+    renderWithShell(<Host />);
+
+    // When
+    await userEvent.click(screen.getByRole('button', { name: /Insert dynamic value/ }));
+    await userEvent.type(screen.getByRole('searchbox', { name: 'Search dynamic values' }), 'uuid');
+    await userEvent.click(screen.getByRole('button', { name: /^UUID/ }));
+
+    // Then
+    expect(screen.getByRole('checkbox', { name: /Response templating/ })).toBeChecked();
+    expect(screen.getByRole('textbox', { name: 'Response body' }).textContent).toContain("{{randomValue type='UUID'}}");
+  });
+
+  it('hands a described webhook to the assistant', async () => {
+    // Given
+    function Probe() {
+      const location = useLocation();
+      return <p data-testid="prompt">{(location.state as { prompt?: string } | null)?.prompt}</p>;
+    }
+    renderWithShell(
+      <Routes>
+        <Route path="/" element={<StubEditor project={project} projects={[project]} stub={{ ...stub, name: 'List' }} isNew={false} canEdit onSaved={() => undefined}
+          onDeleted={() => undefined} onDirtyChange={() => undefined} aiEnabled />} />
+        <Route path="/projects/p1/assistant" element={<Probe />} />
+      </Routes>,
+    );
+
+    // When
+    await userEvent.type(screen.getByRole('textbox', { name: 'Describe a webhook for the assistant' }), 'POST the id to https://hooks.test');
+    await userEvent.click(screen.getByRole('button', { name: 'Ask the assistant' }));
+
+    // Then
+    expect(screen.getByTestId('prompt')).toHaveTextContent('For the stub "List" (id s1): POST the id to https://hooks.test');
   });
 });

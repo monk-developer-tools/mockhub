@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.mockhub.api.ApiException;
+import io.mockhub.callout.InMemoryCalloutLog;
 import io.mockhub.journal.RequestLogService;
 import io.mockhub.project.Project;
 import io.mockhub.project.ProjectService;
@@ -49,7 +50,7 @@ class AssistantJobsTest {
     orders = projects.create(tree("{'orgId':'org1','name':'Orders','slug':'orders'}"));
     settings = new AiSettingsStore(dir, "");
     settings.save(new AiSettings(true, "litellm", "http://llm", "", "gpt-test", 0.2, 3));
-    assistant = new AssistantService(settings, new ChatCompletions(transport, AiProviders.defaults(), ""), stubs, new RequestLogService(gateway, projects));
+    assistant = new AssistantService(settings, new ChatCompletions(transport, AiProviders.defaults(), ""), stubs, new RequestLogService(gateway, projects), new InMemoryCalloutLog(100));
   }
 
   private static List<AssistantService.Message> ask(String text) {

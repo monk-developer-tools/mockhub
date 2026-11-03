@@ -10,6 +10,15 @@ import io.mockhub.ai.AssistantJobs;
 import io.mockhub.ai.AssistantService;
 import io.mockhub.ai.BodyGenerator;
 import io.mockhub.chaos.ErrorRateTransformer;
+import io.mockhub.callout.CalloutListener;
+import io.mockhub.callout.CalloutLog;
+import io.mockhub.callout.CalloutRenderer;
+import io.mockhub.callout.CalloutService;
+import io.mockhub.callout.CalloutTargets;
+import io.mockhub.callout.InMemoryCalloutLog;
+import io.mockhub.callout.SyncCalloutTransformer;
+import io.mockhub.controller.CalloutController;
+import java.util.concurrent.ScheduledExecutorService;
 import io.mockhub.stub.DisabledStubMatcher;
 import io.mockhub.ai.ChatCompletions;
 import io.mockhub.ai.JdkLlmTransport;
@@ -134,6 +143,17 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     orgs.findAll().forEach(o -> teams.ensureDefault(o.id()));
     projects.assignTeams(orgId -> teams.ensureDefault(orgId).id());
     RequestLogService requestLog = new RequestLogService(gateway, projects);
+    CalloutLog calloutLog = new InMemoryCalloutLog(config.calloutLogSize);
+    CalloutService callouts = new CalloutService(
+        new CalloutRenderer(services::getTemplateEngine),
+        new CalloutTargets(new TargetGuard(config.calloutAllowPrivate, InetAddress::getAllByName, "MOCKHUB_CALLOUT_ALLOW_PRIVATE"),
+            () -> port.get() > 0 ? port.get() : services.getOptions().portNumber(), config.publicUrl),
+        new JdkHttpSender(), calloutLog, clock);
+    ScheduledExecutorService calloutScheduler = Executors.newScheduledThreadPool(4, r -> {
+      Thread t = new Thread(r, "mockhub-callout");
+      t.setDaemon(true);
+      return t;
+    });
 
     SsoSettingsStore ssoSettings = new SsoSettingsStore(dataDir, config.ssoClientSecret);
     JdkHttpTransport http = new JdkHttpTransport();
@@ -153,7 +173,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     AiSettingsStore aiSettings = new AiSettingsStore(dataDir, config.aiApiKey);
     AiProviders aiProviders = AiProviders.defaults();
     ChatCompletions chat = new ChatCompletions(new JdkLlmTransport(), aiProviders, config.publicUrl);
-    AssistantService assistant = new AssistantService(aiSettings, chat, stubs, requestLog);
+    AssistantService assistant = new AssistantService(aiSettings, chat, stubs, requestLog, calloutLog);
     AssistantJobs assistantJobs = new AssistantJobs(assistant, Executors.newCachedThreadPool(r -> {
       Thread t = new Thread(r, "mockhub-assistant");
       t.setDaemon(true);
@@ -171,6 +191,8 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
         new CrudTransformer(crud),
         new ErrorRateTransformer(() -> ThreadLocalRandom.current().nextDouble()),
         new DisabledStubMatcher(),
+        new CalloutListener(callouts, calloutScheduler),
+        new SyncCalloutTransformer(callouts),
         new ApiKeyFilter(projects::findForPath),
         new FakeHelpers(fakeData),
         new AuthFilter(auth, policy),
@@ -189,6 +211,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
                 new ExampleController(examples, new ExampleInstaller(examples, projects, stubs, importers, crud, bodyFiles), views, teamChoice),
                 new StubController(stubs),
                 new RequestLogController(requestLog),
+                new CalloutController(calloutLog),
                 new ImportExportController(projects, stubs, exporters, importers, urls, new WireMockArchiveImporter(bodyFiles)),
                 new AiController(aiSettings, aiProviders, chat, assistant, assistantJobs, projects, urls, new BodyGenerator(aiSettings, chat)),
                 new BackupController(new BackupService(orgs, teams, projects, gateway, dataStore, bodyFiles, clock)),

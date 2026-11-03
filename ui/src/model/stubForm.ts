@@ -13,7 +13,7 @@ export type BodyOperator =
   | 'doesNotMatch';
 export type BodyType = 'json' | 'text' | 'xml' | 'file' | 'base64' | 'none';
 export type DelayType = 'none' | 'fixed' | 'uniform' | 'lognormal' | 'chunked';
-export type ResponseMode = 'direct' | 'proxy' | 'fault';
+export type ResponseMode = 'direct' | 'proxy' | 'fault' | 'callout';
 export type StubKind = 'rest' | 'soap';
 export type Fault = 'CONNECTION_RESET_BY_PEER' | 'EMPTY_RESPONSE' | 'MALFORMED_RESPONSE_CHUNK' | 'RANDOM_DATA_THEN_CLOSE';
 
@@ -43,9 +43,13 @@ export interface Webhook {
   headers: KeyValue[];
   body: string;
   delay: string;
+  forward: boolean;
 }
 
 export const WEBHOOK_METHODS = ['POST', 'PUT', 'PATCH', 'GET', 'DELETE'];
+export const CALLOUT_LISTENER = 'mockhub-callout';
+export const SYNC_CALLOUT_TRANSFORMER = 'mockhub-sync-callout';
+const CALLOUT_LISTENERS = new Set(['webhook', CALLOUT_LISTENER]);
 
 export function emptyWebhook(): Webhook {
   return {
@@ -54,7 +58,12 @@ export function emptyWebhook(): Webhook {
     headers: [{ key: 'Content-Type', value: 'application/json' }],
     body: '{\n  "event": "created",\n  "request": {{{originalRequest.body}}}\n}',
     delay: '',
+    forward: false,
   };
+}
+
+export function emptySyncCallout(): Webhook {
+  return { method: 'POST', url: '', headers: [], body: '{{{originalRequest.body}}}', delay: '', forward: true };
 }
 
 export interface StubForm {
@@ -96,6 +105,7 @@ export interface StubForm {
   soapOperation: string;
   sampleBody: string;
   webhooks: Webhook[];
+  syncCallout: Webhook;
   errorPercent: string;
   errorMode: 'status' | 'fault';
   errorStatus: string;
@@ -178,6 +188,7 @@ export function emptyForm(kind: StubKind = 'rest'): StubForm {
     soapOperation: soap ? 'Operation' : '',
     sampleBody: '',
     webhooks: [],
+    syncCallout: emptySyncCallout(),
     errorPercent: '',
     errorMode: 'status',
     errorStatus: soap ? '500' : '503',
@@ -327,7 +338,14 @@ export function fromStub(stub: Stub): Conversion {
   }
   const transformers = Array.isArray(response.transformers) ? response.transformers.map(String) : [];
   form.templating = transformers.includes(TEMPLATE_TRANSFORMER);
-  if (transformers.some((t) => t !== TEMPLATE_TRANSFORMER)) unsupported.push(`Transformers ${transformers.join(', ')}`);
+  const waitsForCallout = transformers.includes(SYNC_CALLOUT_TRANSFORMER) && !response.fault && !response.proxyBaseUrl;
+  if (transformers.some((t) => t !== TEMPLATE_TRANSFORMER && t !== SYNC_CALLOUT_TRANSFORMER)) unsupported.push(`Transformers ${transformers.join(', ')}`);
+  const transformerParameters = obj(response.transformerParameters);
+  if (waitsForCallout) {
+    form.responseMode = 'callout';
+    form.templating = false;
+    form.syncCallout = readCallout(obj(transformerParameters.callout));
+  }
 
   if (response.fixedDelayMilliseconds !== undefined) {
     form.delayType = 'fixed';
@@ -354,24 +372,20 @@ export function fromStub(stub: Stub): Conversion {
   if (response.fault) form.fault = str(response.fault) as Fault;
   form.proxyBaseUrl = str(response.proxyBaseUrl);
   form.proxyRemovePrefix = str(response.proxyUrlPrefixToRemove);
-  for (const key of ['additionalProxyRequestHeaders', 'removeProxyRequestHeaders', 'transformerParameters']) {
+  for (const key of ['additionalProxyRequestHeaders', 'removeProxyRequestHeaders']) {
     if (response[key] !== undefined) unsupported.push(`Response ${key}`);
   }
+  const otherParameters = Object.keys(transformerParameters).filter((k) => !(waitsForCallout && k === 'callout'));
+  if (otherParameters.length) unsupported.push(`Response transformerParameters ${otherParameters.join(', ')}`);
   form.webhooks = [];
   for (const listener of Array.isArray(stub.serveEventListeners) ? stub.serveEventListeners : []) {
     const l = obj(listener);
-    if (l.name !== 'webhook') {
+    if (!CALLOUT_LISTENERS.has(str(l.name))) {
       unsupported.push(`Serve event listener ${str(l.name)}`);
       continue;
     }
     const p = obj(l.parameters);
-    form.webhooks.push({
-      method: str(p.method) || 'POST',
-      url: str(p.url),
-      headers: Object.entries(obj(p.headers)).map(([key, value]) => ({ key, value: Array.isArray(value) ? value.join(', ') : str(value) })),
-      body: typeof p.body === 'string' ? p.body : p.body !== undefined ? JSON.stringify(p.body, null, 2) : '',
-      delay: str(obj(p.delay).milliseconds),
-    });
+    form.webhooks.push(readCallout(p));
     if (p.delay !== undefined && obj(p.delay).type !== 'fixed') unsupported.push('Webhook delay that is not fixed');
   }
   if (stub.postServeActions !== undefined) unsupported.push('Post-serve actions');
@@ -419,7 +433,15 @@ export function toStub(form: StubForm, original: Stub = {}): Stub {
   for (const key of ['additionalProxyRequestHeaders', 'removeProxyRequestHeaders', 'transformerParameters']) {
     if (previous[key] !== undefined) response[key] = previous[key];
   }
-  if (form.responseMode === 'fault') {
+  const parameters = { ...obj(response.transformerParameters) };
+  delete parameters.callout;
+  if (form.responseMode === 'callout') parameters.callout = writeCallout(form.syncCallout, false);
+  if (Object.keys(parameters).length) response.transformerParameters = parameters;
+  else delete response.transformerParameters;
+  if (form.responseMode === 'callout') {
+    response.status = 200;
+    response.transformers = [SYNC_CALLOUT_TRANSFORMER];
+  } else if (form.responseMode === 'fault') {
     response.fault = form.fault;
   } else if (form.responseMode === 'proxy') {
     response.proxyBaseUrl = form.proxyBaseUrl;
@@ -433,21 +455,13 @@ export function toStub(form: StubForm, original: Stub = {}): Stub {
     writeResponseBody(response, form);
   }
   if (form.responseMode !== 'fault') writeDelay(response, form);
-  if (form.templating && form.responseMode !== 'fault') response.transformers = [TEMPLATE_TRANSFORMER];
+  if (form.templating && form.responseMode !== 'fault' && form.responseMode !== 'callout') response.transformers = [TEMPLATE_TRANSFORMER];
   stub.response = response;
 
-  const otherListeners = (Array.isArray(stub.serveEventListeners) ? stub.serveEventListeners : []).filter((l) => obj(l).name !== 'webhook');
+  const otherListeners = (Array.isArray(stub.serveEventListeners) ? stub.serveEventListeners : []).filter((l) => !CALLOUT_LISTENERS.has(str(obj(l).name)));
   const webhooks = form.webhooks
     .filter((w) => w.url.trim())
-    .map((w) => {
-      const parameters: JsonObject = { method: w.method, url: w.url.trim() };
-      const headers: JsonObject = {};
-      for (const h of w.headers) if (h.key.trim()) headers[h.key.trim()] = h.value;
-      if (Object.keys(headers).length) parameters.headers = headers;
-      if (w.body.trim() && w.method !== 'GET') parameters.body = w.body;
-      if (Number(w.delay) > 0) parameters.delay = { type: 'fixed', milliseconds: Number(w.delay) };
-      return { name: 'webhook', parameters };
-    });
+    .map((w) => ({ name: CALLOUT_LISTENER, parameters: writeCallout(w, true) }));
   const listeners = [...otherListeners, ...webhooks];
   if (listeners.length) stub.serveEventListeners = listeners;
   else delete stub.serveEventListeners;
@@ -481,6 +495,27 @@ export function toStub(form: StubForm, original: Stub = {}): Stub {
   else delete meta.sampleRequest;
   stub.metadata = { ...metadata, mockhub: meta };
   return stub;
+}
+
+function readCallout(p: JsonObject): Webhook {
+  return {
+    method: str(p.method) || 'POST',
+    url: str(p.url),
+    headers: Object.entries(obj(p.headers)).map(([key, value]) => ({ key, value: Array.isArray(value) ? value.join(', ') : str(value) })),
+    body: typeof p.body === 'string' ? p.body : p.body !== undefined ? JSON.stringify(p.body, null, 2) : '',
+    delay: str(obj(p.delay).milliseconds),
+    forward: p.forward === true,
+  };
+}
+
+function writeCallout(w: Webhook, withDelay: boolean): JsonObject {
+  const parameters: JsonObject = w.forward ? { url: w.url.trim(), forward: true } : { method: w.method, url: w.url.trim() };
+  const headers: JsonObject = {};
+  for (const h of w.headers) if (h.key.trim()) headers[h.key.trim()] = h.value;
+  if (Object.keys(headers).length) parameters.headers = headers;
+  if (!w.forward && w.body.trim() && w.method !== 'GET') parameters.body = w.body;
+  if (withDelay && Number(w.delay) > 0) parameters.delay = { type: 'fixed', milliseconds: Number(w.delay) };
+  return parameters;
 }
 
 function writeResponseBody(response: JsonObject, form: StubForm) {
@@ -551,6 +586,10 @@ export function validate(form: StubForm): string[] {
     }
   }
   if (form.responseMode === 'proxy' && !/^https?:\/\//.test(form.proxyBaseUrl)) errors.push('Proxy target must start with http:// or https://');
+  if (form.responseMode === 'callout' && !form.syncCallout.url.trim()) errors.push('Enter the URL to call, e.g. https://partner.example.com/authorize');
+  for (const w of form.webhooks) {
+    if (w.delay.trim() && !(Number(w.delay) >= 0)) errors.push('A webhook delay must be a number of milliseconds.');
+  }
   if (form.priority.trim() && !/^\d+$/.test(form.priority.trim())) errors.push('Priority must be a whole number (1 is highest).');
   if (form.errorPercent.trim()) {
     const percent = Number(form.errorPercent);

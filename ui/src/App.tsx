@@ -11,6 +11,7 @@ import { OverviewTab } from './pages/project/OverviewTab';
 import { ProjectPage } from './pages/project/ProjectPage';
 import { ProjectSettingsTab } from './pages/project/ProjectSettingsTab';
 import { RequestsTab } from './pages/project/RequestsTab';
+import { CalloutsTab } from './pages/project/CalloutsTab';
 import { ScenariosTab } from './pages/project/ScenariosTab';
 import { StubsTab } from './pages/project/StubsTab';
 import { AiSettingsPage } from './pages/AiSettingsPage';
@@ -55,6 +56,7 @@ const router = createBrowserRouter(
             { path: 'data', element: <DataTab /> },
             { path: 'assistant', element: <AssistantTab /> },
             { path: 'requests', element: <RequestsTab /> },
+            { path: 'callouts', element: <CalloutsTab /> },
             { path: 'scenarios', element: <ScenariosTab /> },
             { path: 'import-export', element: <ImportExportTab /> },
             { path: 'activity', element: <ActivityTab /> },

@@ -19,6 +19,8 @@ export const SUGGESTIONS = [
   'Create stubs for the requests that matched nothing',
   'Make every POST answer after a 2 second delay',
   'Add a SOAP GetCustomer operation at /ws/customers',
+  'After POST /payments, call the callbackUrl from the request 2 seconds later with status SETTLED',
+  'Why are my webhooks failing? Check the recent callouts and fix them',
 ];
 
 interface Conversation {
