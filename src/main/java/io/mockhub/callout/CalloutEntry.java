@@ -14,7 +14,8 @@ public record CalloutEntry(
     OutboundRequest request,
     Result response,
     String error,
-    long durationMs) {
+    long durationMs,
+    String requestId) {
 
   public record Trigger(String method, String url) {}
 

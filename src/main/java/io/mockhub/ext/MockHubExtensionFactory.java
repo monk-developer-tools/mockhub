@@ -26,10 +26,16 @@ import io.mockhub.callout.CalloutLog;
 import io.mockhub.callout.CalloutRenderer;
 import io.mockhub.callout.CalloutService;
 import io.mockhub.callout.CalloutTargets;
-import io.mockhub.callout.InMemoryCalloutLog;
+import io.mockhub.history.HistoryCalloutLog;
+import io.mockhub.history.HistoryRecorder;
+import io.mockhub.history.HistoryStore;
+import io.mockhub.history.TrafficCounters;
+import io.mockhub.controller.HistoryController;
+import io.mockhub.Main;
 import io.mockhub.callout.SyncCalloutTransformer;
 import io.mockhub.controller.CalloutController;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import io.mockhub.stub.DisabledStubMatcher;
 import io.mockhub.ai.ChatCompletions;
 import io.mockhub.ai.JdkLlmTransport;
@@ -145,7 +151,11 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     DataStore dataStore = new FileDataStore(dataDir);
     BodyFiles bodyFiles = new BodyFiles(dataDir);
     CrudService crud = new CrudService(dataStore);
-    ProjectService projects = new ProjectService(new FileProjectRepository(dataDir), List.of(stubs, new ProjectDataCleaner(dataStore, bodyFiles)), clock);
+    Path historyDir = dataDir.resolve("mockhub").resolve("history");
+    HistoryStore history = new HistoryStore(historyDir, clock, Duration.ofDays(config.historyDays), config.historyMaxMb * 1024L * 1024L);
+    TrafficCounters traffic = new TrafficCounters(historyDir, clock);
+    ProjectService projects = new ProjectService(new FileProjectRepository(dataDir),
+        List.of(stubs, new ProjectDataCleaner(dataStore, bodyFiles), history, traffic), clock);
     projectsRef.set(projects);
     UserService users = new UserService(new FileUserRepository(dataDir), config.users, new PasswordHasher(), clock);
     TeamService teams = new TeamService(new FileTeamRepository(dataDir), List.of(users), clock);
@@ -154,7 +164,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     orgs.findAll().forEach(o -> teams.ensureDefault(o.id()));
     projects.assignTeams(orgId -> teams.ensureDefault(orgId).id());
     RequestLogService requestLog = new RequestLogService(gateway, projects);
-    CalloutLog calloutLog = new InMemoryCalloutLog(config.calloutLogSize);
+    CalloutLog calloutLog = new HistoryCalloutLog(history);
     CalloutService callouts = new CalloutService(
         new CalloutRenderer(services::getTemplateEngine),
         new CalloutTargets(new TargetGuard(config.calloutAllowPrivate, InetAddress::getAllByName, "MOCKHUB_CALLOUT_ALLOW_PRIVATE"),
@@ -165,6 +175,17 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
       t.setDaemon(true);
       return t;
     });
+    ScheduledExecutorService maintenance = Executors.newSingleThreadScheduledExecutor(r -> {
+      Thread t = new Thread(r, "mockhub-history-maintenance");
+      t.setDaemon(true);
+      return t;
+    });
+    maintenance.scheduleWithFixedDelay(() -> safely(history::prune), 1, 30, TimeUnit.MINUTES);
+    maintenance.scheduleWithFixedDelay(() -> safely(traffic::save), 1, 1, TimeUnit.MINUTES);
+    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+      traffic.save();
+      history.close();
+    }, "mockhub-history-shutdown"));
 
     SsoSettingsStore ssoSettings = new SsoSettingsStore(dataDir, config.ssoClientSecret);
     JdkHttpTransport http = new JdkHttpTransport();
@@ -186,7 +207,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     ChatCompletions chat = new ChatCompletions(new JdkLlmTransport(), aiProviders, config.publicUrl);
     RateLimiter rateLimiter = new RateLimiter(clock);
     RuntimeService runtimeService = new RuntimeService(projects, new DefaultResponseStubs(stubs), rateLimiter);
-    AssistantService assistant = new AssistantService(aiSettings, chat, stubs, requestLog, calloutLog, runtimeService);
+    AssistantService assistant = new AssistantService(aiSettings, chat, stubs, history, clock, calloutLog, runtimeService);
     AssistantJobs assistantJobs = new AssistantJobs(assistant, Executors.newCachedThreadPool(r -> {
       Thread t = new Thread(r, "mockhub-assistant");
       t.setDaemon(true);
@@ -208,6 +229,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
         new ErrorRateTransformer(() -> ThreadLocalRandom.current().nextDouble()),
         new DisabledStubMatcher(),
         new CalloutListener(callouts, calloutScheduler),
+        new HistoryRecorder(projects::findForPath, history, traffic),
         new SyncCalloutTransformer(callouts),
         new RuntimeFilter(projects::findForPath, corsHeaders, rateLimiter, loadMeter),
         new ApiKeyFilter(projects::findForPath, corsForRequest::headers),
@@ -231,7 +253,8 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
                 new RuntimeController(runtimeService),
                 new ExampleController(examples, new ExampleInstaller(examples, projects, stubs, importers, crud, bodyFiles), views, teamChoice),
                 new StubController(stubs),
-                new RequestLogController(requestLog),
+                new RequestLogController(requestLog, history),
+                new HistoryController(projects, history, traffic, Main.VERSION),
                 new CalloutController(calloutLog),
                 new ImportExportController(projects, stubs, exporters, importers, urls, new WireMockArchiveImporter(bodyFiles)),
                 new AiController(aiSettings, aiProviders, chat, assistant, assistantJobs, projects, urls, new BodyGenerator(aiSettings, chat)),
@@ -244,5 +267,13 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
                     playgroundHistory, new DataGenerator(fakeData), config.publicUrl)))));
     extensions.addAll(new StateExtension(new CaffeineStore()).create(services));
     return extensions;
+  }
+
+  private static void safely(Runnable task) {
+    try {
+      task.run();
+    } catch (RuntimeException e) {
+      System.getLogger(MockHubExtensionFactory.class.getName()).log(System.Logger.Level.WARNING, "History maintenance failed: " + e.getMessage());
+    }
   }
 }

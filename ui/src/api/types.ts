@@ -423,6 +423,66 @@ export interface CalloutEntry {
   response: { status: number; headers: HeaderPair[]; body: string; truncated: boolean } | null;
   error: string | null;
   durationMs: number;
+  requestId: string | null;
+}
+
+export interface HistoryEntry {
+  id: string;
+  at: number;
+  projectId: string;
+  method: string;
+  url: string;
+  absoluteUrl: string;
+  clientIp: string;
+  requestHeaders: HeaderPair[];
+  requestBody: string;
+  requestBodyTruncated: boolean;
+  status: number;
+  responseHeaders: HeaderPair[];
+  responseBody: string;
+  responseBodyTruncated: boolean;
+  matched: boolean;
+  stubId: string | null;
+  stubName: string | null;
+  durationMs: number;
+}
+
+export interface HistoryPage {
+  items: HistoryEntry[];
+  total: number;
+  truncated: boolean;
+  facets: {
+    methods: Record<string, number>;
+    statuses: Record<string, number>;
+    matched: number;
+    unmatched: number;
+    stubs: { id: string; name: string | null; count: number }[];
+  };
+}
+
+export interface HistoryDetail {
+  entry: HistoryEntry;
+  callouts: CalloutEntry[];
+}
+
+export type TrafficWindow = '5m' | '15m' | '1h' | '6h' | '24h';
+
+export interface TrafficView {
+  window: TrafficWindow;
+  bucketSeconds: number;
+  points: { at: number; requests: number; unmatched: number }[];
+  total: number;
+  unmatched: number;
+  averageRps: number;
+  peakRps: number;
+  firstAt: number | null;
+  lastAt: number | null;
+}
+
+export interface TrafficDay {
+  date: string;
+  requests: number;
+  unmatched: number;
 }
 
 export interface GeneratorField {

@@ -21,7 +21,7 @@ Legend: ✅ have it · 🟡 partial · ❌ missing
 | Beeceptor feature | MockHub today | Status | Phase |
 |---|---|---|---|
 | Create an endpoint | Projects with their own base path and URL | ✅ | — |
-| Inspect HTTP requests | Requests tab, live, JSON formatting, matched and unmatched | ✅ | F3 adds search |
+| Inspect HTTP requests | Requests tab, live, JSON formatting, matched and unmatched, search | ✅ | — |
 | Mock rules and request matching | Form and JSON editor, all WireMock matchers | ✅ | — |
 | Advanced matching filters | Body JSONPath/XPath, regex, headers, query, cookies | ✅ | — |
 | Execution order of rules | Matching order view, drag or arrows to reorder | ✅ | — |
@@ -45,7 +45,7 @@ Legend: ✅ have it · 🟡 partial · ❌ missing
 | Forward proxy (browser/OS proxy) | Missing | ❌ | F11 |
 | Local tunnelling | Missing | ❌ | F12 |
 | White-labelled domains | Missing | ❌ | F11 |
-| Request history: search, facets, 10-day retention | In-memory journal, text filter, no retention | 🟡 | F3 |
+| Request history: search, facets, 10-day retention | On-disk history, search, facets, HAR, configurable retention (default 7 days) | ✅ | — |
 | Snapshots: create, restore, pull to another endpoint | Server backup and restore only | 🟡 | F5 |
 | Stateful data management UI | Data tab for CRUD records; counters and stores not visible | 🟡 | F7 |
 | Datasets (CSV/JSON shared across projects) | Missing | ❌ | F8 |
@@ -55,7 +55,7 @@ Legend: ✅ have it · 🟡 partial · ❌ missing
 | AI rules generator | AI assistant with staged diffs | ✅ | — |
 | Agentic mode (MCP) | Missing | ❌ | F4 |
 | Contract drift detection | Missing | ❌ | F13 |
-| Live traffic (RPS) | Activity bars only | 🟡 | F3 |
+| Live traffic (RPS) | Traffic chart 5m–24h and 30 days, average and peak RPS, drag to select | ✅ | — |
 | Test data editor for OpenAPI mocks | Edit generated stubs by hand, AI body generator | 🟡 | F8 |
 | HTTP echo server | Missing as a built-in | ❌ | F11 |
 | "Mock these APIs" button | Missing | ❌ | F11 |
@@ -223,12 +223,16 @@ Goal: find any request from the last days and watch traffic during load tests.
 - Assistant and MCP: `search_requests` with the same filters.
 
 Checklist:
-- [ ] History store, retention and size cap
-- [ ] Search API and facets
-- [ ] HAR export
-- [ ] Live traffic counters and chart
-- [ ] Callouts stored with their trigger
-- [ ] Tests (including restart), docs, tutorial
+- [x] History store, retention and size cap
+- [x] Search API and facets
+- [x] HAR export
+- [x] Live traffic counters and chart
+- [x] Callouts stored with their trigger
+- [x] Tests (including restart), docs, tutorial
+
+Notes: per-second counters are kept for the last hour and per-minute counters (with the peak second) for 24 hours,
+which is what the windows need. cURL comes per request from the detail panel rather than for a selection. History is
+not in backups. The assistant's `list_requests` became `search_requests`; MCP gets it in F4.
 
 ### Phase F4 — Personal access tokens and MCP (agentic mode)
 

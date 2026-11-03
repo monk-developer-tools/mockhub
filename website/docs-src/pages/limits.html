@@ -1,6 +1,6 @@
 <ul>
   <li>Run one instance per data directory. WireMock keeps stubs in memory and reads the files only at startup.</li>
-  <li>Scenario states, the request log and the callout log are in memory and reset on restart.</li>
+  <li>Scenario states and rate-limit counters are in memory and reset on restart. Request and callout history is kept on disk for a few days (see <a href="#request-retention">How long history is kept</a>).</li>
   <li>A webhook is sent once. Failed callouts are logged, not retried.</li>
   <li>Project base paths can't collide with each other or with <code>/__admin</code>.</li>
 </ul>

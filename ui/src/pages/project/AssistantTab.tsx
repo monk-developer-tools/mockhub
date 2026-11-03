@@ -52,11 +52,11 @@ export function stepsLabel(steps: AssistantStep[]) {
   const count = (tools: string[]) => steps.filter((s) => tools.includes(s.tool)).length;
   const parts: string[] = [];
   const looked = count(['list_stubs', 'get_stub']);
-  const logs = count(['list_requests']);
+  const logs = count(['search_requests']);
   const staged = count(['create_stub', 'update_stub', 'delete_stub']);
   const errors = steps.filter((s) => s.detail.startsWith('Error')).length;
   if (looked) parts.push('read the stubs');
-  if (logs) parts.push('checked the request log');
+  if (logs) parts.push('searched the requests');
   if (staged) parts.push(`staged ${staged} change${staged === 1 ? '' : 's'}`);
   if (errors) parts.push(`fixed ${errors} mistake${errors === 1 ? '' : 's'}`);
   return parts.join(' · ');

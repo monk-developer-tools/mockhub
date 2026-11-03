@@ -4502,3 +4502,292 @@ button.map-node:hover,
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.status-pill.bad {
+  border-color: transparent;
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.status-pill.info {
+  border-color: transparent;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.history-table .status-pill {
+  padding: 1px 8px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.history-table .status-pill::before {
+  width: 6px;
+  height: 6px;
+}
+
+.history-table .path {
+  max-width: 520px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-table .num-col {
+  text-align: right;
+}
+
+.history-stub {
+  color: var(--ink-soft);
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+.requests-tab {
+  gap: 14px;
+}
+
+.traffic-panel {
+  padding: 14px 18px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.traffic-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.traffic-figures {
+  display: flex;
+  gap: 28px;
+  margin: 0;
+  flex-wrap: wrap;
+}
+
+.traffic-figures div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.traffic-figures dt {
+  font-size: var(--text-s);
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.traffic-figures dd {
+  margin: 0;
+  font-size: var(--text-2xl);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.traffic-figures dd.warn-text {
+  color: var(--warn);
+}
+
+.traffic-chart {
+  position: relative;
+  margin: 0;
+}
+
+.traffic-chart svg {
+  display: block;
+  width: 100%;
+  overflow: visible;
+}
+
+.traffic-chart .activity-hit.active {
+  fill: color-mix(in srgb, var(--ink) 6%, transparent);
+}
+
+.traffic-matched {
+  fill: var(--accent);
+  opacity: 0.85;
+}
+
+.traffic-unmatched {
+  fill: var(--warn);
+}
+
+.traffic-tip-miss {
+  color: color-mix(in srgb, var(--warn) 60%, var(--paper));
+  opacity: 1 !important;
+}
+
+.traffic-legend {
+  display: flex;
+  gap: 14px;
+}
+
+.traffic-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-swatch {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.legend-swatch.matched {
+  background: var(--accent);
+}
+
+.legend-swatch.unmatched {
+  background: var(--warn);
+}
+
+.history-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 12px 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.history-search {
+  flex: 1 1 200px;
+}
+
+.history-filters .table-select {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.history-filters .history-status {
+  width: 116px;
+}
+
+.history-filters .history-header {
+  width: 168px;
+}
+
+.history-filters .invalid {
+  border-color: var(--danger);
+}
+
+.history-bar {
+  min-height: 46px;
+}
+
+.history-facets {
+  padding: 0;
+}
+
+.history-facets .num {
+  opacity: 0.7;
+  margin-left: 2px;
+}
+
+.history-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  flex-wrap: wrap;
+}
+
+.request-facts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  font-size: var(--text-s);
+}
+
+.linked-callouts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+}
+
+.linked-callouts li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  font-size: var(--text-s);
+}
+
+.linked-callouts li + li {
+  border-top: 1px solid var(--line);
+}
+
+.linked-callouts .path {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .history-filters .history-status,
+  .history-filters .history-header,
+  .history-filters .table-select {
+    flex: 1 1 calc(50% - 4px);
+    width: auto;
+  }
+
+  .traffic-figures {
+    gap: 18px;
+  }
+
+  .traffic-figures dd {
+    font-size: var(--text-xl);
+  }
+}
+
+.traffic-chart.selectable svg {
+  cursor: crosshair;
+  user-select: none;
+}
+
+.traffic-selection {
+  fill: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.traffic-hint {
+  margin-left: auto;
+}
+
+.span-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 30px;
+  padding: 0 4px 0 10px;
+  border-radius: var(--radius-s);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: var(--text-s);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.span-chip .btn {
+  color: inherit;
+}
+
+@media (max-width: 600px) {
+  .traffic-hint {
+    display: none;
+  }
+}

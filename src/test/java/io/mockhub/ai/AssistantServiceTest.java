@@ -7,7 +7,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import io.mockhub.callout.InMemoryCalloutLog;
-import io.mockhub.journal.RequestLogService;
+import io.mockhub.history.HistoryStore;
 import io.mockhub.project.Project;
 import io.mockhub.project.ProjectService;
 import io.mockhub.runtime.DefaultResponseStubs;
@@ -19,6 +19,7 @@ import io.mockhub.support.FakeStubGateway;
 import io.mockhub.support.InMemoryProjectRepository;
 import java.nio.file.Path;
 import java.time.Clock;
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,7 +52,7 @@ class AssistantServiceTest {
     runtime = new RuntimeService(projects, new DefaultResponseStubs(stubs), new RateLimiter(Clock.systemUTC()));
     settings = new AiSettingsStore(dir, "");
     settings.save(new AiSettings(true, "litellm", "http://llm", "", "gpt-test", 0.2, 3));
-    assistant = new AssistantService(settings, new ChatCompletions(transport, AiProviders.defaults(), ""), stubs, new RequestLogService(gateway, projects), new InMemoryCalloutLog(100), runtime);
+    assistant = new AssistantService(settings, new ChatCompletions(transport, AiProviders.defaults(), ""), stubs, new HistoryStore(dir.resolve("history"), Clock.systemUTC(), Duration.ofDays(1), Long.MAX_VALUE), Clock.systemUTC(), new InMemoryCalloutLog(100), runtime);
   }
 
   private static List<AssistantService.Message> ask(String text) {

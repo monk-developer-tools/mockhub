@@ -15,8 +15,11 @@ curl -OJ $HUB/__admin/mockhub/api/projects/$ID/export/postman
 <span class="c"># require an API key on every mock call (null turns it off)</span>
 curl -X PUT $HUB/__admin/mockhub/api/projects/$ID -d '{"apiKey":{"header":"X-API-Key","value":"test-key"}}'
 
-<span class="c"># check which calls your service made, and which didn't match</span>
-curl "$HUB/__admin/mockhub/api/projects/$ID/requests?unmatched=true"</pre></div>
+<span class="c"># which calls found no stub in the last hour (from = epoch ms or ISO time)</span>
+curl "$HUB/__admin/mockhub/api/projects/$ID/history?matched=false&amp;from=2026-11-03T09:00:00Z"
+
+<span class="c"># download every failed call as HAR</span>
+curl -o failed.har "$HUB/__admin/mockhub/api/projects/$ID/history-export?status=5xx"</pre></div>
 <table>
   <thead><tr><th>Endpoint</th><th>Purpose</th></tr></thead>
   <tbody>
@@ -30,7 +33,12 @@ curl "$HUB/__admin/mockhub/api/projects/$ID/requests?unmatched=true"</pre></div>
     <tr><td><code>POST /playground/send</code>, <code>GET|DELETE /playground/history</code></td><td>send a request from the server; your history</td></tr>
     <tr><td><code>POST /fake/generate</code></td><td>generate records: <code>{count, fields:[{name, expression}], locale}</code></td></tr>
     <tr><td><code>POST /projects/{id}/ai/body</code></td><td>generate a response body from a description</td></tr>
-    <tr><td><code>GET|DELETE /projects/{id}/requests</code></td><td>request log</td></tr>
+    <tr><td><code>GET /projects/{id}/history</code></td><td>search the <a href="#requests">request history</a>: <code>q</code>, <code>method</code>, <code>status</code> (<code>404</code>, <code>4xx</code>, <code>400-499</code>), <code>matched</code>, <code>stub</code>, <code>header</code> (<code>Name</code> or <code>Name:value</code>), <code>from</code>, <code>to</code>, <code>limit</code> (up to 500), <code>offset</code>. Returns <code>items</code>, <code>total</code> and <code>facets</code></td></tr>
+    <tr><td><code>GET /projects/{id}/history/{entryId}</code></td><td>one request with headers, bodies and the callouts it triggered</td></tr>
+    <tr><td><code>GET /projects/{id}/history-export</code></td><td>the same filters as a HAR 1.2 file, up to 500 requests</td></tr>
+    <tr><td><code>GET /projects/{id}/traffic?window=</code></td><td>request counts for <code>5m</code>, <code>15m</code>, <code>1h</code>, <code>6h</code> or <code>24h</code>, with average and peak requests per second</td></tr>
+    <tr><td><code>GET /projects/{id}/traffic/daily</code></td><td>requests per day for the last 30 days</td></tr>
+    <tr><td><code>GET|DELETE /projects/{id}/requests</code></td><td>WireMock's in-memory journal; <code>DELETE</code> also clears the history</td></tr>
     <tr><td><code>GET /projects/{id}/export/{postman|bruno|wiremock}</code></td><td>exports</td></tr>
     <tr><td><code>POST /projects/{id}/import/{openapi|wsdl|wiremock}</code></td><td>imports</td></tr>
     <tr><td><code>POST /projects/{id}/import/wiremock-zip</code></td><td>import a zipped WireMock folder (send the zip as the body)</td></tr>

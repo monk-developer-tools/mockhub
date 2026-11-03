@@ -1,1 +1,33 @@
-<p>The <strong>Requests</strong> tab updates live. To inspect a third-party webhook, select <strong>Catch all webhooks</strong> and give the service the URL shown. Filter to <em>Unmatched</em> to find missing stubs. Click a request to see headers and bodies, the closest stubs and how near they came, a button that creates a stub from that request, and <strong>Replay in Playground</strong>.</p>
+<p>The <strong>Requests</strong> tab shows every call a project received, newest first, and keeps them on disk so you can search days of traffic, not just the last few minutes. It updates live while <strong>Live</strong> is ticked.</p>
+<h3 id="request-traffic">Traffic at a glance</h3>
+<p>The chart at the top counts calls over the last 5 minutes, 15 minutes, hour, 6 hours or 24 hours, with unmatched calls in amber. Beside it are the total, the unmatched count, the average and the peak requests per second. Choose <strong>30d</strong> for one bar per day over the last 30 days. Hover a bar to see its exact numbers. <strong>Drag across the chart</strong> to list only the requests in that span; clear the time chip to go back.</p>
+<h3 id="request-search">Search and filter</h3>
+<p>Type in the search box to find text anywhere in the URL, the headers or either body. Narrow further with:</p>
+<table>
+  <thead><tr><th>Filter</th><th>Examples</th></tr></thead>
+  <tbody>
+    <tr><td>Method</td><td><code>POST</code></td></tr>
+    <tr><td>Status</td><td><code>404</code>, a class like <code>4xx</code>, or a range like <code>500-599</code></td></tr>
+    <tr><td>Matched or not</td><td>Only calls that found no stub, which is the quickest way to find a missing one</td></tr>
+    <tr><td>Stub</td><td>Only calls one stub answered</td></tr>
+    <tr><td>Header</td><td><code>X-Tenant</code> to find calls that sent it, or <code>X-Tenant:acme</code> to find a value</td></tr>
+    <tr><td>Time range</td><td>The last 15 minutes up to the last 7 days</td></tr>
+  </tbody>
+</table>
+<p>The chips under the filters count what matched by status class, and how many found no stub. Click one to filter by it. Filters live in the page address, so you can bookmark a search or send it to a teammate. Results come 100 at a time; use <strong>Older</strong> and <strong>Newer</strong> to page.</p>
+<h3 id="request-details">Look at one request</h3>
+<p>Click a request to see its status, the stub that answered, timing, both sets of headers and both bodies (JSON is formatted). From there you can:</p>
+<ul>
+  <li><strong>Create stub from this request</strong>: opens the stub editor already filled in with the method, path, query and body.</li>
+  <li><strong>Replay in Playground</strong>: sends the same call again and lets you change it first.</li>
+  <li>Copy it as cURL, HTTPie, JavaScript, Python, Java, C# or Apex.</li>
+  <li>See the <a href="#webhooks">callouts</a> the request triggered, with their result.</li>
+</ul>
+<p>For an unmatched request, MockHub also lists the <strong>closest stubs</strong> and how near each came, so you can spot a typo in a path or a missing header.</p>
+<h3 id="request-har">Export as HAR</h3>
+<p><strong>Export HAR</strong> downloads what the current filters match, up to 500 requests, as a <a href="https://w3c.github.io/web-performance/specs/HAR/Overview.html">HAR 1.2</a> file. Open it in your browser's developer tools, in Postman or Insomnia, or attach it to a bug report.</p>
+<h3 id="request-webhooks">Inspect third-party webhooks</h3>
+<p>Select <strong>Catch all webhooks</strong> and give the other service the URL shown. MockHub adds a low-priority stub that answers <code>200</code> to anything, so every webhook the service sends lands in the history.</p>
+<h3 id="request-retention">How long history is kept</h3>
+<p>Each project keeps 7 days of requests and callouts, up to 200 MB. When a project goes over, its oldest hours are dropped first. Change both with <code>MOCKHUB_HISTORY_DAYS</code> and <code>MOCKHUB_HISTORY_MAX_MB</code> (see <a href="#config">Configuration</a>). Bodies longer than 64 KB are cut, and binary bodies are stored as their size only. <strong>Clear history</strong> deletes a project's requests at once. History stays on the server's disk under <code>/data/mockhub/history</code>; it isn't part of backups.</p>
+<p>The AI assistant can search the same history: ask it something like <em>"Which calls failed in the last hour, and why?"</em></p>

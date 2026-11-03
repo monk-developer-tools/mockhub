@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../../api/client';
 import type { CalloutEntry } from '../../api/types';
+import { HeaderTable } from '../../components/HeaderTable';
 import { EmptyArt } from '../../components/Illustrations';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { docsAt } from '../../model/navigation';
@@ -15,22 +16,6 @@ import { useProject } from './ProjectPage';
 
 function time(iso: string) {
   return new Date(iso).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-}
-
-function Headers({ headers }: { headers: { name: string; value: string }[] }) {
-  if (headers.length === 0) return <p className="muted small">No headers</p>;
-  return (
-    <table className="kv-table">
-      <tbody>
-        {headers.map((h, i) => (
-          <tr key={`${h.name}-${i}`}>
-            <td>{h.name}</td>
-            <td>{h.value}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  );
 }
 
 export function CalloutsTab() {
@@ -192,7 +177,7 @@ export function CalloutsTab() {
               <>
                 <section className="stack" style={{ gap: 6 }}>
                   <h3>Sent headers</h3>
-                  <Headers headers={selected.request.headers} />
+                  <HeaderTable headers={selected.request.headers} />
                 </section>
                 {selected.request.body && (
                   <section className="stack" style={{ gap: 6 }}>
@@ -206,7 +191,7 @@ export function CalloutsTab() {
               <>
                 <section className="stack" style={{ gap: 6 }}>
                   <h3>Answer {selected.response.status}</h3>
-                  <Headers headers={selected.response.headers} />
+                  <HeaderTable headers={selected.response.headers} />
                 </section>
                 {selected.response.body && (
                   <section className="stack" style={{ gap: 6 }}>

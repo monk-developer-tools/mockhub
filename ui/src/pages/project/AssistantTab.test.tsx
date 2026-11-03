@@ -169,7 +169,7 @@ describe('AssistantTab', () => {
 
   it('summarises the tool steps', () => {
     // Then
-    expect(stepsLabel([{ tool: 'list_requests', detail: '' }, { tool: 'create_stub', detail: 'Error: bad' }, { tool: 'create_stub', detail: 'ok' }]))
-      .toBe('checked the request log · staged 2 changes · fixed 1 mistake');
+    expect(stepsLabel([{ tool: 'search_requests', detail: '' }, { tool: 'create_stub', detail: 'Error: bad' }, { tool: 'create_stub', detail: 'ok' }]))
+      .toBe('searched the requests · staged 2 changes · fixed 1 mistake');
   });
 });

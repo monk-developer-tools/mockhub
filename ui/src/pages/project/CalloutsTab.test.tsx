@@ -10,13 +10,13 @@ const entries: CalloutEntry[] = [
     id: 'a', at: '2026-11-03T10:00:00Z', projectId: 'p1', stubId: 's1', stubName: 'Take payment', mode: 'async',
     trigger: { method: 'POST', url: '/pay/payments' },
     request: { method: 'POST', url: 'https://partner.test/cb', headers: [{ name: 'Content-Type', value: 'application/json' }], body: '{"id":"pay_1"}' },
-    response: { status: 204, headers: [], body: '', truncated: false }, error: null, durationMs: 31,
+    response: { status: 204, headers: [], body: '', truncated: false }, error: null, durationMs: 31, requestId: null,
   },
   {
     id: 'b', at: '2026-11-03T10:00:05Z', projectId: 'p1', stubId: 's2', stubName: 'Check card', mode: 'sync',
     trigger: { method: 'POST', url: '/pay/check' },
     request: { method: 'POST', url: 'http://10.0.0.5/auth', headers: [], body: '' },
-    response: null, error: '10.0.0.5 is a private or local address', durationMs: 2,
+    response: null, error: '10.0.0.5 is a private or local address', durationMs: 2, requestId: null,
   },
 ];
 const clearCallouts = vi.fn(() => Promise.resolve());

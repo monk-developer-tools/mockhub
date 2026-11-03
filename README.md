@@ -65,11 +65,11 @@ https://mocks.acme.internal/legacy-crm/ws/customers      SOAP mocks of project "
   </tr>
   <tr>
     <td width="50%" valign="top">
-      <strong>Every call, as it happens</strong><br>
-      A live request log, with the closest stub for anything that didn't match.<br><br>
+      <strong>Every call, searchable for days</strong><br>
+      Live traffic with request rates, search by anything the caller sent, HAR export, and the closest stub for anything that didn't match.<br><br>
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="website/assets/img/shots/requests-dark.webp">
-  <img src="website/assets/img/shots/requests-light.webp" alt="The request log listing recent calls with their status">
+  <img src="website/assets/img/shots/requests-light.webp" alt="The Requests tab with a traffic chart, search filters and recent calls">
 </picture>
     </td>
     <td width="50%" valign="top">
@@ -148,7 +148,7 @@ screenshots, and the [live demo](https://mockhub.devops-monk.com/__admin/mockhub
   calls each stub answered and when it was last called.
 - **Random failures.** Make a share of calls fail (say 10% with a 503, or a connection reset) to test retries.
 - **API keys.** Require a header such as `X-API-Key` on every call to a project, like the real service would. Only admins see or change the key.
-- **Live request log** per project, with near misses for unmatched requests and *create stub from request*.
+- **Request history** per project, kept on disk for days: search by text, method, status, header, stub and time, a live traffic chart with request rates, HAR export, near misses for unmatched requests and *create stub from request*.
 - **CRUD resources with a data store.** One click gives you `/customers` with list (filter, sort, page), read,
   create, replace, patch and delete, backed by real stored records. A **Data** tab shows and edits the records, and
   they survive restarts and travel in backups.
@@ -207,14 +207,15 @@ All configuration is through environment variables.
 | `MOCKHUB_AI_API_KEY` | empty | API key for the AI provider. Overrides the one saved in the UI. |
 | `MOCKHUB_SSO_CLIENT_SECRET` | empty | Entra client secret. Overrides the one saved in the UI, so it can come from a secret store. |
 | `MOCKHUB_LOGIN_NOTE` | empty | Text shown on the sign-in page, e.g. demo credentials |
-| `MOCKHUB_JOURNAL_MAX_ENTRIES` | `5000` | How many requests the request log keeps in memory |
+| `MOCKHUB_JOURNAL_MAX_ENTRIES` | `5000` | How many requests WireMock's own journal keeps in memory (used for near-miss matching and the WireMock admin API) |
+| `MOCKHUB_HISTORY_DAYS` | `7` | Days each project keeps its request and callout history on disk, searchable in the Requests tab |
+| `MOCKHUB_HISTORY_MAX_MB` | `200` | Disk cap for one project's history; the oldest hours are dropped first |
 | `MOCKHUB_AUDIT_RETENTION_DAYS` | `90` | Days the audit log keeps changes; older entries are deleted from disk |
 | `MOCKHUB_LOG_LEVEL` | `info` | Detail written to standard output |
 | `MOCKHUB_STUB_CORS` | `true` | CORS for projects that keep the server default: any website can call the mocks. Each project can set its own rules |
 | `MOCKHUB_FAKE_LOCALE` | `en` | Default language for `{{fake ...}}` data, e.g. `de`, `fr`, `en-GB` |
 | `MOCKHUB_PLAYGROUND_ALLOW_PRIVATE` | `false` | Let the Playground call private and local addresses (blocked by default so the server can't reach your internal network) |
 | `MOCKHUB_CALLOUT_ALLOW_PRIVATE` | `false` | Let webhooks and *wait for callout* stubs call private and local addresses. Calls to MockHub's own mock URLs always work. Set it to `true` for callbacks to services on your own network, e.g. `host.docker.internal` |
-| `MOCKHUB_CALLOUT_LOG_SIZE` | `2000` | How many callouts the Callouts tab keeps in memory, across all projects |
 | `WIREMOCK_OPTIONS` | empty | Any extra [WireMock CLI option](https://wiremock.org/docs/standalone/java-jar/), e.g. `--async-response-enabled true --verbose` |
 
 ## Webhooks and callouts
@@ -266,7 +267,7 @@ time it took and any error, such as a template mistake, a refused connection or 
 
 **Catch all webhooks.** On the Requests tab, *Catch all webhooks* adds a low-priority stub that answers `200` to any
 request no other stub matched. Give a third-party service `<mock URL>/webhooks` (or any path) and watch its calls
-arrive in the request log.
+arrive in the request history.
 
 **Where callouts may go.** Calls to MockHub's own mock URLs always work, including relative URLs like
 `/payments/partner/callbacks`. Private and local addresses (`10.x`, `192.168.x`, `localhost` services other than
@@ -372,9 +373,9 @@ that starts the conversation for you.
 The stub editor's *Then call* section has an **Ask the assistant** box for describing a webhook in words, and the
 Callouts tab has **Ask the assistant to fix it** on any failed callout.
 
-The assistant uses tool calling. It reads the project's stubs, recent requests and recent callouts, and it **stages** creates,
+The assistant uses tool calling. It reads the project's stubs, searches the request history and reads recent callouts, and it **stages** creates,
 updates and deletes. Each staged change appears as a diff. You apply or discard each one, so nothing changes until
-someone with the editor role applies it. Viewers can draft changes but can't apply them. Request log and callout log
+someone with the editor role applies it. Viewers can draft changes but can't apply them. Request and callout
 contents are treated as data, not instructions.
 
 The conversation, the project's stubs and, when the assistant asks for them, recent requests are sent to the
@@ -417,7 +418,12 @@ MockHub is a WireMock extension running inside a regular WireMock server:
 | POST | `/__admin/mockhub/api/projects/{id}/stubs/{stubId}/move?target=` | move a stub to another project |
 | PUT | `/__admin/mockhub/api/projects/{id}/stubs/{stubId}/enabled` | `{enabled}` → turn a stub on or off |
 | GET | `/__admin/mockhub/api/projects/{id}/usage` | calls and last call time per stub, from the request log |
-| GET/DELETE | `/__admin/mockhub/api/projects/{id}/requests?unmatched=&limit=` | request log |
+| GET/DELETE | `/__admin/mockhub/api/projects/{id}/requests?unmatched=&limit=` | WireMock's in-memory journal; DELETE also clears the project's history |
+| GET | `/__admin/mockhub/api/projects/{id}/history?q=&method=&status=&matched=&stub=&header=&from=&to=&limit=&offset=` | search the request history; returns items, total and facets |
+| GET | `/__admin/mockhub/api/projects/{id}/history/{entryId}` | one request with headers, bodies and the callouts it triggered |
+| GET | `/__admin/mockhub/api/projects/{id}/history-export?…` | the same filters, as a HAR 1.2 download (up to 500 requests) |
+| GET | `/__admin/mockhub/api/projects/{id}/traffic?window=5m\|15m\|1h\|6h\|24h` | request counts per bucket with average and peak requests per second |
+| GET | `/__admin/mockhub/api/projects/{id}/traffic/daily` | requests and unmatched requests per day for the last 30 days |
 | GET/DELETE | `/__admin/mockhub/api/projects/{id}/callouts?limit=` | callout log: webhooks and *wait for callout* calls with what was sent, the answer, timing and errors |
 | GET | `/__admin/mockhub/api/projects/{id}/export/{postman,bruno,wiremock}` | download an export |
 | POST | `/__admin/mockhub/api/projects/{id}/import/{openapi,wsdl,wiremock}` | import a document (request body) |
@@ -536,5 +542,5 @@ multi-arch (amd64 and arm64). The pipeline needs two repository secrets: `DOCKER
 
 - Run **one** task per data directory. WireMock keeps stubs in memory and only reads the files at startup, so two
   replicas would drift apart. One task handles thousands of requests per second, which is plenty for test environments.
-- Scenario states, the request log and the callout log live in memory and reset on restart.
+- Scenario states and rate-limit counters live in memory and reset on restart. Request and callout history is kept on disk for `MOCKHUB_HISTORY_DAYS` days and is not part of backups.
 - A webhook is sent once. Failed callouts are logged but not retried.

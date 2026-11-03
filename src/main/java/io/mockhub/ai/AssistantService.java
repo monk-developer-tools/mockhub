@@ -6,12 +6,14 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.mockhub.api.ApiException;
 import io.mockhub.api.Jsons;
 import io.mockhub.callout.CalloutLog;
-import io.mockhub.journal.RequestLogService;
+import io.mockhub.history.HistoryStore;
 import io.mockhub.project.Project;
 import io.mockhub.runtime.RuntimeService;
 import io.mockhub.stub.StubService;
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -23,16 +25,18 @@ public final class AssistantService {
   private final AiSettingsStore settings;
   private final ChatCompletions chat;
   private final StubService stubs;
-  private final RequestLogService requestLog;
+  private final HistoryStore requestHistory;
+  private final Clock clock;
   private final CalloutLog callouts;
   private final RuntimeService runtime;
 
-  public AssistantService(AiSettingsStore settings, ChatCompletions chat, StubService stubs, RequestLogService requestLog, CalloutLog callouts, RuntimeService runtime) {
+  public AssistantService(AiSettingsStore settings, ChatCompletions chat, StubService stubs, HistoryStore requestHistory, Clock clock, CalloutLog callouts, RuntimeService runtime) {
     this.runtime = runtime;
     this.settings = settings;
     this.chat = chat;
     this.stubs = stubs;
-    this.requestLog = requestLog;
+    this.requestHistory = requestHistory;
+    this.clock = clock;
     this.callouts = callouts;
   }
 
@@ -65,7 +69,7 @@ public final class AssistantService {
     List<Message> trimmed = prepare(history);
     AiSettings s = settings.get();
 
-    MockTools tools = new MockTools(stubs, requestLog, callouts, runtime, project.id(), pending);
+    MockTools tools = new MockTools(stubs, requestHistory, clock, callouts, runtime, project.id(), pending);
     ArrayNode messages = Jsons.MAPPER.createArrayNode();
     messages.addObject().put("role", "system").put("content", SystemPrompt.forProject(project, mockUrl, stubs.stubsOf(project.id()).size()));
     if (!pending.isEmpty()) {
@@ -185,8 +189,19 @@ public final class AssistantService {
     return switch (tool) {
       case "create_stub", "update_stub", "delete_stub", "set_runtime" -> args.path("summary").asText("");
       case "get_stub" -> args.path("id").asText("");
-      case "list_requests" -> args.path("unmatched_only").asBoolean(false) ? "unmatched only" : "";
+      case "search_requests" -> requestFilters(args);
       default -> "";
     };
+  }
+
+  private static String requestFilters(JsonNode args) {
+    List<String> parts = new ArrayList<>();
+    if (!args.path("text").asText("").isBlank()) parts.add("\"" + args.path("text").asText() + "\"");
+    if (!args.path("method").asText("").isBlank()) parts.add(args.path("method").asText().toUpperCase(Locale.ROOT));
+    if (!args.path("status").asText("").isBlank()) parts.add("status " + args.path("status").asText());
+    if (args.path("unmatched_only").asBoolean(false)) parts.add("unmatched only");
+    if (!args.path("header").asText("").isBlank()) parts.add("header " + args.path("header").asText());
+    if (args.path("since_minutes").asInt(0) > 0) parts.add("last " + args.path("since_minutes").asInt() + " min");
+    return String.join(", ", parts);
   }
 }

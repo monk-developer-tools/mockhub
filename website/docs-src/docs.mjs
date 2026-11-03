@@ -67,7 +67,7 @@ export const GROUPS = [
     icon: 'Pulse',
     description: 'See every call, find why a request missed and try calls yourself.',
     pages: [
-      { slug: 'requests', title: 'Request log', icon: 'Pulse', description: 'Live requests, unmatched ones and the closest stubs for each.' },
+      { slug: 'requests', title: 'Request history', icon: 'Pulse', description: 'Search days of traffic, see the request rate, export HAR and find why a call missed.' },
       { slug: 'playground', title: 'Playground', icon: 'PaperPlaneTilt', description: 'Call mocks or public APIs, keep a history and save a response as a stub.' },
       { slug: 'error-codes', title: 'Error codes', icon: 'WarningCircle', description: 'Every status and header MockHub adds itself, what causes it and how to fix it.' },
     ],

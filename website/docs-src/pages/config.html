@@ -7,13 +7,14 @@
     <tr><td><code>MOCKHUB_USERS</code></td><td>empty</td><td>Break-glass accounts with a server role, see <a href="#auth">Organisations &amp; roles</a></td></tr>
     <tr><td><code>MOCKHUB_AI_API_KEY</code></td><td>empty</td><td>AI provider key; overrides the one saved in the UI</td></tr>
     <tr><td><code>MOCKHUB_SSO_CLIENT_SECRET</code></td><td>empty</td><td>Entra client secret; overrides the one saved in the UI</td></tr>
-    <tr><td><code>MOCKHUB_JOURNAL_MAX_ENTRIES</code></td><td><code>5000</code></td><td>Requests kept in the log</td></tr>
+    <tr><td><code>MOCKHUB_JOURNAL_MAX_ENTRIES</code></td><td><code>5000</code></td><td>Requests kept in WireMock's in-memory journal (near misses, WireMock admin API)</td></tr>
+    <tr><td><code>MOCKHUB_HISTORY_DAYS</code></td><td><code>7</code></td><td>Days each project keeps its <a href="#requests">request and callout history</a> on disk</td></tr>
+    <tr><td><code>MOCKHUB_HISTORY_MAX_MB</code></td><td><code>200</code></td><td>Disk cap for one project's history; the oldest hours go first</td></tr>
     <tr><td><code>MOCKHUB_AUDIT_RETENTION_DAYS</code></td><td><code>90</code></td><td>Days the <a href="#audit">audit log</a> keeps changes</td></tr>
     <tr><td><code>MOCKHUB_LOG_LEVEL</code></td><td><code>info</code></td><td>Standard output detail: <code>error</code>, <code>warn</code>, <code>info</code>, <code>debug</code></td></tr>
     <tr><td><code>MOCKHUB_STUB_CORS</code></td><td><code>true</code></td><td>CORS for projects that keep the server default: <code>true</code> lets any website call the mocks, <code>false</code> sends no CORS headers. Each project can set its own <a href="#cors">CORS rules</a>.</td></tr>
     <tr><td><code>MOCKHUB_PLAYGROUND_ALLOW_PRIVATE</code></td><td><code>false</code></td><td>Let the Playground call private and local addresses</td></tr>
     <tr><td><code>MOCKHUB_CALLOUT_ALLOW_PRIVATE</code></td><td><code>false</code></td><td>Let webhooks and wait-for-callout stubs call private and local addresses (MockHub's own mock URLs always work)</td></tr>
-    <tr><td><code>MOCKHUB_CALLOUT_LOG_SIZE</code></td><td><code>2000</code></td><td>How many callouts the Callouts tab keeps in memory</td></tr>
     <tr><td><code>WIREMOCK_OPTIONS</code></td><td>empty</td><td>Any extra <a href="https://wiremock.org/docs/standalone/java-jar/">WireMock flag</a></td></tr>
   </tbody>
 </table>

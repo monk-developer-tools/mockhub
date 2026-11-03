@@ -41,7 +41,7 @@ function helpersPage() {
   return intro + sections.join('\n');
 }
 
-const pages = GROUPS.flatMap((group) => group.pages.map((page) => ({ ...page, group })));
+const pages = GROUPS.flatMap((group) => group.pages.map((page) => Object.assign(page, { group })));
 for (const page of pages) {
   page.url = `/docs/${page.slug}/`;
   page.source = page.slug === 'helpers' ? helpersPage() : readFileSync(join(pagesDir, `${page.slug}.html`), 'utf8');
@@ -278,6 +278,9 @@ const siteFiles = [join(website, 'index.html'), join(website, 'tutorials', 'inde
 const broken = [];
 for (const file of siteFiles) {
   const content = readFileSync(file, 'utf8');
+  for (const [, href] of content.matchAll(/href="([^"]*)"/g)) {
+    if (!/^(\/|#|https?:\/\/|mailto:)/.test(href)) broken.push(`${file.replace(website, '')}: ${href || '(empty)'}`);
+  }
   for (const [, path, hash] of content.matchAll(/href="(\/docs\/[^"#]*)(?:#([^"]*))?"/g)) {
     const target = join(website, path, path.endsWith('/') ? 'index.html' : '');
     if (!existsSync(target)) broken.push(`${file.replace(website, '')}: ${path}`);

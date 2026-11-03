@@ -14,7 +14,7 @@ function entry(patch: Partial<CalloutEntry> = {}): CalloutEntry {
     request: { method: 'POST', url: 'https://partner.test/cb', headers: [], body: '{}' },
     response: { status: 204, headers: [], body: '', truncated: false },
     error: null,
-    durationMs: 12,
+    durationMs: 12, requestId: null,
     ...patch,
   };
 }

@@ -57,7 +57,7 @@ public final class CalloutService {
         stub == null ? null : StubMetadata.projectId(stub),
         stub == null || stub.getId() == null ? null : stub.getId().toString(),
         stub == null ? null : stub.getName(),
-        mode, trigger, request, result, error, ms);
+        mode, trigger, request, result, error, ms, event.getId() == null ? null : event.getId().toString());
     log.add(entry);
     return new Outcome(entry, body);
   }

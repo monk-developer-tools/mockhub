@@ -1,5 +1,10 @@
 import type {
   CalloutEntry,
+  HistoryDetail,
+  HistoryPage,
+  TrafficDay,
+  TrafficView,
+  TrafficWindow,
   AuditPage,
   AiSettings,
   AiStatus,
@@ -250,6 +255,11 @@ export const api = {
   requests: (projectId: string, unmatched = false, limit = 300) =>
     request<ServeEvent[]>(`${API}/projects/${projectId}/requests?limit=${limit}&unmatched=${unmatched}`),
   clearRequests: (projectId: string) => request<void>(`${API}/projects/${projectId}/requests`, { method: 'DELETE' }),
+  history: (projectId: string, query: string) => request<HistoryPage>(`${API}/projects/${projectId}/history?${query}`),
+  historyEntry: (projectId: string, entryId: string) => request<HistoryDetail>(`${API}/projects/${projectId}/history/${encodeURIComponent(entryId)}`),
+  exportHistory: (projectId: string, query: string) => download(`${API}/projects/${projectId}/history-export?${query}`),
+  traffic: (projectId: string, window: TrafficWindow) => request<TrafficView>(`${API}/projects/${projectId}/traffic?window=${window}`),
+  trafficDaily: (projectId: string) => request<TrafficDay[]>(`${API}/projects/${projectId}/traffic/daily`),
   callouts: (projectId: string, limit = 300) => request<CalloutEntry[]>(`${API}/projects/${projectId}/callouts?limit=${limit}`),
   clearCallouts: (projectId: string) => request<void>(`${API}/projects/${projectId}/callouts`, { method: 'DELETE' }),
 

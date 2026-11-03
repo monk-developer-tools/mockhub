@@ -9,7 +9,9 @@ import io.mockhub.api.Jsons;
 import io.mockhub.callout.CalloutEntry;
 import io.mockhub.callout.InMemoryCalloutLog;
 import io.mockhub.callout.OutboundRequest;
-import io.mockhub.journal.RequestLogService;
+import io.mockhub.history.HistoryEntry;
+import io.mockhub.history.HistoryStore;
+import io.mockhub.playground.Header;
 import io.mockhub.project.Project;
 import io.mockhub.project.ProjectService;
 import io.mockhub.runtime.DefaultResponseStubs;
@@ -18,16 +20,27 @@ import io.mockhub.runtime.RuntimeService;
 import io.mockhub.stub.StubService;
 import io.mockhub.support.FakeStubGateway;
 import io.mockhub.support.InMemoryProjectRepository;
+import java.nio.file.Path;
 import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class MockToolsTest {
 
+  private static final Instant NOW = Instant.parse("2026-11-03T10:00:00Z");
+
+  @TempDir
+  Path dir;
+
   private StubService stubs;
-  private RequestLogService requestLog;
+  private HistoryStore requestLog;
+  private final Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
   private InMemoryCalloutLog callouts;
   private Project orders;
   private String existingId;
@@ -40,7 +53,7 @@ class MockToolsTest {
     stubs = new StubService(gateway, ref::get);
     ProjectService projects = new ProjectService(new InMemoryProjectRepository(), List.of(stubs), Clock.systemUTC());
     ref.set(projects);
-    requestLog = new RequestLogService(gateway, projects);
+    requestLog = new HistoryStore(dir, clock, Duration.ofDays(7), Long.MAX_VALUE);
     callouts = new InMemoryCalloutLog(100);
     runtime = new RuntimeService(projects, new DefaultResponseStubs(stubs), new RateLimiter(Clock.systemUTC()));
     orders = projects.create(tree("{'orgId':'org1','name':'Orders','slug':'orders'}"));
@@ -58,7 +71,7 @@ class MockToolsTest {
   @Test
   void stagesNewStubsWithoutTouchingTheServer() {
     // Given
-    MockTools tools = new MockTools(stubs, requestLog, callouts, runtime, orders.id(), List.of());
+    MockTools tools = new MockTools(stubs, requestLog, clock, callouts, runtime, orders.id(), List.of());
 
     // When
     JsonNode result = run(tools, "create_stub", "{'stub':{'name':'Get','request':{'method':'GET','urlPathTemplate':'/items/{id}'},'response':{'status':200}},'summary':'Get one item'}");
@@ -76,7 +89,7 @@ class MockToolsTest {
   @Test
   void reportsInvalidStubsAsToolErrors() {
     // Given
-    MockTools tools = new MockTools(stubs, requestLog, callouts, runtime, orders.id(), List.of());
+    MockTools tools = new MockTools(stubs, requestLog, clock, callouts, runtime, orders.id(), List.of());
 
     // Then
     assertThat(run(tools, "create_stub", "{'stub':{'response':{'status':200}},'summary':'x'}").get("error").asText()).contains("request");
@@ -89,7 +102,7 @@ class MockToolsTest {
   @Test
   void updatesKeepTheOriginalForReviewAndReplaceEarlierProposals() {
     // Given
-    MockTools tools = new MockTools(stubs, requestLog, callouts, runtime, orders.id(), List.of());
+    MockTools tools = new MockTools(stubs, requestLog, clock, callouts, runtime, orders.id(), List.of());
     String updated = "{'id':'" + existingId + "','stub':{'name':'List','request':{'method':'GET','urlPath':'/items'},'response':{'status':503}},'summary':'Make it fail'}";
 
     // When
@@ -109,7 +122,7 @@ class MockToolsTest {
   @Test
   void revisesOrDropsStagedStubsByChangeId() {
     // Given
-    MockTools tools = new MockTools(stubs, requestLog, callouts, runtime, orders.id(), List.of());
+    MockTools tools = new MockTools(stubs, requestLog, clock, callouts, runtime, orders.id(), List.of());
     String changeId = run(tools, "create_stub", "{'stub':{'request':{'method':'POST','urlPath':'/items'},'response':{'status':201}},'summary':'Create'}").get("changeId").asText();
 
     // When
@@ -125,7 +138,7 @@ class MockToolsTest {
   void stagesDeletionsAndContinuesFromPendingChanges() {
     // Given
     ProposedChange pending = new ProposedChange("c-1", "create", null, json("{'request':{'urlPath':'/a'}}"), null, "earlier");
-    MockTools tools = new MockTools(stubs, requestLog, callouts, runtime, orders.id(), List.of(pending));
+    MockTools tools = new MockTools(stubs, requestLog, clock, callouts, runtime, orders.id(), List.of(pending));
 
     // When
     run(tools, "delete_stub", "{'id':'" + existingId + "','summary':'obsolete'}");
@@ -140,12 +153,12 @@ class MockToolsTest {
     // Given
     callouts.add(new CalloutEntry("1", "2026-11-03T10:00:00Z", orders.id(), existingId, "List", "async",
         new CalloutEntry.Trigger("GET", "/orders/items"), new OutboundRequest("POST", "https://partner.test/cb", List.of(), "{}"),
-        new CalloutEntry.Result(204, List.of(), "", false), null, 12));
+        new CalloutEntry.Result(204, List.of(), "", false), null, 12, null));
     callouts.add(new CalloutEntry("2", "2026-11-03T10:00:01Z", orders.id(), existingId, "List", "async",
         new CalloutEntry.Trigger("GET", "/orders/items"), new OutboundRequest("POST", "http://10.0.0.5/cb", List.of(), "{}"),
-        null, "10.0.0.5 is a private or local address", 3));
-    callouts.add(new CalloutEntry("3", "2026-11-03T10:00:02Z", "other-project", null, null, "async", null, null, null, "elsewhere", 1));
-    MockTools tools = new MockTools(stubs, requestLog, callouts, runtime, orders.id(), List.of());
+        null, "10.0.0.5 is a private or local address", 3, null));
+    callouts.add(new CalloutEntry("3", "2026-11-03T10:00:02Z", "other-project", null, null, "async", null, null, null, "elsewhere", 1, null));
+    MockTools tools = new MockTools(stubs, requestLog, clock, callouts, runtime, orders.id(), List.of());
 
     // When
     JsonNode all = run(tools, "list_callouts", "{}");
@@ -161,9 +174,36 @@ class MockToolsTest {
   }
 
   @Test
+  void searchesTheRequestHistoryWithFilters() {
+    // Given
+    requestLog.record(request("a", NOW.minusSeconds(7_200), "GET", "/orders/items", 200, true, ""));
+    requestLog.record(request("b", NOW.minusSeconds(60), "POST", "/orders/refunds", 404, false, "{\"reason\":\"damaged\"}"));
+    requestLog.record(request("c", NOW.minusSeconds(30), "GET", "/orders/items/9", 200, true, ""));
+    MockTools tools = new MockTools(stubs, requestLog, clock, callouts, runtime, orders.id(), List.of());
+
+    // When
+    JsonNode unmatched = run(tools, "search_requests", "{'unmatched_only':true}");
+    JsonNode recent = run(tools, "search_requests", "{'since_minutes':10,'method':'get'}");
+    JsonNode byBody = run(tools, "search_requests", "{'text':'damaged','status':'4xx'}");
+
+    // Then
+    assertThat(unmatched.get("total").asInt()).isEqualTo(1);
+    assertThat(unmatched.at("/requests/0/url").asText()).isEqualTo("/orders/refunds");
+    assertThat(recent.get("requests")).singleElement().satisfies(row -> assertThat(row.get("id").asText()).isEqualTo("c"));
+    assertThat(byBody.at("/requests/0/body").asText()).contains("damaged");
+    assertThat(byBody.at("/requests/0/at").asText()).isEqualTo("2026-11-03T09:59:00Z");
+  }
+
+  private HistoryEntry request(String id, Instant at, String method, String url, int status, boolean matched, String body) {
+    return new HistoryEntry(id, at.toEpochMilli(), orders.id(), method, url, "http://h" + url, "127.0.0.1",
+        List.of(new Header("Content-Type", "application/json")), body, false, status, List.of(), "", false, matched,
+        matched ? existingId : null, matched ? "List" : null, 2);
+  }
+
+  @Test
   void stagesRuntimeSettingsAndReadsThemBack() {
     // Given
-    MockTools tools = new MockTools(stubs, requestLog, callouts, runtime, orders.id(), List.of());
+    MockTools tools = new MockTools(stubs, requestLog, clock, callouts, runtime, orders.id(), List.of());
 
     // When
     JsonNode staged = run(tools, "set_runtime", "{'settings':{'rateLimit':{'requests':5,'per':'minute'}},'summary':'Limit to 5 a minute'}");

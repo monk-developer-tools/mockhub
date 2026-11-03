@@ -258,7 +258,9 @@ class MockHubSystemTest {
     try (MockHubProcess restarted = MockHubProcess.start(data, AUTH_ENV)) {
       // Then
       assertThat(send(restarted, "POST", "/pay/check", "{}").statusCode()).isEqualTo(201);
-      assertThat(waitForCallouts(restarted, projectId, 2)).hasSize(2);
+      assertThat(waitForCallouts(restarted, projectId, 4)).hasSize(4);
+      JsonNode history = json(send(restarted, "GET", API + "/projects/" + projectId + "/history?method=POST&q=/pay/check", null));
+      assertThat(history.get("total").asInt()).isEqualTo(2);
     }
   }
 

@@ -58,7 +58,7 @@ public final class RuntimeFilter implements StubRequestFilterV2 {
         && request.getHeader("Access-Control-Request-Method") != null;
   }
 
-  static String firstSegment(String path) {
+  public static String firstSegment(String path) {
     String trimmed = path.startsWith("/") ? path.substring(1) : path;
     int slash = trimmed.indexOf('/');
     return slash < 0 ? trimmed : trimmed.substring(0, slash);
