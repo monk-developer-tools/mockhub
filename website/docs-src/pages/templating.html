@@ -1,0 +1,16 @@
+<p>Turn on <strong>Response templating</strong> to build responses from the request:</p>
+<table>
+  <thead><tr><th>Helper</th><th>Gives</th></tr></thead>
+  <tbody>
+    <tr><td><code>{{request.path.id}}</code></td><td>a path-template variable</td></tr>
+    <tr><td><code>{{request.query.page}}</code></td><td>a query parameter</td></tr>
+    <tr><td><code>{{request.headers.X-Tenant}}</code></td><td>a header</td></tr>
+    <tr><td><code>{{jsonPath request.body '$.email'}}</code></td><td>a value from a JSON body</td></tr>
+    <tr><td><code>{{xPath request.body '//id/text()'}}</code></td><td>a value from an XML/SOAP body</td></tr>
+    <tr><td><code>{{randomValue type='UUID'}}</code></td><td>a random UUID (also <code>ALPHANUMERIC</code>, <code>NUMERIC</code>…)</td></tr>
+    <tr><td><code>{{randomInt lower=1 upper=100}}</code></td><td>a random number</td></tr>
+    <tr><td><code>{{now offset='7 days' format='yyyy-MM-dd'}}</code></td><td>dates</td></tr>
+    <tr><td><code>{{#if …}} {{#eq a 'b'}} {{#each …}}</code></td><td>conditionals and loops</td></tr>
+  </tbody>
+</table>
+<p>You don't need to remember these. Above the body, <strong>Insert dynamic value</strong> opens a searchable menu of every helper, grouped as request components, control flow, data manipulation, stateful helpers, comparison, string, arithmetic and date operators, array helpers, random values and Faker. A click inserts the helper at the cursor and turns templating on. See the <a href="https://wiremock.org/docs/response-templating/">WireMock templating reference</a> for the full list.</p>

@@ -1,0 +1,35 @@
+<h3>Docker Compose</h3>
+<div class="code"><pre><span class="k">services</span>:
+  <span class="n">mockhub</span>:
+    <span class="k">image</span>: abhaypratap/mockhub
+    <span class="k">ports</span>: [<span class="s">"8080:8080"</span>]
+    <span class="k">environment</span>:
+<span class="n">MOCKHUB_PUBLIC_URL</span>: https://mocks.acme.internal
+    <span class="k">volumes</span>: [<span class="s">"mockhub-data:/data"</span>]
+<span class="k">volumes</span>:
+  <span class="n">mockhub-data</span>:</pre></div>
+<h3>AWS ECS with Terraform</h3>
+<p>The repository's <code>deploy/terraform</code> module creates a Fargate service, an encrypted EFS volume for <code>/data</code>, an Application Load Balancer with optional HTTPS, and the IAM and security groups around them.</p>
+<div class="code"><pre>cd deploy/terraform
+cp terraform.tfvars.example terraform.tfvars
+terraform init &amp;&amp; terraform apply</pre></div>
+<p>Running on a platform you already have, such as ECS with your own Terraform modules? Point the load balancer health check at <code>/__admin/health</code>, give <code>/data</code> a persistent volume (EFS on Fargate), and run <strong>one task</strong>: MockHub keeps its data in files, so scale up rather than out. To attach an APM agent, mount it and add <code>-javaagent:/path/agent.jar</code> to <code>JAVA_TOOL_OPTIONS</code>.</p>
+<h3 id="logs">Logs</h3>
+<p>MockHub writes all of its logs to standard output, one line per event with a UTC timestamp, so the <code>awslogs</code> driver on Fargate sends them to CloudWatch with nothing to set up (the Terraform module already does this). You'll see:</p>
+<ul>
+  <li>startup, with the port, data folder and how sign-in works</li>
+  <li>every change from the <a href="#audit">audit log</a>, as <code>INFO audit</code></li>
+  <li>sign-ins, failed sign-ins (<code>WARN</code>) and refused requests with the reason</li>
+  <li>errors with their stack trace (<code>ERROR</code>)</li>
+</ul>
+<p>To log every mock request too, add <code>--verbose</code> to <code>WIREMOCK_OPTIONS</code>. In CloudWatch Logs Insights, find who deleted something with:</p>
+<div class="code"><pre>fields @timestamp, @message
+| filter @message like /INFO audit/ and @message like /Deleted/
+| sort @timestamp desc</pre></div>
+<h3>Behind nginx on a VM</h3>
+<div class="code"><pre><span class="k">location</span> / {
+  <span class="k">proxy_pass</span>         http://127.0.0.1:8095;
+  <span class="k">proxy_set_header</span>   Host $host;
+  <span class="k">proxy_set_header</span>   X-Forwarded-Proto $scheme;
+  <span class="k">proxy_read_timeout</span> 120s;
+}</pre></div>

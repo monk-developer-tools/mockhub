@@ -1,0 +1,45 @@
+<p>Everything in the UI is available over HTTP at <code>/__admin/mockhub/api</code>. With sign-in on, send HTTP Basic credentials. The native WireMock API stays available at <code>/__admin</code>.</p>
+<div class="code"><pre><span class="c"># create a project</span>
+curl -X POST $HUB/__admin/mockhub/api/projects -d '{"name":"Orders","slug":"orders"}'
+
+<span class="c"># load stubs from your OpenAPI spec before the test run</span>
+curl -X POST $HUB/__admin/mockhub/api/projects/$ID/import/openapi --data-binary @openapi.yaml
+
+<span class="c"># add one stub (paths are relative to the project)</span>
+curl -X POST $HUB/__admin/mockhub/api/projects/$ID/stubs \
+  -d '{"request":{"method":"GET","url":"/health"},"response":{"status":200}}'
+
+<span class="c"># download the Postman collection</span>
+curl -OJ $HUB/__admin/mockhub/api/projects/$ID/export/postman
+
+<span class="c"># require an API key on every mock call (null turns it off)</span>
+curl -X PUT $HUB/__admin/mockhub/api/projects/$ID -d '{"apiKey":{"header":"X-API-Key","value":"test-key"}}'
+
+<span class="c"># check which calls your service made, and which didn't match</span>
+curl "$HUB/__admin/mockhub/api/projects/$ID/requests?unmatched=true"</pre></div>
+<table>
+  <thead><tr><th>Endpoint</th><th>Purpose</th></tr></thead>
+  <tbody>
+    <tr><td><code>GET|POST /projects</code></td><td>list, create</td></tr>
+    <tr><td><code>GET|PUT|DELETE /projects/{id}</code></td><td>read, update, delete (with its stubs)</td></tr>
+    <tr><td><code>GET|POST /projects/{id}/stubs</code></td><td>list, create</td></tr>
+    <tr><td><code>GET|PUT|DELETE /projects/{id}/stubs/{stubId}</code></td><td>read, update, delete</td></tr>
+    <tr><td><code>POST …/stubs/{stubId}/clone?target=</code>, <code>…/move?target=</code></td><td>copy or move a stub</td></tr>
+    <tr><td><code>PUT …/stubs/{stubId}/enabled</code></td><td>turn a stub on or off: <code>{"enabled":false}</code></td></tr>
+    <tr><td><code>GET /projects/{id}/usage</code></td><td>calls and last call time per stub</td></tr>
+    <tr><td><code>POST /playground/send</code>, <code>GET|DELETE /playground/history</code></td><td>send a request from the server; your history</td></tr>
+    <tr><td><code>POST /fake/generate</code></td><td>generate records: <code>{count, fields:[{name, expression}], locale}</code></td></tr>
+    <tr><td><code>POST /projects/{id}/ai/body</code></td><td>generate a response body from a description</td></tr>
+    <tr><td><code>GET|DELETE /projects/{id}/requests</code></td><td>request log</td></tr>
+    <tr><td><code>GET /projects/{id}/export/{postman|bruno|wiremock}</code></td><td>exports</td></tr>
+    <tr><td><code>POST /projects/{id}/import/{openapi|wsdl|wiremock}</code></td><td>imports</td></tr>
+    <tr><td><code>POST /projects/{id}/import/wiremock-zip</code></td><td>import a zipped WireMock folder (send the zip as the body)</td></tr>
+    <tr><td><code>PUT /projects/{id}</code> with <code>{"root": true}</code></td><td>answer at the root (one project per server)</td></tr>
+    <tr><td><code>GET /examples</code>, <code>POST /examples/{id}/install</code></td><td>built-in examples</td></tr>
+    <tr><td><code>GET /audit</code></td><td>recent changes; filter with <code>orgId</code>, <code>projectId</code>, <code>actorId</code>, <code>limit</code></td></tr>
+    <tr><td><code>GET /projects/{id}/audit</code></td><td>one project's changes</td></tr>
+    <tr><td><code>GET /backup</code></td><td>everything as one file</td></tr>
+    <tr><td><code>POST /backup</code></td><td>chosen organisations and projects as one file</td></tr>
+    <tr><td><code>POST /restore/preview</code>, <code>POST /restore</code></td><td>see what a file holds, then restore all or part of it</td></tr>
+  </tbody>
+</table>

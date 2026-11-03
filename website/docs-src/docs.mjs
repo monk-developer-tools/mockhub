@@ -1,0 +1,115 @@
+export const GROUPS = [
+  {
+    id: 'start',
+    title: 'Get started',
+    icon: 'RocketLaunch',
+    description: 'Run MockHub, learn the ideas and make your first stub.',
+    pages: [
+      { slug: 'quick-start', title: 'Quick start', icon: 'Lightning', description: 'Run MockHub with Docker, install an example and call your first mock.' },
+      { slug: 'concepts', title: 'Concepts', icon: 'Cube', description: 'Projects, stubs, base paths, teams and roles in one table.' },
+      { slug: 'use-cases', title: 'Use cases', icon: 'Signpost', description: 'Which feature to reach for: test environments, contract-first work, demos and load tests.' },
+      { slug: 'first-stub', title: 'Your first stub', icon: 'PlusSquare', description: 'Match a request, write a response and try it from the editor.' },
+    ],
+  },
+  {
+    id: 'mock',
+    title: 'Mock APIs',
+    icon: 'BracketsCurly',
+    description: 'Match requests and answer them, from a single stub to a whole REST resource.',
+    pages: [
+      { slug: 'matching', title: 'Request matching', icon: 'Funnel', description: 'Match on method, path, query, headers, cookies and JSON or XML body, and decide which stub wins.' },
+      { slug: 'crud', title: 'CRUD resources', icon: 'Database', description: 'A full REST resource from one dialog: list, get, create, update and delete, with stored data.' },
+      { slug: 'files', title: 'Response files', icon: 'FileArrowUp', description: 'Serve images, PDFs, CSV and other large or binary bodies with the right content type.' },
+      { slug: 'soap', title: 'SOAP & WSDL', icon: 'Envelope', description: 'Generate SOAP stubs from a WSDL, match operations and answer with faults.' },
+      { slug: 'proxy', title: 'Proxy & record', icon: 'ArrowsLeftRight', description: 'Pass calls through to a real service and record the answers as stubs.' },
+      { slug: 'stub-controls', title: 'On, off & usage', icon: 'ToggleRight', description: 'Turn stubs off without deleting them and see how often each one is called.' },
+    ],
+  },
+  {
+    id: 'dynamic',
+    title: 'Dynamic responses',
+    icon: 'MagicWand',
+    description: 'Answers built from the request, realistic data and state.',
+    pages: [
+      { slug: 'templating', title: 'Templating', icon: 'Code', description: 'Handlebars templates in bodies and headers, and the Insert dynamic value picker.' },
+      { slug: 'helpers', title: 'Helper reference', icon: 'ListMagnifyingGlass', description: 'Every helper the picker offers, by category, ready to copy.' },
+      { slug: 'fake-data', title: 'Fake data', icon: 'Sparkle', description: 'Realistic names, e-mails, addresses and products in many languages.' },
+      { slug: 'data-generator', title: 'Data generator', icon: 'Table', description: 'Generate up to 1,000 typed records for a body or a CRUD resource.' },
+      { slug: 'scenarios', title: 'Scenarios', icon: 'FlowArrow', description: 'Stateful flows where the same call answers differently as state changes.' },
+    ],
+  },
+  {
+    id: 'callouts',
+    title: 'Webhooks & callouts',
+    icon: 'ArrowBendUpRight',
+    description: 'Call back after answering, forward requests and wait for partners.',
+    pages: [
+      { slug: 'webhooks', title: 'Webhooks & callouts', icon: 'ArrowBendUpRight', description: 'Then call, forward, wait for callout, the callout log and catching third-party webhooks.' },
+    ],
+  },
+  {
+    id: 'runtime',
+    title: 'Runtime behaviour',
+    icon: 'Gauge',
+    description: 'Latency, failures and access rules for your mocks.',
+    pages: [
+      { slug: 'faults', title: 'Delays & faults', icon: 'Lightning', description: 'Fixed, random and realistic delays, dropped connections and random failure rates.' },
+      { slug: 'api-keys', title: 'API keys', icon: 'Key', description: 'Make a project answer only when a request carries the right key.' },
+    ],
+  },
+  {
+    id: 'traffic',
+    title: 'Traffic & debugging',
+    icon: 'Pulse',
+    description: 'See every call, find why a request missed and try calls yourself.',
+    pages: [
+      { slug: 'requests', title: 'Request log', icon: 'Pulse', description: 'Live requests, unmatched ones and the closest stubs for each.' },
+      { slug: 'playground', title: 'Playground', icon: 'PaperPlaneTilt', description: 'Call mocks or public APIs, keep a history and save a response as a stub.' },
+      { slug: 'error-codes', title: 'Error codes', icon: 'WarningCircle', description: 'Every status and header MockHub adds itself, what causes it and how to fix it.' },
+    ],
+  },
+  {
+    id: 'exchange',
+    title: 'Import & export',
+    icon: 'ArrowsDownUp',
+    description: 'Bring stubs in from contracts and WireMock, and take them to API clients.',
+    pages: [
+      { slug: 'import', title: 'Import', icon: 'FileArrowDown', description: 'OpenAPI, Swagger, WSDL, WireMock mappings and folders.' },
+      { slug: 'migrate', title: 'Moving from WireMock', icon: 'ArrowSquareIn', description: 'Move a folder or a whole repository of mappings and keep every URL working.' },
+      { slug: 'export', title: 'Postman & Bruno', icon: 'Export', description: 'Export a project as a collection with examples, keys and descriptions.' },
+    ],
+  },
+  {
+    id: 'teams',
+    title: 'Teams & security',
+    icon: 'UsersThree',
+    description: 'Organisations, teams, roles, sign-in and who changed what.',
+    pages: [
+      { slug: 'auth', title: 'Organisations, teams & roles', icon: 'Buildings', description: 'Who can see and change which projects, and how access is granted.' },
+      { slug: 'sso', title: 'Single sign-on', icon: 'SignIn', description: 'Sign in with Microsoft Entra ID and map groups to roles.' },
+      { slug: 'audit', title: 'Audit log', icon: 'ClockCounterClockwise', description: 'Every change with who made it, when and what changed.' },
+    ],
+  },
+  {
+    id: 'ai',
+    title: 'AI assistant',
+    icon: 'Sparkle',
+    description: 'Describe mocks in plain words and review the changes.',
+    pages: [
+      { slug: 'ai', title: 'AI assistant', icon: 'Sparkle', description: 'Set up a model provider, chat to create and fix stubs, and apply staged changes.' },
+    ],
+  },
+  {
+    id: 'operations',
+    title: 'Operations',
+    icon: 'HardDrives',
+    description: 'Configure, automate, deploy and back up MockHub.',
+    pages: [
+      { slug: 'config', title: 'Configuration', icon: 'Sliders', description: 'Every environment variable and what it changes.' },
+      { slug: 'api', title: 'API & CI', icon: 'TerminalWindow', description: 'Manage projects and stubs from scripts and pipelines.' },
+      { slug: 'deploy', title: 'Deployment', icon: 'CloudArrowUp', description: 'Docker, Kubernetes, AWS ECS, reverse proxies and logs.' },
+      { slug: 'persistence', title: 'Persistence & backup', icon: 'Archive', description: 'Where data lives and how to back up and restore projects.' },
+      { slug: 'limits', title: 'Limits', icon: 'Info', description: 'What MockHub does not do, so nothing surprises you.' },
+    ],
+  },
+];

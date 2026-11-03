@@ -1,0 +1,13 @@
+<p>Templated responses can use <code>{{fake '…'}}</code> with any <a href="https://www.datafaker.net/documentation/providers/">Datafaker expression</a>. In the editor, <strong>Fake data</strong> lists the common ones.</p>
+<table>
+  <thead><tr><th>Write</th><th>Gives</th></tr></thead>
+  <tbody>
+    <tr><td><code>{{fake 'Name.fullName'}}</code></td><td>a person's name</td></tr>
+    <tr><td><code>{{fake 'Internet.emailAddress'}}</code></td><td>an e-mail address</td></tr>
+    <tr><td><code>{{fake 'Address.city'}}</code>, <code>{{fake 'Address.streetAddress'}}</code></td><td>places</td></tr>
+    <tr><td><code>{{fake 'Company.name'}}</code>, <code>{{fake 'Commerce.productName'}}</code></td><td>business data</td></tr>
+    <tr><td><code>{{fake 'Number.numberBetween' 1 100}}</code></td><td>a number in a range</td></tr>
+    <tr><td><code>{{fake 'Name.fullName' locale='de'}}</code></td><td>another language</td></tr>
+  </tbody>
+</table>
+<p>The default language comes from <code>MOCKHUB_FAKE_LOCALE</code> (<code>en</code>). Importing an OpenAPI spec also fills fields by name and format (e-mail, phone, city, dates, prices) with realistic values that stay the same on every import.</p>

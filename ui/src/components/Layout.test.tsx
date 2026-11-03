@@ -148,7 +148,7 @@ describe('Layout', () => {
 
     // Then
     expect(screen.getByRole('navigation', { name: 'Breadcrumb' })).toHaveTextContent('Single sign-on');
-    expect(screen.getByRole('menuitem', { name: 'Docs for this page' })).toHaveAttribute('href', 'https://mockhub.devops-monk.com/docs/#sso');
+    expect(screen.getByRole('menuitem', { name: 'Docs for this page' })).toHaveAttribute('href', 'https://mockhub.devops-monk.com/docs/sso/');
   });
 
   it('switches organisation from the sidebar', async () => {

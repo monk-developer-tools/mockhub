@@ -59,8 +59,8 @@ const DOCS: [RegExp, string][] = [
   [/^\/admin\/backup/, 'persistence'],
 ];
 
-export function docsAt(anchor: string): string {
-  return `${DOCS_URL}#${anchor}`;
+export function docsAt(page: string): string {
+  return `${DOCS_URL}${page}/`;
 }
 
 export function docsFor(pathname: string): string {

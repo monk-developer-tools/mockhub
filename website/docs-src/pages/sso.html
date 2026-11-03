@@ -1,0 +1,7 @@
+<ol>
+  <li>In the Entra admin centre, open <strong>App registrations → New registration</strong>. Choose <strong>Web</strong> and paste the redirect URI shown under <strong>MockHub → Single sign-on</strong>: <code>https://&lt;host&gt;/__admin/mockhub/api/auth/sso/azure/callback</code>.</li>
+  <li>Copy the <strong>Application (client) ID</strong> and <strong>Directory (tenant) ID</strong>. Under <strong>Certificates &amp; secrets</strong>, create a client secret and copy its value.</li>
+  <li>Optional: add a <strong>groups claim</strong> under <strong>Token configuration</strong>, or define <strong>App roles</strong>.</li>
+  <li>Paste the values into MockHub and choose <strong>Test connection</strong>. Then set the allowed domains, the organisation and role every new user gets, and mappings from group IDs or app roles to roles. Turn it on and save.</li>
+</ol>
+<p>MockHub uses the authorisation code flow with PKCE and checks the ID token's signature, issuer, audience, expiry and nonce. Roles from groups are refreshed at every sign-in; roles set by hand are kept. Set <code>MOCKHUB_PUBLIC_URL</code> behind a proxy so the redirect URI matches. Supply the secret with <code>MOCKHUB_SSO_CLIENT_SECRET</code> if you keep it in a secret store.</p>

@@ -1,0 +1,14 @@
+<p>Sign-in is off until the first user exists. Open <strong>Users</strong> and create an admin, or start with a break-glass account in <code>MOCKHUB_USERS</code>. Mock endpoints are never protected; only the UI and the admin API are.</p>
+<div class="code"><pre>MOCKHUB_USERS="root:change-me:admin"</pre></div>
+<p>An <strong>organisation</strong> is your company or department. It holds <strong>teams</strong>, and each team owns its <strong>projects</strong>. Add people under <strong>Teams &amp; people → Add people</strong> in three choices: who, where (the whole organisation or only some teams) and what they can do. Pick an organisation with the switcher at the top of the sidebar. <strong>Teams</strong> live inside an organisation and own its projects. Every organisation has a <em>General</em> team, and projects from before teams existed move there. People get a role in single teams, an organisation-wide role that applies to every team, or both; the higher role wins, and team members only see their own teams' projects. Moving a project to another team or organisation doesn't change its mock URL. See the <a href="/tutorials/#teams">teams tutorial</a> for a walk-through.</p>
+<table>
+  <thead><tr><th>Role</th><th>In a team</th><th>Organisation-wide</th></tr></thead>
+  <tbody>
+    <tr><td>viewer</td><td>see the team's projects, stubs and request logs, and download exports</td><td>the same, in every team</td></tr>
+    <tr><td>editor</td><td>also add, change and delete stubs, import, record, and edit data and scenarios</td><td>the same, in every team</td></tr>
+    <tr><td>manager</td><td>also create, rename, move and delete projects, and manage the team's members</td><td>also create and delete teams, manage members and the organisation</td></tr>
+    <tr><td>admin</td><td colspan="2">a server role: everything, plus creating organisations and seeing or changing every secret</td></tr>
+  </tbody>
+</table>
+<p>Only members see a team's projects. Someone in the Checkout team can't open, change or delete the Search team's projects, stubs, request log or activity, and the admin API answers <code>403</code>. Mock URLs are different: apps and tests call them without signing in, so turn on an <a href="#api-keys">API key</a> when a project's mocks must stay private.</p>
+<p><strong>Secrets stay with admins.</strong> Only admins create organisations, see or change a project's API key, and configure the AI assistant, single sign-on and backups. Managers and editors see <em>X-API-Key · set</em>; Try it, code snippets and Postman / Bruno exports use a <code>{{apiKey}}</code> placeholder, which Postman and Bruno mark as a secret variable to fill in. Existing <em>owner</em> memberships and SSO mappings become <em>manager</em> automatically.</p>

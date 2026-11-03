@@ -1,0 +1,6 @@
+<ul>
+  <li>Run one instance per data directory. WireMock keeps stubs in memory and reads the files only at startup.</li>
+  <li>Scenario states, the request log and the callout log are in memory and reset on restart.</li>
+  <li>A webhook is sent once. Failed callouts are logged, not retried.</li>
+  <li>Project base paths can't collide with each other or with <code>/__admin</code>.</li>
+</ul>

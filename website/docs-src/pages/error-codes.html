@@ -1,0 +1,38 @@
+<p>Most answers come from your stubs. The ones below come from MockHub itself, so you can tell a mock's answer from a problem with the setup. Every error body MockHub writes is JSON with an <code>error</code> message, except SOAP stubs, which get a SOAP fault.</p>
+
+<h3 id="mock-errors">From a mock URL</h3>
+<table>
+  <thead><tr><th>Status</th><th>When</th><th>What to do</th></tr></thead>
+  <tbody>
+    <tr><td><code>404</code></td><td>No stub matched the request. WireMock answers <code>Request was not matched</code> with a diff against the closest stubs. Stubs that are turned off never match.</td><td>Open the <a href="#requests">request log</a> and pick the request: the closest stubs and the reason each one missed are listed. Turn the stub on, fix the matcher, or add a <a href="#webhooks">catch-all stub</a>.</td></tr>
+    <tr><td><code>401</code></td><td>The project needs an <a href="#api-keys">API key</a> and the request has none (<code>Missing API key</code>) or a wrong one (<code>Invalid API key</code>). The JSON body names the header to send.</td><td>Send the key in the header shown in the project settings. <code>OPTIONS</code> and <code>?wsdl</code> requests don't need it.</td></tr>
+    <tr><td>Any status, with <code>X-MockHub-Simulated-Error: true</code></td><td>The stub's <a href="#faults">failure rate</a> picked this call. The default body is <code>{"error":"Simulated failure","status":…}</code>, or a SOAP fault.</td><td>Nothing, it's on purpose. Lower the rate or turn it off under the stub's Failures section.</td></tr>
+    <tr><td>Connection reset, empty reply or garbage</td><td>The stub's response is a <a href="#faults">fault</a>, or its failure rate uses one.</td><td>Expected when testing retries. Pick a status code instead if the client should get an answer.</td></tr>
+    <tr><td><code>502</code> with <code>X-MockHub-Callout-Error: true</code></td><td>A <a href="#webhooks">wait-for-callout</a> stub couldn't reach its target, timed out after 30 seconds, or rendered a broken template. The body is <code>{"error":"Callout failed: …"}</code>.</td><td>Open the <a href="#webhooks">Callouts tab</a> to see the request and the error. Private addresses are blocked unless <code>MOCKHUB_CALLOUT_ALLOW_PRIVATE=true</code>.</td></tr>
+  </tbody>
+</table>
+
+<h3 id="crud-errors">From a CRUD resource</h3>
+<table>
+  <thead><tr><th>Status</th><th>Body</th><th>Cause</th></tr></thead>
+  <tbody>
+    <tr><td><code>400</code></td><td><code>The body isn't valid JSON</code></td><td>The create or update body didn't parse.</td></tr>
+    <tr><td><code>404</code></td><td><code>&lt;resource&gt; &lt;id&gt; not found</code></td><td>No record with that id. Records live in the project's <a href="#crud">Data tab</a>.</td></tr>
+    <tr><td><code>405</code></td><td><code>&lt;METHOD&gt; isn't allowed on …</code></td><td>For example <code>DELETE</code> on the collection instead of one record.</td></tr>
+    <tr><td><code>409</code></td><td><code>&lt;resource&gt; &lt;id&gt; already exists</code></td><td>The body carried an id that's taken.</td></tr>
+  </tbody>
+</table>
+
+<h3 id="api-errors">From the MockHub API and UI</h3>
+<table>
+  <thead><tr><th>Status</th><th>Typical message</th><th>Cause</th></tr></thead>
+  <tbody>
+    <tr><td><code>400</code></td><td>A field that's missing or not valid</td><td>The request to <code>/__admin/mockhub/api</code> didn't pass validation.</td></tr>
+    <tr><td><code>401</code></td><td><code>Authentication required</code>, <code>Invalid username or password</code></td><td>Sign-in is on and the request has no valid token or credentials. See <a href="#api">API &amp; CI</a>.</td></tr>
+    <tr><td><code>403</code></td><td><code>You need the manager role …</code>, <code>Only admins can set or change a project's API key</code></td><td>Your role in the team or organisation doesn't allow the change. See <a href="#auth">roles</a>.</td></tr>
+    <tr><td><code>404</code></td><td><code>Project … not found</code>, <code>Stub … not found</code></td><td>Wrong id, or it was deleted.</td></tr>
+    <tr><td><code>409</code></td><td><code>Base path /… is already used by project …</code>, <code>Username '…' is taken</code></td><td>Something with that name or path already exists. Base paths can't overlap or start with <code>/__admin</code>.</td></tr>
+    <tr><td><code>413</code></td><td><code>Files can be at most 10 MB</code></td><td>Response files are limited to 10 MB, unpacked WireMock archives to 200 MB.</td></tr>
+    <tr><td><code>429</code></td><td><code>Too many sign-ins in progress</code></td><td>Too many single sign-on attempts at once. Try again in a moment.</td></tr>
+  </tbody>
+</table>

@@ -1,0 +1,25 @@
+<p>Create a project, open it, and choose <strong>REST stub</strong>. Set the method and path, then the response status and body, and save. Click <strong>Send</strong> in the <em>Try it</em> panel to call it.</p>
+<p>The form covers the common cases. Switch to <strong>JSON</strong> for anything else WireMock supports. This is the same stub as JSON, as sent through the API:</p>
+<div class="code"><pre>{
+  <span class="s">"name"</span>: <span class="s">"Get payment"</span>,
+  <span class="s">"request"</span>: { <span class="s">"method"</span>: <span class="s">"GET"</span>, <span class="s">"urlPathTemplate"</span>: <span class="s">"/payments/{id}"</span> },
+  <span class="s">"response"</span>: {
+    <span class="s">"status"</span>: <span class="v">200</span>,
+    <span class="s">"headers"</span>: { <span class="s">"Content-Type"</span>: <span class="s">"application/json"</span> },
+    <span class="s">"jsonBody"</span>: { <span class="s">"id"</span>: <span class="s">"{{request.path.id}}"</span>, <span class="s">"status"</span>: <span class="s">"PAID"</span> },
+    <span class="s">"transformers"</span>: [<span class="s">"response-template"</span>]
+  }
+}</pre></div>
+<p>Not sure where to start? The <strong>template gallery</strong> button in the stub list has ready-made patterns for common cases.</p>
+<p>Under <em>Call it from your code</em>, every stub has a snippet you can copy as cURL, HTTPie, JavaScript, Python, Java, C# or Apex. The request log offers the same for any request it captured.</p>
+<h3>Keyboard shortcuts</h3>
+<table>
+  <thead><tr><th>Keys</th><th>Action</th></tr></thead>
+  <tbody>
+    <tr><td><code>⌘K</code> / <code>Ctrl K</code></td><td>Command palette: jump to any project, stub or page</td></tr>
+    <tr><td><code>N</code></td><td>New REST stub (in a project's stub list)</td></tr>
+    <tr><td><code>/</code></td><td>Search stubs</td></tr>
+    <tr><td><code>⌘S</code> / <code>Ctrl S</code></td><td>Save the stub you're editing</td></tr>
+    <tr><td><code>?</code></td><td>Show all shortcuts</td></tr>
+  </tbody>
+</table>

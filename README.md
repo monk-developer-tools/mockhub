@@ -486,6 +486,13 @@ MOCKHUB_USER=alex MOCKHUB_PASSWORD=demo-password-1 \
   npm --prefix ui run screens -- http://localhost:8080 screens   # key pages, light and dark, desktop and phone
 ```
 
+The docs site is generated. Edit the pages in `website/docs-src/pages/` and the sidebar in `website/docs-src/docs.mjs`,
+then build `website/docs/` (needs `ui/node_modules`; `deploy/vps/deploy-site.sh` runs it too):
+
+```bash
+node --disable-warning=ExperimentalWarning website/scripts/build-docs.mjs
+```
+
 ### Code layout
 
 ```

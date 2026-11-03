@@ -1,0 +1,16 @@
+<p>Many APIs answer at once and report the result later by calling you back. MockHub mocks both sides.</p>
+<p><strong>Then call.</strong> In a stub's <strong>Then call</strong> section, add one or more webhooks with a method, URL, headers, body and delay. They're sent after the stub answers. The URL, headers and body are templates, and <strong>Insert dynamic value</strong> lists what you can use:</p>
+<table>
+  <thead><tr><th>In a webhook</th><th>Gives</th></tr></thead>
+  <tbody>
+    <tr><td><code>{{jsonPath originalRequest.body '$.callbackUrl'}}</code></td><td>a value from the request, here a callback URL to call</td></tr>
+    <tr><td><code>{{{originalRequest.body}}}</code>, <code>{{originalRequest.headers.X-Id}}</code>, <code>{{originalRequest.path.id}}</code></td><td>the rest of the request</td></tr>
+    <tr><td><code>{{jsonPath originalResponse.body '$.id'}}</code>, <code>{{originalResponse.status}}</code></td><td>the mock response the stub just sent</td></tr>
+    <tr><td><code>{{now}}</code>, <code>{{randomValue type='UUID'}}</code>, <code>{{fake 'Name.fullName'}}</code></td><td>any other templating helper</td></tr>
+  </tbody>
+</table>
+<p>Choose <strong>Forward incoming request</strong> to send the request as it arrived (method, headers and body) instead of a custom body.</p>
+<p><strong>Wait for callout.</strong> As the response type, <strong>Wait for callout</strong> calls the URL while the caller waits and answers with the target's status, headers and body. If the call fails, the caller gets <code>502</code> with the reason.</p>
+<p><strong>Callouts tab.</strong> Every callout shows up live with what was sent, the answer, the time it took and any error. On a failed one, <strong>Ask the assistant to fix it</strong> hands it to the <a href="#ai">AI assistant</a>.</p>
+<p><strong>Catch all webhooks.</strong> On the Requests tab, this adds a low-priority stub that answers <code>200</code> to anything no other stub matched. Point a third-party webhook at <code>&lt;mock URL&gt;/webhooks</code> and inspect each call in the <a href="#requests">request log</a>.</p>
+<p>Calls to MockHub's own mock URLs always work. Private and local addresses are blocked unless an admin sets <code>MOCKHUB_CALLOUT_ALLOW_PRIVATE=true</code>. Webhooks are stored as <code>mockhub-callout</code> serve event listeners. WireMock's own <code>webhook</code> mappings still run, and they become <code>mockhub-callout</code> when you save them in the editor. The WireMock mappings export turns them back into <code>webhook</code>.</p>

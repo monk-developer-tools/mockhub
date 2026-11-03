@@ -36,8 +36,8 @@ describe('navigation', () => {
     const unknown = docsFor('/somewhere');
 
     // Then
-    expect(callouts).toBe(`${DOCS_URL}#webhooks`);
-    expect(stub).toBe(`${DOCS_URL}#matching`);
+    expect(callouts).toBe(`${DOCS_URL}webhooks/`);
+    expect(stub).toBe(`${DOCS_URL}matching/`);
     expect(unknown).toBe(DOCS_URL);
   });
 });

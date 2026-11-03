@@ -1,0 +1,14 @@
+<p>An admin connects a model under <strong>Administration → AI assistant</strong>:</p>
+<table>
+  <thead><tr><th>Provider</th><th>Base URL</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td>OpenRouter</td><td><code>https://openrouter.ai/api/v1</code></td><td>One key, hundreds of models. <code>openrouter/auto</code> picks one.</td></tr>
+    <tr><td>Hugging Face</td><td><code>https://router.huggingface.co/v1</code></td><td>Open models through Inference Providers. Token with <em>Make calls to Inference Providers</em>; pick a model with tool calling, e.g. <code>openai/gpt-oss-120b</code>.</td></tr>
+    <tr><td>LiteLLM proxy</td><td>e.g. <code>http://litellm:4000</code></td><td>Your proxy's virtual keys, budgets and approved models.</td></tr>
+    <tr><td>OpenAI-compatible</td><td>e.g. <code>https://api.openai.com/v1</code></td><td>OpenAI, Azure OpenAI, Ollama, vLLM, LM Studio.</td></tr>
+  </tbody>
+</table>
+<p>In a project, open <strong>Assistant</strong> and describe what you need, or paste an OpenAPI spec, a WSDL or curl commands. The assistant reads the stubs, recent requests and recent <a href="#webhooks">callouts</a> and <em>stages</em> changes. It can set up webhooks and wait-for-callout stubs from a sentence, such as <em>“after POST /payments, call the callbackUrl from the request 2 seconds later with status SETTLED”</em>, and it can explain and fix a failing one. You review each one as a diff and apply or discard it, so nothing changes until an editor applies it. Viewers can draft changes but not apply them.</p>
+<p>In a stub's <strong>Then call</strong> section, <strong>Ask the assistant</strong> takes a description of a webhook for that stub. In the Callouts tab, <strong>Ask the assistant to fix it</strong> sends it a failed callout.</p>
+<p>For a single response, select <strong>Generate with AI</strong> next to a stub's body. Describe it, check the result and select <strong>Use this body</strong>. This needs the editor role.</p>
+<div class="callout">The conversation, the project's stubs and, when needed, recent requests go to the provider you configure. Choose one your organisation allows, or run models yourself behind LiteLLM.</div>

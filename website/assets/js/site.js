@@ -150,7 +150,7 @@
     });
   }
 
-  const docLinks = document.querySelectorAll('.docs aside a[href^="#"], .tut-toc a[href^="#"]');
+  const docLinks = document.querySelectorAll('.tut-toc a[href^="#"]');
   if (docLinks.length && 'IntersectionObserver' in window) {
     const byId = new Map(Array.from(docLinks).map((a) => [a.getAttribute('href').slice(1), a]));
     const spy = new IntersectionObserver(

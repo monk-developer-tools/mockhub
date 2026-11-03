@@ -1,0 +1,3 @@
+<p><strong>Generate data</strong> in the stub editor builds a fixed JSON list: choose fields (ids, names, e-mails, addresses, prices, IBANs, any Datafaker expression), up to 1,000 records, a language and an optional key to wrap the list in. Dots in a field name nest it, e.g. <code>address.city</code>. The CRUD resource dialog uses the same generator for starting records. Over the API:</p>
+<div class="code"><pre>curl -X POST $HUB/__admin/mockhub/api/fake/generate \
+  -d '{"count":3,"fields":[{"name":"id","expression":"sequence"},{"name":"email","expression":"Internet.emailAddress"}]}'</pre></div>

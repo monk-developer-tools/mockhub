@@ -1,0 +1,10 @@
+<ul>
+  <li><strong>Fixed</strong>: always wait N ms.</li>
+  <li><strong>Random range</strong>: uniform between two values.</li>
+  <li><strong>Realistic</strong>: log-normal latency around a median, with a long tail.</li>
+  <li><strong>Trickle</strong>: send the body in chunks over a period of time.</li>
+  <li><strong>Faults</strong>: connection reset, empty response, malformed chunk, or random data then close.</li>
+</ul>
+<p>A global delay for every response is on the <strong>Server</strong> page.</p>
+<p><strong>Random failures.</strong> Under <strong>Failures</strong>, make a share of calls fail, for example 10%, with an error status or a network fault. The rest get the normal response. Failed calls carry <code>X-MockHub-Simulated-Error: true</code>. Without a body of your own, REST stubs answer <code>{"error":"Simulated failure"}</code> and SOAP stubs answer a SOAP fault. In JSON, it's stored on the stub as:</p>
+<div class="code"><pre>"metadata": { "mockhub": { "errorRate": { "percent": 10, "status": 503 } } }</pre></div>

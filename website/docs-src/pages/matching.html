@@ -1,0 +1,12 @@
+<table>
+  <thead><tr><th>URL match</th><th>Example</th><th>Matches</th></tr></thead>
+  <tbody>
+    <tr><td>Path equals</td><td><code>/pets</code></td><td><code>/pets</code>, <code>/pets?any=query</code></td></tr>
+    <tr><td>Path and query equal</td><td><code>/pets?status=sold</code></td><td>exactly that URL</td></tr>
+    <tr><td>Path template</td><td><code>/pets/{id}</code></td><td><code>/pets/7</code>, and exposes <code>request.path.id</code></td></tr>
+    <tr><td>Path matches regex</td><td><code>/pets/[0-9]+</code></td><td>numeric ids only</td></tr>
+    <tr><td>Any URL</td><td></td><td>anything under the project's base path</td></tr>
+  </tbody>
+</table>
+<p>Add conditions on query parameters, headers, cookies and the body. Every condition must match. Body matchers include <em>JSON equals</em> (optionally ignoring extra fields and array order), <em>JSONPath</em> (for example <code>$[?(@.amount &gt; 1000)]</code>), <em>XML equals</em>, <em>XPath</em>, <em>contains</em> and <em>regex</em>.</p>
+<p>The patterns teams use most, like magic test ids for error paths, a regex on one body field with a low-priority fallback, filters inside arrays, one stub for every environment and proxying chosen ids to a real service, are explained step by step in <a href="/tutorials/#patterns">Matching patterns from real projects</a> and installed together as the <em>Matching patterns</em> example.</p>

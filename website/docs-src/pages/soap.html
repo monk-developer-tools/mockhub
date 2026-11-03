@@ -1,0 +1,8 @@
+<p>Choose <strong>SOAP stub</strong>, or switch an existing stub's service type to SOAP. Enter the operation element (the first element inside <code>soap:Body</code>, such as <code>GetCustomer</code>) and MockHub matches it for you. Add XPath conditions to answer differently per field value:</p>
+<div class="code"><pre>{ <span class="s">"matchesXPath"</span>: { <span class="s">"expression"</span>: <span class="s">"//*[local-name()='customerId']/text()"</span>, <span class="s">"equalTo"</span>: <span class="s">"42"</span> } }</pre></div>
+<p><strong>Import → WSDL</strong> creates, for the service's SOAP binding:</p>
+<ul>
+  <li>one stub per operation, with request and response envelopes generated from the XSD (including enums, attributes and nested types)</li>
+  <li><code>GET &lt;endpoint&gt;?wsdl</code>, serving the WSDL with <code>soap:address</code> rewritten to the mock</li>
+  <li>a low-priority SOAP fault for operations without a mock</li>
+</ul>

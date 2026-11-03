@@ -136,13 +136,38 @@ Goal: `website/docs/` becomes a multi-page documentation site in the style of Be
 - The UI's help menu and each empty state link to the matching page.
 
 Checklist:
-- [ ] Docs generator, shared layout, sidebar, breadcrumbs, previous/next, table of contents
-- [ ] Landing page with grouped feature cards and search
-- [ ] Existing docs split into feature pages, no content lost
-- [ ] Helper reference generated from the picker data
-- [ ] Error code reference
-- [ ] Links from the UI to the docs
-- [ ] Deploy script builds the docs
+- [x] Docs generator (`website/scripts/build-docs.mjs`), shared layout, sidebar, breadcrumbs, previous/next, table of
+  contents. Pages are HTML fragments in `website/docs-src/pages/` rather than Markdown, so the existing docs moved over
+  unchanged and no Markdown dependency is needed. The page list and groups live in `website/docs-src/docs.mjs`.
+- [x] Landing page with grouped feature cards and search (`/` focuses it, arrow keys pick a result)
+- [x] Existing docs split into 32 feature pages, no content lost; old `/docs/#anchor` links redirect to the new page
+- [x] Helper reference generated from the picker data
+- [x] Error code reference
+- [x] Links from the UI, the homepage and the tutorials to the new pages
+- [x] Deploy script builds the docs; the build fails on a broken docs link or a duplicate heading id
+- [ ] Group pages listing their guides as cards (the landing page covers this for now)
+- [ ] Screenshots inside feature pages
+
+### Phase F1b — Website redesign
+
+Goal: the marketing site at mockhub.devops-monk.com looks like a product site such as beeceptor.com, and shares one
+header, footer and visual system with the new docs.
+
+- Header with a Product menu (feature groups with icons, linking to docs pages), Docs, Tutorials, GitHub and a
+  primary "Try the demo" button.
+- Hero with a clear one-line promise, a live mock URL example (`curl` and its answer), and two calls to action.
+- Logo strip of what MockHub works with (OpenAPI, WSDL, WireMock, Postman, Bruno, Docker, Kubernetes, Entra ID).
+- Feature sections as icon cards grouped like the docs, each linking to its docs page.
+- "How it works" in three steps, use-case cards (test environments, contract-first, demos, load tests), and a
+  comparison with plain WireMock.
+- Footer with columns: Product, Docs, Resources, Project.
+- Same tokens, light and dark, phone layout without horizontal scroll, screenshots refreshed.
+
+Checklist:
+- [ ] Shared header and footer partials used by the homepage, tutorials and docs
+- [ ] New homepage sections
+- [ ] Tutorials page moved to the shared layout
+- [ ] Phone, dark mode and accessibility check
 
 ### Phase F2 — Runtime behaviour
 
@@ -381,6 +406,7 @@ Checklist:
 |---|---|---|
 | F0 UI | L | Every later phase builds on the component kit |
 | F1 Docs | M | Every later phase adds a docs page in the new format |
+| F1b Website | M | First impression; shares the docs layout |
 | F2 Runtime behaviour | M | Most-asked gaps, small each |
 | F3 History and live traffic | L | Needed by F9 and F13 |
 | F4 Tokens and MCP | M | High value, reuses the assistant's tools |

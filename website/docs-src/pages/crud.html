@@ -1,0 +1,13 @@
+<p>In <strong>Stubs</strong>, choose <strong>CRUD resource</strong> and name it, e.g. <code>customers</code>. MockHub creates one stub that handles:</p>
+<table>
+  <thead><tr><th>Request</th><th>Does</th></tr></thead>
+  <tbody>
+    <tr><td><code>GET /customers</code></td><td>list; filter with <code>?city=London</code>, sort with <code>_sort=name&amp;_order=desc</code>, page with <code>_limit</code> and <code>_offset</code>; the total is in <code>X-Total-Count</code></td></tr>
+    <tr><td><code>GET /customers/{id}</code></td><td>one record, or 404</td></tr>
+    <tr><td><code>POST /customers</code></td><td>create; the id is generated (1, 2, 3 or a UUID) unless you send one; 201 with a <code>Location</code> header</td></tr>
+    <tr><td><code>PUT /customers/{id}</code></td><td>replace</td></tr>
+    <tr><td><code>PATCH /customers/{id}</code></td><td>merge fields; <code>null</code> removes one</td></tr>
+    <tr><td><code>DELETE /customers/{id}</code></td><td>delete; 204</td></tr>
+  </tbody>
+</table>
+<p>Records are kept per project in <code>/data/mockhub/data</code>, survive restarts and are included in backups. The <strong>Data</strong> tab lists them and lets you add, edit, delete or clear them. For custom stateful flows, the <a href="https://github.com/wiremock/wiremock-state-extension">WireMock state extension</a> is included too (its state lives in memory).</p>

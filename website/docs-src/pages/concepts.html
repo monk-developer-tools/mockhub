@@ -1,0 +1,10 @@
+<table>
+  <thead><tr><th>Term</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td>Project</td><td>The mocks of one service. It owns a <strong>base path</strong> such as <code>/payment-service</code>, so its mock URL is <code>https://your-host/payment-service</code>.</td></tr>
+    <tr><td>Root project</td><td>At most one project per server can <strong>answer at the root</strong>: its stubs match without a base path, exactly like a plain WireMock server. Paths that start with another project's base path still go to that project.</td></tr>
+    <tr><td>Stub</td><td>A rule: when a request matches, send this response. Stubs are plain <a href="https://wiremock.org/docs/stubbing/">WireMock stub mappings</a>, edited relative to the project's base path.</td></tr>
+    <tr><td>Priority</td><td>When several stubs match, the lowest number wins (1 is highest, the default is 5). Use it for "specific case first, generic fallback last".</td></tr>
+    <tr><td>Scenario</td><td>A named state machine that lets the same request get different answers over time.</td></tr>
+  </tbody>
+</table>

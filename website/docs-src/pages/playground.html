@@ -1,0 +1,6 @@
+<p>The <strong>Playground</strong> (sidebar) sends requests to your mocks or to public APIs from the server, so browser CORS rules don't get in the way. It shows status, time, size, headers and a formatted body, and can copy the request as cURL or save the response as a stub in any project you can edit. It needs the editor role.</p>
+<ul>
+  <li><strong>History</strong>: your last 100 requests and responses, private to you. Values of <code>Authorization</code>, <code>Proxy-Authorization</code>, <code>Cookie</code> and <code>Set-Cookie</code> are hidden before saving, and bodies over 64 KB are cut short.</li>
+  <li><strong>Own mocks</strong>: paths like <code>/shop/orders</code> and URLs on MockHub's own address go straight to the local mocks. <code>/__admin</code> is refused.</li>
+  <li><strong>Safety</strong>: private, loopback, link-local and other internal addresses are refused so the server can't be used to reach your network. Set <code>MOCKHUB_PLAYGROUND_ALLOW_PRIVATE=true</code> to allow them, for example to call services on your intranet. Redirects aren't followed; responses over 2 MB are cut short; requests time out after 30 seconds.</li>
+</ul>
