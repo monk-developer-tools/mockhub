@@ -10,6 +10,16 @@ import io.mockhub.ai.AssistantJobs;
 import io.mockhub.ai.AssistantService;
 import io.mockhub.ai.BodyGenerator;
 import io.mockhub.chaos.ErrorRateTransformer;
+import io.mockhub.controller.RuntimeController;
+import io.mockhub.runtime.CorsForRequest;
+import io.mockhub.runtime.CorsHeaders;
+import io.mockhub.runtime.CorsTransformer;
+import io.mockhub.runtime.DefaultResponseStubs;
+import io.mockhub.runtime.LoadMeter;
+import io.mockhub.runtime.ProjectScopeMatcher;
+import io.mockhub.runtime.RateLimiter;
+import io.mockhub.runtime.RuntimeFilter;
+import io.mockhub.runtime.RuntimeTransformer;
 import io.mockhub.callout.CalloutListener;
 import io.mockhub.callout.CalloutLog;
 import io.mockhub.callout.CalloutRenderer;
@@ -184,6 +194,10 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     AuditRecorder auditRecorder = new AuditRecorder(auditLog, new ServiceAuditNames(projects, stubs, teams, orgs, users), clock);
 
     FakeData fakeData = new FakeData(config.fakeLocale);
+    CorsHeaders corsHeaders = new CorsHeaders(config.stubCors);
+    RateLimiter rateLimiter = new RateLimiter(clock);
+    LoadMeter loadMeter = new LoadMeter(clock);
+    CorsForRequest corsForRequest = new CorsForRequest(projects::findForPath, corsHeaders);
     PlaygroundHistory playgroundHistory = new PlaygroundHistory(dataDir);
 
     List<Extension> extensions = new ArrayList<>(List.of(
@@ -193,7 +207,11 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
         new DisabledStubMatcher(),
         new CalloutListener(callouts, calloutScheduler),
         new SyncCalloutTransformer(callouts),
-        new ApiKeyFilter(projects::findForPath),
+        new RuntimeFilter(projects::findForPath, corsHeaders, rateLimiter, loadMeter),
+        new ApiKeyFilter(projects::findForPath, corsForRequest::headers),
+        new RuntimeTransformer(projects::find, rateLimiter, loadMeter),
+        new CorsTransformer(corsForRequest),
+        new ProjectScopeMatcher(projects::findForPath),
         new FakeHelpers(fakeData),
         new AuthFilter(auth, policy),
         new MockHubAdminExtension(
@@ -208,6 +226,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
                 new UserController(users, userViews, auth, orgs, teams),
                 new SsoController(ssoSettings, sso, orgs, teams, urls),
                 new ProjectController(projects, views, teamChoice),
+                new RuntimeController(projects, new DefaultResponseStubs(stubs), rateLimiter),
                 new ExampleController(examples, new ExampleInstaller(examples, projects, stubs, importers, crud, bodyFiles), views, teamChoice),
                 new StubController(stubs),
                 new RequestLogController(requestLog),

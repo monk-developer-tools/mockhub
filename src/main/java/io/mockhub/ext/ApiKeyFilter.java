@@ -11,14 +11,17 @@ import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
 import io.mockhub.api.Jsons;
 import io.mockhub.project.ApiKey;
 import io.mockhub.project.Project;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
 public final class ApiKeyFilter implements StubRequestFilterV2 {
   private final Function<String, Optional<Project>> projectForPath;
+  private final Function<Request, Map<String, String>> corsHeaders;
 
-  public ApiKeyFilter(Function<String, Optional<Project>> projectForPath) {
+  public ApiKeyFilter(Function<String, Optional<Project>> projectForPath, Function<Request, Map<String, String>> corsHeaders) {
     this.projectForPath = projectForPath;
+    this.corsHeaders = corsHeaders;
   }
 
   @Override
@@ -32,7 +35,9 @@ public final class ApiKeyFilter implements StubRequestFilterV2 {
     String slug = firstSegment(Urls.getPath(request.getUrl()));
     ApiKey key = projectForPath.apply(slug).map(Project::apiKey).orElse(null);
     if (key == null || key.accepts(request.getHeader(key.header()))) return RequestFilterAction.continueWith(request);
-    return RequestFilterAction.stopWith(rejection(request, key));
+    ResponseDefinitionBuilder rejection = ResponseDefinitionBuilder.like(rejection(request, key));
+    corsHeaders.apply(request).forEach(rejection::withHeader);
+    return RequestFilterAction.stopWith(rejection.build());
   }
 
   static String firstSegment(String path) {

@@ -5,6 +5,7 @@ import io.mockhub.api.ApiException;
 import io.mockhub.common.Slugs;
 import io.mockhub.org.Organization;
 import io.mockhub.org.OrganizationListener;
+import io.mockhub.runtime.RuntimeSettings;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
@@ -88,7 +89,8 @@ public final class ProjectService implements OrganizationListener {
         requiredText(body, "orgId"),
         body.path("teamId").asText("").isBlank() ? null : body.get("teamId").asText(),
         ApiKey.parse(body.get("apiKey")),
-        body.path("root").asBoolean(false));
+        body.path("root").asBoolean(false),
+        body.has("runtime") ? RuntimeSettings.parse(body.get("runtime")) : null);
     validateRoot(project);
     repository.save(project);
     return project;
@@ -109,11 +111,18 @@ public final class ProjectService implements OrganizationListener {
         body.hasNonNull("orgId") && !body.get("orgId").asText().isBlank() ? body.get("orgId").asText() : before.orgId(),
         body.hasNonNull("teamId") && !body.get("teamId").asText().isBlank() ? body.get("teamId").asText() : before.teamId(),
         body.has("apiKey") ? ApiKey.parse(body.get("apiKey")) : before.apiKey(),
-        body.hasNonNull("root") ? body.get("root").asBoolean() : before.root());
+        body.hasNonNull("root") ? body.get("root").asBoolean() : before.root(),
+        before.runtime());
     validateRoot(after);
     if (!before.basePath().equals(after.basePath())) {
       listeners.forEach(l -> l.onBasePathChanged(before, after));
     }
+    repository.save(after);
+    return after;
+  }
+
+  public Project updateRuntime(String id, RuntimeSettings runtime) {
+    Project after = get(id).withRuntime(runtime);
     repository.save(after);
     return after;
   }

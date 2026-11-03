@@ -4188,3 +4188,99 @@ button.map-node:hover,
       margin-left: 0;
     }
 }
+
+.runtime-panel .section > h3 {
+  margin-bottom: 4px;
+}
+
+.runtime-fields {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.runtime-rule > h4 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 0 4px;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.runtime-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.runtime-title svg {
+  color: var(--accent);
+}
+
+.runtime-body {
+  margin-top: 12px;
+  gap: 12px;
+}
+
+.runtime-inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.runtime-inline input[type='number'] {
+  width: 96px;
+}
+
+.runtime-inline select {
+  width: auto;
+}
+
+.runtime-ms {
+  max-width: 220px;
+}
+
+.runtime-check {
+  align-self: end;
+  min-height: 32px;
+}
+
+.runtime-fields:disabled input,
+.runtime-fields:disabled select,
+.runtime-fields:disabled textarea,
+.runtime-fields:disabled .segmented button:not([aria-pressed='true']) {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.runtime-save {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+  border-radius: 0 0 var(--radius-m) var(--radius-m);
+}
+
+.runtime-save .muted {
+  margin-right: auto;
+}
+
+@media (max-width: 640px) {
+  .runtime-panel .grid.two {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.rate-row select {
+  width: auto;
+}

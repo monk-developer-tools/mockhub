@@ -3,6 +3,7 @@ package io.mockhub.controller;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.mockhub.api.ApiException;
+import com.github.tomakehurst.wiremock.stubbing.StubMapping;
 import io.mockhub.api.ApiRouter;
 import io.mockhub.api.Response;
 import io.mockhub.export.CollectionExporter;
@@ -13,6 +14,7 @@ import io.mockhub.importer.WireMockArchiveImporter;
 import io.mockhub.importer.StubImporter;
 import io.mockhub.project.Project;
 import io.mockhub.project.ProjectService;
+import io.mockhub.stub.StubMetadata;
 import io.mockhub.stub.StubService;
 import java.util.List;
 
@@ -40,7 +42,10 @@ public final class ImportExportController implements ApiController {
       Project p = projects.get(ctx.path("id"));
       CollectionExporter exporter = exporters.get(ctx.path("format"));
       Project shared = p.apiKey() == null || ctx.principal().isAdmin() ? p : p.withApiKey(p.apiKey().hidden());
-      byte[] content = exporter.export(shared, stubs.stubsOf(p.id()), urls.mock(ctx, p));
+      List<StubMapping> exported = stubs.stubsOf(p.id()).stream()
+          .filter(s -> exporter.format().equals("wiremock") || !StubMetadata.isManaged(s))
+          .toList();
+      byte[] content = exporter.export(shared, exported, urls.mock(ctx, p));
       return Response.download(exporter.fileName(p), exporter.contentType(), content);
     });
     r.post("/projects/{id}/import/wiremock-zip", ctx -> {

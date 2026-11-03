@@ -660,7 +660,7 @@ export function StubEditor({ project, projects, stub, isNew, canEdit, onSaved, o
 
           {form.responseMode !== 'fault' && (
             <div className="section">
-              <h3>Failures <span className="muted small">optional: make some calls fail at random</span></h3>
+              <h3>Failures <span className="muted small">optional: make some calls fail at random or limit how often it answers</span></h3>
               <div className="rows">
                 <div className="failure-row">
                   <label className="field">
@@ -710,6 +710,23 @@ export function StubEditor({ project, projects, stub, isNew, canEdit, onSaved, o
                     {form.errorMode === 'status'
                       ? `About ${form.errorPercent}% of calls get ${form.errorStatus || 500}${form.errorBody.trim() ? ' with the body above' : soap ? ' with a SOAP fault' : ' with {"error":"Simulated failure"}'} and the header X-MockHub-Simulated-Error. The rest get the normal response.`
                       : `About ${form.errorPercent}% of calls end with a ${form.errorFault.toLowerCase().replace(/_/g, ' ')}. The rest get the normal response.`}
+                  </p>
+                )}
+                <div className="field">
+                  <span>Rate limit <span className="hint">optional, on top of the project's limit</span></span>
+                  <span className="input-suffix rate-row">
+                    <input type="number" min={0} aria-label="Rate limit requests" placeholder="none" value={form.rateRequests} onChange={(e) => update({ rateRequests: e.target.value })} />
+                    <span>requests per</span>
+                    <select aria-label="Rate limit period" value={form.ratePer} onChange={(e) => update({ ratePer: e.target.value as StubForm['ratePer'] })}>
+                      <option value="second">second</option>
+                      <option value="minute">minute</option>
+                      <option value="hour">hour</option>
+                    </select>
+                  </span>
+                </div>
+                {Number(form.rateRequests) > 0 && (
+                  <p className="muted small">
+                    {`After ${form.rateRequests} call${form.rateRequests === '1' ? '' : 's'} a ${form.ratePer}, this stub answers 429 Too Many Requests with Retry-After and X-RateLimit headers until the ${form.ratePer} is over.`}
                   </p>
                 )}
               </div>

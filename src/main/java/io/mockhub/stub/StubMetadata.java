@@ -8,6 +8,8 @@ public final class StubMetadata {
   public static final String KEY = "mockhub";
   public static final String PROJECT_ID = "projectId";
   public static final String TYPE = "type";
+  public static final String MANAGED = "managed";
+  public static final String MANAGED_DEFAULT_RESPONSE = "default-response";
 
   private StubMetadata() {}
 
@@ -21,6 +23,10 @@ public final class StubMetadata {
   public static String projectId(StubMapping stub) {
     Object id = of(stub).get(PROJECT_ID);
     return id == null ? null : id.toString();
+  }
+
+  public static boolean isManaged(StubMapping stub) {
+    return of(stub).get(MANAGED) != null;
   }
 
   public static boolean isSoap(StubMapping stub) {

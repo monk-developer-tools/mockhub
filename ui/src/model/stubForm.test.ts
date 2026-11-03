@@ -294,6 +294,26 @@ describe('validation', () => {
     expect((cleared.metadata as { mockhub: Record<string, unknown> }).mockhub.errorRate).toBeUndefined();
   });
 
+  it('round-trips a stub rate limit and drops it when cleared', () => {
+    // Given
+    const stub = toStub({ ...emptyForm('rest'), rateRequests: '3', ratePer: 'second' });
+
+    // When
+    const back = fromStub(stub).form;
+    const cleared = toStub({ ...back, rateRequests: '' }, stub);
+
+    // Then
+    expect((stub.metadata as { mockhub: { rateLimit: unknown } }).mockhub.rateLimit).toEqual({ requests: 3, per: 'second' });
+    expect(back.rateRequests).toBe('3');
+    expect(back.ratePer).toBe('second');
+    expect((cleared.metadata as { mockhub: Record<string, unknown> }).mockhub.rateLimit).toBeUndefined();
+  });
+
+  it('rejects a rate limit that is not a whole number', () => {
+    // When / Then
+    expect(validate({ ...emptyForm('rest'), rateRequests: '2.5' })).toContain('The rate limit must be a whole number of requests up to 1,000,000.');
+  });
+
   it('rejects failure rates outside 0 to 100', () => {
     // When / Then
     expect(validate({ ...emptyForm('rest'), errorPercent: '120' })).toContain('The failure rate must be between 0 and 100 percent.');

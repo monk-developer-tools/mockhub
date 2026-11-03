@@ -24,6 +24,7 @@ import type {
   TeamMember,
   Organization,
   Project,
+  RuntimeSettings,
   Scenario,
   ServeEvent,
   ServerInfo,
@@ -207,6 +208,9 @@ export const api = {
   updateProject: (id: string, body: Partial<Project>) =>
     request<Project>(`${API}/projects/${id}`, { method: 'PUT', body: json(body) }),
   deleteProject: (id: string) => request<void>(`${API}/projects/${id}`, { method: 'DELETE' }),
+  runtime: (id: string) => request<RuntimeSettings>(`${API}/projects/${id}/runtime`),
+  updateRuntime: (id: string, body: RuntimeSettings) =>
+    request<RuntimeSettings>(`${API}/projects/${id}/runtime`, { method: 'PUT', body: json(body) }),
 
   stubs: (projectId: string) => request<Stub[]>(`${API}/projects/${projectId}/stubs`),
   createStub: (projectId: string, stub: Stub) =>

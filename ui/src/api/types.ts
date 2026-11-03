@@ -448,3 +448,44 @@ export interface AuditPage {
   retentionDays: number;
   entries: AuditEntry[];
 }
+
+export type RatePeriod = 'second' | 'minute' | 'hour';
+export type LatencyMode = 'none' | 'fixed' | 'uniform' | 'lognormal';
+
+export interface RateLimitRule {
+  requests: number;
+  per: RatePeriod;
+}
+
+export interface DefaultResponseRule {
+  status: number;
+  headers: Record<string, string>;
+  body: string;
+  templated: boolean;
+}
+
+export interface LatencyRule {
+  mode: LatencyMode;
+  fixedMs?: number;
+  minMs?: number;
+  maxMs?: number;
+  medianMs?: number;
+  sigma?: number;
+  load?: { afterRps: number; msPerRequest: number } | null;
+}
+
+export interface CorsRule {
+  origins: string[];
+  methods: string[];
+  headers: string[];
+  credentials: boolean;
+  simulateFailure: boolean;
+}
+
+export interface RuntimeSettings {
+  defaultResponse: DefaultResponseRule | null;
+  rateLimit: RateLimitRule | null;
+  latency: LatencyRule | null;
+  cors: CorsRule | null;
+  ipAllowList: string[];
+}

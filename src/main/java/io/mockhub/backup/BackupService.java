@@ -13,6 +13,7 @@ import io.mockhub.files.BodyFiles;
 import io.mockhub.org.Organization;
 import io.mockhub.org.OrganizationService;
 import io.mockhub.project.Project;
+import io.mockhub.runtime.ProjectScopeMatcher;
 import io.mockhub.project.ProjectService;
 import io.mockhub.stub.StubGateway;
 import io.mockhub.team.Team;
@@ -208,7 +209,7 @@ public final class BackupService {
       String now = Instant.now(clock).toString();
       boolean root = p.root() && projects.findRoot().filter(r -> !r.id().equals(id)).isEmpty();
       Project saved = new Project(id, p.name(), slug, p.description(), p.color(),
-          options.asCopy() ? now : p.createdAt(), now, orgId, teamId, p.apiKey(), root);
+          options.asCopy() ? now : p.createdAt(), now, orgId, teamId, p.apiKey(), root, p.runtime());
       projects.restore(List.of(saved));
       file.path("files").path(p.id()).fields().forEachRemaining(e -> files.save(saved.id(), e.getKey(), Base64.getDecoder().decode(e.getValue().asText())));
       JsonNode stored = file.path("data").path(p.id());
@@ -265,6 +266,7 @@ public final class BackupService {
       StubPaths.toAbsolute(m, to.basePath());
     }
     StubMetadata.node(m).put(StubMetadata.PROJECT_ID, to.id());
+    ProjectScopeMatcher.retarget(m, to.id());
     JsonNode bodyFile = m.path("response").path("bodyFileName");
     String oldPrefix = BodyFiles.bodyFileName(from.id(), "");
     if (bodyFile.isTextual() && bodyFile.asText().startsWith(oldPrefix) && !from.id().equals(to.id())) {

@@ -6,6 +6,7 @@ import com.github.tomakehurst.wiremock.stubbing.StubMapping;
 import io.mockhub.api.Jsons;
 import io.mockhub.callout.CalloutPortability;
 import io.mockhub.project.Project;
+import io.mockhub.runtime.ProjectScopeMatcher;
 import io.mockhub.stub.StubSwitch;
 import java.util.List;
 
@@ -34,6 +35,7 @@ public final class WireMockMappingsExporter implements CollectionExporter {
       ObjectNode node = (ObjectNode) Jsons.fromWireMock(s);
       node.remove("insertionIndex");
       StubSwitch.reveal(node);
+      ProjectScopeMatcher.strip(node);
       CalloutPortability.toWireMockWebhooks(node);
       mappings.add(node);
     }

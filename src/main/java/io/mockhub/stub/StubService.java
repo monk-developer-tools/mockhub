@@ -40,7 +40,7 @@ public final class StubService implements ProjectListener {
   public ArrayNode list(String projectId) {
     Project p = projects.get().get(projectId);
     ArrayNode out = Jsons.MAPPER.createArrayNode();
-    stubsOf(projectId).forEach(s -> out.add(relative(s, p)));
+    stubsOf(projectId).stream().filter(s -> !StubMetadata.isManaged(s)).forEach(s -> out.add(relative(s, p)));
     return out;
   }
 

@@ -1,4 +1,4 @@
-import type { Json, JsonObject, Stub } from '../api/types';
+import type { Json, JsonObject, RatePeriod, Stub } from '../api/types';
 
 export type UrlMatchType = 'url' | 'urlPath' | 'urlPathTemplate' | 'urlPattern' | 'urlPathPattern' | 'any';
 export type ValueOperator = 'equalTo' | 'contains' | 'matches' | 'doesNotMatch' | 'doesNotContain' | 'absent' | 'present';
@@ -111,6 +111,8 @@ export interface StubForm {
   errorStatus: string;
   errorFault: Fault;
   errorBody: string;
+  rateRequests: string;
+  ratePer: RatePeriod;
 }
 
 export interface Conversion {
@@ -194,6 +196,8 @@ export function emptyForm(kind: StubKind = 'rest'): StubForm {
     errorStatus: soap ? '500' : '503',
     errorFault: 'CONNECTION_RESET_BY_PEER',
     errorBody: '',
+    rateRequests: '',
+    ratePer: 'minute',
   };
 }
 
@@ -398,6 +402,11 @@ export function fromStub(stub: Stub): Conversion {
     if (errorRate.fault) form.errorFault = str(errorRate.fault) as Fault;
     form.errorBody = str(errorRate.body);
   }
+  const rateLimit = obj(meta.rateLimit);
+  if (Number(rateLimit.requests) > 0) {
+    form.rateRequests = str(rateLimit.requests);
+    form.ratePer = (['second', 'minute', 'hour'].includes(str(rateLimit.per)) ? str(rateLimit.per) : 'minute') as RatePeriod;
+  }
 
   form.soapVersion = meta.soapVersion === '1.2' ? '1.2' : '1.1';
   form.soapAction = str(meta.soapAction);
@@ -489,6 +498,8 @@ export function toStub(form: StubForm, original: Stub = {}): Stub {
   } else {
     delete meta.errorRate;
   }
+  if (Number(form.rateRequests) > 0) meta.rateLimit = { requests: Number(form.rateRequests), per: form.ratePer };
+  else delete meta.rateLimit;
   const sample = { ...obj(meta.sampleRequest) };
   setOrDelete(sample, 'body', form.sampleBody);
   if (Object.keys(sample).length) meta.sampleRequest = sample;
@@ -598,6 +609,10 @@ export function validate(form: StubForm): string[] {
     if (form.errorMode === 'status' && (!Number.isInteger(status) || status < 100 || status > 599)) {
       errors.push('The failure status must be a number between 100 and 599.');
     }
+  }
+  if (form.rateRequests.trim()) {
+    const requests = Number(form.rateRequests);
+    if (!Number.isInteger(requests) || requests < 0 || requests > 1_000_000) errors.push('The rate limit must be a whole number of requests up to 1,000,000.');
   }
   for (const b of form.body) {
     if (b.operator === 'equalToJson' && b.value.trim() && !tryParseJson(b.value).ok) errors.push('A JSON body matcher is not valid JSON.');

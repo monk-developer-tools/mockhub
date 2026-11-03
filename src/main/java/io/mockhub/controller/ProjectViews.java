@@ -37,7 +37,7 @@ public final class ProjectViews {
     if (p.apiKey() != null && !ctx.principal().isAdmin()) {
       node.putObject("apiKey").put("header", p.apiKey().header()).put("set", true);
     }
-    List<StubMapping> list = stubs.stubsOf(p.id());
+    List<StubMapping> list = stubs.stubsOf(p.id()).stream().filter(s -> !StubMetadata.isManaged(s)).toList();
     node.put("basePath", p.basePath());
     node.put("mockUrl", urls.mock(ctx, p));
     node.put("stubCount", list.size());

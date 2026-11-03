@@ -24,9 +24,6 @@ public final class Main {
     addDefault(finalArgs, userArgs, "--port", String.valueOf(config.port));
     addDefault(finalArgs, userArgs, "--root-dir", config.dataDir.toString());
     addDefault(finalArgs, userArgs, "--max-request-journal-entries", String.valueOf(config.journalMaxEntries));
-    if (config.stubCors && !userArgs.contains("--enable-stub-cors")) {
-      finalArgs.add("--enable-stub-cors");
-    }
     if (!userArgs.contains("--disable-extensions-scanning")) {
       finalArgs.add("--disable-extensions-scanning");
     }

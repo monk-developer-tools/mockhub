@@ -9,6 +9,7 @@ import { useToast } from '../../components/Toasts';
 import { useApp } from '../../state/AppContext';
 import { ProjectDialog } from '../ProjectDialog';
 import { useProject } from './ProjectPage';
+import { RuntimePanel } from './RuntimePanel';
 
 export function ProjectSettingsTab() {
   const { project, reloadProject } = useProject();
@@ -57,6 +58,7 @@ export function ProjectSettingsTab() {
       </div>
       <RootPanel />
       <ApiKeyPanel />
+      <RuntimePanel />
       {canManage && (
         <div className="panel">
           <div className="section">
