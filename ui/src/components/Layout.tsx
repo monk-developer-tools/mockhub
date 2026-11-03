@@ -1,4 +1,4 @@
-import { Archive, BookOpenText, ClockCounterClockwise, Buildings, CircleHalf, Eye, HardDrives, Key, MagnifyingGlass, Moon, PaperPlaneTilt, Plus, SidebarSimple, Sparkle, SquaresFour, Sun, UsersThree } from '@phosphor-icons/react';
+import { Archive, BookOpenText, CaretRight, ClockCounterClockwise, Buildings, CircleHalf, Eye, GearSix, HardDrives, Key, MagnifyingGlass, Moon, PaperPlaneTilt, Plus, SidebarSimple, Sparkle, SquaresFour, Sun, UsersThree } from '@phosphor-icons/react';
 import { useCallback, useMemo } from 'react';
 import { MOD_LABEL, useHotkeys } from '../state/hotkeys';
 import { CommandPalette } from './CommandPalette';
@@ -15,7 +15,8 @@ import { ProjectDialog } from '../pages/ProjectDialog';
 import { OrgSwitcher } from './OrgSwitcher';
 import { roleLabel } from './RoleBadge';
 import { canSeeAuditLog } from '../model/audit';
-import { readCollapsed, writeCollapsed } from '../state/sidebar';
+import { readCollapsed, readSettingsOpen, writeCollapsed, writeSettingsOpen } from '../state/sidebar';
+import { shortProjectName, sidebarProjects } from '../model/sidebarProjects';
 import { TopBar } from './TopBar';
 
 const NEXT_THEME: Record<ThemeChoice, ThemeChoice> = { system: 'light', light: 'dark', dark: 'system' };
@@ -34,15 +35,26 @@ export function Layout() {
   const [collapsed, setCollapsed] = useState(readCollapsed);
   const location = useLocation();
   const ThemeIcon = THEME_ICON[theme];
+  const activeProjectId = location.pathname.match(/^\/projects\/([^/]+)/)?.[1];
   const projectGroups = useMemo(() => {
     const teams = teamsIn(currentOrg?.id);
-    const groups = teams
-      .map((t) => ({ id: t.id, name: t.name, projects: orgProjects.filter((p) => p.teamId === t.id) }))
-      .filter((g) => g.projects.length > 0);
     const known = new Set(teams.map((t) => t.id));
-    const other = orgProjects.filter((p) => !known.has(p.teamId));
+    const ordered = [...teams.flatMap((t) => orgProjects.filter((p) => p.teamId === t.id)), ...orgProjects.filter((p) => !known.has(p.teamId))];
+    const shown = new Set(sidebarProjects(ordered, activeProjectId));
+    const groups = teams
+      .map((t) => ({ id: t.id, name: t.name, projects: orgProjects.filter((p) => p.teamId === t.id && shown.has(p)) }))
+      .filter((g) => g.projects.length > 0);
+    const other = orgProjects.filter((p) => !known.has(p.teamId) && shown.has(p));
     return other.length ? [...groups, { id: 'other', name: 'Other', projects: other }] : groups;
-  }, [orgProjects, teamsIn, currentOrg]);
+  }, [orgProjects, teamsIn, currentOrg, activeProjectId]);
+  const hiddenProjects = orgProjects.length - projectGroups.reduce((n, g) => n + g.projects.length, 0);
+  const inSettings = /^\/(server|admin)(\/|$)/.test(location.pathname);
+  const [settingsOpen, setSettingsOpen] = useState(readSettingsOpen);
+  const showSettings = settingsOpen || inSettings || collapsed;
+  const toggleSettings = () => {
+    writeSettingsOpen(!settingsOpen);
+    setSettingsOpen(!settingsOpen);
+  };
 
   const cycleTheme = () => {
     const next = NEXT_THEME[theme];
@@ -75,93 +87,109 @@ export function Layout() {
             <Logo />
             <span className="brand-name">MockHub</span>
           </NavLink>
+          <button className="btn ghost icon small collapse-toggle" onClick={toggleCollapsed} aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} title={`${collapsed ? 'Expand' : 'Collapse'} sidebar ( [ )`} aria-pressed={collapsed}>
+            <SidebarSimple size={16} />
+          </button>
         </div>
-        <OrgSwitcher onNewOrg={() => setCreatingOrg(true)} />
-        <button className="palette-trigger" onClick={() => setPalette(true)}>
-          <MagnifyingGlass size={14} />
-          <span className="palette-label">Search…</span>
-          <kbd>{MOD_LABEL} K</kbd>
-        </button>
-        <div className="sidebar-section"><span>Workspace</span></div>
-        <nav className="nav" aria-label="Main">
-          <NavLink to="/" end title={collapsed ? 'Projects' : undefined}>
-            <SquaresFour size={18} weight="duotone" /> <span className="nav-label">Projects</span>
-          </NavLink>
-          {canEdit && (
-            <NavLink to="/playground" title={collapsed ? 'Playground' : undefined}>
-              <PaperPlaneTilt size={18} weight="duotone" /> <span className="nav-label">Playground</span>
-            </NavLink>
-          )}
-          <NavLink to="/examples" title={collapsed ? 'Examples' : undefined}>
-            <BookOpenText size={18} weight="duotone" /> <span className="nav-label">Examples</span>
-          </NavLink>
-          {currentOrg && (
-            <NavLink to="/org" title={collapsed ? 'Teams & people' : undefined}>
-              <Buildings size={18} weight="duotone" /> <span className="nav-label">Teams & people</span>
-            </NavLink>
-          )}
-          {canSeeAuditLog(session) && (
-            <NavLink to="/audit" title={collapsed ? 'Audit log' : undefined}>
-              <ClockCounterClockwise size={18} weight="duotone" /> <span className="nav-label">Audit log</span>
-            </NavLink>
-          )}
-          <NavLink to="/server" title={collapsed ? 'Server' : undefined}>
-            <HardDrives size={18} weight="duotone" /> <span className="nav-label">Server</span>
-          </NavLink>
-        </nav>
-        {isAdmin && (
-          <>
-            <div className="sidebar-section"><span>Administration</span></div>
-            <nav className="nav" aria-label="Administration">
-              <NavLink to="/admin/users" title={collapsed ? 'Users' : undefined}>
-                <UsersThree size={18} weight="duotone" /> <span className="nav-label">Users</span>
-              </NavLink>
-              <NavLink to="/admin/sso" title={collapsed ? 'Single sign-on' : undefined}>
-                <Key size={18} weight="duotone" /> <span className="nav-label">Single sign-on</span>
-              </NavLink>
-              <NavLink to="/admin/ai" title={collapsed ? 'AI assistant' : undefined}>
-                <Sparkle size={18} weight="duotone" /> <span className="nav-label">AI assistant</span>
-              </NavLink>
-              <NavLink to="/admin/backup" title={collapsed ? 'Backup & restore' : undefined}>
-                <Archive size={18} weight="duotone" /> <span className="nav-label">Backup &amp; restore</span>
-              </NavLink>
-            </nav>
-          </>
-        )}
-        <div className="sidebar-section">
-          <span>Projects in {currentOrg?.name ?? 'this organisation'}</span>
-          {canCreateProjects && (
-            <button className="btn ghost icon small" onClick={() => setCreating(true)} aria-label="New project" title="New project">
-              <Plus size={15} />
-            </button>
-          )}
+        <div className="sidebar-top">
+          <OrgSwitcher onNewOrg={() => setCreatingOrg(true)} />
+          <button className="palette-trigger" onClick={() => setPalette(true)} title={collapsed ? 'Search' : undefined}>
+            <MagnifyingGlass size={14} />
+            <span className="palette-label">Search…</span>
+            <kbd>{MOD_LABEL} K</kbd>
+          </button>
         </div>
-        <div className="project-list">
-          {orgProjects.length === 0 && <p className="muted small" style={{ padding: '4px 10px' }}>No projects yet.</p>}
-          {projectGroups.map((group) => (
-            <div key={group.id} className="project-group">
-              {projectGroups.length > 1 && (
-                <div className="project-group-head">
-                  <TeamMark name={group.name} seed={group.id} size={16} />
-                  <span>{group.name}</span>
-                </div>
+        <div className="sidebar-scroll">
+          <nav className="nav" aria-label="Main">
+            <NavLink to="/" end title={collapsed ? 'Projects' : undefined}>
+              <SquaresFour size={17} /> <span className="nav-label">Projects</span>
+            </NavLink>
+            {canEdit && (
+              <NavLink to="/playground" title={collapsed ? 'Playground' : undefined}>
+                <PaperPlaneTilt size={17} /> <span className="nav-label">Playground</span>
+              </NavLink>
+            )}
+            <NavLink to="/examples" title={collapsed ? 'Examples' : undefined}>
+              <BookOpenText size={17} /> <span className="nav-label">Examples</span>
+            </NavLink>
+            {currentOrg && (
+              <NavLink to="/org" title={collapsed ? 'Teams & people' : undefined}>
+                <Buildings size={17} /> <span className="nav-label">Teams & people</span>
+              </NavLink>
+            )}
+            {canSeeAuditLog(session) && (
+              <NavLink to="/audit" title={collapsed ? 'Audit log' : undefined}>
+                <ClockCounterClockwise size={17} /> <span className="nav-label">Audit log</span>
+              </NavLink>
+            )}
+          </nav>
+          <div className="sidebar-section">
+            <span>Projects</span>
+            {canCreateProjects && (
+              <button className="btn ghost icon small" onClick={() => setCreating(true)} aria-label="New project" title="New project">
+                <Plus size={14} />
+              </button>
+            )}
+          </div>
+          <div className="project-list">
+            {orgProjects.length === 0 && <p className="project-empty">No projects yet.</p>}
+            {projectGroups.map((group) => (
+              <div key={group.id} className="project-group">
+                {projectGroups.length > 1 && (
+                  <div className="project-group-head" title={collapsed ? group.name : undefined}>
+                    <TeamMark name={group.name} seed={group.id} size={14} />
+                    <span>{group.name}</span>
+                  </div>
+                )}
+                {group.projects.map((p) => (
+                  <NavLink
+                    key={p.id}
+                    to={`/projects/${p.id}`}
+                    className={() => `project-link${p.id === activeProjectId ? ' active' : ''}`}
+                    title={`${p.name} · ${p.basePath || '/'}`}
+                  >
+                    <span className="swatch" style={{ background: p.color }} />
+                    <span className="project-link-text">{shortProjectName(p.name)}</span>
+                  </NavLink>
+                ))}
+              </div>
+            ))}
+            {hiddenProjects > 0 && (
+              <NavLink to="/" end className="project-more">
+                View all {orgProjects.length} projects
+              </NavLink>
+            )}
+          </div>
+        </div>
+        <div className="sidebar-settings">
+          <button className="settings-toggle" onClick={toggleSettings} aria-expanded={showSettings} aria-controls="sidebar-settings" title={collapsed ? 'Settings' : undefined}>
+            <GearSix size={17} />
+            <span className="nav-label">Settings</span>
+            <CaretRight size={12} className="settings-caret" />
+          </button>
+          {showSettings && (
+            <nav className="nav" id="sidebar-settings" aria-label="Settings">
+              <NavLink to="/server" title={collapsed ? 'Server' : undefined}>
+                <HardDrives size={17} /> <span className="nav-label">Server</span>
+              </NavLink>
+              {isAdmin && (
+                <>
+                  <NavLink to="/admin/users" title={collapsed ? 'Users' : undefined}>
+                    <UsersThree size={17} /> <span className="nav-label">Users</span>
+                  </NavLink>
+                  <NavLink to="/admin/sso" title={collapsed ? 'Single sign-on' : undefined}>
+                    <Key size={17} /> <span className="nav-label">Single sign-on</span>
+                  </NavLink>
+                  <NavLink to="/admin/ai" title={collapsed ? 'AI assistant' : undefined}>
+                    <Sparkle size={17} /> <span className="nav-label">AI assistant</span>
+                  </NavLink>
+                  <NavLink to="/admin/backup" title={collapsed ? 'Backup & restore' : undefined}>
+                    <Archive size={17} /> <span className="nav-label">Backup &amp; restore</span>
+                  </NavLink>
+                </>
               )}
-              {group.projects.map((p) => (
-                <NavLink
-                  key={p.id}
-                  to={`/projects/${p.id}`}
-                  className={() => `project-link${location.pathname.startsWith(`/projects/${p.id}`) ? ' active' : ''}`}
-                  title={`${p.name} (${p.basePath})`}
-                >
-                  <span className="swatch" style={{ background: p.color }} />
-                  <span className="project-link-text">
-                    <span className="name">{p.name}</span>
-                    <span className="path">{p.basePath}</span>
-                  </span>
-                </NavLink>
-              ))}
-            </div>
-          ))}
+            </nav>
+          )}
         </div>
         <div className="sidebar-footer">
           {session && info?.authEnabled ? (
@@ -175,9 +203,6 @@ export function Layout() {
           ) : (
             <span title={info ? `WireMock ${info.wiremockVersion}` : undefined}>v{info?.version ?? ''}</span>
           )}
-          <button className="btn ghost icon small collapse-toggle" onClick={toggleCollapsed} aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} title={`${collapsed ? 'Expand' : 'Collapse'} sidebar ( [ )`} aria-pressed={collapsed}>
-            <SidebarSimple size={16} />
-          </button>
         </div>
       </aside>
       <div className="main">

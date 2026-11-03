@@ -15,3 +15,21 @@ export function writeCollapsed(collapsed: boolean) {
     return;
   }
 }
+
+const SETTINGS_KEY = 'mockhub.sidebar.settings';
+
+export function readSettingsOpen(): boolean {
+  try {
+    return localStorage.getItem(SETTINGS_KEY) === 'open';
+  } catch {
+    return false;
+  }
+}
+
+export function writeSettingsOpen(open: boolean) {
+  try {
+    localStorage.setItem(SETTINGS_KEY, open ? 'open' : 'closed');
+  } catch {
+    return;
+  }
+}

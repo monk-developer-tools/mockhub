@@ -60,6 +60,22 @@ describe('Layout', () => {
     expect(groups[1]).toHaveTextContent('Index');
   });
 
+  it('lists projects on one line each and links to the rest', () => {
+    // Given
+    role = 'viewer';
+    orgProjects = Array.from({ length: 10 }, (_, i) => ({ id: `p${i}`, name: `Service ${i} — the long story`, basePath: `/s${i}`, color: '#f00', teamId: 't1', orgId: 'o1' }));
+
+    // When
+    renderWithShell(<Layout />);
+
+    // Then
+    const links = document.querySelectorAll('.project-link');
+    expect(links).toHaveLength(8);
+    expect(links[0]).toHaveTextContent(/^Service 0$/);
+    expect(links[0]).toHaveAttribute('title', 'Service 0 — the long story · /s0');
+    expect(screen.getByRole('link', { name: 'View all 10 projects' })).toHaveAttribute('href', '/');
+  });
+
   it('tells viewers why they cannot edit and lets them switch account', async () => {
     // Given
     role = 'viewer';
@@ -108,15 +124,19 @@ describe('Layout', () => {
     expect(screen.getByRole('button', { name: 'New project' })).toBeInTheDocument();
   });
 
-  it('shows the administration links to admins', () => {
+  it('shows the administration links to admins under Settings', async () => {
     // Given
     role = 'admin';
     isAdmin = true;
+    localStorage.removeItem('mockhub.sidebar.settings');
+    renderWithShell(<Layout />);
+    expect(screen.queryByRole('link', { name: 'Users' })).not.toBeInTheDocument();
 
     // When
-    renderWithShell(<Layout />);
+    await userEvent.click(screen.getByRole('button', { name: 'Settings' }));
 
     // Then
+    expect(localStorage.getItem('mockhub.sidebar.settings')).toBe('open');
     expect(screen.getByRole('link', { name: 'Users' })).toHaveAttribute('href', '/admin/users');
     expect(screen.getByRole('link', { name: 'Single sign-on' })).toHaveAttribute('href', '/admin/sso');
   });
