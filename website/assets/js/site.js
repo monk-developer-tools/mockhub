@@ -150,6 +150,99 @@
     });
   }
 
+  const trigger = document.querySelector('.nav-menu-trigger');
+  const mega = document.getElementById('product-menu');
+  if (trigger && mega) {
+    const hover = window.matchMedia('(hover: hover) and (min-width: 961px)');
+    let timer;
+    const setOpen = (open) => {
+      clearTimeout(timer);
+      mega.hidden = !open;
+      trigger.setAttribute('aria-expanded', String(open));
+    };
+    trigger.addEventListener('click', () => setOpen(mega.hidden));
+    const menu = trigger.parentElement;
+    menu.addEventListener('mouseenter', () => hover.matches && setOpen(true));
+    menu.addEventListener('mouseleave', () => {
+      if (hover.matches) timer = setTimeout(() => setOpen(false), 160);
+    });
+    document.addEventListener('click', (e) => {
+      if (!menu.contains(e.target)) setOpen(false);
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !mega.hidden) {
+        setOpen(false);
+        trigger.focus();
+      }
+    });
+    menu.addEventListener('focusout', (e) => {
+      if (!menu.contains(e.relatedTarget)) setOpen(false);
+    });
+  }
+
+  const tryCard = document.querySelector('[data-try]');
+  if (tryCard) {
+    const host = location.hostname === 'mockhub.devops-monk.com' ? '' : 'https://mockhub.devops-monk.com';
+    const $ = (name) => tryCard.querySelector(`[data-try-${name}]`);
+    const tabs = Array.from(tryCard.querySelectorAll('.try-tabs button'));
+    let current = tabs[0];
+    const pretty = (text, type) => {
+      if (type.includes('json')) {
+        try {
+          return JSON.stringify(JSON.parse(text), null, 2);
+        } catch (e) {
+          return text;
+        }
+      }
+      return text.trim();
+    };
+    const show = (tab) => {
+      current = tab;
+      tabs.forEach((t) => t.setAttribute('aria-pressed', String(t === tab)));
+      const method = tab.dataset.method;
+      $('method').textContent = method;
+      $('method').className = `jack ${method.toLowerCase()}`;
+      $('path').textContent = `mockhub.devops-monk.com${tab.dataset.path}`;
+      $('req').hidden = !tab.dataset.body;
+      $('req').textContent = tab.dataset.body ?? '';
+    };
+    const send = async () => {
+      const tab = current;
+      const button = $('send');
+      button.disabled = true;
+      button.textContent = 'Sending…';
+      const started = performance.now();
+      try {
+        const res = await fetch(host + tab.dataset.path, {
+          method: tab.dataset.method,
+          headers: tab.dataset.type ? { 'Content-Type': tab.dataset.type } : {},
+          body: tab.dataset.body,
+          cache: 'no-store',
+        });
+        const text = await res.text();
+        $('time').textContent = `${Math.round(performance.now() - started)} ms`;
+        $('status').textContent = `${res.status} ${res.statusText || ''}`.trim();
+        $('status').className = `try-status ${res.ok ? 'ok' : 'bad'}`;
+        $('stub').textContent = res.headers.get('Matched-Stub-Name') ?? '';
+        $('body').textContent = pretty(text, res.headers.get('Content-Type') ?? '');
+      } catch (e) {
+        $('status').textContent = 'No answer';
+        $('status').className = 'try-status bad';
+        $('time').textContent = '';
+        $('stub').textContent = '';
+        $('body').textContent = `The demo couldn't be reached from this page.\nTry it in a terminal:\n\ncurl -X ${tab.dataset.method} https://mockhub.devops-monk.com${tab.dataset.path}`;
+      } finally {
+        button.disabled = false;
+        button.textContent = 'Send';
+      }
+    };
+    tabs.forEach((tab) => tab.addEventListener('click', () => {
+      show(tab);
+      send();
+    }));
+    $('send').addEventListener('click', send);
+  }
+
   const docLinks = document.querySelectorAll('.tut-toc a[href^="#"]');
   if (docLinks.length && 'IntersectionObserver' in window) {
     const byId = new Map(Array.from(docLinks).map((a) => [a.getAttribute('href').slice(1), a]));

@@ -3,6 +3,7 @@ import { createRequire } from 'node:module';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { GROUPS } from '../docs-src/docs.mjs';
+import { featureCards, footer as siteFooter, groupAnchor, header as siteHeader, useCases } from '../docs-src/layout.mjs';
 
 const website = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repo = resolve(website, '..');
@@ -76,37 +77,9 @@ function rewrite(page) {
   });
 }
 
-const header = (current) => `  <a class="skip" href="#content">Skip to content</a>
-  <header class="nav">
-    <div class="wrap">
-      <a class="brand" href="/"><img src="/assets/img/logo.svg" alt="" width="22" height="22"> MockHub</a>
-      <button class="nav-toggle" aria-label="Menu" aria-expanded="false" aria-controls="nav-links">
-        <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 6h14M3 14h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-      </button>
-      <nav class="nav-links" id="nav-links" aria-label="Main">
-        <a href="/#highlights">Highlights</a>
-        <a href="/#features">Features</a>
-        <a href="/tutorials/">Tutorials</a>
-        <a href="/docs/"${current ? ' aria-current="page"' : ''}>Docs</a>
-        <a href="https://github.com/monk-developer-tools/mockhub">GitHub</a>
-        <a class="pill" href="/__admin/mockhub/ui/">Try the demo</a>
-      </nav>
-    </div>
-  </header>`;
+const header = () => `  ${siteHeader(icon, 'docs')}`;
 
-const footer = `  <footer>
-    <div class="wrap">
-      <span>MockHub is built on WireMock. Not affiliated with WireMock Inc.</span>
-      <nav aria-label="Footer">
-        <a href="/">Home</a>
-        <a href="/docs/">Docs</a>
-        <a href="/tutorials/">Tutorials</a>
-        <a href="https://github.com/monk-developer-tools/mockhub">GitHub</a>
-        <a href="https://hub.docker.com/r/abhaypratap/mockhub">Docker Hub</a>
-        <a href="/__admin/mockhub/ui/">Live demo</a>
-      </nav>
-    </div>
-  </footer>
+const footer = `  ${siteFooter(icon)}
   <script src="/assets/js/site.js" defer></script>
   <script src="/assets/js/docs.js" defer></script>`;
 
@@ -174,7 +147,7 @@ function renderPage(page, index) {
   const body = rewrite(page).trimEnd().split('\n').join('\n      ');
   return `${head(`${page.title} — MockHub docs`, page.description)}
 <body>
-${header(true)}
+${header()}
 
   <div class="wrap docs-layout${page.headings.length < 2 ? ' no-toc' : ''}">
     ${sidebar(page.slug)}
@@ -216,7 +189,7 @@ function renderLanding() {
             <span>${escape(p.description)}</span>
             <span class="doc-card-arrow" aria-hidden="true">→</span>
           </a>`).join('\n          ');
-    return `<section class="docs-group" id="${g.id}" aria-labelledby="${g.id}-title">
+    return `<section class="docs-group" id="${groupAnchor(g)}" aria-labelledby="${g.id}-title">
         <header>
           <span class="docs-group-icon">${icon(g.icon, 22)}</span>
           <div>
@@ -232,7 +205,7 @@ function renderLanding() {
   }).join('\n\n      ');
   return `${head('Docs — MockHub', 'How to run MockHub, mock REST and SOAP services, send webhooks, share mocks with your team, automate it from CI and deploy it.', redirect)}
 <body>
-${header(true)}
+${header()}
 
   <main id="content" class="docs-landing">
     <section class="docs-hero">
@@ -281,6 +254,26 @@ writeFileSync(join(out, 'search.json'), JSON.stringify(pages.map((p) => ({
   text: plain(p.source),
 }))));
 
+const blocks = {
+  header: (current) => siteHeader(icon, current),
+  footer: () => siteFooter(icon),
+  features: () => featureCards(icon),
+  usecases: () => useCases(icon),
+};
+const inject = (file, current) => {
+  const path = join(website, file);
+  const before = readFileSync(path, 'utf8');
+  const after = before.replace(/(<!-- site:(\w+) -->)[\s\S]*?(<!-- \/site:\2 -->)/g, (match, open, name, close) => {
+    if (!blocks[name]) throw new Error(`Unknown block ${name} in ${file}`);
+    const indent = before.slice(0, before.indexOf(match)).split('\n').pop();
+    return `${open}\n${indent}${blocks[name](current)}\n${indent}${close}`;
+  });
+  if (after !== before) writeFileSync(path, after);
+};
+inject('index.html', 'home');
+inject(join('tutorials', 'index.html'), 'tutorials');
+
+const groupAnchors = new Set(GROUPS.map(groupAnchor));
 const siteFiles = [join(website, 'index.html'), join(website, 'tutorials', 'index.html'), ...pages.map((p) => join(out, p.slug, 'index.html'))];
 const broken = [];
 for (const file of siteFiles) {
@@ -289,7 +282,7 @@ for (const file of siteFiles) {
     const target = join(website, path, path.endsWith('/') ? 'index.html' : '');
     if (!existsSync(target)) broken.push(`${file.replace(website, '')}: ${path}`);
     else if (hash && path !== '/docs/' && !readFileSync(target, 'utf8').includes(`id="${hash}"`)) broken.push(`${file.replace(website, '')}: ${path}#${hash}`);
-    else if (hash && path === '/docs/' && !anchors.has(hash)) broken.push(`${file.replace(website, '')}: /docs/#${hash}`);
+    else if (hash && path === '/docs/' && !anchors.has(hash) && !groupAnchors.has(hash)) broken.push(`${file.replace(website, '')}: /docs/#${hash}`);
   }
 }
 if (broken.length) throw new Error(`Links to missing docs pages:\n  ${broken.join('\n  ')}`);

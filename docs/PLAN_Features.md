@@ -136,7 +136,7 @@ Goal: `website/docs/` becomes a multi-page documentation site in the style of Be
 - The UI's help menu and each empty state link to the matching page.
 
 Checklist:
-- [x] Docs generator (`website/scripts/build-docs.mjs`), shared layout, sidebar, breadcrumbs, previous/next, table of
+- [x] Docs generator (`website/scripts/build-site.mjs`), shared layout, sidebar, breadcrumbs, previous/next, table of
   contents. Pages are HTML fragments in `website/docs-src/pages/` rather than Markdown, so the existing docs moved over
   unchanged and no Markdown dependency is needed. The page list and groups live in `website/docs-src/docs.mjs`.
 - [x] Landing page with grouped feature cards and search (`/` focuses it, arrow keys pick a result)
@@ -164,10 +164,13 @@ header, footer and visual system with the new docs.
 - Same tokens, light and dark, phone layout without horizontal scroll, screenshots refreshed.
 
 Checklist:
-- [ ] Shared header and footer partials used by the homepage, tutorials and docs
-- [ ] New homepage sections
-- [ ] Tutorials page moved to the shared layout
-- [ ] Phone, dark mode and accessibility check
+- [x] Shared header (Product menu built from the docs groups) and footer in `website/docs-src/layout.mjs`; the build
+  writes them into the homepage and tutorials between `<!-- site:name -->` markers, and the build is idempotent
+- [x] New homepage: two-column hero with a "Call a live mock" card that calls the public demo and shows the status,
+  time and matched stub; works-with strip; numbers; feature cards per docs group; use-case cards
+- [x] Tutorials page moved to the shared layout
+- [x] Phone, dark mode and keyboard check (menu opens on click or hover, closes on Escape or focus leaving)
+- [ ] Logos instead of names in the works-with strip (needs permission-safe artwork)
 
 ### Phase F2 — Runtime behaviour
 

@@ -490,7 +490,7 @@ The docs site is generated. Edit the pages in `website/docs-src/pages/` and the 
 then build `website/docs/` (needs `ui/node_modules`; `deploy/vps/deploy-site.sh` runs it too):
 
 ```bash
-node --disable-warning=ExperimentalWarning website/scripts/build-docs.mjs
+node --disable-warning=ExperimentalWarning website/scripts/build-site.mjs
 ```
 
 ### Code layout
