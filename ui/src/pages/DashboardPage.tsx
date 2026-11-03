@@ -1,6 +1,5 @@
-import { BookOpenText, BracketsCurly, CheckCircle, ClockCounterClockwise, PaperPlaneTilt, Plus, Pulse, ShareNetwork, SquaresFour, Warning } from '@phosphor-icons/react';
+import { BookOpenText, BracketsCurly, CheckCircle, ClockCounterClockwise, MagnifyingGlass, PaperPlaneTilt, Plus, Pulse, ShareNetwork, SquaresFour, Warning } from '@phosphor-icons/react';
 import { EmptyArt } from '../components/Illustrations';
-import { TeamMark } from '../components/Avatar';
 import { ActivityBars } from '../components/ActivityBars';
 import { StatTile } from '../components/StatTile';
 import { timeAgo } from '../model/time';
@@ -18,6 +17,11 @@ export function DashboardPage() {
   const [teamFilter, setTeamFilter] = useState('all');
   const projects = teamFilter === 'all' ? allProjects : allProjects.filter((p) => p.teamId === teamFilter);
   const teamName = (id: string) => teams.find((t) => t.id === id)?.name ?? '';
+  const [query, setQuery] = useState('');
+  const needle = query.trim().toLowerCase();
+  const shown = needle
+    ? projects.filter((p) => `${p.name} ${p.description} ${p.basePath} ${teamName(p.teamId)}`.toLowerCase().includes(needle))
+    : projects;
 
   useEffect(() => {
     const timer = setInterval(() => refreshProjects().catch(() => undefined), 10000);
@@ -39,7 +43,7 @@ export function DashboardPage() {
     <div className="page">
       <PageHeader
         title={currentOrg ? `${currentOrg.name} projects` : 'Projects'}
-        description={<>Each project serves its mocks under its own base path on <span className="mono">{info?.baseUrl}</span>. Point your service or test at that URL instead of the real dependency.</>}
+        description={<>Each project answers under its own base path on <span className="mono">{info?.baseUrl}</span>. Point your service or tests there instead of the real dependency.</>}
         actions={
           canManage && (
             <button className="btn primary" onClick={() => setCreating(true)}>
@@ -80,74 +84,78 @@ export function DashboardPage() {
               detail={totals.unmatched > 0 ? 'requests with no stub' : 'every request found a stub'}
             />
           </div>
-          {teams.length > 1 && (
-            <div className="segmented team-filter" role="group" aria-label="Filter by team">
-              <button aria-pressed={teamFilter === 'all'} onClick={() => setTeamFilter('all')}>All teams</button>
-              {teams.map((t) => (
-                <button key={t.id} aria-pressed={teamFilter === t.id} onClick={() => setTeamFilter(t.id)}>
-                  <TeamMark name={t.name} seed={t.id} size={16} /> {t.name}
-                </button>
-              ))}
-            </div>
-          )}
           <div className="panel">
+            <div className="table-toolbar">
+              <label className="table-search">
+                <MagnifyingGlass size={14} aria-hidden="true" />
+                <input type="search" placeholder="Filter projects" aria-label="Filter projects" value={query} onChange={(e) => setQuery(e.target.value)} />
+              </label>
+              {teams.length > 1 && (
+                <select className="table-select" aria-label="Filter by team" value={teamFilter} onChange={(e) => setTeamFilter(e.target.value)}>
+                  <option value="all">All teams</option>
+                  {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                </select>
+              )}
+              <span className="muted small table-count">{shown.length === projects.length ? `${projects.length} projects` : `${shown.length} of ${projects.length}`}</span>
+            </div>
             <table className="project-table">
               <thead>
                 <tr>
                   <th>Project</th>
+                  <th className="hide-sm">Base path</th>
                   <th className="hide-sm">Team</th>
-                  <th className="hide-sm">Mock URL</th>
-                  <th className="hide-sm">Stubs</th>
-                  <th className="hide-sm">Requests</th>
-                  <th className="hide-sm" style={{ width: 150 }}>Last hour</th>
+                  <th className="hide-sm num-col">Stubs</th>
+                  <th className="hide-sm num-col">Requests</th>
+                  <th className="hide-sm">Last request</th>
+                  <th className="hide-sm" style={{ width: 110 }}>Last hour</th>
                 </tr>
               </thead>
               <tbody>
-                {projects.map((p) => (
+                {shown.map((p) => (
                   <tr key={p.id} className="clickable" onClick={() => navigate(`/projects/${p.id}`)}>
-                    <td>
+                    <td className="project-cell">
                       <div className="project-title">
                         <span className="project-mark small" style={{ background: p.color }} aria-hidden="true">
                           {p.name.trim().charAt(0).toUpperCase()}
                         </span>
-                        <Link to={`/projects/${p.id}`} onClick={(e) => e.stopPropagation()}>
-                          {p.name}
-                        </Link>
+                        <span className="project-text">
+                          <Link to={`/projects/${p.id}`} onClick={(e) => e.stopPropagation()} title={p.name}>{p.name}</Link>
+                          {p.description && <span className="project-desc" title={p.description}>{p.description}</span>}
+                        </span>
                       </div>
-                      {p.description && <p className="muted small clamp-2">{p.description}</p>}
-                    </td>
-                    <td className="hide-sm">
-                      {teamName(p.teamId) && (
-                        <span className="team-cell"><TeamMark name={teamName(p.teamId)} seed={p.teamId} size={18} /> {teamName(p.teamId)}</span>
-                      )}
                     </td>
                     <td className="hide-sm" onClick={(e) => e.stopPropagation()}>
                       <span className="url-cell">
-                        <span className="mono small" title={p.mockUrl}>
-                          <span className="muted">{p.mockUrl.slice(0, p.mockUrl.length - p.basePath.length)}</span>
-                          {p.basePath}
-                        </span>
+                        <span className="mono small" title={p.mockUrl}>{p.root ? '/' : p.basePath}</span>
                         <CopyButton text={p.mockUrl} label="Copy mock URL" />
                       </span>
                     </td>
-                    <td className="hide-sm num">
-                      {p.stubCount}
-                      {p.soapStubCount > 0 && <span className="tag soap" style={{ marginLeft: 8 }}>{p.soapStubCount} SOAP</span>}
-                    </td>
                     <td className="hide-sm">
-                      <span className="num">{p.requestCount}</span>
+                      <span className="team-cell">{teamName(p.teamId) || '—'}</span>
+                    </td>
+                    <td className="hide-sm num-col">
+                      {p.stubCount}
+                      {p.soapStubCount > 0 && <span className="tag soap" style={{ marginLeft: 6 }}>{p.soapStubCount} SOAP</span>}
+                    </td>
+                    <td className="hide-sm num-col">
+                      {p.requestCount}
                       {p.unmatchedCount > 0 && (
-                        <span className="tag warn" style={{ marginLeft: 8 }} title="Requests that matched no stub">
-                          <Warning size={11} weight="bold" style={{ marginRight: 3 }} /> {p.unmatchedCount} unmatched
+                        <span className="tag warn" style={{ marginLeft: 6 }} title="Requests that matched no stub">
+                          {p.unmatchedCount} unmatched
                         </span>
                       )}
-                      <div className="muted small">{timeAgo(p.lastRequestAt)}</div>
                     </td>
+                    <td className="hide-sm muted small">{p.lastRequestAt ? timeAgo(p.lastRequestAt) : '—'}</td>
                     <td className="hide-sm" onClick={(e) => e.stopPropagation()}>
-                      <ActivityBars counts={p.activity ?? []} height={28} label={`${p.name} requests`} />
+                      {(p.activity ?? []).some((n) => n > 0)
+                        ? <ActivityBars counts={p.activity ?? []} height={22} label={`${p.name} requests`} />
+                        : <span className="muted small">—</span>}
                     </td>
                   </tr>
                 ))}
+                {shown.length === 0 && (
+                  <tr><td colSpan={7} className="muted small table-empty">No projects match “{query}”.</td></tr>
+                )}
               </tbody>
             </table>
           </div>

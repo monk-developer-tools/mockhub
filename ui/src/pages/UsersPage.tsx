@@ -109,7 +109,7 @@ export function UsersPage() {
                     <SourceTag source={u.source} />
                     {u.disabled && <span className="tag">disabled</span>}
                   </td>
-                  <td><RoleBadge role={u.effectiveServerRole} /></td>
+                  <td>{u.effectiveServerRole === 'none' ? <span className="muted small">—</span> : <RoleBadge role={u.effectiveServerRole} />}</td>
                   <td>
                     <span className="badge-list">
                       {[...u.memberships, ...u.groupMemberships.filter((g) => !u.memberships.some((m) => m.orgId === g.orgId))].map((m) => (
