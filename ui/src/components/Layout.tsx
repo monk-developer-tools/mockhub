@@ -1,5 +1,5 @@
-import { Archive, BookOpenText, ClockCounterClockwise, Buildings, CircleHalf, Eye, HardDrives, Key, List, MagnifyingGlass, Moon, PaperPlaneTilt, Plus, Sparkle, SquaresFour, Sun, UsersThree } from '@phosphor-icons/react';
-import { useMemo } from 'react';
+import { Archive, BookOpenText, ClockCounterClockwise, Buildings, CircleHalf, Eye, HardDrives, Key, MagnifyingGlass, Moon, PaperPlaneTilt, Plus, SidebarSimple, Sparkle, SquaresFour, Sun, UsersThree } from '@phosphor-icons/react';
+import { useCallback, useMemo } from 'react';
 import { MOD_LABEL, useHotkeys } from '../state/hotkeys';
 import { CommandPalette } from './CommandPalette';
 import { ShortcutsDialog } from './ShortcutsDialog';
@@ -15,6 +15,8 @@ import { ProjectDialog } from '../pages/ProjectDialog';
 import { OrgSwitcher } from './OrgSwitcher';
 import { roleLabel } from './RoleBadge';
 import { canSeeAuditLog } from '../model/audit';
+import { readCollapsed, writeCollapsed } from '../state/sidebar';
+import { TopBar } from './TopBar';
 
 const NEXT_THEME: Record<ThemeChoice, ThemeChoice> = { system: 'light', light: 'dark', dark: 'system' };
 const THEME_ICON = { system: CircleHalf, light: Sun, dark: Moon };
@@ -29,6 +31,7 @@ export function Layout() {
   const [shortcuts, setShortcuts] = useState(false);
   const [creatingOrg, setCreatingOrg] = useState(false);
   const [account, setAccount] = useState(false);
+  const [collapsed, setCollapsed] = useState(readCollapsed);
   const location = useLocation();
   const ThemeIcon = THEME_ICON[theme];
   const projectGroups = useMemo(() => {
@@ -47,69 +50,80 @@ export function Layout() {
     setTheme(next);
   };
 
+  const toggleCollapsed = useCallback(() => {
+    setCollapsed((was) => {
+      writeCollapsed(!was);
+      return !was;
+    });
+  }, []);
+
   const hotkeys = useMemo(
     () => [
       { key: 'k', mod: true, allowWhileTyping: true, handler: () => setPalette((open) => !open) },
       { key: '?', handler: () => setShortcuts(true) },
+      { key: '[', handler: toggleCollapsed },
     ],
-    [],
+    [toggleCollapsed],
   );
   useHotkeys(hotkeys);
 
   return (
-    <div className="shell">
+    <div className={`shell${collapsed ? ' collapsed' : ''}`}>
       <aside className={`sidebar${open ? ' open' : ''}`} onClick={(e) => (e.target as HTMLElement).closest('a') && setOpen(false)}>
-        <NavLink to="/" className="brand">
-          <Logo />
-          MockHub
-        </NavLink>
+        <div className="brand-row">
+          <NavLink to="/" className="brand" aria-label="MockHub home">
+            <Logo />
+            <span className="brand-name">MockHub</span>
+          </NavLink>
+        </div>
         <OrgSwitcher onNewOrg={() => setCreatingOrg(true)} />
         <button className="palette-trigger" onClick={() => setPalette(true)}>
           <MagnifyingGlass size={14} />
-          <span>Search…</span>
+          <span className="palette-label">Search…</span>
           <kbd>{MOD_LABEL} K</kbd>
         </button>
+        <div className="sidebar-section"><span>Workspace</span></div>
         <nav className="nav" aria-label="Main">
-          <NavLink to="/" end>
-            <SquaresFour size={18} weight="duotone" /> Projects
+          <NavLink to="/" end title={collapsed ? 'Projects' : undefined}>
+            <SquaresFour size={18} weight="duotone" /> <span className="nav-label">Projects</span>
           </NavLink>
           {canEdit && (
-            <NavLink to="/playground">
-              <PaperPlaneTilt size={18} weight="duotone" /> Playground
+            <NavLink to="/playground" title={collapsed ? 'Playground' : undefined}>
+              <PaperPlaneTilt size={18} weight="duotone" /> <span className="nav-label">Playground</span>
             </NavLink>
           )}
-          <NavLink to="/examples">
-            <BookOpenText size={18} weight="duotone" /> Examples
+          <NavLink to="/examples" title={collapsed ? 'Examples' : undefined}>
+            <BookOpenText size={18} weight="duotone" /> <span className="nav-label">Examples</span>
           </NavLink>
           {currentOrg && (
-            <NavLink to="/org">
-              <Buildings size={18} weight="duotone" /> Teams & people
+            <NavLink to="/org" title={collapsed ? 'Teams & people' : undefined}>
+              <Buildings size={18} weight="duotone" /> <span className="nav-label">Teams & people</span>
             </NavLink>
           )}
           {canSeeAuditLog(session) && (
-            <NavLink to="/audit">
-              <ClockCounterClockwise size={18} weight="duotone" /> Audit log
+            <NavLink to="/audit" title={collapsed ? 'Audit log' : undefined}>
+              <ClockCounterClockwise size={18} weight="duotone" /> <span className="nav-label">Audit log</span>
             </NavLink>
           )}
-          <NavLink to="/server">
-            <HardDrives size={18} weight="duotone" /> Server
+          <NavLink to="/server" title={collapsed ? 'Server' : undefined}>
+            <HardDrives size={18} weight="duotone" /> <span className="nav-label">Server</span>
           </NavLink>
         </nav>
         {isAdmin && (
           <>
             <div className="sidebar-section"><span>Administration</span></div>
             <nav className="nav" aria-label="Administration">
-              <NavLink to="/admin/users">
-                <UsersThree size={18} weight="duotone" /> Users
+              <NavLink to="/admin/users" title={collapsed ? 'Users' : undefined}>
+                <UsersThree size={18} weight="duotone" /> <span className="nav-label">Users</span>
               </NavLink>
-              <NavLink to="/admin/sso">
-                <Key size={18} weight="duotone" /> Single sign-on
+              <NavLink to="/admin/sso" title={collapsed ? 'Single sign-on' : undefined}>
+                <Key size={18} weight="duotone" /> <span className="nav-label">Single sign-on</span>
               </NavLink>
-              <NavLink to="/admin/ai">
-                <Sparkle size={18} weight="duotone" /> AI assistant
+              <NavLink to="/admin/ai" title={collapsed ? 'AI assistant' : undefined}>
+                <Sparkle size={18} weight="duotone" /> <span className="nav-label">AI assistant</span>
               </NavLink>
-              <NavLink to="/admin/backup">
-                <Archive size={18} weight="duotone" /> Backup &amp; restore
+              <NavLink to="/admin/backup" title={collapsed ? 'Backup & restore' : undefined}>
+                <Archive size={18} weight="duotone" /> <span className="nav-label">Backup &amp; restore</span>
               </NavLink>
             </nav>
           </>
@@ -137,9 +151,10 @@ export function Layout() {
                   key={p.id}
                   to={`/projects/${p.id}`}
                   className={() => `project-link${location.pathname.startsWith(`/projects/${p.id}`) ? ' active' : ''}`}
+                  title={`${p.name} (${p.basePath})`}
                 >
                   <span className="swatch" style={{ background: p.color }} />
-                  <span className="project-link-text" title={`${p.name} (${p.basePath})`}>
+                  <span className="project-link-text">
                     <span className="name">{p.name}</span>
                     <span className="path">{p.basePath}</span>
                   </span>
@@ -160,20 +175,22 @@ export function Layout() {
           ) : (
             <span title={info ? `WireMock ${info.wiremockVersion}` : undefined}>v{info?.version ?? ''}</span>
           )}
-          <span className="btn-row">
-            <button className="btn ghost icon small" onClick={cycleTheme} aria-label={`Theme: ${theme}`} title={`Theme: ${theme}`}>
-              <ThemeIcon size={15} />
-            </button>
-          </span>
+          <button className="btn ghost icon small collapse-toggle" onClick={toggleCollapsed} aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} title={`${collapsed ? 'Expand' : 'Collapse'} sidebar ( [ )`} aria-pressed={collapsed}>
+            <SidebarSimple size={16} />
+          </button>
         </div>
       </aside>
       <div className="main">
-        <div className="mobile-bar">
-          <button className="btn ghost icon" onClick={() => setOpen(!open)} aria-label="Menu">
-            <List size={18} />
-          </button>
-          <Logo size={20} /> <strong>MockHub</strong>
-        </div>
+        <TopBar
+          onMenu={() => setOpen(!open)}
+          onShortcuts={() => setShortcuts(true)}
+          onSearch={() => setPalette(true)}
+          themeToggle={
+            <button className="btn ghost icon" onClick={cycleTheme} aria-label={`Theme: ${theme}`} title={`Theme: ${theme}`}>
+              <ThemeIcon size={18} />
+            </button>
+          }
+        />
         {session && info?.authEnabled && !canEdit && (
           <div className="viewer-banner" role="status">
             <Eye size={15} />

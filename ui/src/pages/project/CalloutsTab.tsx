@@ -4,6 +4,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../../api/client';
 import type { CalloutEntry } from '../../api/types';
 import { EmptyArt } from '../../components/Illustrations';
+import { EmptyState } from '../../components/ui/EmptyState';
+import { docsAt } from '../../model/navigation';
 import { Loading } from '../../components/Loading';
 import { MethodJack } from '../../components/StubRoute';
 import { useToast } from '../../components/Toasts';
@@ -94,22 +96,27 @@ export function CalloutsTab() {
       </div>
 
       {shown.length === 0 ? (
-        <div className="empty">
-          <EmptyArt kind="requests" />
-          <h2>{failedOnly ? 'No failed callouts' : 'No callouts yet'}</h2>
+        <EmptyState
+          art={<EmptyArt kind="requests" />}
+          title={failedOnly ? 'No failed callouts' : 'No callouts yet'}
+          docs={docsAt('webhooks')}
+          actions={
+            aiOn &&
+            !failedOnly && (
+              <button
+                className="btn"
+                onClick={() => navigate(`/projects/${project.id}/assistant`, { state: { prompt: 'Add a webhook to one of my stubs: after it answers, POST the request body to https://example.com/hooks with an X-Event header.' } })}
+              >
+                <Sparkle size={15} /> Set one up with the assistant
+              </button>
+            )
+          }
+        >
           <p>
             Webhooks and “wait for callout” calls your stubs make show up here with what was sent, the answer and the time it
             took. Add one in a stub under <strong>Then call</strong>, or pick <strong>Wait for callout</strong> as the response.
           </p>
-          {aiOn && !failedOnly && (
-            <button
-              className="btn"
-              onClick={() => navigate(`/projects/${project.id}/assistant`, { state: { prompt: 'Add a webhook to one of my stubs: after it answers, POST the request body to https://example.com/hooks with an X-Event header.' } })}
-            >
-              <Sparkle size={15} /> Set one up with the assistant
-            </button>
-          )}
-        </div>
+        </EmptyState>
       ) : (
         <div style={{ overflowX: 'auto' }}>
           <table className="log-table">

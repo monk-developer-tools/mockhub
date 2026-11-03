@@ -6,6 +6,7 @@ import { CopyButton } from '../components/CopyButton';
 import { Skeleton } from '../components/Skeleton';
 import { useToast } from '../components/Toasts';
 import { MicrosoftMark } from './LoginPage';
+import { PageHeader } from '../components/ui/PageHeader';
 
 type TestResult = { ok: boolean; error?: string; issuer?: string } | null;
 
@@ -84,13 +85,11 @@ export function SsoPage() {
 
   return (
     <div className="page">
-      <div className="page-header">
-        <div>
-          <h1>Single sign-on</h1>
-          <p className="muted">Let people sign in with their work account from Microsoft Entra ID (formerly Azure AD).</p>
-        </div>
-        <span className={`status-pill ${status.tone}`}>{status.label}</span>
-      </div>
+      <PageHeader
+        title="Single sign-on"
+        description="Let people sign in with their work account from Microsoft Entra ID (formerly Azure AD)."
+        actions={<span className={`status-pill ${status.tone}`}>{status.label}</span>}
+      />
 
       <form className="split sso" onSubmit={save}>
         <div className="stack">

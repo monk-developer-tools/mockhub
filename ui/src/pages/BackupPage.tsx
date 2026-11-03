@@ -18,20 +18,17 @@ import {
   type Picked,
 } from '../model/selection';
 import { useApp } from '../state/AppContext';
+import { PageHeader } from '../components/ui/PageHeader';
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
 export function BackupPage() {
   return (
     <div className="page">
-      <div className="page-header">
-        <div>
-          <h1>Backup &amp; restore</h1>
-          <p className="muted">
-            Save organisations or single projects, with their stubs, to a file. Restore all of it or just the parts you need, here or on another MockHub.
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title={<>Backup &amp; restore</>}
+        description="Save organisations or single projects, with their stubs, to a file. Restore all of it or just the parts you need, here or on another MockHub."
+      />
       <div className="split backup">
         <BackupPanel />
         <RestorePanel />

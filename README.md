@@ -478,6 +478,14 @@ make docker         # build abhaypratap/mockhub locally
 Gradle tasks: `unitTest`, `integrationTest` (in-process server), `systemTest` (runs the packaged JAR as a process,
 including a restart), `uiTest`, and `test` for all the Java levels.
 
+Screenshots for reviewing UI changes and refreshing the website:
+
+```bash
+node ui/scripts/demo.mjs http://localhost:8080      # on a fresh server: seeds the "Acme" demo (sign-in on, user alex)
+MOCKHUB_USER=alex MOCKHUB_PASSWORD=demo-password-1 \
+  npm --prefix ui run screens -- http://localhost:8080 screens   # key pages, light and dark, desktop and phone
+```
+
 ### Code layout
 
 ```

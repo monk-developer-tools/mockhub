@@ -10,6 +10,7 @@ import { CopyButton } from '../components/CopyButton';
 import { useApp } from '../state/AppContext';
 import { ExampleGrid } from './ExamplesPage';
 import { ProjectDialog } from './ProjectDialog';
+import { PageHeader } from '../components/ui/PageHeader';
 
 export function DashboardPage() {
   const { orgProjects: allProjects, currentOrg, canManage, info, refreshProjects, teamsIn } = useApp();
@@ -36,20 +37,17 @@ export function DashboardPage() {
 
   return (
     <div className="page">
-      <div className="page-header">
-        <div>
-          <h1>{currentOrg ? `${currentOrg.name} projects` : 'Projects'}</h1>
-          <p className="muted">
-            Each project serves its mocks under its own base path on <span className="mono">{info?.baseUrl}</span>. Point your service
-            or test at that URL instead of the real dependency.
-          </p>
-        </div>
-        {canManage && (
-          <button className="btn primary" onClick={() => setCreating(true)}>
-            <Plus size={16} /> New project
-          </button>
-        )}
-      </div>
+      <PageHeader
+        title={currentOrg ? `${currentOrg.name} projects` : 'Projects'}
+        description={<>Each project serves its mocks under its own base path on <span className="mono">{info?.baseUrl}</span>. Point your service or test at that URL instead of the real dependency.</>}
+        actions={
+          canManage && (
+            <button className="btn primary" onClick={() => setCreating(true)}>
+              <Plus size={16} /> New project
+            </button>
+          )
+        }
+      />
 
       {allProjects.length === 0 ? (
         <div className="panel">
@@ -98,7 +96,7 @@ export function DashboardPage() {
                 <tr>
                   <th>Project</th>
                   <th className="hide-sm">Team</th>
-                  <th>Mock URL</th>
+                  <th className="hide-sm">Mock URL</th>
                   <th className="hide-sm">Stubs</th>
                   <th className="hide-sm">Requests</th>
                   <th className="hide-sm" style={{ width: 150 }}>Last hour</th>
@@ -123,7 +121,7 @@ export function DashboardPage() {
                         <span className="team-cell"><TeamMark name={teamName(p.teamId)} seed={p.teamId} size={18} /> {teamName(p.teamId)}</span>
                       )}
                     </td>
-                    <td onClick={(e) => e.stopPropagation()}>
+                    <td className="hide-sm" onClick={(e) => e.stopPropagation()}>
                       <span className="url-cell">
                         <span className="mono small" title={p.mockUrl}>
                           <span className="muted">{p.mockUrl.slice(0, p.mockUrl.length - p.basePath.length)}</span>

@@ -1,8 +1,9 @@
 import { Buildings, CaretUpDown, Check, GearSix, Plus } from '@phosphor-icons/react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../state/AppContext';
 import { RoleBadge } from './RoleBadge';
+import { useDismiss } from '../state/useDismiss';
 
 export function OrgSwitcher({ onNewOrg }: { onNewOrg: () => void }) {
   const { orgs, currentOrg, setCurrentOrg, isAdmin, roleIn } = useApp();
@@ -10,17 +11,8 @@ export function OrgSwitcher({ onNewOrg }: { onNewOrg: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (!open) return;
-    const close = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && setOpen(false);
-    const esc = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
-    document.addEventListener('mousedown', close);
-    document.addEventListener('keydown', esc);
-    return () => {
-      document.removeEventListener('mousedown', close);
-      document.removeEventListener('keydown', esc);
-    };
-  }, [open]);
+  const close = useCallback(() => setOpen(false), []);
+  useDismiss(ref, open, close);
 
   const choose = (id: string) => {
     setCurrentOrg(id);

@@ -1,4 +1,4 @@
-import { Buildings, CaretRight, Plus, Trash, UserPlus } from '@phosphor-icons/react';
+import { Plus, Trash, UserPlus } from '@phosphor-icons/react';
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api/client';
@@ -12,6 +12,7 @@ import { ROLE_INFO } from '../model/access';
 import { atLeast, useApp } from '../state/AppContext';
 import { ProjectDialog } from './ProjectDialog';
 import { SourceTag } from './UsersPage';
+import { PageHeader } from '../components/ui/PageHeader';
 
 export const TEAM_ROLES: { value: OrgRole; label: string; hint: string }[] = ROLE_INFO.map((r) => ({ value: r.value, label: r.label, hint: r.detail }));
 
@@ -110,26 +111,17 @@ export function TeamPage() {
 
   return (
     <div className="page">
-      <nav className="breadcrumbs" aria-label="Breadcrumb">
-        <Link to="/org"><Buildings size={14} weight="duotone" /> {currentOrg.name}</Link>
-        <CaretRight size={12} className="muted" />
-        <Link to="/org">Teams</Link>
-        <CaretRight size={12} className="muted" />
-        <span aria-current="page">{team.name}</span>
-      </nav>
-      <div className="page-header team-header">
-        <div className="team-title">
-          <TeamMark name={team.name} seed={team.id} size={48} />
-          <div>
-            <h1>{team.name}</h1>
-            <p className="muted">{team.description || `A team in ${currentOrg.name}`}</p>
-          </div>
-        </div>
-        <div className="btn-row">
-          <RoleBadge role={isAdmin ? 'admin' : team.role} />
-          {canManage && <button className="btn primary" onClick={() => setAdding(true)}><UserPlus size={15} /> Add people</button>}
-        </div>
-      </div>
+      <PageHeader
+        icon={<TeamMark name={team.name} seed={team.id} size={44} />}
+        title={team.name}
+        description={team.description || `A team in ${currentOrg.name}`}
+        actions={
+          <>
+            <RoleBadge role={isAdmin ? 'admin' : team.role} />
+            {canManage && <button className="btn primary" onClick={() => setAdding(true)}><UserPlus size={15} /> Add people</button>}
+          </>
+        }
+      />
 
       <div className="split">
         <div className="panel">

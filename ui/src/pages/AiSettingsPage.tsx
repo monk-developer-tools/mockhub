@@ -5,6 +5,7 @@ import type { AiSettings, AiTestResult } from '../api/types';
 import { Skeleton } from '../components/Skeleton';
 import { useToast } from '../components/Toasts';
 import { useApp } from '../state/AppContext';
+import { PageHeader } from '../components/ui/PageHeader';
 
 const GUIDES: Record<string, { hint: string; keyHint: string; modelHint: string; link?: { href: string; label: string } }> = {
   openrouter: {
@@ -99,13 +100,11 @@ export function AiSettingsPage() {
 
   return (
     <div className="page">
-      <div className="page-header">
-        <div>
-          <h1>AI assistant</h1>
-          <p className="muted">Let people describe mocks in plain English and review what the assistant stages before it goes live.</p>
-        </div>
-        <span className={`status-pill ${settings.enabled ? 'ok' : 'off'}`}>{settings.enabled ? 'On' : 'Off'}</span>
-      </div>
+      <PageHeader
+        title="AI assistant"
+        description="Let people describe mocks in plain English and review what the assistant stages before it goes live."
+        actions={<span className={`status-pill ${settings.enabled ? 'ok' : 'off'}`}>{settings.enabled ? 'On' : 'Off'}</span>}
+      />
 
       <form className="split sso" onSubmit={save}>
         <div className="stack">

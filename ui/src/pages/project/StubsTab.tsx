@@ -1,5 +1,7 @@
 import { Database, MagnifyingGlass, Plus, Stack } from '@phosphor-icons/react';
 import { EmptyArt } from '../../components/Illustrations';
+import { EmptyState } from '../../components/ui/EmptyState';
+import { docsAt } from '../../model/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useHotkeys } from '../../state/hotkeys';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
@@ -230,17 +232,14 @@ export function StubsTab() {
         />
       ) : (
         <div className="panel">
-          <div className="empty">
-            <EmptyArt kind="stubs" />
-            {stubs.length === 0 ? (
-              <>
-                <h2>No stubs in this project yet</h2>
-                <p>
-                  A stub answers requests that match it. Create one from scratch, start from a template, or import an OpenAPI spec,
-                  WSDL or WireMock mappings from the Import &amp; export tab.
-                </p>
-                {canEdit && (
-                  <div className="btn-row" style={{ justifyContent: 'center' }}>
+          {stubs.length === 0 ? (
+            <EmptyState
+              art={<EmptyArt kind="stubs" />}
+              title="No stubs in this project yet"
+              docs={docsAt('first-stub')}
+              actions={
+                canEdit && (
+                  <>
                     <button className="btn primary" onClick={() => startDraft(toStub(emptyForm('rest')))}>
                       <Plus size={15} /> REST stub
                     </button>
@@ -256,16 +255,17 @@ export function StubsTab() {
                     <button className="btn" onClick={() => navigate(`/projects/${project.id}/import-export`)}>
                       Import
                     </button>
-                  </div>
-                )}
-              </>
-            ) : (
-              <>
-                <h2>Select a stub</h2>
-                <p>Pick a stub on the left to edit it and try it out.</p>
-              </>
-            )}
-          </div>
+                  </>
+                )
+              }
+            >
+              A stub answers requests that match it. Create one from scratch, start from a template, or import an OpenAPI spec, WSDL or WireMock mappings from the Import &amp; export tab.
+            </EmptyState>
+          ) : (
+            <EmptyState art={<EmptyArt kind="stubs" />} title="Select a stub">
+              Pick a stub on the left to edit it and try it out.
+            </EmptyState>
+          )}
         </div>
       )}
 

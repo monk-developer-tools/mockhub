@@ -130,6 +130,19 @@ class AuditRecorderTest {
   }
 
   @Test
+  void listsOnlyTheProjectFieldsThatReallyChanged() {
+    // Given
+    String body = "{\"name\":\"" + shop.name() + "\",\"basePath\":\"" + shop.basePath() + "\",\"color\":\"" + shop.color()
+        + "\",\"teamId\":\"team2\",\"description\":\"New words\"}";
+
+    // When
+    recorder.begin(change(RequestMethod.PUT, "/projects/{id}", Map.of("id", shop.id()), body)).succeeded(null);
+
+    // Then
+    assertThat(written.get(0).details()).isEqualTo("changed teamId, description");
+  }
+
+  @Test
   void takesTheNewProjectsIdAndTeamFromTheResponse() {
     // Given
     ChangeAudit.Pending pending = recorder.begin(change(RequestMethod.POST, "/projects", Map.of(), "{\"name\":\"Payments\"}"));

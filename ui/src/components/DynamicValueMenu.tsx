@@ -15,8 +15,9 @@ import {
   TextAa,
   type Icon,
 } from '@phosphor-icons/react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { dynamicValues, searchDynamicValues, type DynamicScope } from '../model/dynamicValues';
+import { useDismiss } from '../state/useDismiss';
 
 const ICONS: Record<string, Icon> = {
   request: Tag,
@@ -48,21 +49,8 @@ export function DynamicValueMenu({ scope, onInsert, label = 'Insert dynamic valu
   const shown = useMemo(() => searchDynamicValues(groups, query), [groups, query]);
   const searching = query.trim().length > 0;
 
-  useEffect(() => {
-    if (!open) return;
-    const close = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    const escape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
-    };
-    document.addEventListener('mousedown', close);
-    document.addEventListener('keydown', escape);
-    return () => {
-      document.removeEventListener('mousedown', close);
-      document.removeEventListener('keydown', escape);
-    };
-  }, [open]);
+  const close = useCallback(() => setOpen(false), []);
+  useDismiss(ref, open, close);
 
   const pick = (expression: string) => {
     setOpen(false);

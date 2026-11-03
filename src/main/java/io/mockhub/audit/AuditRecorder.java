@@ -1,6 +1,7 @@
 package io.mockhub.audit;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import io.mockhub.api.ChangeAudit;
 import io.mockhub.api.Jsons;
@@ -124,7 +125,7 @@ public final class AuditRecorder implements ChangeAudit {
     if (rule.target().equals("stub") && action.equals("switched") && body != null && body.has("enabled")) {
       action = body.get("enabled").asBoolean() ? "turned on" : "turned off";
     }
-    return new AuditEntry(null, null, p.id(), label(p), action, rule.target(), name(rule.name(), change, project), details(change),
+    return new AuditEntry(null, null, p.id(), label(p), action, rule.target(), name(rule.name(), change, project), details(change, project),
         orgId, teamId, project.map(Project::id).orElse(null), project.map(Project::name).orElse(null));
   }
 
@@ -144,18 +145,32 @@ public final class AuditRecorder implements ChangeAudit {
     };
   }
 
-  private static String details(Change change) {
+  private static String details(Change change, Optional<Project> project) {
     JsonNode body = change.body();
     String route = change.route();
     if (body == null || !body.isObject()) return route.endsWith("/import/wiremock-zip") ? "WireMock folder" : "";
     if (route.contains("/members/")) return text(body, "role").isEmpty() ? "" : "as " + text(body, "role");
     if (route.equals("/projects/{id}") || route.equals("/orgs/{id}") || route.equals("/orgs/{id}/teams/{teamId}") || route.equals("/users/{id}")) {
+      JsonNode before = project.filter(x -> route.equals("/projects/{id}")).map(AuditRecorder::projectJson).orElse(null);
       List<String> fields = new ArrayList<>();
-      body.fieldNames().forEachRemaining(f -> { if (!f.equals("password")) fields.add(f); });
+      body.fieldNames().forEachRemaining(f -> { if (!f.equals("password") && differs(before, f, body.get(f))) fields.add(f); });
       return fields.isEmpty() ? "" : "changed " + String.join(", ", fields);
     }
     if (route.endsWith("/stubs/{stubId}/move")) return text(body, "projectId").isEmpty() ? "" : "to project " + text(body, "projectId");
     return "";
+  }
+
+  private static JsonNode projectJson(Project project) {
+    ObjectNode node = Jsons.MAPPER.valueToTree(project);
+    node.put("basePath", project.basePath());
+    return node;
+  }
+
+  private static boolean differs(JsonNode before, String field, JsonNode after) {
+    if (before == null || !before.has(field)) return true;
+    JsonNode old = before.get(field);
+    if (old.isValueNode() && after.isValueNode()) return !old.asText().equals(after.asText());
+    return !old.equals(after);
   }
 
   static String stubLabel(JsonNode body) {

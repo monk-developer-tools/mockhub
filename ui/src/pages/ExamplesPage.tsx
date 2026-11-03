@@ -6,6 +6,7 @@ import type { Example } from '../api/types';
 import { Loading } from '../components/Loading';
 import { useToast } from '../components/Toasts';
 import { useApp } from '../state/AppContext';
+import { PageHeader } from '../components/ui/PageHeader';
 
 export function ExampleGrid({ compact }: { compact?: boolean }) {
   const { canManage, refreshProjects, currentOrg } = useApp();
@@ -60,15 +61,10 @@ export function ExampleGrid({ compact }: { compact?: boolean }) {
 export function ExamplesPage() {
   return (
     <div className="page">
-      <div className="page-header">
-        <div>
-          <h1>Examples</h1>
-          <p className="muted">
-            Ready-made projects that show what MockHub can do. Installing one creates a normal project you can edit, call, export to
-            Postman or Bruno, and delete when you're done. Each stub has a description of the technique it shows.
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="Examples"
+        description="Ready-made projects that show what MockHub can do. Installing one creates a normal project you can edit, call, export to Postman or Bruno, and delete when you're done. Each stub has a description of the technique it shows."
+      />
       <div className="panel">
         <ExampleGrid />
       </div>

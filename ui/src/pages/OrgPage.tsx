@@ -13,6 +13,7 @@ import { ROLE_INFO, accessChips, currentAccessOf, planChanges } from '../model/a
 import { useApp } from '../state/AppContext';
 import { ProjectDialog } from './ProjectDialog';
 import { SourceTag } from './UsersPage';
+import { PageHeader } from '../components/ui/PageHeader';
 
 export const ORG_ROLES: { value: OrgRole; label: string; hint: string }[] = ROLE_INFO.map((r) => ({ value: r.value, label: r.label, hint: r.detail }));
 
@@ -120,16 +121,16 @@ export function OrgPage() {
 
   return (
     <div className="page">
-      <div className="page-header">
-        <div>
-          <h1>{currentOrg.name}</h1>
-          <p className="muted">{org?.description || 'Your organisation, its teams and the people who work in them.'}</p>
-        </div>
-        <div className="btn-row">
-          <RoleBadge role={isAdmin ? 'admin' : currentOrg.role} />
-          {isManager && <button className="btn primary" onClick={() => setAdding(true)}><UserPlus size={15} /> Add people</button>}
-        </div>
-      </div>
+      <PageHeader
+        title={currentOrg.name}
+        description={org?.description || 'Your organisation, its teams and the people who work in them.'}
+        actions={
+          <>
+            <RoleBadge role={isAdmin ? 'admin' : currentOrg.role} />
+            {isManager && <button className="btn primary" onClick={() => setAdding(true)}><UserPlus size={15} /> Add people</button>}
+          </>
+        }
+      />
 
       <section className="access-map" aria-label="How it fits together">
         <div className="access-map-row">

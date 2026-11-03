@@ -11,6 +11,7 @@ import { useToast } from '../components/Toasts';
 import { MicrosoftMark } from './LoginPage';
 import { useApp } from '../state/AppContext';
 import { timeAgo } from '../model/time';
+import { PageHeader } from '../components/ui/PageHeader';
 
 const SERVER_ROLES: { value: ServerRole; label: string; hint: string }[] = [
   { value: 'none', label: 'None (recommended)', hint: 'only sees the organisations and teams they were added to' },
@@ -62,12 +63,10 @@ export function UsersPage() {
   if (info && !info.authEnabled) {
     return (
       <div className="page">
-        <div className="page-header">
-          <div>
-            <h1>Users</h1>
-            <p className="muted">Sign-in is off, so anyone who can reach MockHub can change every mock.</p>
-          </div>
-        </div>
+        <PageHeader
+          title="Users"
+          description="Sign-in is off, so anyone who can reach MockHub can change every mock."
+        />
         <FirstAdmin onCreated={(token) => acceptToken(token)} />
       </div>
     );
@@ -75,13 +74,11 @@ export function UsersPage() {
 
   return (
     <div className="page">
-      <div className="page-header">
-        <div>
-          <h1>Users</h1>
-          <p className="muted">Every account on this server. To give someone access to an organisation or a team, the quickest way is <strong>Teams &amp; people → Add people</strong>.</p>
-        </div>
-        <button className="btn primary" onClick={() => setCreating(true)}><Plus size={15} /> New user</button>
-      </div>
+      <PageHeader
+        title="Users"
+        description={<>Every account on this server. To give someone access to an organisation or a team, the quickest way is <strong>Teams &amp; people → Add people</strong>.</>}
+        actions={<button className="btn primary" onClick={() => setCreating(true)}><Plus size={15} /> New user</button>}
+      />
       <div className="panel">
         <div className="panel-head">
           <div className="search-field">

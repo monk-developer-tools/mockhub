@@ -32,6 +32,7 @@ import {
 import { timeAgo } from '../model/time';
 import { useApp } from '../state/AppContext';
 import { SaveAsStubDialog } from './SaveAsStubDialog';
+import { PageHeader } from '../components/ui/PageHeader';
 
 type RequestTab = 'params' | 'headers' | 'body';
 type ResponseTab = 'body' | 'headers';
@@ -153,15 +154,11 @@ export function PlaygroundPage() {
 
   return (
     <div className="page playground-page">
-      <div className="page-header">
-        <div>
-          <h1><PaperPlaneTilt size={24} weight="duotone" className="title-icon" /> Playground</h1>
-          <p className="muted">
-            Call your mocks or any public API and inspect the response. Every request is saved in your history, and you can turn any
-            response into a stub.
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        icon={<PaperPlaneTilt size={24} weight="duotone" />}
+        title="Playground"
+        description="Call your mocks or any public API and inspect the response. Every request is saved in your history, and you can turn any response into a stub."
+      />
 
       <div className="playground">
         <aside className="panel playground-history" aria-label="History">

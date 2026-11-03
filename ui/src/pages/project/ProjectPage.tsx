@@ -5,6 +5,8 @@ import { api } from '../../api/client';
 import type { Project } from '../../api/types';
 import { CopyButton } from '../../components/CopyButton';
 import { Skeleton } from '../../components/Skeleton';
+import { TeamMark } from '../../components/Avatar';
+import { PageHeader } from '../../components/ui/PageHeader';
 import { useToast } from '../../components/Toasts';
 import { useApp } from '../../state/AppContext';
 
@@ -22,7 +24,7 @@ export function ProjectPage() {
   const toast = useToast();
   const [project, setProject] = useState<Project | null>(null);
   const [missing, setMissing] = useState(false);
-  const { currentOrg, setCurrentOrg, orgs, setActiveProject } = useApp();
+  const { currentOrg, setCurrentOrg, orgs, setActiveProject, teamsIn } = useApp();
 
   useEffect(() => {
     setActiveProject(project);
@@ -61,6 +63,7 @@ export function ProjectPage() {
   }
   if (!project) return <div className="page"><Skeleton rows={4} label="Loading project" /></div>;
 
+  const teamName = teamsIn(project.orgId).find((t) => t.id === project.teamId)?.name;
   const tabs = [
     { to: 'overview', label: 'Overview', icon: Gauge },
     { to: 'stubs', label: 'Stubs', icon: BracketsCurly, count: project.stubCount },
@@ -76,25 +79,34 @@ export function ProjectPage() {
 
   return (
     <div className="page">
-      <div className="page-header" style={{ marginBottom: 14 }}>
-        <div style={{ minWidth: 0 }}>
-          <h1 style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span className="project-mark" style={{ background: project.color }} aria-hidden="true">
-              {project.name.trim().charAt(0).toUpperCase()}
-            </span>
-            {project.name}
-          </h1>
-          <div className="mock-url">
-            <span>
-              {project.mockUrl.slice(0, project.mockUrl.length - project.basePath.length)}
-              <strong>{project.basePath}</strong>
+      <PageHeader
+        className="compact project-header"
+        icon={
+          <span className="project-mark" style={{ background: project.color }} aria-hidden="true">
+            {project.name.trim().charAt(0).toUpperCase()}
+          </span>
+        }
+        title={project.name}
+        meta={
+          <>
+            <span className="url-pill">
+              <span className="url-pill-text">
+                {project.mockUrl.slice(0, project.mockUrl.length - project.basePath.length)}
+                <strong>{project.basePath}</strong>
+              </span>
+              <CopyButton text={project.mockUrl} label="Copy mock URL" />
             </span>
             {project.root && <span className="tag" title="This project answers without a path prefix">root</span>}
-            <CopyButton text={project.mockUrl} label="Copy mock URL" />
-          </div>
-          {project.description && <p className="muted" style={{ marginTop: 4 }}>{project.description}</p>}
-        </div>
-      </div>
+            {teamName && (
+              <span className="meta-item">
+                <TeamMark name={teamName} seed={project.teamId} size={16} />
+                {teamName}
+              </span>
+            )}
+          </>
+        }
+        description={project.description || undefined}
+      />
       <nav className="tabs" aria-label="Project sections">
         {tabs.map((t) => (
           <NavLink key={t.to} to={t.to} className={({ isActive }) => (isActive ? 'active' : '')}>

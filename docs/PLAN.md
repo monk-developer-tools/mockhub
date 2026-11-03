@@ -332,6 +332,8 @@ Checklist:
 - [x] Tests: unit, integration, UI
 - [x] Docs, tutorials with use cases, website
 
+> Phases 15, 16 and "Not planned" are replaced by [PLAN_Features.md](PLAN_Features.md) (November 2026).
+
 ### Phase 15 — Agents, history and access control (recommended)
 
 - **MCP server.** Let Claude, Cursor and other agents create, edit and inspect mocks. Expose the assistant's tools

@@ -1,0 +1,22 @@
+.log-table th,
+.project-table th,
+.data-table th {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: var(--surface-sunken);
+}
+
+.log-table td,
+.project-table td,
+.data-table td {
+  font-variant-numeric: tabular-nums;
+}
+
+.log-table tr:hover td,
+.project-table tr.clickable:hover td,
+.data-table tr.clickable:hover td {
+  background: color-mix(in srgb, var(--accent-soft) 45%, var(--surface));
+}

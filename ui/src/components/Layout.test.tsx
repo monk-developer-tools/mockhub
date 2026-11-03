@@ -121,6 +121,36 @@ describe('Layout', () => {
     expect(screen.getByRole('link', { name: 'Single sign-on' })).toHaveAttribute('href', '/admin/sso');
   });
 
+  it('collapses the sidebar to a rail and remembers it', async () => {
+    // Given
+    role = 'editor';
+    localStorage.removeItem('mockhub.sidebar');
+    const { container } = renderWithShell(<Layout />);
+
+    // When
+    await userEvent.click(screen.getByRole('button', { name: 'Collapse sidebar' }));
+
+    // Then
+    expect(container.querySelector('.shell')).toHaveClass('collapsed');
+    expect(localStorage.getItem('mockhub.sidebar')).toBe('collapsed');
+    expect(screen.getByRole('link', { name: 'Playground' })).toHaveAttribute('title', 'Playground');
+    await userEvent.click(screen.getByRole('button', { name: 'Expand sidebar' }));
+    expect(container.querySelector('.shell')).not.toHaveClass('collapsed');
+  });
+
+  it('shows breadcrumbs and links help to the docs for the page', async () => {
+    // Given
+    role = 'editor';
+    renderWithShell(<Layout />, '/admin/sso');
+
+    // When
+    await userEvent.click(screen.getByRole('button', { name: 'Help' }));
+
+    // Then
+    expect(screen.getByRole('navigation', { name: 'Breadcrumb' })).toHaveTextContent('Single sign-on');
+    expect(screen.getByRole('menuitem', { name: 'Docs for this page' })).toHaveAttribute('href', 'https://mockhub.devops-monk.com/docs/#sso');
+  });
+
   it('switches organisation from the sidebar', async () => {
     // Given
     role = 'editor';

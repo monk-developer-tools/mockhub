@@ -5,6 +5,7 @@ import { AuditList } from '../components/AuditList';
 import { Skeleton } from '../components/Skeleton';
 import { useToast } from '../components/Toasts';
 import { useApp } from '../state/AppContext';
+import { PageHeader } from '../components/ui/PageHeader';
 
 export function AuditPage() {
   const { orgs, projects, isAdmin } = useApp();
@@ -25,16 +26,10 @@ export function AuditPage() {
 
   return (
     <div className="page">
-      <div className="page-header">
-        <div>
-          <h1>Audit log</h1>
-          <p className="muted">
-            {isAdmin
-              ? 'Every change anyone made: projects, stubs, teams, people and settings.'
-              : 'Changes in the organisations and teams you manage.'}
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="Audit log"
+        description={isAdmin ? 'Every change anyone made: projects, stubs, teams, people and settings.' : 'Changes in the organisations and teams you manage.'}
+      />
       <div className="panel panel-body">
         {data ? (
           <AuditList

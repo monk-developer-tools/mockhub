@@ -3,6 +3,8 @@ import { catchAllStub, hasCatchAll } from '../../model/callouts';
 import { CopyButton } from '../../components/CopyButton';
 import { replayOf } from '../../model/playground';
 import { EmptyArt } from '../../components/Illustrations';
+import { EmptyState } from '../../components/ui/EmptyState';
+import { docsAt } from '../../model/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../api/client';
@@ -149,9 +151,7 @@ export function RequestsTab() {
         </div>
       </div>
       {events.length === 0 ? (
-        <div className="empty">
-          <EmptyArt kind="requests" />
-          <h2>{unmatchedOnly ? 'No unmatched requests' : 'No requests yet'}</h2>
+        <EmptyState art={<EmptyArt kind="requests" />} title={unmatchedOnly ? 'No unmatched requests' : 'No requests yet'} docs={docsAt('requests')}>
           <p>
             Requests sent to <span className="mono">{project.mockUrl}</span> show up here as they arrive. Unmatched ones are the
             quickest way to find a missing or wrong stub.
@@ -160,7 +160,7 @@ export function RequestsTab() {
             Testing a third-party webhook? Give it <span className="mono">{project.mockUrl}/webhooks</span> <CopyButton text={`${project.mockUrl}/webhooks`} label="Copy webhook URL" />
             {catching === false && canEdit ? ' and turn on Catch all webhooks so it gets 200.' : ' and watch it arrive here.'}
           </p>
-        </div>
+        </EmptyState>
       ) : (
         <div style={{ overflowX: 'auto' }}>
           <table className="log-table">

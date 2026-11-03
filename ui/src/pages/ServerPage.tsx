@@ -6,6 +6,7 @@ import type { Stub } from '../api/types';
 import { StubRoute } from '../components/StubRoute';
 import { useToast } from '../components/Toasts';
 import { useApp } from '../state/AppContext';
+import { PageHeader } from '../components/ui/PageHeader';
 
 export function ServerPage() {
   const { info, projects, canEdit, isAdmin, refreshProjects } = useApp();
@@ -80,12 +81,10 @@ export function ServerPage() {
 
   return (
     <div className="page">
-      <div className="page-header">
-        <div>
-          <h1>Server</h1>
-          <p className="muted">Settings that apply to every project on this MockHub.</p>
-        </div>
-      </div>
+      <PageHeader
+        title="Server"
+        description="Settings that apply to every project on this MockHub."
+      />
       <div className="split">
         <div className="stack">
           <div className="panel">
