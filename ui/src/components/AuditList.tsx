@@ -12,6 +12,7 @@ import {
   groupByDay,
   localTimeZone,
   people,
+  personName,
   toCsv,
   whatHappened,
   type ActionKind,
@@ -135,7 +136,7 @@ export function AuditList({ entries, retentionDays, showProject = false, scope }
                     <button type="button" className="audit-line" aria-expanded={expanded} onClick={() => setOpen(expanded ? null : e.id)}>
                       <time dateTime={e.at} className="audit-clock mono">{clockTime(e.at)}</time>
                       <span className="audit-dot" aria-hidden="true"><Icon size={11} weight="bold" /></span>
-                      <Avatar name={e.actor} seed={e.actorId} size={26} />
+                      <Avatar name={personName(e.actor)} seed={e.actorId} size={26} />
                       <span className="audit-text">
                         <span>
                           <strong>{e.actor}</strong> {whatHappened(e)}

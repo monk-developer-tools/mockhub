@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { AccessTokens } from './account/AccessTokens';
 import { api, credentials } from '../api/client';
 import { Modal } from '../components/Modal';
 import { RoleBadge } from '../components/RoleBadge';
@@ -13,7 +14,9 @@ export function AccountDialog({ onClose }: { onClose: () => void }) {
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
   const [busy, setBusy] = useState(false);
+  const [tab, setTab] = useState<'profile' | 'tokens'>('profile');
   if (!session) return null;
+  const tokensAvailable = session.authEnabled && !session.anonymous;
 
   const change = async (e: FormEvent) => {
     e.preventDefault();
@@ -32,7 +35,14 @@ export function AccountDialog({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <Modal title={session.displayName || session.username} description={session.email || session.username} onClose={onClose}>
+    <Modal title={session.displayName || session.username} description={session.email || session.username} onClose={onClose} wide={tab === 'tokens'}>
+      {tokensAvailable && (
+        <div className="segmented" role="tablist" aria-label="Account">
+          <button type="button" role="tab" aria-selected={tab === 'profile'} aria-pressed={tab === 'profile'} onClick={() => setTab('profile')}>Profile</button>
+          <button type="button" role="tab" aria-selected={tab === 'tokens'} aria-pressed={tab === 'tokens'} onClick={() => setTab('tokens')}>Access tokens</button>
+        </div>
+      )}
+      {tab === 'tokens' ? <AccessTokens /> : (
       <div className="stack">
         <table className="kv-table">
           <tbody>
@@ -70,6 +80,7 @@ export function AccountDialog({ onClose }: { onClose: () => void }) {
           <button className="btn" onClick={signOut}>Sign out</button>
         </div>
       </div>
+      )}
     </Modal>
   );
 }

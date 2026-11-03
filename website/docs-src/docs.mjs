@@ -91,16 +91,18 @@ export const GROUPS = [
     pages: [
       { slug: 'auth', title: 'Organisations, teams & roles', icon: 'Buildings', description: 'Who can see and change which projects, and how access is granted.' },
       { slug: 'sso', title: 'Single sign-on', icon: 'SignIn', description: 'Sign in with Microsoft Entra ID and map groups to roles.' },
+      { slug: 'access-tokens', title: 'Access tokens', icon: 'Password', description: 'Personal tokens for scripts, CI and AI agents, limited by role, project and expiry.' },
       { slug: 'audit', title: 'Audit log', icon: 'ClockCounterClockwise', description: 'Every change with who made it, when and what changed.' },
     ],
   },
   {
     id: 'ai',
-    title: 'AI assistant',
+    title: 'AI & agents',
     icon: 'Sparkle',
-    description: 'Describe mocks in plain words and review the changes.',
+    description: 'Describe mocks in plain words, or let your coding agent build them over MCP.',
     pages: [
       { slug: 'ai', title: 'AI assistant', icon: 'Sparkle', description: 'Set up a model provider, chat to create and fix stubs, and apply staged changes.' },
+      { slug: 'mcp', title: 'MCP for agents', icon: 'Robot', description: 'Connect Claude Code, Cursor, Codex or Claude Desktop to build and debug mocks, directly or for review.' },
     ],
   },
   {

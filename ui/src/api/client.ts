@@ -1,4 +1,7 @@
 import type {
+  AccessToken,
+  NewAccessToken,
+  StagedChange,
   CalloutEntry,
   HistoryDetail,
   HistoryPage,
@@ -204,6 +207,15 @@ export const api = {
   deleteFile: (projectId: string, name: string) =>
     request<void>(`${API}/projects/${projectId}/files?name=${encodeURIComponent(name)}`, { method: 'DELETE' }),
   resetData: (projectId: string) => request<void>(`${API}/projects/${projectId}/data`, { method: 'DELETE' }),
+  stagedChanges: (projectId: string) => request<StagedChange[]>(`${API}/projects/${projectId}/staged`),
+  applyStaged: (projectId: string, ids: string[]) =>
+    request<ApplyResult>(`${API}/projects/${projectId}/staged/apply`, { method: 'POST', body: json({ ids }) }),
+  discardStaged: (projectId: string, changeId: string) =>
+    request<void>(`${API}/projects/${projectId}/staged/${encodeURIComponent(changeId)}`, { method: 'DELETE' }),
+  accessTokens: () => request<AccessToken[]>(`${API}/auth/tokens`),
+  createAccessToken: (token: NewAccessToken) =>
+    request<AccessToken & { secret: string }>(`${API}/auth/tokens`, { method: 'POST', body: json(token) }),
+  revokeAccessToken: (id: string) => request<void>(`${API}/auth/tokens/${encodeURIComponent(id)}`, { method: 'DELETE' }),
   applyChanges: (projectId: string, changes: ProposedChange[]) =>
     request<ApplyResult>(`${API}/projects/${projectId}/ai/apply`, { method: 'POST', body: json({ changes }) }),
 

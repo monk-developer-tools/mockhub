@@ -62,7 +62,7 @@
               </a>
               <a class="mega-item" href="/docs/#group-ai">
                 <span class="mega-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 256 256" aria-hidden="true"><path d="M194.82,151.43l-55.09,20.3-20.3,55.09a7.92,7.92,0,0,1-14.86,0l-20.3-55.09-55.09-20.3a7.92,7.92,0,0,1,0-14.86l55.09-20.3,20.3-55.09a7.92,7.92,0,0,1,14.86,0l20.3,55.09,55.09,20.3A7.92,7.92,0,0,1,194.82,151.43Z" opacity="0.2"></path><path d="M197.58,129.06,146,110l-19-51.62a15.92,15.92,0,0,0-29.88,0L78,110l-51.62,19a15.92,15.92,0,0,0,0,29.88L78,178l19,51.62a15.92,15.92,0,0,0,29.88,0L146,178l51.62-19a15.92,15.92,0,0,0,0-29.88ZM137,164.22a8,8,0,0,0-4.74,4.74L112,223.85,91.78,169A8,8,0,0,0,87,164.22L32.15,144,87,123.78A8,8,0,0,0,91.78,119L112,64.15,132.22,119a8,8,0,0,0,4.74,4.74L191.85,144ZM144,40a8,8,0,0,1,8-8h16V16a8,8,0,0,1,16,0V32h16a8,8,0,0,1,0,16H184V64a8,8,0,0,1-16,0V48H152A8,8,0,0,1,144,40ZM248,88a8,8,0,0,1-8,8h-8v8a8,8,0,0,1-16,0V96h-8a8,8,0,0,1,0-16h8V72a8,8,0,0,1,16,0v8h8A8,8,0,0,1,248,88Z"></path></svg></span>
-                <span><strong>AI assistant</strong><small>Describe mocks in plain words and review the changes.</small></span>
+                <span><strong>AI &amp; agents</strong><small>Describe mocks in plain words, or let your coding agent build them over MCP.</small></span>
               </a>
               <a class="mega-item" href="/docs/#group-operations">
                 <span class="mega-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 256 256" aria-hidden="true"><path d="M216,152v48a8,8,0,0,1-8,8H48a8,8,0,0,1-8-8V152a8,8,0,0,1,8-8H208A8,8,0,0,1,216,152ZM208,48H48a8,8,0,0,0-8,8v48a8,8,0,0,0,8,8H208a8,8,0,0,0,8-8V56A8,8,0,0,0,208,48Z" opacity="0.2"></path><path d="M208,136H48a16,16,0,0,0-16,16v48a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V152A16,16,0,0,0,208,136Zm0,64H48V152H208v48Zm0-160H48A16,16,0,0,0,32,56v48a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V56A16,16,0,0,0,208,40Zm0,64H48V56H208v48ZM192,80a12,12,0,1,1-12-12A12,12,0,0,1,192,80Zm0,96a12,12,0,1,1-12-12A12,12,0,0,1,192,176Z"></path></svg></span>
@@ -278,6 +278,7 @@
             <a class="tut-card" href="#migrate-repo"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M4 6h6l2 2h8v11H4z"/><path d="M9 14h6M12 11v6"/></svg></span><strong>Move a whole mock repository</strong><span>Thousands of stubs, same responses.</span><em>5 min</em></a>
             <a class="tut-card" href="#export"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19h14"/></svg></span><strong>Share with Postman and Bruno</strong><span>Collections that already work.</span><em>2 min</em></a>
             <a class="tut-card" href="#ai"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M18.5 15.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z"/></svg></span><strong>Let the AI assistant draft stubs</strong><span>Draft stubs or a single body.</span><em>5 min</em></a>
+            <a class="tut-card" href="#mcp"><span class="tut-ico"><svg viewBox="0 0 24 24"><rect x="5" y="8" width="14" height="11" rx="2"/><path d="M12 4v4M9 13h.01M15 13h.01M9.5 16.5h5"/></svg></span><strong>Connect your coding agent</strong><span>Claude Code, Cursor or Codex over MCP.</span><em>4 min</em></a>
           </div>
         </div>
         <div class="tut-group">
@@ -320,6 +321,7 @@
         <a href="#migrate-repo">Move a mock repository</a>
         <a href="#export">Postman &amp; Bruno</a>
         <a href="#ai">AI assistant</a>
+        <a href="#mcp">Coding agents (MCP)</a>
         <h4>Teams</h4>
         <a href="#teams">Teams &amp; people</a>
         <a href="#sso">Microsoft sign-in</a>
@@ -1077,6 +1079,36 @@ done</code></pre>
             </li>
           </ol>
           <p class="tip"><strong>Who can do what.</strong> Viewers can chat and draft, but only editors can apply. The conversation, the project's stubs and, when needed, recent requests go to the provider you chose, so pick one your organisation allows.</p>
+          <a class="next" href="#mcp">Next: Connect your coding agent</a>
+        </article>
+
+        <article class="tut" id="mcp">
+          <p class="tut-meta"><span>Bring in what you have</span><span>4 min</span><span>Needs sign-in to be on</span></p>
+          <h2>Connect your coding agent</h2>
+          <p class="tut-intro">Let Claude Code, Cursor, Codex or Claude Desktop build and debug your mocks over MCP. The agent can read your code and contracts, create the stubs, run your tests and fix what didn't match, all with no more access than you give it.</p>
+          <ol class="tut-steps">
+            <li>
+              <h3>Create an access token</h3>
+              <p>Select your name at the bottom of the sidebar, open <strong>Access tokens</strong> and select <strong>New token</strong>. Name it after where it's used, choose its access, which projects it can reach and when it expires. Under <strong>Changes</strong>, choose <strong>Apply directly</strong>, or <strong>Stage for review</strong> if a person should approve every change.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/mcp-1-new.webp" alt="The new access token form with a name, editor access, 90 days expiry, and the Apply directly or Stage for review choice outlined" width="1176" height="900" loading="lazy"></figure>
+            </li>
+            <li>
+              <h3>Copy the setup into your agent</h3>
+              <p>Select <strong>Create token</strong>. MockHub shows the token once, with the setup for each agent filled in. Pick yours, select <strong>Copy setup</strong> and run it, or paste it into the file shown. For Claude Code, run the command in your terminal, then check it with <code>claude mcp list</code>.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/mcp-2-setup.webp" alt="The new token shown once, with the Claude Code setup command outlined" width="1176" height="900" loading="lazy"></figure>
+            </li>
+            <li>
+              <h3>Ask for what you need</h3>
+              <p>In your agent, ask in plain words, for example <em>“In the Bookshop project, add GET /books/{id} that returns 404 for id 0”</em> or <em>“Which requests to Checkout found no stub in the last hour? Create stubs for them.”</em> The agent lists projects, reads the stub reference and the request history, and makes the changes. With a review token, the changes wait in the project's <strong>Assistant</strong> tab under <strong>Changes from agents</strong>; look at the JSON and select <strong>Apply</strong> or <strong>Discard</strong>.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/mcp-3-staged.webp" alt="A stub staged by the Cursor review token waiting in the Assistant tab, outlined" width="1176" height="900" loading="lazy"></figure>
+            </li>
+            <li>
+              <h3>See what the agent did</h3>
+              <p>Every change made with a token is in the <strong>Audit log</strong> with the token name, so you can tell your own edits from the agent's. To cut an agent off, revoke its token under <strong>Access tokens</strong>.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/mcp-4-audit.webp" alt="The audit log with a stub created by Alex Morgan via token Claude Code on laptop, outlined" width="1176" height="900" loading="lazy"></figure>
+            </li>
+          </ol>
+          <p class="tip"><strong>Keep tokens tight.</strong> Give a token the lowest access that works, only the projects it needs and a short expiry. Treat it like a password: keep it in your agent's config or a secret store, not in a repository. More in the <a href="/docs/mcp/">MCP docs</a>.</p>
           <a class="next" href="#teams">Next: Organise people into teams</a>
         </article>
 

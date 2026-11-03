@@ -4791,3 +4791,135 @@ button.map-node:hover,
     display: none;
   }
 }
+
+.token-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+}
+
+.token-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.4fr) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+}
+
+.token-list li + li {
+  border-top: 1px solid var(--line);
+}
+
+.token-list li.expired .token-main strong {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.token-main,
+.token-times {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.token-main strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.token-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.token-empty {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-s);
+  color: var(--muted);
+}
+
+.token-secret,
+.token-created .snippet {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.token-secret code {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  background: var(--surface-sunken);
+  border-radius: var(--radius-s);
+  word-break: break-all;
+}
+
+.token-created .snippet pre {
+  flex: 1;
+  min-width: 0;
+}
+
+.token-projects {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-top: 8px;
+}
+
+.token-form fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.token-form legend {
+  padding: 0;
+  margin-bottom: 6px;
+}
+
+@media (max-width: 640px) {
+  .token-list li {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .token-list li > button {
+    grid-row: 1;
+    grid-column: 2;
+  }
+
+  .token-meta,
+  .token-times {
+    grid-column: 1 / -1;
+  }
+
+  .token-form .grid.two {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .token-secret,
+  .token-created .snippet {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.changes-column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.change-meta {
+  margin: 0;
+}

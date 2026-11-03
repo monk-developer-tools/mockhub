@@ -172,6 +172,11 @@ screenshots, and the [live demo](https://mockhub.devops-monk.com/__admin/mockhub
 - **AI assistant.** Connect OpenRouter, Hugging Face, a LiteLLM proxy or any OpenAI-compatible API, then describe the mocks you
   need in plain English or paste a spec. The assistant stages stubs, and you review each change as a diff before
   applying it. *Generate with AI* in the editor writes a single response body from a description.
+- **MCP for coding agents.** Claude Code, Cursor, Codex and Claude Desktop connect to `/__admin/mockhub/mcp` with a
+  personal access token and build, debug and tune mocks: stubs, matching order, CRUD data, delays and failures,
+  callouts and request search. Each token applies changes directly or stages them for review.
+- **Personal access tokens.** For scripts, CI and agents. Shown once and stored as a hash, with a name, expiry, role
+  ceiling and project scope. Revocable, with the last use shown, and every change is audited with the token name.
 - **Organisations, teams and people.** Organisations hold teams, and teams own projects. People get a role per team
   or across the whole organisation, and see only their teams' projects. Managers add people as viewers, editors or managers,
   and each person sees only their organisations.
@@ -321,7 +326,10 @@ Each user also has a **server role**. With *viewer everywhere* or *editor everyw
 organisation. With *admin*, a user also manages users, single sign-on, backups and the native WireMock admin API.
 Users from `MOCKHUB_USERS` keep the role given there. Use them as a break-glass account.
 
-The UI keeps a session token for 12 hours. Scripts can keep using HTTP Basic auth with a username and password.
+The UI keeps a session token for 12 hours. Scripts and CI should use a **personal access token** (Account → Access
+tokens) as `Authorization: Bearer mh_…`; HTTP Basic auth with a username and password still works. A token never has
+more access than its owner, can be limited to a role and to chosen projects, and expires after 7, 30, 90 or 365 days
+or never. MockHub stores only its SHA-256 hash.
 Changing a password or disabling a user signs out that user's other sessions.
 
 ### Single sign-on with Microsoft Entra ID
@@ -381,6 +389,42 @@ contents are treated as data, not instructions.
 The conversation, the project's stubs and, when the assistant asks for them, recent requests are sent to the
 provider you configure. Choose one your organisation allows, or run models yourself behind LiteLLM.
 
+## MCP for coding agents
+
+MockHub is an MCP server at `/__admin/mockhub/mcp` (Streamable HTTP, stateless JSON answers). Create a token under
+**Account → Access tokens**; the dialog shows the setup for each client with your URL and token filled in.
+
+```bash
+# Claude Code
+claude mcp add --transport http mockhub https://mockhub.example.com/__admin/mockhub/mcp \
+  --header "Authorization: Bearer mh_…"
+```
+
+```json
+// Cursor: .cursor/mcp.json
+{ "mcpServers": { "mockhub": { "url": "https://mockhub.example.com/__admin/mockhub/mcp",
+  "headers": { "Authorization": "Bearer mh_…" } } } }
+```
+
+```toml
+# Codex: ~/.codex/config.toml, with the token in MOCKHUB_TOKEN
+[mcp_servers.mockhub]
+url = "https://mockhub.example.com/__admin/mockhub/mcp"
+bearer_token_env_var = "MOCKHUB_TOKEN"
+```
+
+Claude Desktop connects through `npx -y mcp-remote <url> --header "Authorization: Bearer mh_…"`.
+
+Tools: `list_projects`, `get_project`, `get_stub_reference`, `list_stubs`, `get_stub`, `create_stub`, `update_stub`,
+`delete_stub`, `set_stub_enabled`, `reorder_stubs`, `get_runtime`, `set_runtime`, `search_requests`, `get_request`,
+`clear_requests`, `list_callouts`, `list_data`, `create_crud_resource`, `list_records`, `save_record`,
+`delete_record` and `list_staged_changes`. They call the same API as the UI, so validation, roles and the audit log
+all apply. A token set to *stage for review* puts stub and runtime changes in the project's Assistant tab for an
+editor to apply, and can't make other changes. Requests from a browser page on another origin are refused.
+
+Try: *“Which requests to Checkout found no stub in the last hour? Create stubs for them.”* or *“Make Payments 1.5 s
+slower and fail 5% of calls with 503.”*
+
 ## How it works
 
 MockHub is a WireMock extension running inside a regular WireMock server:
@@ -399,6 +443,11 @@ MockHub is a WireMock extension running inside a regular WireMock server:
 |---|---|---|
 | POST | `/__admin/mockhub/api/auth/login` | `{username, password}` → session token |
 | GET | `/__admin/mockhub/api/auth/me` | the signed-in user and their organisations |
+| GET/POST | `/__admin/mockhub/api/auth/tokens` | your access tokens / create one (`{name, role, projectIds, mode, expiresInDays}`, answer has `secret`) |
+| DELETE | `/__admin/mockhub/api/auth/tokens/{tokenId}` | revoke a token |
+| GET | `/__admin/mockhub/api/projects/{id}/staged` | changes staged by review tokens |
+| POST | `/__admin/mockhub/api/projects/{id}/staged/apply` | apply staged changes (`{ids}`); `DELETE …/staged/{changeId}` discards one |
+| POST | `/__admin/mockhub/mcp` | MCP server (JSON-RPC over Streamable HTTP) |
 | GET/POST | `/__admin/mockhub/api/orgs` | list / create organisations |
 | GET/PUT/DELETE | `/__admin/mockhub/api/orgs/{id}` | read / rename / delete an organisation (and its projects) |
 | GET | `/__admin/mockhub/api/orgs/{id}/members` | members with their roles |
@@ -511,7 +560,9 @@ src/main/java/io/mockhub
   org/ user/                     organisations and users: models, repository ports + file implementations, services
   auth/                          roles, principal, session tokens, access policy
   sso/                           single sign-on: provider strategy (Entra ID), OIDC token check, role mapping
-  ai/                            AI assistant: provider strategy (OpenRouter, Hugging Face, LiteLLM, OpenAI-compatible), tool loop
+  ai/                            AI assistant: provider strategy (OpenRouter, Hugging Face, LiteLLM, OpenAI-compatible), tool loop, staged changes
+  token/                         personal access tokens: model, repository port + file implementation, service
+  mcp/                           MCP server: JSON-RPC transport, tools over the internal API, review stager
   stub/                          project stubs: gateway port to WireMock, path re-rooting, metadata
   journal/                       request log per project
   callout/                       webhooks and wait-for-callout: listener, transformer, templating, target guard, log

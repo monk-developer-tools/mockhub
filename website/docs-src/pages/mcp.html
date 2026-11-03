@@ -1,0 +1,80 @@
+<p>MockHub is an MCP server, so AI agents such as Claude Code, Cursor, Codex and Claude Desktop can read and build your mocks. The agent works through the same rules as the UI: the same validation, your roles and the token's limits. Every change it makes is in the <a href="#audit">audit log</a> as <em>“Alex Morgan via token “Claude Code””</em>.</p>
+<p>The server is at <code>/__admin/mockhub/mcp</code> and speaks Streamable HTTP. Connect with a <a href="#access-tokens">personal access token</a>; with sign-in off, no token is needed.</p>
+
+<h3 id="mcp-setup">Connect an agent</h3>
+<p>Create a token under <strong>Account → Access tokens</strong>. MockHub shows these snippets with your URL and token filled in. Replace <code>$HUB</code> with your MockHub address, such as <code>https://mockhub.example.com</code>.</p>
+<p><strong>Claude Code</strong></p>
+<div class="code"><pre>claude mcp add --transport http mockhub $HUB/__admin/mockhub/mcp \
+  --header "Authorization: Bearer mh_…"</pre></div>
+<p><strong>Cursor</strong>, in <code>.cursor/mcp.json</code> or <code>~/.cursor/mcp.json</code></p>
+<div class="code"><pre>{
+  "mcpServers": {
+    "mockhub": {
+      "url": "$HUB/__admin/mockhub/mcp",
+      "headers": { "Authorization": "Bearer mh_…" }
+    }
+  }
+}</pre></div>
+<p><strong>Codex</strong>, in <code>~/.codex/config.toml</code>, with the token in the <code>MOCKHUB_TOKEN</code> environment variable</p>
+<div class="code"><pre>[mcp_servers.mockhub]
+url = "$HUB/__admin/mockhub/mcp"
+bearer_token_env_var = "MOCKHUB_TOKEN"</pre></div>
+<p><strong>Claude Desktop</strong>, in <code>claude_desktop_config.json</code>, through the <code>mcp-remote</code> bridge (needs Node.js)</p>
+<div class="code"><pre>{
+  "mcpServers": {
+    "mockhub": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "$HUB/__admin/mockhub/mcp",
+               "--header", "Authorization: Bearer mh_…"]
+    }
+  }
+}</pre></div>
+<p>Any other client that supports Streamable HTTP works the same way: the URL plus an <code>Authorization</code> header. MockHub answers each call with plain JSON and keeps no session, so it works behind any load balancer.</p>
+
+<h3 id="mcp-prompts">Things to ask</h3>
+<ul>
+  <li><em>“In the Bookshop project, add GET /books/{id} that returns 404 for id 0 and a book with that id otherwise.”</em></li>
+  <li><em>“Which requests to Checkout found no stub in the last hour? Create stubs for them.”</em></li>
+  <li><em>“Build a CRUD resource for /customers with 10 realistic customers.”</em></li>
+  <li><em>“Make every call to Payments 1.5 seconds slower and fail 5% of them with a 503.”</em></li>
+  <li><em>“After POST /payments, call the callbackUrl from the request 2 seconds later with status SETTLED.”</em></li>
+  <li><em>“Why is my webhook failing? Look at the recent callouts.”</em></li>
+  <li><em>“Read openapi.yaml in this repo and mock every endpoint our service calls.”</em></li>
+  <li><em>“Clear the request history, then run the tests and show me what didn't match.”</em></li>
+</ul>
+<p>An agent with your code open is useful: it can read the client code or the contract, create the stubs, run your tests against the mock and fix what missed.</p>
+
+<h3 id="mcp-tools">Tools</h3>
+<p>Each tool takes a <code>project</code>, which can be its id, slug, name or base path.</p>
+<table>
+  <thead><tr><th>Area</th><th>Tools</th></tr></thead>
+  <tbody>
+    <tr><td>Projects</td><td><code>list_projects</code>, <code>get_project</code> (with its mock URL and runtime behaviour)</td></tr>
+    <tr><td>Stubs</td><td><code>list_stubs</code> (in matching order), <code>get_stub</code>, <code>create_stub</code>, <code>update_stub</code>, <code>delete_stub</code>, <code>set_stub_enabled</code>, <code>reorder_stubs</code></td></tr>
+    <tr><td>Reference</td><td><code>get_stub_reference</code>: how to write matching, templating, delays, faults, state, webhooks and SOAP in MockHub, so the agent gets it right first time</td></tr>
+    <tr><td>Runtime</td><td><code>get_runtime</code>, <code>set_runtime</code>: delays, failure rates, rate limits, default response, CORS and the other <a href="#faults">project-wide behaviour</a></td></tr>
+    <tr><td>Requests</td><td><code>search_requests</code> (text, method, status, unmatched only, stub, header, last N minutes), <code>get_request</code>, <code>clear_requests</code></td></tr>
+    <tr><td>Callouts</td><td><code>list_callouts</code>: recent webhooks and forwards with their results</td></tr>
+    <tr><td>Data</td><td><code>create_crud_resource</code>, <code>list_data</code>, <code>list_records</code>, <code>save_record</code>, <code>delete_record</code></td></tr>
+    <tr><td>Review</td><td><code>list_staged_changes</code></td></tr>
+  </tbody>
+</table>
+<p>Read-only tools are marked as such, and deleting tools as destructive, so clients that ask before risky calls can do so. Request bodies and callout answers come from outside callers; MockHub tells the agent to treat them as data, not instructions.</p>
+
+<h3 id="mcp-review">Review mode</h3>
+<p>A token set to <em>Stage for review</em> can read everything in its scope, but its stub and runtime changes don't go live. They wait in the project's <strong>Assistant</strong> tab under <strong>Changes from agents</strong>, with the token name and time, and an editor applies or discards each one after looking at the JSON or the diff. This works even when the <a href="#ai">AI assistant</a> is off. Other changes, such as clearing requests or saving records, are refused for review tokens, and so is the REST API. Use review mode for agents you're trying out, or for shared projects where a person should see every change first.</p>
+<table>
+  <thead><tr><th>Endpoint</th><th>Purpose</th></tr></thead>
+  <tbody>
+    <tr><td><code>GET /projects/{id}/staged</code></td><td>staged changes with who staged them and when</td></tr>
+    <tr><td><code>POST /projects/{id}/staged/apply</code></td><td>apply <code>{"ids":[…]}</code>; needs the editor role</td></tr>
+    <tr><td><code>DELETE /projects/{id}/staged/{changeId}</code></td><td>discard one</td></tr>
+  </tbody>
+</table>
+
+<h3 id="mcp-security">Security</h3>
+<ul>
+  <li>The token decides what the agent can do: no more than your own access, limited to its projects and its role.</li>
+  <li>Requests from a browser page on another site are refused (the <code>Origin</code> must match the host), so a web page can't drive your agent's session.</li>
+  <li>Revoke a token to cut an agent off at once. The audit log shows what each token changed.</li>
+</ul>

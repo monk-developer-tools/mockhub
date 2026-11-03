@@ -1,0 +1,36 @@
+<p>A personal access token lets a script, a CI job or an AI agent use MockHub as you, without your password. Send it as <code>Authorization: Bearer mh_…</code> to the <a href="#api">API</a> or the <a href="#mcp">MCP server</a>. Tokens only exist when sign-in is on. With sign-in off, the API and MCP work without one.</p>
+
+<h3 id="token-create">Create a token</h3>
+<p>Open your account (your name at the bottom of the sidebar), select <strong>Access tokens</strong>, then <strong>New token</strong>:</p>
+<table>
+  <thead><tr><th>Setting</th><th>What it does</th></tr></thead>
+  <tbody>
+    <tr><td>Name</td><td>Where it's used, such as <em>Claude Code on my laptop</em>. The name appears in the <a href="#audit">audit log</a> next to every change the token makes.</td></tr>
+    <tr><td>Access</td><td>The most the token can do: <em>viewer</em>, <em>editor</em>, <em>manager</em> or <em>admin</em>. It never gets more than you have. An editor token used by a manager still can't change project settings, and a token gets nothing where you have no access.</td></tr>
+    <tr><td>Projects</td><td><em>All I can reach</em>, or only the projects you tick. A scoped token can't see other projects, organisations or server settings. If you delete a project, it's removed from every token, and a token left with no projects is deleted.</td></tr>
+    <tr><td>Changes</td><td><em>Apply directly</em>, or <em>Stage for review</em>. See <a href="#mcp-review">review mode</a>.</td></tr>
+    <tr><td>Expires after</td><td>7, 30, 90 days (the default), a year, or never.</td></tr>
+  </tbody>
+</table>
+<p>MockHub shows the token once, with ready-to-paste setup for Claude Code, Cursor, Codex and Claude Desktop. It keeps only a SHA-256 fingerprint, so a lost token can't be recovered: revoke it and make a new one.</p>
+<div class="callout">Treat a token like a password. Keep it in your agent's config or a CI secret, never in a repository. Prefer a short expiry, the lowest access that works and only the projects the job needs.</div>
+
+<h3 id="token-manage">See and revoke tokens</h3>
+<p>The list shows each token's name, its first characters, access, projects, mode, when it was last used and when it expires. Select the bin to revoke one; anything using it stops working at once. Admins can revoke anyone's token through the API. A token can't create or revoke tokens, or change your password.</p>
+
+<h3 id="token-api">Tokens in the API</h3>
+<div class="code"><pre><span class="c"># call the API as yourself, from CI</span>
+curl -H "Authorization: Bearer $MOCKHUB_TOKEN" $HUB/__admin/mockhub/api/projects
+
+<span class="c"># create a token (needs a normal sign-in, not a token)</span>
+curl -X POST -u alex:$PASSWORD $HUB/__admin/mockhub/api/auth/tokens \
+  -d '{"name":"CI","role":"editor","projectIds":["58b5108a"],"mode":"direct","expiresInDays":30}'</pre></div>
+<table>
+  <thead><tr><th>Endpoint</th><th>Purpose</th></tr></thead>
+  <tbody>
+    <tr><td><code>GET /auth/tokens</code></td><td>your tokens, newest first, without secrets</td></tr>
+    <tr><td><code>POST /auth/tokens</code></td><td>create one: <code>name</code>, <code>role</code>, <code>projectIds</code> (empty means all), <code>mode</code> (<code>direct</code> or <code>review</code>), <code>expiresInDays</code> (<code>7</code>, <code>30</code>, <code>90</code>, <code>365</code> or <code>0</code> for never). The answer has the <code>secret</code></td></tr>
+    <tr><td><code>DELETE /auth/tokens/{tokenId}</code></td><td>revoke</td></tr>
+  </tbody>
+</table>
+<p>A request with an expired, revoked or unknown token gets <code>401</code>. A request outside the token's access or projects gets <code>403</code> with the reason.</p>

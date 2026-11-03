@@ -1,0 +1,194 @@
+package io.mockhub.integration;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.mockhub.api.Jsons;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+class McpIntegrationTest {
+
+  private static final String API = "/__admin/mockhub/api";
+  private static final String MCP = "/__admin/mockhub/mcp";
+
+  @TempDir
+  Path data;
+  private MockHubServer server;
+  private ApiClient admin;
+  private String shopId;
+  private String payId;
+  private int nextId = 1;
+
+  @BeforeEach
+  void start() {
+    server = MockHubServer.start(data, Map.of("MOCKHUB_USERS", "admin:pw:admin"));
+    admin = server.api().login("admin", "pw");
+    shopId = admin.post(API + "/projects", "{\"name\":\"Shop\",\"slug\":\"shop\"}").json().get("id").asText();
+    payId = admin.post(API + "/projects", "{\"name\":\"Payments\",\"slug\":\"pay\"}").json().get("id").asText();
+  }
+
+  @AfterEach
+  void stop() {
+    server.close();
+  }
+
+  private String token(String body) {
+    ApiClient.Result created = admin.post(API + "/auth/tokens", body);
+    assertThat(created.status()).as(created.body()).isEqualTo(200);
+    return created.json().get("secret").asText();
+  }
+
+  private JsonNode rpc(String token, String method, ObjectNode params) {
+    ObjectNode message = Jsons.object().put("jsonrpc", "2.0").put("id", nextId++).put("method", method);
+    if (params != null) message.set("params", params);
+    ApiClient.Result result = server.api().bearer(token).post(MCP, Jsons.write(message));
+    assertThat(result.status()).as(result.body()).isEqualTo(200);
+    return result.json();
+  }
+
+  private JsonNode tool(String token, String name, String arguments) {
+    ObjectNode params = Jsons.object().put("name", name);
+    try {
+      params.set("arguments", Jsons.MAPPER.readTree(arguments));
+    } catch (Exception e) {
+      throw new IllegalArgumentException(e);
+    }
+    return rpc(token, "tools/call", params).path("result");
+  }
+
+  private static JsonNode content(JsonNode toolResult) throws Exception {
+    return Jsons.MAPPER.readTree(toolResult.at("/content/0/text").asText());
+  }
+
+  @Test
+  void personalTokensWorkOnTheApiUntilRevoked() {
+    // Given
+    ApiClient.Result created = admin.post(API + "/auth/tokens", "{\"name\":\"CI\",\"role\":\"viewer\",\"expiresInDays\":30}");
+    String secret = created.json().get("secret").asText();
+    ApiClient ci = server.api().bearer(secret);
+
+    // When
+    int read = ci.get(API + "/projects").status();
+    int write = ci.post(API + "/projects", "{\"name\":\"X\"}").status();
+    int tokenAdmin = ci.get(API + "/auth/tokens").status();
+    JsonNode listed = admin.get(API + "/auth/tokens").json();
+    admin.delete(API + "/auth/tokens/" + created.json().get("id").asText());
+
+    // Then
+    assertThat(read).isEqualTo(200);
+    assertThat(write).isEqualTo(403);
+    assertThat(tokenAdmin).isEqualTo(403);
+    assertThat(listed).singleElement().satisfies(t -> {
+      assertThat(t.get("name").asText()).isEqualTo("CI");
+      assertThat(t.has("secret")).isFalse();
+      assertThat(t.has("hash")).isFalse();
+      assertThat(t.get("lastUsedAt").isNull()).isFalse();
+    });
+    assertThat(ci.get(API + "/projects").status()).isEqualTo(401);
+  }
+
+  @Test
+  void anAgentBuildsAndChecksAMockOverMcp() throws Exception {
+    // Given
+    String secret = token("{\"name\":\"Claude Code\",\"role\":\"editor\"}");
+
+    // When
+    JsonNode init = rpc(secret, "initialize", Jsons.object().put("protocolVersion", "2025-06-18"));
+    JsonNode tools = rpc(secret, "tools/list", null);
+    JsonNode created = tool(secret, "create_stub", "{\"project\":\"shop\",\"stub\":{\"name\":\"List items\",\"request\":{\"method\":\"GET\",\"urlPath\":\"/items\"},\"response\":{\"status\":200,\"jsonBody\":[{\"id\":1}]}}}");
+    int mockStatus = server.api().get("/shop/items").status();
+    server.api().get("/shop/missing");
+    JsonNode stubs = tool(secret, "list_stubs", "{\"project\":\"Shop\"}");
+    JsonNode unmatched = waitForUnmatched(secret);
+    JsonNode audit = admin.get(API + "/projects/" + shopId + "/audit").json();
+
+    // Then
+    assertThat(init.at("/result/protocolVersion").asText()).isEqualTo("2025-06-18");
+    assertThat(init.at("/result/serverInfo/name").asText()).isEqualTo("mockhub");
+    List<String> names = new ArrayList<>();
+    tools.at("/result/tools").forEach(t -> names.add(t.get("name").asText()));
+    assertThat(names).contains("list_projects", "create_stub", "search_requests", "set_runtime", "create_crud_resource", "get_stub_reference");
+    assertThat(created.path("isError").asBoolean()).as(created.toString()).isFalse();
+    assertThat(mockStatus).isEqualTo(200);
+    assertThat(content(stubs)).singleElement().satisfies(s -> assertThat(s.get("url").asText()).isEqualTo("/items"));
+    assertThat(unmatched.at("/requests/0/url").asText()).isEqualTo("/shop/missing");
+    assertThat(audit.toString()).contains("via token “Claude Code”");
+  }
+
+  private JsonNode waitForUnmatched(String secret) throws Exception {
+    for (int i = 0; i < 100; i++) {
+      JsonNode found = content(tool(secret, "search_requests", "{\"project\":\"shop\",\"unmatched_only\":true}"));
+      if (found.path("total").asInt() > 0) return found;
+      Thread.sleep(50);
+    }
+    throw new AssertionError("No unmatched request recorded");
+  }
+
+  @Test
+  void aReviewTokenStagesChangesForSomeoneToApply() throws Exception {
+    // Given
+    String secret = token("{\"name\":\"Cursor\",\"role\":\"editor\",\"mode\":\"review\"}");
+
+    // When
+    JsonNode staged = tool(secret, "create_stub", "{\"project\":\"pay\",\"stub\":{\"name\":\"Refund\",\"request\":{\"method\":\"POST\",\"urlPath\":\"/refunds\"},\"response\":{\"status\":201}},\"summary\":\"Add refunds\"}");
+    JsonNode refused = tool(secret, "clear_requests", "{\"project\":\"pay\"}");
+    int beforeApply = server.api().post("/pay/refunds", "{}").status();
+    JsonNode pending = admin.get(API + "/projects/" + payId + "/staged").json();
+    String changeId = pending.at("/0/change/id").asText();
+    JsonNode applied = admin.post(API + "/projects/" + payId + "/staged/apply", "{\"ids\":[\"" + changeId + "\"]}").json();
+
+    // Then
+    assertThat(content(staged).get("staged").asBoolean()).isTrue();
+    assertThat(refused.get("isError").asBoolean()).isTrue();
+    assertThat(refused.at("/content/0/text").asText()).contains("stages changes for review");
+    assertThat(beforeApply).isEqualTo(404);
+    assertThat(pending).singleElement().satisfies(s -> {
+      assertThat(s.get("by").asText()).isEqualTo("admin via token “Cursor”");
+      assertThat(s.at("/change/summary").asText()).isEqualTo("Add refunds");
+    });
+    assertThat(applied.get("applied").asInt()).isEqualTo(1);
+    assertThat(server.api().post("/pay/refunds", "{}").status()).isEqualTo(201);
+    assertThat(admin.get(API + "/projects/" + payId + "/staged").json()).isEmpty();
+  }
+
+  @Test
+  void aProjectTokenOnlySeesItsProject() throws Exception {
+    // Given
+    String secret = token("{\"name\":\"Shop only\",\"role\":\"editor\",\"projectIds\":[\"" + shopId + "\"]}");
+
+    // When
+    JsonNode projects = content(tool(secret, "list_projects", "{}"));
+    JsonNode other = tool(secret, "list_stubs", "{\"project\":\"pay\"}");
+    int restOther = server.api().bearer(secret).get(API + "/projects/" + payId + "/stubs").status();
+
+    // Then
+    assertThat(projects).singleElement().satisfies(p -> assertThat(p.get("name").asText()).isEqualTo("Shop"));
+    assertThat(other.get("isError").asBoolean()).isTrue();
+    assertThat(restOther).isEqualTo(403);
+  }
+
+  @Test
+  void refusesCallsWithoutCredentialsAndAnswersOnlyPost() {
+    // When
+    int anonymous = server.api().post(MCP, "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"ping\"}").status();
+    int stream = admin.get(MCP).status();
+    int notification = admin.post(MCP, "{\"jsonrpc\":\"2.0\",\"method\":\"notifications/initialized\"}").status();
+    JsonNode unknown = admin.post(MCP, "{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"resources/list\"}").json();
+    int foreign = admin.send("POST", MCP, "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"ping\"}", "application/json", Map.of("Origin", "https://evil.example")).status();
+
+    // Then
+    assertThat(anonymous).isEqualTo(401);
+    assertThat(stream).isEqualTo(405);
+    assertThat(notification).isEqualTo(202);
+    assertThat(unknown.at("/error/code").asInt()).isEqualTo(-32601);
+    assertThat(foreign).isEqualTo(403);
+  }
+}

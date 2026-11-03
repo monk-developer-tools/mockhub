@@ -8,6 +8,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class AccessPolicy {
+  public static final String MCP = "/mockhub/mcp";
   private static final String API = "/mockhub/api";
   private static final Set<String> ASK_ONLY = Set.of("/ai/chat", "/ai/jobs");
   private static final Pattern PROJECT = Pattern.compile("/projects/([^/]+)(/.*)?");
@@ -17,7 +18,8 @@ public final class AccessPolicy {
   private static final Set<String> PUBLIC_API =
       Set.of("/auth/info", "/auth/login", "/auth/sso/exchange");
   private static final Set<String> ANY_SIGNED_IN =
-      Set.of("/auth/me", "/auth/password", "/info", "/projects", "/orgs", "/examples", "/ai/status", "/fake/generate");
+      Set.of("/auth/me", "/auth/password", "/auth/tokens", "/info", "/projects", "/orgs", "/examples", "/ai/status", "/fake/generate");
+  private static final Set<String> SCOPED_TOKEN_READS = Set.of("/auth/me", "/info", "/projects", "/examples", "/ai/status");
   private static final Set<String> READ_ONLY_NATIVE_POSTS =
       Set.of("/requests/find", "/requests/count", "/near-misses/request", "/near-misses/request-pattern");
   private static final Set<String> ADMIN_ONLY_NATIVE =
@@ -47,13 +49,39 @@ public final class AccessPolicy {
   }
 
   public Decision decide(Principal principal, RequestMethod method, String adminPath) {
+    if (adminPath.equals(MCP)) return Decision.allow();
+    if (principal.viaToken()) {
+      Decision limits = tokenLimits(principal, method, adminPath);
+      if (!limits.allowed()) return limits;
+    }
     if (principal.isAdmin()) return Decision.allow();
     if (adminPath.startsWith(API)) return decideApi(principal, method, adminPath.substring(API.length()));
     return decideNative(principal.highestRole(), method, adminPath);
   }
 
+  private static Decision tokenLimits(Principal p, RequestMethod method, String adminPath) {
+    if (!adminPath.startsWith(API)) {
+      if (p.reviewOnly() && !isRead(method)) return Decision.deny("This token stages changes for review, so it can only read here");
+      return p.allProjects() ? Decision.allow() : Decision.deny("A token limited to some projects can't use the WireMock admin API");
+    }
+    String api = adminPath.substring(API.length());
+    if (api.equals("/auth/password") || api.equals("/auth/tokens") || api.startsWith("/auth/tokens/")) {
+      return Decision.deny("Access tokens can't manage passwords or tokens; sign in to do that");
+    }
+    if (p.reviewOnly() && !isRead(method)) {
+      return Decision.deny("This token stages changes for review: connect it through MCP, or use a token that applies changes directly");
+    }
+    Matcher project = PROJECT.matcher(api);
+    if (project.matches()) {
+      return p.allowsProject(project.group(1)) ? Decision.allow() : Decision.deny("This token can't reach project " + project.group(1));
+    }
+    if (p.allProjects() || (isRead(method) && SCOPED_TOKEN_READS.contains(api))) return Decision.allow();
+    return Decision.deny("This token only reaches the projects it was made for");
+  }
+
   private Decision decideApi(Principal p, RequestMethod method, String path) {
     boolean read = isRead(method);
+    if (path.startsWith("/auth/tokens/")) return Decision.allow();
     if (ANY_SIGNED_IN.contains(path)) {
       return path.equals("/orgs") && !read ? Decision.deny("Only admins can create organisations") : Decision.allow();
     }

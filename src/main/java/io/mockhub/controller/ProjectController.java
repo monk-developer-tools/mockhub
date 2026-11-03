@@ -33,7 +33,7 @@ public final class ProjectController implements ApiController {
       String teamId = ctx.query("teamId");
       ArrayNode out = Jsons.MAPPER.createArrayNode();
       projects.findAll().stream()
-          .filter(project -> p.canInTeam(project.orgId(), project.teamId(), Role.VIEWER))
+          .filter(project -> p.allowsProject(project.id()) && p.canInTeam(project.orgId(), project.teamId(), Role.VIEWER))
           .filter(project -> orgId == null || orgId.equals(project.orgId()))
           .filter(project -> teamId == null || teamId.equals(project.teamId()))
           .forEach(project -> out.add(views.view(ctx, project)));

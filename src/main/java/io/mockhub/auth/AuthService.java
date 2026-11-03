@@ -6,16 +6,25 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Optional;
 import java.util.function.BooleanSupplier;
+import java.util.function.Function;
 
 public final class AuthService {
+  public static final String ACCESS_TOKEN_PREFIX = "mh_";
+
   private final UserService users;
   private final TokenService tokens;
   private final BooleanSupplier ssoEnabled;
+  private final Function<String, Optional<Principal>> accessTokens;
 
   public AuthService(UserService users, TokenService tokens, BooleanSupplier ssoEnabled) {
+    this(users, tokens, ssoEnabled, secret -> Optional.empty());
+  }
+
+  public AuthService(UserService users, TokenService tokens, BooleanSupplier ssoEnabled, Function<String, Optional<Principal>> accessTokens) {
     this.users = users;
     this.tokens = tokens;
     this.ssoEnabled = ssoEnabled;
+    this.accessTokens = accessTokens;
   }
 
   public boolean enabled() {
@@ -24,6 +33,8 @@ public final class AuthService {
 
   public Optional<Principal> principal(String authorizationHeader) {
     if (!enabled()) return Optional.of(Principal.anonymousAdmin());
+    String bearer = bearer(authorizationHeader);
+    if (bearer != null && bearer.startsWith(ACCESS_TOKEN_PREFIX)) return accessTokens.apply(bearer);
     return authenticate(authorizationHeader).map(Principal::of);
   }
 
@@ -46,6 +57,10 @@ public final class AuthService {
 
   public long tokenLifetimeSeconds() {
     return tokens.lifetimeSeconds();
+  }
+
+  private static String bearer(String header) {
+    return header != null && header.regionMatches(true, 0, "Bearer ", 0, 7) ? header.substring(7).trim() : null;
   }
 
   private Optional<User> fromToken(String token) {

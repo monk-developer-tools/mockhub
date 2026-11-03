@@ -40,6 +40,8 @@ dependencies {
     testImplementation(platform("org.junit:junit-bom:5.11.4"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testImplementation("org.assertj:assertj-core:3.27.3")
+    testImplementation("io.modelcontextprotocol.sdk:mcp-core:2.1.0")
+    testImplementation("io.modelcontextprotocol.sdk:mcp-json-jackson2:2.1.0")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

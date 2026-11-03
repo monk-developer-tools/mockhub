@@ -87,10 +87,14 @@ export function applyFilter(entries: AuditEntry[], filter: AuditFilter, now: num
   );
 }
 
+export function personName(actor: string): string {
+  return actor.replace(/ via token “.*”$/, '');
+}
+
 export function people(entries: AuditEntry[]): { id: string; name: string; count: number }[] {
   const byId = new Map<string, { id: string; name: string; count: number }>();
   for (const e of entries) {
-    const p = byId.get(e.actorId) ?? { id: e.actorId, name: e.actor, count: 0 };
+    const p = byId.get(e.actorId) ?? { id: e.actorId, name: personName(e.actor), count: 0 };
     p.count += 1;
     byId.set(e.actorId, p);
   }

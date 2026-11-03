@@ -53,14 +53,14 @@ Legend: ✅ have it · 🟡 partial · ❌ missing
 | API connections (stored OAuth for outbound calls) | Missing | ❌ | F9 |
 | Mock server security (required header) | Project API key header (401) and IP allow list (403) | ✅ | — |
 | AI rules generator | AI assistant with staged diffs | ✅ | — |
-| Agentic mode (MCP) | Missing | ❌ | F4 |
+| Agentic mode (MCP) | MCP server with 22 tools, direct or review tokens, audited | ✅ | — |
 | Contract drift detection | Missing | ❌ | F13 |
 | Live traffic (RPS) | Traffic chart 5m–24h and 30 days, average and peak RPS, drag to select | ✅ | — |
 | Test data editor for OpenAPI mocks | Edit generated stubs by hand, AI body generator | 🟡 | F8 |
 | HTTP echo server | Missing as a built-in | ❌ | F11 |
 | "Mock these APIs" button | Missing | ❌ | F11 |
 | Error code reference | Scattered across docs | 🟡 | F1 |
-| Account management | Users, SSO, account dialog | ✅ | F4 adds tokens |
+| Account management | Users, SSO, account dialog, personal access tokens | ✅ | — |
 | Product documentation as a card-based site | One long docs page | 🟡 | F1 |
 
 ## 2. Phases
@@ -248,11 +248,18 @@ Goal: Claude, Cursor, Codex and CI can create and manage mocks directly.
 - Docs page with setup snippets for Claude Code, Claude Desktop, Cursor and Codex, and example prompts.
 
 Checklist:
-- [ ] Tokens: model, store, API, UI
-- [ ] MCP transport and tools
-- [ ] Staged or direct changes, audit
-- [ ] Tests with a real MCP client in the system test
-- [ ] Docs and tutorial
+- [x] Tokens: model, store, API, UI
+- [x] MCP transport and tools
+- [x] Staged or direct changes, audit
+- [x] Tests with a real MCP client in the system test
+- [x] Docs and tutorial
+
+Notes: the MCP endpoint answers every POST with plain JSON and keeps no session, so it needs no sticky load
+balancing; GET returns 405 (no server-initiated stream). Tools call the MockHub API in-process, so authorisation,
+validation and audit are shared with the UI. Token limits are checked before the admin shortcut, so a scoped admin
+token stays scoped. Review tokens stage stub and runtime changes only; other writes are refused. Deleting a project
+narrows tokens scoped to it and deletes a token left with none. Staged changes show in the Assistant tab even when
+the in-app assistant is off.
 
 ### Phase F5 — Snapshots
 

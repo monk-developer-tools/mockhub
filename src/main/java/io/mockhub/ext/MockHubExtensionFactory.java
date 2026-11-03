@@ -42,6 +42,25 @@ import io.mockhub.ai.JdkLlmTransport;
 import io.mockhub.controller.AiController;
 import io.mockhub.backup.BackupService;
 import io.mockhub.auth.AccessPolicy;
+import io.mockhub.ai.MockTools;
+import io.mockhub.ai.StagedChanges;
+import io.mockhub.api.ApiRouter;
+import io.mockhub.controller.AccessTokenController;
+import io.mockhub.controller.ApiController;
+import io.mockhub.controller.StagedController;
+import io.mockhub.mcp.InternalApi;
+import io.mockhub.mcp.McpServer;
+import io.mockhub.mcp.McpTask;
+import io.mockhub.mcp.McpTools;
+import io.mockhub.mcp.ReviewStager;
+import io.mockhub.token.AccessTokenService;
+import io.mockhub.token.FileAccessTokenRepository;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.util.function.Function;
+import com.github.tomakehurst.wiremock.http.Request;
 import io.mockhub.audit.AuditLog;
 import io.mockhub.audit.AuditRecorder;
 import io.mockhub.audit.FileAuditLog;
@@ -154,10 +173,13 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     Path historyDir = dataDir.resolve("mockhub").resolve("history");
     HistoryStore history = new HistoryStore(historyDir, clock, Duration.ofDays(config.historyDays), config.historyMaxMb * 1024L * 1024L);
     TrafficCounters traffic = new TrafficCounters(historyDir, clock);
-    ProjectService projects = new ProjectService(new FileProjectRepository(dataDir),
-        List.of(stubs, new ProjectDataCleaner(dataStore, bodyFiles), history, traffic), clock);
-    projectsRef.set(projects);
+    StagedChanges staged = new StagedChanges(dataDir, clock);
     UserService users = new UserService(new FileUserRepository(dataDir), config.users, new PasswordHasher(), clock);
+    AccessTokenService accessTokens = new AccessTokenService(new FileAccessTokenRepository(dataDir), users::find,
+        id -> projectsRef.get().find(id).isPresent(), clock);
+    ProjectService projects = new ProjectService(new FileProjectRepository(dataDir),
+        List.of(stubs, new ProjectDataCleaner(dataStore, bodyFiles), history, traffic, staged, accessTokens), clock);
+    projectsRef.set(projects);
     TeamService teams = new TeamService(new FileTeamRepository(dataDir), List.of(users), clock);
     OrganizationService orgs = new OrganizationService(new FileOrganizationRepository(dataDir), List.of(projects, teams, users), clock);
     projects.assignOrphans(orgs.ensureDefault().id());
@@ -182,6 +204,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     });
     maintenance.scheduleWithFixedDelay(() -> safely(history::prune), 1, 30, TimeUnit.MINUTES);
     maintenance.scheduleWithFixedDelay(() -> safely(traffic::save), 1, 1, TimeUnit.MINUTES);
+    maintenance.scheduleWithFixedDelay(() -> safely(accessTokens::flushUse), 1, 1, TimeUnit.MINUTES);
     Runtime.getRuntime().addShutdownHook(new Thread(() -> {
       traffic.save();
       history.close();
@@ -192,7 +215,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     SsoService sso = new SsoService(
         List.of(new AzureEntraProvider(http, new JwtVerifier(http, clock), config.ssoAuthority)),
         ssoSettings, users, new RoleMapper(orgs::exists, id -> teams.find(id).map(Team::orgId)), clock);
-    AuthService auth = new AuthService(users, TokenService.fromDataDir(dataDir, clock), ssoSettings::active);
+    AuthService auth = new AuthService(users, TokenService.fromDataDir(dataDir, clock), ssoSettings::active, accessTokens::principal);
     AccessPolicy policy = new AccessPolicy(id -> projects.find(id).map(p -> new ProjectScope(p.orgId(), p.teamId())));
 
     BaseUrls urls = new BaseUrls(config.publicUrl);
@@ -223,6 +246,40 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     CorsForRequest corsForRequest = new CorsForRequest(projects::findForPath, corsHeaders);
     PlaygroundHistory playgroundHistory = new PlaygroundHistory(dataDir);
 
+    Function<Request, Principal> principals = request -> auth.principal(request.getHeader("Authorization")).orElse(null);
+    ApiRouter api = new ApiRouter(principals, auditRecorder);
+    List<ApiController> controllers = List.of(
+        new AuditController(auditLog, config.auditRetentionDays),
+        new SystemController(auth, urls, dataDir.toString(), config.journalMaxEntries),
+        new AuthController(auth, users, userViews, sso, ssoSettings, urls, config.loginNote),
+        new OrganizationController(orgs, projects, users, userViews, teams),
+        new TeamController(orgs, teams, projects, users, userViews),
+        new UserController(users, userViews, auth, orgs, teams),
+        new SsoController(ssoSettings, sso, orgs, teams, urls),
+        new ProjectController(projects, views, teamChoice),
+        new RuntimeController(runtimeService),
+        new ExampleController(examples, new ExampleInstaller(examples, projects, stubs, importers, crud, bodyFiles), views, teamChoice),
+        new StubController(stubs),
+        new RequestLogController(requestLog, history),
+        new HistoryController(projects, history, traffic, Main.VERSION),
+        new CalloutController(calloutLog),
+        new ImportExportController(projects, stubs, exporters, importers, urls, new WireMockArchiveImporter(bodyFiles)),
+        new AiController(aiSettings, aiProviders, chat, assistant, assistantJobs, projects, urls, new BodyGenerator(aiSettings, chat)),
+        new BackupController(new BackupService(orgs, teams, projects, gateway, dataStore, bodyFiles, clock)),
+        new DataController(projects, stubs, dataStore, crud),
+        new FilesController(projects, stubs, bodyFiles),
+        new PlaygroundController(
+            new PlaygroundService(new JdkHttpSender(), new TargetGuard(config.playgroundAllowPrivate, InetAddress::getAllByName),
+                playgroundHistory, () -> "http://127.0.0.1:" + (port.get() > 0 ? port.get() : services.getOptions().portNumber()), clock),
+            playgroundHistory, new DataGenerator(fakeData), config.publicUrl),
+        new AccessTokenController(accessTokens, auth, projects, clock),
+        new StagedController(projects, staged, assistant));
+    controllers.forEach(c -> c.register(api));
+    McpTools mcpTools = new McpTools(new InternalApi(api.task(), policy),
+        new ReviewStager(staged, (projectId, pending) -> new MockTools(stubs, history, clock, calloutLog, runtimeService, projectId, pending), policy),
+        resource("/mcp/reference.md"), clock);
+    McpServer mcpServer = new McpServer(mcpTools, Main.VERSION);
+
     List<Extension> extensions = new ArrayList<>(List.of(
         new PersistenceListener(),
         new CrudTransformer(crud),
@@ -238,35 +295,18 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
         new ProjectScopeMatcher(projects::findForPath),
         new FakeHelpers(fakeData),
         new AuthFilter(auth, policy),
-        new MockHubAdminExtension(
-            request -> auth.principal(request.getHeader("Authorization")).orElse(null),
-            auditRecorder,
-            List.of(
-                new AuditController(auditLog, config.auditRetentionDays),
-                new SystemController(auth, urls, dataDir.toString(), config.journalMaxEntries),
-                new AuthController(auth, users, userViews, sso, ssoSettings, urls, config.loginNote),
-                new OrganizationController(orgs, projects, users, userViews, teams),
-                new TeamController(orgs, teams, projects, users, userViews),
-                new UserController(users, userViews, auth, orgs, teams),
-                new SsoController(ssoSettings, sso, orgs, teams, urls),
-                new ProjectController(projects, views, teamChoice),
-                new RuntimeController(runtimeService),
-                new ExampleController(examples, new ExampleInstaller(examples, projects, stubs, importers, crud, bodyFiles), views, teamChoice),
-                new StubController(stubs),
-                new RequestLogController(requestLog, history),
-                new HistoryController(projects, history, traffic, Main.VERSION),
-                new CalloutController(calloutLog),
-                new ImportExportController(projects, stubs, exporters, importers, urls, new WireMockArchiveImporter(bodyFiles)),
-                new AiController(aiSettings, aiProviders, chat, assistant, assistantJobs, projects, urls, new BodyGenerator(aiSettings, chat)),
-                new BackupController(new BackupService(orgs, teams, projects, gateway, dataStore, bodyFiles, clock)),
-                new DataController(projects, stubs, dataStore, crud),
-                new FilesController(projects, stubs, bodyFiles),
-                new PlaygroundController(
-                    new PlaygroundService(new JdkHttpSender(), new TargetGuard(config.playgroundAllowPrivate, InetAddress::getAllByName),
-                        playgroundHistory, () -> "http://127.0.0.1:" + (port.get() > 0 ? port.get() : services.getOptions().portNumber()), clock),
-                    playgroundHistory, new DataGenerator(fakeData), config.publicUrl)))));
+        new MockHubAdminExtension(api, new McpTask(mcpServer, principals))));
     extensions.addAll(new StateExtension(new CaffeineStore()).create(services));
     return extensions;
+  }
+
+  private static String resource(String path) {
+    try (InputStream in = MockHubExtensionFactory.class.getResourceAsStream(path)) {
+      if (in == null) throw new IllegalStateException("Missing resource " + path);
+      return new String(in.readAllBytes(), StandardCharsets.UTF_8);
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
   }
 
   private static void safely(Runnable task) {

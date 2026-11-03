@@ -85,9 +85,9 @@ describe('audit model', () => {
     expect(ids({ range: 'month', actorId: 'u2', query: 'maria' })).toEqual(['b']);
   });
 
-  it('lists the people who made changes, busiest first, and counts each kind', () => {
+  it('lists the people who made changes, busiest first, counting their tokens as them, and counts each kind', () => {
     // Given
-    const entries = [entry({ actorId: 'u2', actor: 'Maria' }), entry({ action: 'created' }), entry({ action: 'updated' })];
+    const entries = [entry({ actorId: 'u2', actor: 'Maria' }), entry({ action: 'created', actor: 'Sam Patel via token “CI”' }), entry({ action: 'updated' })];
 
     // Then
     expect(people(entries)).toEqual([{ id: 'u1', name: 'Sam Patel', count: 2 }, { id: 'u2', name: 'Maria', count: 1 }]);

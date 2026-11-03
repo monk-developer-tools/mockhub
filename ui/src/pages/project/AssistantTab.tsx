@@ -1,15 +1,14 @@
-import { ArrowCounterClockwise, ArrowUp, CaretDown, CaretRight, Check, Sparkle, Trash, X } from '@phosphor-icons/react';
+import { ArrowCounterClockwise, ArrowUp, Check, Sparkle } from '@phosphor-icons/react';
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { api, ApiError } from '../../api/client';
-import type { AssistantStep, ChatMessage, ProposedChange, RuntimeSettings, Stub } from '../../api/types';
+import type { AssistantStep, ChatMessage, ProposedChange } from '../../api/types';
 import { ChatText } from '../../components/ChatText';
-import { StubRoute } from '../../components/StubRoute';
-import { runtimeSummary } from '../../model/runtime';
 import { useToast } from '../../components/Toasts';
-import { collapse, diffLines } from '../../model/diff';
 import { useApp } from '../../state/AppContext';
+import { ChangeCard } from './ChangeCard';
 import { useProject } from './ProjectPage';
+import { StagedPanel, useStagedChanges } from './StagedPanel';
 
 const STORAGE_KEY = 'mockhub.chat.';
 const POLL_MS = 1500;
@@ -78,6 +77,7 @@ export function AssistantTab() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const autoSent = useRef(false);
   const mounted = useRef(true);
+  const { staged, reload: reloadStaged } = useStagedChanges(project.id);
 
   const { messages, pending, jobId } = conversation;
   const thinking = starting || Boolean(jobId);
@@ -207,6 +207,8 @@ export function AssistantTab() {
 
   if (aiStatus && !aiStatus.enabled) {
     return (
+      <div className="stack">
+      <StagedPanel staged={staged} reload={reloadStaged} />
       <div className="panel empty">
         <Sparkle size={22} />
         <h2>The AI assistant is off</h2>
@@ -220,11 +222,12 @@ export function AssistantTab() {
           <p className="muted small">Ask an admin to turn it on under Administration → AI assistant.</p>
         )}
       </div>
+      </div>
     );
   }
 
   return (
-    <div className={`assistant${pending.length ? ' has-changes' : ''}`}>
+    <div className={`assistant${pending.length || staged.length ? ' has-changes' : ''}`}>
       <div className="panel chat">
         <div className="panel-head">
           <h2><Sparkle size={15} /> Assistant</h2>
@@ -285,6 +288,9 @@ export function AssistantTab() {
         </form>
       </div>
 
+      {(pending.length > 0 || staged.length > 0) && (
+      <div className="changes-column">
+      <StagedPanel staged={staged} reload={reloadStaged} />
       {pending.length > 0 && (
         <div className="panel changes">
           <div className="panel-head">
@@ -305,62 +311,8 @@ export function AssistantTab() {
           </ul>
         </div>
       )}
-    </div>
-  );
-}
-
-const ACTION_LABEL = { create: 'New', update: 'Change', delete: 'Delete', runtime: 'Runtime' };
-
-function ChangeCard({ change, basePath, canApply, onApply, onDiscard }: {
-  change: ProposedChange;
-  basePath: string;
-  canApply: boolean;
-  onApply: () => void;
-  onDiscard: () => void;
-}) {
-  const [open, setOpen] = useState(change.action === 'update' || change.action === 'runtime');
-  const shown: Stub = (change.stub ?? change.before ?? {}) as Stub;
-  const before = change.before ? JSON.stringify(change.before, null, 2) : '';
-  const after = change.stub ? JSON.stringify(change.stub, null, 2) : '';
-  return (
-    <li className={`change ${change.action}`}>
-      <div className="change-head">
-        <span className={`change-kind ${change.action}`}>{ACTION_LABEL[change.action]}</span>
-        {change.action === 'runtime' ? (
-          <span className="change-runtime">{runtimeSummary(change.stub as unknown as RuntimeSettings).join(' · ') || 'Turn off every runtime setting'}</span>
-        ) : (
-          <StubRoute stub={shown} basePath={basePath} />
-        )}
       </div>
-      {change.summary && <p className="change-summary">{change.summary}</p>}
-      <div className="btn-row change-actions">
-        <button className="btn ghost small" aria-expanded={open} onClick={() => setOpen(!open)}>
-          {open ? <CaretDown size={13} /> : <CaretRight size={13} />} {change.action === 'update' || change.action === 'runtime' ? 'Diff' : 'JSON'}
-        </button>
-        <span style={{ flex: 1 }} />
-        <button className="btn ghost small" onClick={onDiscard} aria-label={`Discard: ${change.summary}`}>
-          {change.action === 'delete' ? <X size={13} /> : <Trash size={13} />} Discard
-        </button>
-        <button className="btn small" disabled={!canApply} onClick={onApply} aria-label={`Apply: ${change.summary}`}>
-          <Check size={13} /> Apply
-        </button>
-      </div>
-      {open && <Diff before={before} after={after} />}
-    </li>
-  );
-}
-
-function Diff({ before, after }: { before: string; after: string }) {
-  const lines = collapse(diffLines(before, after), before && after ? 3 : 1000);
-  return (
-    <pre className="diff" aria-label="Changes">
-      {lines.map((l, i) =>
-        l.kind === 'gap' ? (
-          <span key={i} className="diff-gap">⋯ {l.count} unchanged line{l.count === 1 ? '' : 's'}</span>
-        ) : (
-          <span key={i} className={`diff-${l.kind}`}>{l.kind === 'add' ? '+ ' : l.kind === 'remove' ? '- ' : '  '}{l.text}</span>
-        ),
       )}
-    </pre>
+    </div>
   );
 }

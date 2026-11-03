@@ -154,4 +154,56 @@ class AccessPolicyTest {
     // Then
     assertThat(AccessPolicy.isPublic(path)).isEqualTo(expected);
   }
+
+  private static Principal viaToken(Principal owner, Role ceiling, List<String> projects, boolean review) {
+    return Principal.viaToken(owner.user(), new TokenGrant("t1", "CI", ceiling, projects, review));
+  }
+
+  private static final Map<String, Principal> TOKENS = Map.of(
+      "adminAsViewer", viaToken(user(Role.ADMIN), Role.VIEWER, List.of(), false),
+      "adminFull", viaToken(user(Role.ADMIN), Role.ADMIN, List.of(), false),
+      "adminOnlyPa", viaToken(user(Role.ADMIN), Role.ADMIN, List.of("pa"), false),
+      "editorReview", viaToken(user(Role.NONE, new Membership("orgA", Role.EDITOR)), Role.EDITOR, List.of(), true));
+
+  @ParameterizedTest
+  @CsvSource({
+      "adminAsViewer, GET, /mockhub/api/projects/pa/stubs, true",
+      "adminAsViewer, POST, /mockhub/api/projects/pa/stubs, false",
+      "adminAsViewer, POST, /mockhub/api/users, false",
+      "adminFull, POST, /mockhub/api/users, true",
+      "adminFull, POST, /mockhub/api/auth/tokens, false",
+      "adminFull, DELETE, /mockhub/api/auth/tokens/x, false",
+      "adminFull, POST, /mockhub/api/auth/password, false",
+      "adminOnlyPa, POST, /mockhub/api/projects/pa/stubs, true",
+      "adminOnlyPa, GET, /mockhub/api/projects/pb/stubs, false",
+      "adminOnlyPa, GET, /mockhub/api/projects, true",
+      "adminOnlyPa, POST, /mockhub/api/projects, false",
+      "adminOnlyPa, GET, /mockhub/api/orgs, false",
+      "adminOnlyPa, GET, /mappings, false",
+      "editorReview, GET, /mockhub/api/projects/pa/stubs, true",
+      "editorReview, POST, /mockhub/api/projects/pa/stubs, false",
+      "editorReview, POST, /mockhub/mcp, true",
+      "nobodyToken, POST, /mockhub/mcp, true"
+  })
+  void limitsAccessTokensToTheirRoleProjectsAndMode(String who, String method, String path, boolean allowed) {
+    // Given
+    Principal principal = TOKENS.getOrDefault(who, viaToken(user(Role.NONE), Role.VIEWER, List.of(), false));
+
+    // When
+    AccessPolicy.Decision decision = policy.decide(principal, RequestMethod.fromString(method), path);
+
+    // Then
+    assertThat(decision.allowed()).as(decision.reason()).isEqualTo(allowed);
+  }
+
+  @Test
+  void signedInPeopleManageTheirOwnTokens() {
+    // When
+    AccessPolicy.Decision list = policy.decide(PEOPLE.get("teamViewer"), RequestMethod.GET, "/mockhub/api/auth/tokens");
+    AccessPolicy.Decision create = policy.decide(PEOPLE.get("teamViewer"), RequestMethod.POST, "/mockhub/api/auth/tokens");
+    AccessPolicy.Decision revoke = policy.decide(PEOPLE.get("teamViewer"), RequestMethod.DELETE, "/mockhub/api/auth/tokens/abc");
+
+    // Then
+    assertThat(List.of(list.allowed(), create.allowed(), revoke.allowed())).containsOnly(true);
+  }
 }

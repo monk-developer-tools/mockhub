@@ -66,7 +66,11 @@ public final class AuditRecorder implements ChangeAudit {
       Map.entry("POST /users/{id}/password", new Rule("reset the password of", "account", Name.USER)),
       Map.entry("PUT /sso", new Rule("updated", "single sign-on settings", Name.NONE)),
       Map.entry("PUT /ai/settings", new Rule("updated", "AI assistant settings", Name.NONE)),
-      Map.entry("POST /restore", new Rule("restored", "backup", Name.NONE)));
+      Map.entry("POST /restore", new Rule("restored", "backup", Name.NONE)),
+      Map.entry("POST /auth/tokens", new Rule("created", "access token", Name.BODY_NAME)),
+      Map.entry("DELETE /auth/tokens/{tokenId}", new Rule("revoked", "access token", Name.NONE)),
+      Map.entry("POST /projects/{id}/staged/apply", new Rule("applied", "staged changes", Name.NONE)),
+      Map.entry("DELETE /projects/{id}/staged/{changeId}", new Rule("discarded", "staged change", Name.NONE)));
 
   private final AuditLog log;
   private final AuditNames names;
@@ -127,7 +131,7 @@ public final class AuditRecorder implements ChangeAudit {
     if (rule.target().equals("stub") && action.equals("switched") && body != null && body.has("enabled")) {
       action = body.get("enabled").asBoolean() ? "turned on" : "turned off";
     }
-    return new AuditEntry(null, null, p.id(), label(p), action, rule.target(), name(rule.name(), change, project), details(change, project),
+    return new AuditEntry(null, null, p.id(), p.label(), action, rule.target(), name(rule.name(), change, project), details(change, project),
         orgId, teamId, project.map(Project::id).orElse(null), project.map(Project::name).orElse(null));
   }
 
@@ -190,10 +194,5 @@ public final class AuditRecorder implements ChangeAudit {
 
   private static String text(JsonNode body, String field) {
     return body == null ? "" : body.path(field).asText("");
-  }
-
-  private static String label(Principal p) {
-    String display = p.user().displayName();
-    return display == null || display.isBlank() ? p.username() : display;
   }
 }

@@ -1,4 +1,4 @@
-<p>Everything in the UI is available over HTTP at <code>/__admin/mockhub/api</code>. With sign-in on, send HTTP Basic credentials. The native WireMock API stays available at <code>/__admin</code>.</p>
+<p>Everything in the UI is available over HTTP at <code>/__admin/mockhub/api</code>. With sign-in on, send a <a href="#access-tokens">personal access token</a> as <code>Authorization: Bearer mh_…</code>, or HTTP Basic credentials. AI agents can use the same features through the <a href="#mcp">MCP server</a>. The native WireMock API stays available at <code>/__admin</code>.</p>
 <div class="code"><pre><span class="c"># create a project</span>
 curl -X POST $HUB/__admin/mockhub/api/projects -d '{"name":"Orders","slug":"orders"}'
 
@@ -44,6 +44,8 @@ curl -o failed.har "$HUB/__admin/mockhub/api/projects/$ID/history-export?status=
     <tr><td><code>POST /projects/{id}/import/wiremock-zip</code></td><td>import a zipped WireMock folder (send the zip as the body)</td></tr>
     <tr><td><code>PUT /projects/{id}</code> with <code>{"root": true}</code></td><td>answer at the root (one project per server)</td></tr>
     <tr><td><code>GET /examples</code>, <code>POST /examples/{id}/install</code></td><td>built-in examples</td></tr>
+    <tr><td><code>GET|POST /auth/tokens</code>, <code>DELETE /auth/tokens/{tokenId}</code></td><td>your <a href="#access-tokens">access tokens</a>: list, create, revoke</td></tr>
+    <tr><td><code>GET /projects/{id}/staged</code>, <code>POST …/staged/apply</code>, <code>DELETE …/staged/{changeId}</code></td><td>changes staged by <a href="#mcp-review">review tokens</a>: list, apply <code>{"ids":[…]}</code>, discard</td></tr>
     <tr><td><code>GET /audit</code></td><td>recent changes; filter with <code>orgId</code>, <code>projectId</code>, <code>actorId</code>, <code>limit</code></td></tr>
     <tr><td><code>GET /projects/{id}/audit</code></td><td>one project's changes</td></tr>
     <tr><td><code>GET /backup</code></td><td>everything as one file</td></tr>

@@ -1,14 +1,11 @@
 package io.mockhub.ext;
 
+import com.github.tomakehurst.wiremock.admin.AdminTask;
 import com.github.tomakehurst.wiremock.admin.Router;
 import com.github.tomakehurst.wiremock.extension.AdminApiExtension;
-import com.github.tomakehurst.wiremock.http.Request;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
-import io.mockhub.auth.Principal;
-import java.util.function.Function;
 import io.mockhub.api.ApiRouter;
-import io.mockhub.api.ChangeAudit;
-import io.mockhub.controller.ApiController;
+import io.mockhub.mcp.McpNotAllowedTask;
 import io.mockhub.web.RedirectToUiTask;
 import io.mockhub.web.StaticUiTask;
 import java.util.List;
@@ -18,14 +15,11 @@ public final class MockHubAdminExtension implements AdminApiExtension {
       List.of(RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE);
 
   private final ApiRouter api;
+  private final AdminTask mcp;
 
-  public MockHubAdminExtension(Function<Request, Principal> principals, List<ApiController> controllers) {
-    this(principals, change -> ChangeAudit.Pending.NONE, controllers);
-  }
-
-  public MockHubAdminExtension(Function<Request, Principal> principals, ChangeAudit audit, List<ApiController> controllers) {
-    this.api = new ApiRouter(principals, audit);
-    controllers.forEach(c -> c.register(api));
+  public MockHubAdminExtension(ApiRouter api, AdminTask mcp) {
+    this.api = api;
+    this.mcp = mcp;
   }
 
   @Override
@@ -36,6 +30,9 @@ public final class MockHubAdminExtension implements AdminApiExtension {
   @Override
   public void contributeAdminApiRoutes(Router router) {
     API_METHODS.forEach(method -> router.add(method, "/mockhub/api/**", api.task()));
+    router.add(RequestMethod.POST, "/mockhub/mcp", mcp);
+    router.add(RequestMethod.GET, "/mockhub/mcp", new McpNotAllowedTask());
+    router.add(RequestMethod.DELETE, "/mockhub/mcp", new McpNotAllowedTask());
     router.add(RequestMethod.GET, "/mockhub/ui/**", new StaticUiTask());
     router.add(RequestMethod.GET, "/mockhub", new RedirectToUiTask());
   }

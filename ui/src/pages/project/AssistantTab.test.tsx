@@ -27,6 +27,7 @@ vi.mock('../../api/client', async (original) => ({
     startAssistant: (...a: unknown[]) => startAssistant(...a),
     assistantJob: (...a: unknown[]) => assistantJob(...a),
     applyChanges: (...a: unknown[]) => applyChanges(...a),
+    stagedChanges: () => Promise.resolve([]),
   },
 }));
 vi.mock('../../state/AppContext', () => ({ useApp: () => ({ aiStatus, canEdit, isAdmin: true, refreshProjects: vi.fn(() => Promise.resolve()) }) }));

@@ -291,6 +291,36 @@ export interface ProposedChange {
   summary: string;
 }
 
+export interface StagedChange {
+  change: ProposedChange;
+  by: string;
+  at: string;
+}
+
+export type TokenRole = 'viewer' | 'editor' | 'manager' | 'admin';
+export type TokenMode = 'direct' | 'review';
+
+export interface AccessToken {
+  id: string;
+  name: string;
+  prefix: string;
+  role: TokenRole;
+  mode: TokenMode;
+  projects: { id: string; name: string }[];
+  createdAt: string;
+  expiresAt: string | null;
+  lastUsedAt: string | null;
+  expired: boolean;
+}
+
+export interface NewAccessToken {
+  name: string;
+  role: TokenRole;
+  mode: TokenMode;
+  projectIds: string[];
+  expiresInDays: number;
+}
+
 export interface AssistantReply {
   reply: string;
   changes: ProposedChange[];
