@@ -51,10 +51,14 @@ export const GROUPS = [
     id: 'runtime',
     title: 'Runtime behaviour',
     icon: 'Gauge',
-    description: 'Latency, failures and access rules for your mocks.',
+    description: 'Latency, failures, limits and access rules for your mocks.',
     pages: [
-      { slug: 'faults', title: 'Delays & faults', icon: 'Lightning', description: 'Fixed, random and realistic delays, dropped connections and random failure rates.' },
+      { slug: 'faults', title: 'Delays & faults', icon: 'Lightning', description: 'Delays for a stub or a whole project, slower answers under load, dropped connections and failure rates.' },
+      { slug: 'default-response', title: 'Default response', icon: 'ArrowUDownLeft', description: 'Answer calls no stub matches with your own status, headers and body.' },
+      { slug: 'rate-limits', title: 'Rate limits', icon: 'Gauge', description: 'Limit calls per second, minute or hour for a project or one stub, with 429 and Retry-After.' },
       { slug: 'api-keys', title: 'API keys', icon: 'Key', description: 'Make a project answer only when a request carries the right key.' },
+      { slug: 'cors', title: 'CORS', icon: 'Globe', description: 'Which websites can call a mock from the browser, or make CORS fail on purpose.' },
+      { slug: 'ip-allow-list', title: 'IP allow list', icon: 'ShieldCheck', description: 'Only answer calls from listed addresses and ranges.' },
     ],
   },
   {

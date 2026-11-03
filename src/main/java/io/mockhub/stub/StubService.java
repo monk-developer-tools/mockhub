@@ -22,6 +22,8 @@ public final class StubService implements ProjectListener {
       Comparator.comparing((StubMapping s) -> s.getPriority() == null ? 5 : s.getPriority())
           .thenComparing(s -> s.getName() == null ? "" : s.getName().toLowerCase());
 
+  public static final int PRIORITY_STEP = 10;
+
   private final StubGateway gateway;
   private final Supplier<ProjectService> projects;
 
@@ -42,6 +44,33 @@ public final class StubService implements ProjectListener {
     ArrayNode out = Jsons.MAPPER.createArrayNode();
     stubsOf(projectId).stream().filter(s -> !StubMetadata.isManaged(s)).forEach(s -> out.add(relative(s, p)));
     return out;
+  }
+
+  public ArrayNode matchingOrder(String projectId) {
+    Project p = projects.get().get(projectId);
+    ArrayNode out = Jsons.MAPPER.createArrayNode();
+    gateway.findAll().stream()
+        .filter(s -> p.id().equals(StubMetadata.projectId(s)) && !StubMetadata.isManaged(s))
+        .forEach(s -> out.add(s.getId().toString()));
+    return out;
+  }
+
+  public ArrayNode reorder(String projectId, List<String> ids) {
+    Project p = projects.get().get(projectId);
+    List<StubMapping> current = stubsOf(p.id()).stream().filter(s -> !StubMetadata.isManaged(s)).toList();
+    Set<String> known = current.stream().map(s -> s.getId().toString()).collect(Collectors.toSet());
+    if (ids.size() != known.size() || !known.equals(Set.copyOf(ids))) {
+      throw ApiException.badRequest("Send every stub of the project exactly once, in the new order");
+    }
+    for (int i = 0; i < ids.size(); i++) {
+      int priority = (i + 1) * PRIORITY_STEP;
+      StubMapping stub = find(p, ids.get(i));
+      if (stub.getPriority() != null && stub.getPriority() == priority) continue;
+      ObjectNode node = (ObjectNode) Jsons.fromWireMock(stub);
+      node.put("priority", priority);
+      gateway.update(Jsons.toWireMock(node, StubMapping.class));
+    }
+    return list(p.id());
   }
 
   public ObjectNode get(String projectId, String stubId) {

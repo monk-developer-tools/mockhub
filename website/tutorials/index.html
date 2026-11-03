@@ -46,7 +46,7 @@
               </a>
               <a class="mega-item" href="/docs/#group-runtime">
                 <span class="mega-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 256 256" aria-hidden="true"><path d="M232,152v24a8,8,0,0,1-8,8H32a8,8,0,0,1-8-8V153.13C24,95.65,70.15,48.2,127.63,48A104,104,0,0,1,232,152Z" opacity="0.2"></path><path d="M207.06,72.67A111.24,111.24,0,0,0,128,40h-.4C66.07,40.21,16,91,16,153.13V176a16,16,0,0,0,16,16H224a16,16,0,0,0,16-16V152A111.25,111.25,0,0,0,207.06,72.67ZM224,176H119.71l54.76-75.3a8,8,0,0,0-12.94-9.42L99.92,176H32V153.13c0-3.08.15-6.12.43-9.13H56a8,8,0,0,0,0-16H35.27c10.32-38.86,44-68.24,84.73-71.66V80a8,8,0,0,0,16,0V56.33A96.14,96.14,0,0,1,221,128H200a8,8,0,0,0,0,16h23.67c.21,2.65.33,5.31.33,8Z"></path></svg></span>
-                <span><strong>Runtime behaviour</strong><small>Latency, failures and access rules for your mocks.</small></span>
+                <span><strong>Runtime behaviour</strong><small>Latency, failures, limits and access rules for your mocks.</small></span>
               </a>
               <a class="mega-item" href="/docs/#group-traffic">
                 <span class="mega-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 256 256" aria-hidden="true"><path d="M96,40l33.52,88H56Zm104,88H129.52L160,208Z" opacity="0.2"></path><path d="M240,128a8,8,0,0,1-8,8H204.94l-37.78,75.58A8,8,0,0,1,160,216h-.4a8,8,0,0,1-7.08-5.14L95.35,60.76,63.28,131.31A8,8,0,0,1,56,136H24a8,8,0,0,1,0-16H50.85L88.72,36.69a8,8,0,0,1,14.76.46l57.51,151,31.85-63.71A8,8,0,0,1,200,120h32A8,8,0,0,1,240,128Z"></path></svg></span>
@@ -266,6 +266,7 @@
             <a class="tut-card" href="#webhooks"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M4 12h9M10 8l4 4-4 4"/><circle cx="18" cy="12" r="2.5"/></svg></span><strong>Send webhooks and serve files</strong><span>Callbacks, PDFs and images.</span><em>3 min</em></a>
             <a class="tut-card" href="#api-key"><span class="tut-ico"><svg viewBox="0 0 24 24"><circle cx="8" cy="12" r="3.5"/><path d="M11.5 12H21M17 12v3M20 12v2"/></svg></span><strong>Require an API key</strong><span>Reject calls without the header.</span><em>2 min</em></a>
             <a class="tut-card" href="#chaos"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M3 14h4l2-6 4 10 2-6h6"/></svg></span><strong>Simulate slow and failing services</strong><span>Delays, faults and random failures.</span><em>3 min</em></a>
+            <a class="tut-card" href="#runtime"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M4 18a8 8 0 1 1 16 0"/><path d="M12 18l4-6"/></svg></span><strong>Behave like the real API</strong><span>Default errors, rate limits, load and CORS.</span><em>4 min</em></a>
           </div>
         </div>
         <div class="tut-group">
@@ -798,6 +799,31 @@ curl -X POST $MOCK/example-soap/ws/calculator -H "Content-Type: text/xml" -d \
             </li>
           </ol>
           <p class="tip"><strong>Fails once, then works.</strong> Combine a fault with a scenario to test retries, like the <em>Flaky</em> stub in the <em>Resilience testing</em> example. To slow down every project at once, set a <strong>Global delay</strong> on the Server page.</p>
+          <a class="next" href="#runtime">Next: Behave like the real API</a>
+        </article>
+
+        <article class="tut" id="runtime">
+          <p class="tut-meta"><span>Realistic mocks</span><span>4 min</span></p>
+          <h2>Behave like the real API</h2>
+          <p class="tut-intro">A real service answers unknown paths with its own error, limits how often you call it, slows down when it's busy and decides which websites may call it. Set all of that once per project, in <strong>Settings → Runtime behaviour</strong>.</p>
+          <ol class="tut-steps">
+            <li>
+              <h3>Answer unknown paths with your own error</h3>
+              <p>Turn on <strong>Default response</strong> and write the status, headers and body the real service sends for a path it doesn't know. With <strong>Use templates</strong> on, <code>{{request.method}} {{request.path}}</code> name the call. Every stub is still tried first.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/runtime-1-default.webp" alt="The Default response section turned on with status 404, a JSON content type and a templated error body" width="1176" height="900" loading="lazy"></figure>
+            </li>
+            <li>
+              <h3>Add a rate limit and latency</h3>
+              <p>Turn on <strong>Rate limit</strong>, for example <strong>60 requests per minute</strong>. Calls over it get <code>429</code> with <code>Retry-After</code> and <code>X-RateLimit-*</code> headers, so you can test your back-off. Under <strong>Latency</strong>, choose <strong>Random range</strong> and tick <strong>Get slower under load</strong> to make answers slower as a load test pushes harder. Then <strong>Save</strong>.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/runtime-2-limits.webp" alt="Rate limit set to 60 requests per minute and latency set to a random range of 100 to 400 ms, getting slower above 10 requests a second" width="1176" height="900" loading="lazy"></figure>
+            </li>
+            <li>
+              <h3>Decide which stub wins</h3>
+              <p>In the <strong>Stubs</strong> tab, click <strong>Show matching order</strong>. Stubs are tried from the top and the first match answers. Drag a specific stub, like an error for one id, above a general one, then <strong>Save order</strong>.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/runtime-3-order.webp" alt="The matching order view: seven numbered stubs with drag handles, the 404 fallback at the bottom and a Save order button" width="1176" height="900" loading="lazy"></figure>
+            </li>
+          </ol>
+          <p class="tip"><strong>Browser apps.</strong> Under <strong>CORS</strong>, list the websites that may call the mock, or choose <strong>Fail on purpose</strong> to see how your frontend handles a blocked call. An <strong>IP allow list</strong> keeps a mock to your CI runners or VPN. The <a href="/docs/rate-limits/">rate limits</a>, <a href="/docs/cors/">CORS</a> and <a href="/docs/default-response/">default response</a> docs have the details.</p>
           <a class="next" href="#webhooks">Next: Send webhooks and serve files</a>
         </article>
 

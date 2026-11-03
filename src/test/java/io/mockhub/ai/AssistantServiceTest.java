@@ -10,6 +10,9 @@ import io.mockhub.callout.InMemoryCalloutLog;
 import io.mockhub.journal.RequestLogService;
 import io.mockhub.project.Project;
 import io.mockhub.project.ProjectService;
+import io.mockhub.runtime.DefaultResponseStubs;
+import io.mockhub.runtime.RateLimiter;
+import io.mockhub.runtime.RuntimeService;
 import io.mockhub.stub.StubService;
 import io.mockhub.support.FakeLlmTransport;
 import io.mockhub.support.FakeStubGateway;
@@ -35,6 +38,7 @@ class AssistantServiceTest {
   private Project orders;
   private AiSettingsStore settings;
   private AssistantService assistant;
+  private RuntimeService runtime;
 
   @BeforeEach
   void setUp() {
@@ -44,9 +48,10 @@ class AssistantServiceTest {
     ProjectService projects = new ProjectService(new InMemoryProjectRepository(), List.of(stubs), Clock.systemUTC());
     ref.set(projects);
     orders = projects.create(tree("{'orgId':'org1','name':'Orders','slug':'orders'}"));
+    runtime = new RuntimeService(projects, new DefaultResponseStubs(stubs), new RateLimiter(Clock.systemUTC()));
     settings = new AiSettingsStore(dir, "");
     settings.save(new AiSettings(true, "litellm", "http://llm", "", "gpt-test", 0.2, 3));
-    assistant = new AssistantService(settings, new ChatCompletions(transport, AiProviders.defaults(), ""), stubs, new RequestLogService(gateway, projects), new InMemoryCalloutLog(100));
+    assistant = new AssistantService(settings, new ChatCompletions(transport, AiProviders.defaults(), ""), stubs, new RequestLogService(gateway, projects), new InMemoryCalloutLog(100), runtime);
   }
 
   private static List<AssistantService.Message> ask(String text) {
@@ -149,14 +154,16 @@ class AssistantServiceTest {
     List<ProposedChange> changes = List.of(
         new ProposedChange("c-1", "create", null, json("{'request':{'method':'GET','urlPath':'/new'},'response':{'status':200}}"), null, "new"),
         new ProposedChange("c-2", "delete", id, null, null, "old"),
-        new ProposedChange("c-3", "update", "missing", json("{'request':{'urlPath':'/x'}}"), null, "bad"));
+        new ProposedChange("c-3", "update", "missing", json("{'request':{'urlPath':'/x'}}"), null, "bad"),
+        new ProposedChange("c-4", "runtime", null, json("{'rateLimit':{'requests':3,'per':'second'}}"), null, "limit"));
 
     // When
     List<AssistantService.Applied> results = assistant.apply(orders.id(), changes);
 
     // Then
-    assertThat(results).extracting(AssistantService.Applied::ok).containsExactly(true, true, false);
+    assertThat(results).extracting(AssistantService.Applied::ok).containsExactly(true, true, false, true);
     assertThat(stubs.list(orders.id()).findValuesAsText("urlPath")).containsExactly("/new");
+    assertThat(runtime.current(orders.id()).rateLimit().requests()).isEqualTo(3);
   }
 
   @Test

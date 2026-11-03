@@ -10,6 +10,9 @@ import io.mockhub.callout.InMemoryCalloutLog;
 import io.mockhub.journal.RequestLogService;
 import io.mockhub.project.Project;
 import io.mockhub.project.ProjectService;
+import io.mockhub.runtime.DefaultResponseStubs;
+import io.mockhub.runtime.RateLimiter;
+import io.mockhub.runtime.RuntimeService;
 import io.mockhub.stub.StubService;
 import io.mockhub.support.FakeLlmTransport;
 import io.mockhub.support.FakeStubGateway;
@@ -50,7 +53,7 @@ class AssistantJobsTest {
     orders = projects.create(tree("{'orgId':'org1','name':'Orders','slug':'orders'}"));
     settings = new AiSettingsStore(dir, "");
     settings.save(new AiSettings(true, "litellm", "http://llm", "", "gpt-test", 0.2, 3));
-    assistant = new AssistantService(settings, new ChatCompletions(transport, AiProviders.defaults(), ""), stubs, new RequestLogService(gateway, projects), new InMemoryCalloutLog(100));
+    assistant = new AssistantService(settings, new ChatCompletions(transport, AiProviders.defaults(), ""), stubs, new RequestLogService(gateway, projects), new InMemoryCalloutLog(100), new RuntimeService(projects, new DefaultResponseStubs(stubs), new RateLimiter(Clock.systemUTC())));
   }
 
   private static List<AssistantService.Message> ask(String text) {

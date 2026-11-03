@@ -1,9 +1,12 @@
 package io.mockhub.controller;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import io.mockhub.api.ApiException;
 import io.mockhub.api.ApiRouter;
 import io.mockhub.api.Response;
 import io.mockhub.stub.StubService;
+import java.util.ArrayList;
+import java.util.List;
 
 public final class StubController implements ApiController {
   private final StubService stubs;
@@ -34,5 +37,14 @@ public final class StubController implements ApiController {
     r.post("/projects/{id}/adopt/{stubId}", ctx ->
         stubs.adopt(ctx.path("id"), ctx.path("stubId"), Boolean.parseBoolean(ctx.query("prefix", "false"))));
     r.get("/stubs/unassigned", ctx -> stubs.unassigned());
+    r.get("/projects/{id}/matching-order", ctx -> stubs.matchingOrder(ctx.path("id")));
+    r.put("/projects/{id}/matching-order", ctx -> stubs.reorder(ctx.path("id"), ids(ctx.json().path("ids"))));
+  }
+
+  private static List<String> ids(JsonNode node) {
+    if (!node.isArray()) throw ApiException.badRequest("Send the stub ids as an array called 'ids'");
+    List<String> ids = new ArrayList<>();
+    node.forEach(n -> ids.add(n.asText()));
+    return ids;
   }
 }

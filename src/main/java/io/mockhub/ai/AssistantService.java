@@ -8,6 +8,7 @@ import io.mockhub.api.Jsons;
 import io.mockhub.callout.CalloutLog;
 import io.mockhub.journal.RequestLogService;
 import io.mockhub.project.Project;
+import io.mockhub.runtime.RuntimeService;
 import io.mockhub.stub.StubService;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,8 +25,10 @@ public final class AssistantService {
   private final StubService stubs;
   private final RequestLogService requestLog;
   private final CalloutLog callouts;
+  private final RuntimeService runtime;
 
-  public AssistantService(AiSettingsStore settings, ChatCompletions chat, StubService stubs, RequestLogService requestLog, CalloutLog callouts) {
+  public AssistantService(AiSettingsStore settings, ChatCompletions chat, StubService stubs, RequestLogService requestLog, CalloutLog callouts, RuntimeService runtime) {
+    this.runtime = runtime;
     this.settings = settings;
     this.chat = chat;
     this.stubs = stubs;
@@ -62,7 +65,7 @@ public final class AssistantService {
     List<Message> trimmed = prepare(history);
     AiSettings s = settings.get();
 
-    MockTools tools = new MockTools(stubs, requestLog, callouts, project.id(), pending);
+    MockTools tools = new MockTools(stubs, requestLog, callouts, runtime, project.id(), pending);
     ArrayNode messages = Jsons.MAPPER.createArrayNode();
     messages.addObject().put("role", "system").put("content", SystemPrompt.forProject(project, mockUrl, stubs.stubsOf(project.id()).size()));
     if (!pending.isEmpty()) {
@@ -122,6 +125,10 @@ public final class AssistantService {
             stubs.delete(projectId, c.stubId());
             yield c.stubId();
           }
+          case ProposedChange.RUNTIME -> {
+            runtime.update(projectId, c.stub());
+            yield null;
+          }
           default -> throw ApiException.badRequest("Unknown change '" + c.action() + "'");
         };
         results.add(new Applied(c.id(), true, stubId, null));
@@ -176,7 +183,7 @@ public final class AssistantService {
     }
     if (args == null) return "";
     return switch (tool) {
-      case "create_stub", "update_stub", "delete_stub" -> args.path("summary").asText("");
+      case "create_stub", "update_stub", "delete_stub", "set_runtime" -> args.path("summary").asText("");
       case "get_stub" -> args.path("id").asText("");
       case "list_requests" -> args.path("unmatched_only").asBoolean(false) ? "unmatched only" : "";
       default -> "";

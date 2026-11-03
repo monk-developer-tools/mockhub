@@ -1,0 +1,9 @@
+<p>To make a mock answer only your own network, for example a CI runner or the office VPN, add addresses in <strong>Settings → Runtime behaviour → IP allow list</strong>. One per line: single addresses like <code>203.0.113.7</code> or ranges like <code>10.0.0.0/8</code>, IPv4 or IPv6 (<code>2001:db8::/32</code>), up to 100 entries. Host names aren't accepted, so nothing is looked up in DNS. Leave the list empty to allow everyone.</p>
+<p>Calls from anywhere else get:</p>
+<div class="code"><pre>HTTP/1.1 403 Forbidden
+Content-Type: application/json
+
+{"error":"Calls from 198.51.100.4 aren't allowed for this mock"}</pre></div>
+<h3 id="ip-allow-list-proxy">Behind a proxy or load balancer</h3>
+<p>MockHub checks the address the connection comes from. Behind a reverse proxy or a load balancer, that's the proxy's address. Add the proxy's range, or limit access at the proxy instead.</p>
+<p>The allow list protects a mock from casual use. It isn't a replacement for an <a href="#api-keys">API key</a> or a firewall.</p>

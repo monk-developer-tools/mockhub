@@ -18,6 +18,7 @@ import io.mockhub.runtime.DefaultResponseStubs;
 import io.mockhub.runtime.LoadMeter;
 import io.mockhub.runtime.ProjectScopeMatcher;
 import io.mockhub.runtime.RateLimiter;
+import io.mockhub.runtime.RuntimeService;
 import io.mockhub.runtime.RuntimeFilter;
 import io.mockhub.runtime.RuntimeTransformer;
 import io.mockhub.callout.CalloutListener;
@@ -183,7 +184,9 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     AiSettingsStore aiSettings = new AiSettingsStore(dataDir, config.aiApiKey);
     AiProviders aiProviders = AiProviders.defaults();
     ChatCompletions chat = new ChatCompletions(new JdkLlmTransport(), aiProviders, config.publicUrl);
-    AssistantService assistant = new AssistantService(aiSettings, chat, stubs, requestLog, calloutLog);
+    RateLimiter rateLimiter = new RateLimiter(clock);
+    RuntimeService runtimeService = new RuntimeService(projects, new DefaultResponseStubs(stubs), rateLimiter);
+    AssistantService assistant = new AssistantService(aiSettings, chat, stubs, requestLog, calloutLog, runtimeService);
     AssistantJobs assistantJobs = new AssistantJobs(assistant, Executors.newCachedThreadPool(r -> {
       Thread t = new Thread(r, "mockhub-assistant");
       t.setDaemon(true);
@@ -195,7 +198,6 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
 
     FakeData fakeData = new FakeData(config.fakeLocale);
     CorsHeaders corsHeaders = new CorsHeaders(config.stubCors);
-    RateLimiter rateLimiter = new RateLimiter(clock);
     LoadMeter loadMeter = new LoadMeter(clock);
     CorsForRequest corsForRequest = new CorsForRequest(projects::findForPath, corsHeaders);
     PlaygroundHistory playgroundHistory = new PlaygroundHistory(dataDir);
@@ -226,7 +228,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
                 new UserController(users, userViews, auth, orgs, teams),
                 new SsoController(ssoSettings, sso, orgs, teams, urls),
                 new ProjectController(projects, views, teamChoice),
-                new RuntimeController(projects, new DefaultResponseStubs(stubs), rateLimiter),
+                new RuntimeController(runtimeService),
                 new ExampleController(examples, new ExampleInstaller(examples, projects, stubs, importers, crud, bodyFiles), views, teamChoice),
                 new StubController(stubs),
                 new RequestLogController(requestLog),

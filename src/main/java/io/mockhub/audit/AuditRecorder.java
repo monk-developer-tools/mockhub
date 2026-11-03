@@ -36,6 +36,8 @@ public final class AuditRecorder implements ChangeAudit {
       Map.entry("POST /projects/{id}/stubs/{stubId}/clone", new Rule("duplicated", "stub", Name.STUB)),
       Map.entry("POST /projects/{id}/stubs/{stubId}/move", new Rule("moved", "stub", Name.STUB)),
       Map.entry("POST /projects/{id}/adopt/{stubId}", new Rule("adopted", "stub", Name.NONE)),
+      Map.entry("PUT /projects/{id}/matching-order", new Rule("reordered", "stubs", Name.NONE)),
+      Map.entry("PUT /projects/{id}/runtime", new Rule("updated", "runtime behaviour", Name.NONE)),
       Map.entry("POST /projects/{id}/import/{format}", new Rule("imported", "stubs", Name.PARAM_FORMAT)),
       Map.entry("POST /projects/{id}/import/wiremock-zip", new Rule("imported", "stubs", Name.NONE)),
       Map.entry("POST /projects/{id}/ai/apply", new Rule("applied", "assistant changes", Name.NONE)),

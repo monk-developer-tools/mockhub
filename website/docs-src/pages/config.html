@@ -10,7 +10,7 @@
     <tr><td><code>MOCKHUB_JOURNAL_MAX_ENTRIES</code></td><td><code>5000</code></td><td>Requests kept in the log</td></tr>
     <tr><td><code>MOCKHUB_AUDIT_RETENTION_DAYS</code></td><td><code>90</code></td><td>Days the <a href="#audit">audit log</a> keeps changes</td></tr>
     <tr><td><code>MOCKHUB_LOG_LEVEL</code></td><td><code>info</code></td><td>Standard output detail: <code>error</code>, <code>warn</code>, <code>info</code>, <code>debug</code></td></tr>
-    <tr><td><code>MOCKHUB_STUB_CORS</code></td><td><code>true</code></td><td>CORS headers on mock responses</td></tr>
+    <tr><td><code>MOCKHUB_STUB_CORS</code></td><td><code>true</code></td><td>CORS for projects that keep the server default: <code>true</code> lets any website call the mocks, <code>false</code> sends no CORS headers. Each project can set its own <a href="#cors">CORS rules</a>.</td></tr>
     <tr><td><code>MOCKHUB_PLAYGROUND_ALLOW_PRIVATE</code></td><td><code>false</code></td><td>Let the Playground call private and local addresses</td></tr>
     <tr><td><code>MOCKHUB_CALLOUT_ALLOW_PRIVATE</code></td><td><code>false</code></td><td>Let webhooks and wait-for-callout stubs call private and local addresses (MockHub's own mock URLs always work)</td></tr>
     <tr><td><code>MOCKHUB_CALLOUT_LOG_SIZE</code></td><td><code>2000</code></td><td>How many callouts the Callouts tab keeps in memory</td></tr>

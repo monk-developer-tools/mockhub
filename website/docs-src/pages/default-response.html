@@ -1,0 +1,12 @@
+<p>By default, a call that no stub matches gets WireMock's <code>404</code> page, which lists the closest stubs and why each one missed. That's useful while you build a mock, but a real service answers unknown paths with its own error. In a project's <strong>Settings</strong>, turn on <strong>Default response</strong> to answer those calls your way.</p>
+<ul>
+  <li><strong>Status</strong>: any code from 100 to 599. The default is <code>404</code>.</li>
+  <li><strong>Headers</strong>: one per line, <code>Name: value</code>.</li>
+  <li><strong>Body</strong>: up to 1 MB. With <em>Use templates</em> on, the body can use every <a href="#templating">template helper</a>, for example <code>{{request.method}} {{request.path}}</code>.</li>
+</ul>
+<div class="code"><pre>{
+  "error": "No mock matches {{request.method}} {{request.path}}"
+}</pre></div>
+<h3 id="default-response-how">How it works</h3>
+<p>MockHub keeps the default response as a hidden stub with the lowest possible priority, so every one of your stubs is tried first. It doesn't show up in the stub list, the stub count or Postman and Bruno exports. A WireMock export includes it as a normal catch-all stub, so the same behaviour moves with the mappings. Calls answered by it still appear in the <a href="#requests">request log</a> with <code>Matched-Stub-Name: Default response</code>.</p>
+<p>A project that <a href="#concepts">answers at the root</a> only catches its own unmatched calls: paths under another project's base path still go to that project.</p>

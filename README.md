@@ -210,7 +210,7 @@ All configuration is through environment variables.
 | `MOCKHUB_JOURNAL_MAX_ENTRIES` | `5000` | How many requests the request log keeps in memory |
 | `MOCKHUB_AUDIT_RETENTION_DAYS` | `90` | Days the audit log keeps changes; older entries are deleted from disk |
 | `MOCKHUB_LOG_LEVEL` | `info` | Detail written to standard output |
-| `MOCKHUB_STUB_CORS` | `true` | Adds CORS headers to mock responses so browser apps can call them |
+| `MOCKHUB_STUB_CORS` | `true` | CORS for projects that keep the server default: any website can call the mocks. Each project can set its own rules |
 | `MOCKHUB_FAKE_LOCALE` | `en` | Default language for `{{fake ...}}` data, e.g. `de`, `fr`, `en-GB` |
 | `MOCKHUB_PLAYGROUND_ALLOW_PRIVATE` | `false` | Let the Playground call private and local addresses (blocked by default so the server can't reach your internal network) |
 | `MOCKHUB_CALLOUT_ALLOW_PRIVATE` | `false` | Let webhooks and *wait for callout* stubs call private and local addresses. Calls to MockHub's own mock URLs always work. Set it to `true` for callbacks to services on your own network, e.g. `host.docker.internal` |

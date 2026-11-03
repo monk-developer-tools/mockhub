@@ -24,7 +24,7 @@ Legend: ✅ have it · 🟡 partial · ❌ missing
 | Inspect HTTP requests | Requests tab, live, JSON formatting, matched and unmatched | ✅ | F3 adds search |
 | Mock rules and request matching | Form and JSON editor, all WireMock matchers | ✅ | — |
 | Advanced matching filters | Body JSONPath/XPath, regex, headers, query, cookies | ✅ | — |
-| Execution order of rules | Priority number only, no drag to reorder | 🟡 | F2 |
+| Execution order of rules | Matching order view, drag or arrows to reorder | ✅ | — |
 | CRUD routes | CRUD resources with `_sort`, `_order`, `_limit`, `_offset` | 🟡 | F7 |
 | HTTP callout rule | Webhooks, forward, wait for callout, callout log | ✅ | F9 adds retries and OAuth |
 | Large and binary responses | Response files with content type | ✅ | — |
@@ -37,10 +37,10 @@ Legend: ✅ have it · 🟡 partial · ❌ missing
 | GraphQL from SDL | Missing | ❌ | F10 |
 | gRPC from proto | Missing | ❌ | F10 |
 | Mutual TLS | Only through raw `WIREMOCK_OPTIONS` | 🟡 | F10 |
-| Default response | Manual catch-all stub | 🟡 | F2 |
-| Latency profiles | Per-stub fixed, random, log-normal and trickle delays; no project default or load-dependent delay | 🟡 | F2 |
-| Rate limits | Missing | ❌ | F2 |
-| CORS origin allow list | Server-wide on/off switch | 🟡 | F2 |
+| Default response | Project setting, templated, hidden managed stub | ✅ | — |
+| Latency profiles | Per-stub delays plus a project default and load-dependent delay | ✅ | — |
+| Rate limits | Per project and per stub, 429 with Retry-After and X-RateLimit headers | ✅ | — |
+| CORS origin allow list | Per project allow list, credentials, simulated failure | ✅ | — |
 | Proxying and intercepting | Proxy and record per stub or project | ✅ | — |
 | Forward proxy (browser/OS proxy) | Missing | ❌ | F11 |
 | Local tunnelling | Missing | ❌ | F12 |
@@ -51,7 +51,7 @@ Legend: ✅ have it · 🟡 partial · ❌ missing
 | Datasets (CSV/JSON shared across projects) | Missing | ❌ | F8 |
 | Sharing and teams | Organisations, teams, roles, SSO | ✅ | — |
 | API connections (stored OAuth for outbound calls) | Missing | ❌ | F9 |
-| Mock server security (required header) | Project API key header, 401 | ✅ | F2 adds IP allow list |
+| Mock server security (required header) | Project API key header (401) and IP allow list (403) | ✅ | — |
 | AI rules generator | AI assistant with staged diffs | ✅ | — |
 | Agentic mode (MCP) | Missing | ❌ | F4 |
 | Contract drift detection | Missing | ❌ | F13 |
@@ -190,13 +190,22 @@ Goal: project-level controls for how mocks behave, without writing stubs.
 - Assistant and MCP: tools to read and change project runtime settings.
 
 Checklist:
-- [ ] Default response
-- [ ] Rate limits with headers
-- [ ] Project latency profile and load-dependent delay
-- [ ] CORS allow list and failure simulation
-- [ ] IP allow list
-- [ ] Drag to reorder and matching order view
-- [ ] Assistant tools, tests, docs, tutorial
+- [x] Default response
+- [x] Rate limits with headers
+- [x] Project latency profile and load-dependent delay
+- [x] CORS allow list and failure simulation
+- [x] IP allow list
+- [x] Drag to reorder and matching order view
+- [x] Assistant tools, tests, docs, tutorial
+
+Notes from building it:
+- Rate limits use fixed windows (per second, minute or hour) rather than a token bucket: the counts match the
+  `X-RateLimit-*` headers exactly. Counters are in memory, per instance.
+- CORS is now handled by MockHub instead of WireMock's `--enable-stub-cors`, so it can differ per project.
+  WireMock's own unmatched 404 can't carry CORS headers; a default response fixes that for browser apps.
+- The matching order view lists the real order WireMock tries stubs in, plus what answers when nothing matches.
+  Explaining the winner for one sample request is left to the request log's closest-stub view.
+- MCP tools for runtime settings come with Phase F4; the in-app assistant has `get_runtime` and `set_runtime`.
 
 ### Phase F3 — Request history and live traffic
 

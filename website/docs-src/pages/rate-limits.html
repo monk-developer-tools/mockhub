@@ -1,0 +1,15 @@
+<p>Real APIs limit how often you can call them. To test how your service handles that, set a limit on the whole project in <strong>Settings → Runtime behaviour → Rate limit</strong>, or on one stub in the stub editor under <strong>Failures → Rate limit</strong>.</p>
+<p>Limits count calls in a fixed window: per second, per minute or per hour, from 1 to 1,000,000 calls. A call over the limit gets <code>429 Too Many Requests</code> with the headers real APIs send:</p>
+<div class="code"><pre>HTTP/1.1 429 Too Many Requests
+Retry-After: 42
+X-RateLimit-Limit: 60
+X-RateLimit-Remaining: 0
+X-RateLimit-Reset: 42
+Content-Type: application/json
+
+{"error":"Rate limit exceeded: 60 requests per minute. Try again in 42 s."}</pre></div>
+<h3 id="rate-limit-scope">Project and stub limits</h3>
+<p>The project limit counts every call under the base path, matched or not. A stub limit counts only the calls that stub answers, so you can make one endpoint stricter than the rest. When both are set, a call must pass both. Saving the project's runtime settings restarts its counters.</p>
+<p>In stub JSON, a stub's limit is stored as:</p>
+<div class="code"><pre>"metadata": { "mockhub": { "rateLimit": { "requests": 5, "per": "minute" } } }</pre></div>
+<p>Counters live in memory, so a restart resets them, and each MockHub instance counts on its own if you run several.</p>

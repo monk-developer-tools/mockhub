@@ -2,9 +2,10 @@ import { ArrowCounterClockwise, ArrowUp, CaretDown, CaretRight, Check, Sparkle, 
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { api, ApiError } from '../../api/client';
-import type { AssistantStep, ChatMessage, ProposedChange, Stub } from '../../api/types';
+import type { AssistantStep, ChatMessage, ProposedChange, RuntimeSettings, Stub } from '../../api/types';
 import { ChatText } from '../../components/ChatText';
 import { StubRoute } from '../../components/StubRoute';
+import { runtimeSummary } from '../../model/runtime';
 import { useToast } from '../../components/Toasts';
 import { collapse, diffLines } from '../../model/diff';
 import { useApp } from '../../state/AppContext';
@@ -308,7 +309,7 @@ export function AssistantTab() {
   );
 }
 
-const ACTION_LABEL = { create: 'New', update: 'Change', delete: 'Delete' };
+const ACTION_LABEL = { create: 'New', update: 'Change', delete: 'Delete', runtime: 'Runtime' };
 
 function ChangeCard({ change, basePath, canApply, onApply, onDiscard }: {
   change: ProposedChange;
@@ -317,7 +318,7 @@ function ChangeCard({ change, basePath, canApply, onApply, onDiscard }: {
   onApply: () => void;
   onDiscard: () => void;
 }) {
-  const [open, setOpen] = useState(change.action === 'update');
+  const [open, setOpen] = useState(change.action === 'update' || change.action === 'runtime');
   const shown: Stub = (change.stub ?? change.before ?? {}) as Stub;
   const before = change.before ? JSON.stringify(change.before, null, 2) : '';
   const after = change.stub ? JSON.stringify(change.stub, null, 2) : '';
@@ -325,12 +326,16 @@ function ChangeCard({ change, basePath, canApply, onApply, onDiscard }: {
     <li className={`change ${change.action}`}>
       <div className="change-head">
         <span className={`change-kind ${change.action}`}>{ACTION_LABEL[change.action]}</span>
-        <StubRoute stub={shown} basePath={basePath} />
+        {change.action === 'runtime' ? (
+          <span className="change-runtime">{runtimeSummary(change.stub as unknown as RuntimeSettings).join(' · ') || 'Turn off every runtime setting'}</span>
+        ) : (
+          <StubRoute stub={shown} basePath={basePath} />
+        )}
       </div>
       {change.summary && <p className="change-summary">{change.summary}</p>}
       <div className="btn-row change-actions">
         <button className="btn ghost small" aria-expanded={open} onClick={() => setOpen(!open)}>
-          {open ? <CaretDown size={13} /> : <CaretRight size={13} />} {change.action === 'update' ? 'Diff' : 'JSON'}
+          {open ? <CaretDown size={13} /> : <CaretRight size={13} />} {change.action === 'update' || change.action === 'runtime' ? 'Diff' : 'JSON'}
         </button>
         <span style={{ flex: 1 }} />
         <button className="btn ghost small" onClick={onDiscard} aria-label={`Discard: ${change.summary}`}>

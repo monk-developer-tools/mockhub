@@ -18,6 +18,7 @@ export interface Project {
   teamId: string;
   apiKey?: ApiKeyRule | null;
   root?: boolean;
+  runtime?: RuntimeSettings | null;
 }
 
 export interface ApiKeyRule {
@@ -283,7 +284,7 @@ export interface AssistantStep {
 
 export interface ProposedChange {
   id: string;
-  action: 'create' | 'update' | 'delete';
+  action: 'create' | 'update' | 'delete' | 'runtime';
   stubId: string | null;
   stub: Stub | null;
   before: Stub | null;

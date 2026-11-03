@@ -8,6 +8,7 @@ import io.mockhub.api.Jsons;
 import io.mockhub.callout.CalloutEntry;
 import io.mockhub.callout.CalloutLog;
 import io.mockhub.journal.RequestLogService;
+import io.mockhub.runtime.RuntimeService;
 import io.mockhub.stub.StubService;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,13 +22,15 @@ public final class MockTools {
   private final StubService stubs;
   private final RequestLogService requestLog;
   private final CalloutLog callouts;
+  private final RuntimeService runtime;
   private final String projectId;
   private final List<ProposedChange> changes;
 
-  public MockTools(StubService stubs, RequestLogService requestLog, CalloutLog callouts, String projectId, List<ProposedChange> pending) {
+  public MockTools(StubService stubs, RequestLogService requestLog, CalloutLog callouts, RuntimeService runtime, String projectId, List<ProposedChange> pending) {
     this.stubs = stubs;
     this.requestLog = requestLog;
     this.callouts = callouts;
+    this.runtime = runtime;
     this.projectId = projectId;
     this.changes = new ArrayList<>(pending);
   }
@@ -60,6 +63,13 @@ public final class MockTools {
             .set("summary", str("What changes and why")), "id", "stub", "summary")));
     tools.add(tool("delete_stub", "Stage the deletion of a stub, or drop a staged new stub.",
         props(Jsons.object().<ObjectNode>set("id", str("Stub id or staged change id")).set("summary", str("Why it is removed")), "id", "summary")));
+    tools.add(tool("get_runtime", "Get the project's runtime behaviour, including a staged change: default response for unmatched calls, rate limit, latency, CORS and IP allow list.", Jsons.object()));
+    ObjectNode runtimeSchema = Jsons.object().put("type", "object").put("description",
+        "The complete runtime settings. Leave a section out or null to turn it off. defaultResponse {status, headers, body, templated}; "
+            + "rateLimit {requests, per: second|minute|hour}; latency {mode: none|fixed|uniform|lognormal, fixedMs, minMs, maxMs, medianMs, sigma, load {afterRps, msPerRequest}}; "
+            + "cors {origins, methods, headers, credentials, simulateFailure}; ipAllowList [IP or CIDR].");
+    tools.add(tool("set_runtime", "Stage new runtime behaviour for the whole project. Read get_runtime first and send the complete settings, not a patch. A single stub's rate limit goes in its metadata.mockhub.rateLimit instead.",
+        props(Jsons.object().<ObjectNode>set("settings", runtimeSchema).set("summary", str("What changes and why")), "settings", "summary")));
     return tools;
   }
 
@@ -73,6 +83,8 @@ public final class MockTools {
         case "create_stub" -> create(args.path("stub"), args.path("summary").asText(""));
         case "update_stub" -> update(text(args, "id"), args.path("stub"), args.path("summary").asText(""));
         case "delete_stub" -> delete(text(args, "id"), args.path("summary").asText(""));
+        case "get_runtime" -> getRuntime();
+        case "set_runtime" -> setRuntime(args.path("settings"), args.path("summary").asText(""));
         default -> Jsons.object().put("error", "Unknown tool " + name);
       });
     } catch (ApiException | AiException e) {
@@ -181,6 +193,21 @@ public final class MockTools {
     ProposedChange change = new ProposedChange(newId(), ProposedChange.DELETE, id, null, before, summary);
     changes.add(change);
     return Jsons.object().put("staged", "delete").put("changeId", change.id());
+  }
+
+  private JsonNode getRuntime() {
+    return changes.stream().filter(c -> c.action().equals(ProposedChange.RUNTIME)).map(ProposedChange::stub).findFirst()
+        .orElseGet(() -> Jsons.MAPPER.valueToTree(runtime.current(projectId)));
+  }
+
+  private ObjectNode setRuntime(JsonNode settings, String summary) {
+    if (!settings.isObject()) throw ApiException.badRequest("'settings' must be a JSON object");
+    JsonNode clean = Jsons.MAPPER.valueToTree(runtime.validate(settings));
+    JsonNode before = Jsons.MAPPER.valueToTree(runtime.current(projectId));
+    changes.removeIf(c -> c.action().equals(ProposedChange.RUNTIME));
+    ProposedChange change = new ProposedChange(newId(), ProposedChange.RUNTIME, null, clean, before, summary);
+    changes.add(change);
+    return Jsons.object().put("staged", "runtime").put("changeId", change.id());
   }
 
   static ObjectNode summary(JsonNode stub, String id) {

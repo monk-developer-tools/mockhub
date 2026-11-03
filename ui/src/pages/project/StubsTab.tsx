@@ -1,4 +1,4 @@
-import { Database, MagnifyingGlass, Plus, Stack } from '@phosphor-icons/react';
+import { Database, ListNumbers, MagnifyingGlass, Plus, Stack } from '@phosphor-icons/react';
 import { EmptyArt } from '../../components/Illustrations';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { docsAt } from '../../model/navigation';
@@ -17,6 +17,7 @@ import { useProject } from './ProjectPage';
 import { StubEditor } from './StubEditor';
 import { TemplateGallery } from './TemplateGallery';
 import { CrudDialog } from './CrudDialog';
+import { MatchingOrder } from './MatchingOrder';
 
 type Meta = { type?: string; folder?: string };
 const metaOf = (s: Stub) => ((s.metadata as { mockhub?: Meta } | undefined)?.mockhub ?? {}) as Meta;
@@ -41,6 +42,7 @@ export function StubsTab() {
   const [usage, setUsage] = useState<Record<string, StubUsage>>({});
   const [query, setQuery] = useState('');
   const [chip, setChip] = useState('All');
+  const [ordering, setOrdering] = useState(false);
   const [draft, setDraft] = useState<Stub | null>(null);
   const [gallery, setGallery] = useState(false);
   const [crudOpen, setCrudOpen] = useState(false);
@@ -144,6 +146,9 @@ export function StubsTab() {
             <MagnifyingGlass size={14} style={{ position: 'absolute', left: 9, top: 9, color: 'var(--muted)' }} />
             <input ref={searchInput} type="search" aria-label="Search stubs" placeholder="Search path, name, body…  ( / )" value={query} onChange={(e) => setQuery(e.target.value)} style={{ paddingLeft: 28 }} />
           </div>
+          <button className="btn icon" title="Show matching order" aria-label="Show matching order" aria-pressed={ordering} onClick={() => setOrdering(!ordering)}>
+            <ListNumbers size={15} />
+          </button>
           {canEdit && (
             <button className="btn icon" title="Start from a template" aria-label="Start from a template" onClick={() => setGallery(true)}>
               <Stack size={15} />
@@ -163,6 +168,20 @@ export function StubsTab() {
             </button>
           </div>
         )}
+        {ordering ? (
+          <MatchingOrder
+            project={project}
+            stubs={stubs}
+            canEdit={canEdit}
+            selectedId={stubId}
+            onSelect={select}
+            onSaved={async () => {
+              await load();
+              reloadProject();
+            }}
+          />
+        ) : (
+        <>
         {chips.length > 2 && (
           <div className="chips" role="group" aria-label="Filter stubs">
             {chips.map((c) => (
@@ -210,6 +229,8 @@ export function StubsTab() {
           ))}
           {stubs.length > 0 && filtered.length === 0 && <li className="muted small" style={{ padding: 12 }}>No stub matches this filter.</li>}
         </ul>
+        </>
+        )}
       </div>
 
       {selected ? (

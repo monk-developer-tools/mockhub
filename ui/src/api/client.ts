@@ -208,6 +208,9 @@ export const api = {
   updateProject: (id: string, body: Partial<Project>) =>
     request<Project>(`${API}/projects/${id}`, { method: 'PUT', body: json(body) }),
   deleteProject: (id: string) => request<void>(`${API}/projects/${id}`, { method: 'DELETE' }),
+  matchingOrder: (id: string) => request<string[]>(`${API}/projects/${id}/matching-order`),
+  reorderStubs: (id: string, ids: string[]) =>
+    request<Stub[]>(`${API}/projects/${id}/matching-order`, { method: 'PUT', body: json({ ids }) }),
   runtime: (id: string) => request<RuntimeSettings>(`${API}/projects/${id}/runtime`),
   updateRuntime: (id: string, body: RuntimeSettings) =>
     request<RuntimeSettings>(`${API}/projects/${id}/runtime`, { method: 'PUT', body: json(body) }),

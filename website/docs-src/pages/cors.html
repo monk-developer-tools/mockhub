@@ -1,0 +1,12 @@
+<p>Browsers only let a web page call another origin when the answer carries CORS headers. MockHub adds them itself, per project, in <strong>Settings → Runtime behaviour → CORS</strong>:</p>
+<table>
+  <thead><tr><th>Setting</th><th>What browsers see</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Server default</strong></td><td>Follows <code>MOCKHUB_STUB_CORS</code> (see <a href="#config">configuration</a>). By default any website can call the mock, with credentials: MockHub echoes the caller's <code>Origin</code>.</td></tr>
+    <tr><td><strong>Allow list</strong></td><td>Only the listed origins, for example <code>https://app.example.com</code>, a wildcard subdomain like <code>https://*.example.com</code>, or <code>*</code> for any. Choose the methods, the request headers (empty allows any) and whether cookies and credentials are allowed.</td></tr>
+    <tr><td><strong>Fail on purpose</strong></td><td>No CORS headers at all, so the browser blocks every call. Use it to see how your frontend shows a CORS error. Calls from servers, tests and curl still work, because only browsers enforce CORS.</td></tr>
+  </tbody>
+</table>
+<h3 id="cors-preflight">Preflights</h3>
+<p>MockHub answers a preflight (<code>OPTIONS</code> with <code>Origin</code> and <code>Access-Control-Request-Method</code>) itself with <code>204</code>, before stubs, API keys, IP rules or rate limits run, so your stubs don't need an <code>OPTIONS</code> stub. Browsers cache the answer for 30 minutes.</p>
+<p>MockHub's own answers carry the CORS headers too: the <code>401</code> for a missing <a href="#api-keys">API key</a>, the <code>403</code> from the <a href="#ip-allow-list">IP allow list</a>, the <code>429</code> from a <a href="#rate-limits">rate limit</a> and the <a href="#default-response">default response</a>. WireMock's own <code>404</code> for an unmatched call doesn't, so a browser reports it as a CORS error. Turn on a default response if your frontend needs to read that 404.</p>

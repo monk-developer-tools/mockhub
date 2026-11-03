@@ -60,6 +60,25 @@ describe('AssistantTab', () => {
     expect(screen.getByText('Get one customer')).toBeInTheDocument();
   });
 
+  it('shows a runtime change as a summary with a diff of the settings', async () => {
+    // Given
+    const runtime: ProposedChange = {
+      id: 'c-9', action: 'runtime', stubId: null, summary: 'Limit to 5 a minute',
+      before: { defaultResponse: null, rateLimit: null, latency: null, cors: null, ipAllowList: [] } as never,
+      stub: { defaultResponse: null, rateLimit: { requests: 5, per: 'minute' }, latency: null, cors: null, ipAllowList: [] } as never,
+    };
+    assistantJob = vi.fn((): Promise<AssistantJob> => Promise.resolve({ ...doneJob, reply: { ...doneJob.reply!, changes: [runtime] } }));
+    renderWithShell(<AssistantTab />);
+
+    // When
+    await userEvent.type(screen.getByLabelText('Message the assistant'), 'Add a rate limit{enter}');
+
+    // Then
+    expect(await screen.findByText('5 requests per minute', {}, { timeout: 3000 })).toBeInTheDocument();
+    expect(screen.getByText('Runtime')).toBeInTheDocument();
+    expect(screen.getByLabelText('Changes')).toHaveTextContent('"requests": 5');
+  });
+
   it('applies changes and clears them from the review list', async () => {
     // Given
     renderWithShell(<AssistantTab />);
