@@ -1,0 +1,14 @@
+<div class="tool-grid">
+  <div class="tool-card">
+    <div class="tool-head">
+      <label class="tool-label" for="check-input">Stub JSON</label>
+      <button type="button" class="btn secondary small" data-check-format>Format</button>
+    </div>
+    <textarea id="check-input" class="tool-input tool-tall" rows="22" spellcheck="false" autocomplete="off" data-check-input></textarea>
+    <p class="tool-hint">One stub, an array of stubs, or a WireMock <code>{"mappings": [...]}</code> file.</p>
+  </div>
+  <div class="tool-card">
+    <div class="tool-head"><h3>Results</h3><span class="tool-badge" data-check-summary></span></div>
+    <div class="tool-results" data-check-results aria-live="polite"></div>
+  </div>
+</div>

@@ -249,16 +249,83 @@ function examplesGrid(examples, icon) {
     </section>`;
 }
 
+const SCRIPTS = { jwt: 'jwt-page.js', 'curl-to-stub': 'curl-page.js', 'stub-checker': 'stubcheck-page.js' };
+
+function toolHero(page, icon) {
+  return `<section class="hero fp-hero tool-hero">
+      <div class="wrap fp-wide">
+        <p class="eyebrow">${icon(page.icon, 16)}${page.kind === 'tool' ? 'Free tool' : 'Free tools'} · no login</p>
+        <h1>${esc(page.h1)}</h1>
+        <p class="lede">${esc(page.lede)}</p>
+        <p class="tool-private">${icon('ShieldCheck', 16)}Runs in your browser. Nothing you paste is sent anywhere.</p>
+      </div>
+    </section>`;
+}
+
+const toolBody = (page, tools) => `<section class="tool-section" aria-label="${esc(page.nav[0])}">
+      <div class="wrap fp-wide">
+        ${tools[page.tool].trim().split('\n').join('\n        ')}
+      </div>
+    </section>`;
+
+const toolSteps = (page) => `<section class="alt" aria-labelledby="how">
+      <div class="wrap">
+        <div class="section-head reveal">
+          <p class="eyebrow">How to use it</p>
+          <h2 id="how">Three steps</h2>
+        </div>
+        <ol class="steps">
+          ${page.steps.map(([title, text], i) => `<li class="step reveal">
+            <span class="step-n">${i + 1}</span>
+            <h3>${esc(title)}</h3>
+            <p>${esc(text)}</p>
+          </li>`).join('\n          ')}
+        </ol>
+      </div>
+    </section>`;
+
+function toolsIndex(page, icon) {
+  const cards = PAGES.filter((p) => p.kind === 'tool').map((p) => `<a class="fp-benefit reveal" href="/${p.slug}/">
+            <span class="feature-icon">${icon(p.icon, 22)}</span>
+            <h3>${esc(p.nav[0])}</h3>
+            <p>${esc(p.description)}</p>
+            <span class="fp-more" aria-hidden="true">Open the tool</span>
+          </a>`).join('\n          ');
+  return `<section class="alt" aria-labelledby="all-tools">
+      <div class="wrap fp-wide">
+        <div class="section-head reveal">
+          <p class="eyebrow">${icon('ShieldCheck', 16)}Runs in your browser</p>
+          <h2 id="all-tools">Pick a tool</h2>
+        </div>
+        <div class="fp-benefits cols-3">
+          ${cards}
+        </div>
+      </div>
+    </section>`;
+}
+
 function structured(page) {
   const crumbs = {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'MockHub', item: `${SITE}/` },
-      { '@type': 'ListItem', position: 2, name: page.nav[0], item: `${SITE}/${page.slug}/` },
+      ...(page.slug.startsWith('tools/') ? [{ '@type': 'ListItem', position: 2, name: 'Free tools', item: `${SITE}/tools/` }] : []),
+      { '@type': 'ListItem', position: page.slug.startsWith('tools/') ? 3 : 2, name: page.nav[0], item: `${SITE}/${page.slug}/` },
     ],
   };
   const blocks = [crumbs];
+  if (page.kind === 'tool') {
+    blocks.push({
+      '@context': 'https://schema.org',
+      '@type': 'WebApplication',
+      name: page.nav[0],
+      url: `${SITE}/${page.slug}/`,
+      applicationCategory: 'DeveloperApplication',
+      operatingSystem: 'Any (runs in the browser)',
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    });
+  }
   if (page.faq) {
     blocks.push({
       '@context': 'https://schema.org',
@@ -269,10 +336,17 @@ function structured(page) {
   return blocks.map((b) => `  <script type="application/ld+json">${json(b)}</script>\n`).join('');
 }
 
-export function renderFeature(page, { icon, header, footer, examples }) {
-  const sections = page.kind === 'examples'
-    ? [hero(page, icon), examplesGrid(examples, icon), related(page, icon), closing(page)]
-    : [hero(page, icon), steps(page), problem(page, icon), benefits(page, icon), example(page), faq(page), related(page, icon), closing(page)];
+const LAYOUTS = {
+  examples: (page, ctx) => [hero(page, ctx.icon), examplesGrid(ctx.examples, ctx.icon), related(page, ctx.icon), closing(page)],
+  'tools-index': (page, ctx) => [toolHero(page, ctx.icon), toolsIndex(page, ctx.icon), related(page, ctx.icon), closing(page)],
+  tool: (page, ctx) => [toolHero(page, ctx.icon), toolBody(page, ctx.tools), toolSteps(page), faq(page), related(page, ctx.icon), closing(page)],
+  feature: (page, ctx) => [hero(page, ctx.icon), steps(page), problem(page, ctx.icon), benefits(page, ctx.icon), example(page), faq(page), related(page, ctx.icon), closing(page)],
+};
+
+export function renderFeature(page, ctx) {
+  const { header, footer } = ctx;
+  const sections = LAYOUTS[page.kind ?? 'feature'](page, ctx);
+  const script = page.tool ? `\n  <script type="module" src="/assets/js/tools/${SCRIPTS[page.tool]}"></script>` : '';
   return `${head({ title: page.title, description: page.description, path: `/${page.slug}/`, extra: structured(page) })}
 <body>
   ${header}
@@ -282,7 +356,7 @@ export function renderFeature(page, { icon, header, footer, examples }) {
   </main>
 
   ${footer}
-  <script src="/assets/js/site.js" defer></script>
+  <script src="/assets/js/site.js" defer></script>${script}
 </body>
 </html>
 `;

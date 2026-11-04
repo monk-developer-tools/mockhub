@@ -300,7 +300,8 @@ if (existsSync(generatedList)) {
     if (dir && dir !== 'docs' && dir !== 'assets' && dir !== 'tutorials') rmSync(join(website, dir), { recursive: true, force: true });
   }
 }
-const featureContext = { icon, header: siteHeader(icon, ''), footer: siteFooter(icon), examples: exampleProjects() };
+const tools = Object.fromEntries(readdirSync(join(website, 'site-src', 'tools')).map((f) => [f.replace(/\.html$/, ''), readFileSync(join(website, 'site-src', 'tools', f), 'utf8')]));
+const featureContext = { icon, header: siteHeader(icon, ''), footer: siteFooter(icon), examples: exampleProjects(), tools };
 for (const page of FEATURES) {
   if (existsSync(join(website, page.slug)) && !existsSync(join(website, page.slug, 'index.html'))) throw new Error(`Feature slug ${page.slug} clashes with a folder in website/`);
   mkdirSync(join(website, page.slug), { recursive: true });
@@ -313,7 +314,7 @@ ${urls.map((u) => `  <url><loc>${SITE}${u}</loc></url>`).join('\n')}
 </urlset>
 `);
 writeFileSync(join(website, 'robots.txt'), `User-agent: *\nAllow: /\nDisallow: /__admin/\n\nSitemap: ${SITE}/sitemap.xml\n`);
-writeFileSync(generatedList, ['/docs/', '/sitemap.xml', '/robots.txt', ...FEATURES.map((p) => `/${p.slug}/`)].join('\n') + '\n');
+writeFileSync(generatedList, [...new Set(['/docs/', '/sitemap.xml', '/robots.txt', ...FEATURES.map((p) => `/${p.slug.split('/')[0]}/`)])].join('\n') + '\n');
 
 const groupAnchors = new Set(GROUPS.map(groupAnchor));
 const siteFiles = [join(website, 'index.html'), join(website, 'tutorials', 'index.html'), join(out, 'index.html'), ...pages.map((p) => join(out, p.slug, 'index.html')), ...FEATURES.map((p) => join(website, p.slug, 'index.html'))];

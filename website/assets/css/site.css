@@ -4024,3 +4024,375 @@ footer a {
 .fp-card-actions .link-chevron {
   font-size: 14px;
 }
+
+/* Free tools */
+
+.footer-top {
+  grid-template-columns: minmax(0, 1.3fr) repeat(5, minmax(0, 1fr));
+}
+
+.mega-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 980px;
+  font-size: 10.5px;
+  font-style: normal;
+  font-weight: 600;
+  vertical-align: 1px;
+  color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 12%, transparent);
+}
+
+.fp .tool-hero {
+  padding: 56px 0 28px;
+}
+
+.tool-hero .lede {
+  max-width: 46em;
+}
+
+.tool-private {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 18px;
+  font-size: 14px;
+  color: var(--ok);
+}
+
+.fp .tool-section {
+  padding: 8px 0 72px;
+}
+
+.tool-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.tool-grid[hidden] {
+  display: none;
+}
+
+.tool-section .tabs {
+  margin-bottom: 16px;
+}
+
+.tool-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  background: var(--tile);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+  padding: 20px;
+}
+
+.tool-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.tool-head h3 {
+  font-size: 18px;
+}
+
+.tool-actions {
+  display: inline-flex;
+  gap: 8px;
+}
+
+.tool-label {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.tool-input {
+  width: 100%;
+  font: 13.5px/1.5 var(--mono);
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  resize: vertical;
+}
+
+select.tool-input,
+input.tool-input {
+  font-family: var(--font);
+  font-size: 15px;
+}
+
+.tool-input:focus {
+  outline: 2px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  outline-offset: 1px;
+  border-color: var(--accent);
+}
+
+.tool-input[hidden],
+.tool-label[hidden] {
+  display: none;
+}
+
+.tool-tall {
+  min-height: 420px;
+}
+
+.tool-hint {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.tool-error {
+  font-size: 14px;
+  color: var(--m-delete);
+  background: color-mix(in srgb, var(--m-delete) 8%, transparent);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.tool-error[hidden] {
+  display: none;
+}
+
+.tool-sub {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 6px;
+}
+
+.tool-out {
+  margin: 0;
+  font: 13px/1.55 var(--mono);
+  background: var(--code-bg);
+  color: var(--code-ink);
+  border-radius: 10px;
+  padding: 14px;
+  overflow-x: auto;
+  min-height: 44px;
+}
+
+.tool-wrap {
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.tool-badge {
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 980px;
+  background: var(--bg-alt);
+  color: var(--ink-2);
+}
+
+.tool-badge:empty {
+  display: none;
+}
+
+.tool-badge.ok,
+.tool-result.ok {
+  color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 12%, transparent);
+}
+
+.tool-badge.warn {
+  color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 12%, transparent);
+}
+
+.tool-badge.bad,
+.tool-result.bad {
+  color: var(--m-delete);
+  background: color-mix(in srgb, var(--m-delete) 10%, transparent);
+}
+
+.tool-result {
+  font-size: 14px;
+  font-weight: 600;
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+
+.tool-result:empty {
+  display: none;
+}
+
+.tool-verify {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--hair);
+}
+
+.tool-times {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 6px 14px;
+  margin: 4px 0 0;
+  font-size: 14px;
+}
+
+.tool-times dt {
+  color: var(--muted);
+}
+
+.tool-times dd {
+  margin: 0;
+}
+
+.tool-fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.tool-fieldset[hidden] {
+  display: none;
+}
+
+.tool-checks {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.tool-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  min-width: 0;
+}
+
+.tool-check span {
+  font-family: var(--mono);
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tool-row {
+  display: flex;
+  gap: 12px;
+}
+
+.tool-row > div {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 160px;
+}
+
+.tool-explain {
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.tool-results {
+  display: grid;
+  gap: 14px;
+}
+
+.tool-stub {
+  display: grid;
+  gap: 8px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--hair);
+}
+
+.tool-stub:last-child {
+  border-bottom: 0;
+}
+
+.tool-problems {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.tool-problem {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.tool-problem.ok {
+  color: var(--ok);
+  font-weight: 600;
+}
+
+.tool-level {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 1px 7px;
+  border-radius: 6px;
+}
+
+.tool-level.error {
+  color: var(--m-delete);
+  background: color-mix(in srgb, var(--m-delete) 10%, transparent);
+}
+
+.tool-level.warning {
+  color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 12%, transparent);
+}
+
+.tool-level.info {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+@media (max-width: 1100px) {
+  .footer-top {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .tool-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tool-tall {
+    min-height: 260px;
+  }
+}
+
+@media (max-width: 1100px) {
+  .footer-brand {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 640px) {
+  .footer-top {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.mega-groups {
+  align-content: start;
+}

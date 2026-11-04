@@ -519,10 +519,10 @@ Safety for the demo-server tools. Each tool:
   - [x] Each page has a code example and an FAQ
   - [ ] Fresh light and dark screenshots for every page
 - W3 Browser-only tools:
-  - [ ] JWT
-  - [ ] cURL to stub
-  - [ ] Stub JSON checker
-  - [ ] vitest for every parser and converter
+  - [x] JWT
+  - [x] cURL to stub
+  - [x] Stub JSON checker
+  - [x] Tests for every parser and converter (`node --test website/tests/`, run in CI)
 - W4 Demo-server tools, backend:
   - [ ] `MOCKHUB_PUBLIC_TOOLS` flag
   - [ ] Echo, status and delay
@@ -554,6 +554,12 @@ anchor, a missing image or an image without alt text. nginx serves `<path>/index
 everything else to the demo. The examples page is generated from `src/main/resources/examples`. Pages reuse existing
 product screenshots for now. The build also stopped indenting code blocks in the docs, which had broken every
 multi-line example.
+
+Notes (W3): the tools are plain ES modules in `website/assets/js/tools/`: pure logic (`jwt.js`, `curl.js`,
+`stubcheck.js`) plus one page script each, with markup in `website/site-src/tools/`. They are tested with Node's
+built-in runner instead of vitest, so the website needs no package of its own. JWT signing and checking use Web Crypto.
+The RS256 key pair is made in the browser and never stored. `/tools/` lists them, and the Tools menu marks each one
+"No login".
 
 ### Phase F7 — State and CRUD parity
 

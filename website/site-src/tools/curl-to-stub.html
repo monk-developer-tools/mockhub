@@ -1,0 +1,33 @@
+<div class="tool-grid">
+  <div class="tool-card">
+    <label class="tool-label" for="curl-input">cURL command</label>
+    <textarea id="curl-input" class="tool-input" rows="8" spellcheck="false" autocomplete="off" data-curl-input></textarea>
+    <p class="tool-hint">Copy as cURL from your browser's network tab, Postman or the docs of the API you call.</p>
+    <p class="tool-error" data-curl-error hidden></p>
+    <fieldset class="tool-fieldset" data-curl-headers-box>
+      <legend class="tool-label">Headers to match</legend>
+      <div class="tool-checks" data-curl-headers></div>
+    </fieldset>
+    <label class="tool-check"><input type="checkbox" checked data-curl-match-body> Match the request body</label>
+    <div class="tool-row">
+      <div>
+        <label class="tool-label" for="curl-status">Answer with status</label>
+        <input id="curl-status" class="tool-input" type="number" min="100" max="599" value="200" data-curl-status>
+      </div>
+    </div>
+    <label class="tool-label" for="curl-response">Answer with body</label>
+    <textarea id="curl-response" class="tool-input" rows="5" spellcheck="false" autocomplete="off" data-curl-response>{"id": 42, "status": "PAID"}</textarea>
+  </div>
+  <div class="tool-card">
+    <div class="tool-head">
+      <h3>Stub</h3>
+      <span class="tool-actions">
+        <button type="button" class="btn secondary small" data-copy="[data-curl-output]">Copy</button>
+        <button type="button" class="btn secondary small" data-curl-download>Download</button>
+      </span>
+    </div>
+    <p class="tool-explain" data-curl-explain></p>
+    <pre class="tool-out" data-curl-output></pre>
+    <p class="tool-hint">Paste it into a MockHub stub's JSON view, import it under Import &amp; export, or POST it to any WireMock server's <code>/__admin/mappings</code>.</p>
+  </div>
+</div>

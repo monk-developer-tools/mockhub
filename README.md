@@ -193,6 +193,8 @@ screenshots, and the [live demo](https://mockhub.devops-monk.com/__admin/mockhub
   open an entry for the full local and UTC time, and download it as CSV. Kept for 90 days and written to stdout.
 - **Users and single sign-on.** Create users in the UI, or let people sign in with **Microsoft Entra ID** (Azure AD).
   Entra groups and app roles can map to organisation roles. Mock endpoints always stay open.
+- **Free tools, no login.** A JWT encoder and decoder, cURL to stub, and a stub JSON checker run in your browser at
+  [mockhub.devops-monk.com/tools](https://mockhub.devops-monk.com/tools/).
 
 ## Quick start
 
@@ -557,11 +559,14 @@ MOCKHUB_USER=alex MOCKHUB_PASSWORD=demo-password-1 \
   npm --prefix ui run screens -- http://localhost:8080 screens   # key pages, light and dark, desktop and phone
 ```
 
-The docs site is generated. Edit the pages in `website/docs-src/pages/` and the sidebar in `website/docs-src/docs.mjs`,
-then build `website/docs/` (needs `ui/node_modules`; `deploy/vps/deploy-site.sh` runs it too):
+The website is generated. Edit the docs pages in `website/docs-src/pages/` and the sidebar in `website/docs-src/docs.mjs`.
+Feature pages, the menus, the footer and the free tools come from `website/site-src/pages.mjs`. Then build (needs
+Node 22.6+ and `ui/node_modules`; `deploy/vps/deploy-site.sh` runs it too). The build fails on a broken internal link,
+a missing image or an image without alt text:
 
 ```bash
 node --disable-warning=ExperimentalWarning website/scripts/build-site.mjs
+node --test website/tests/*.test.mjs                  # the free tools' logic (JWT, cURL to stub, stub checker)
 ```
 
 ### Code layout
@@ -589,6 +594,11 @@ src/main/java/io/mockhub
 ui/src
   api/ model/ state/             API client, stub form model, app state
   components/ pages/             UI
+website
+  docs-src/                      docs pages, docs sidebar, shared header and footer
+  site-src/                      feature and tool pages as data, page renderer, tool markup
+  assets/js/tools/               the free tools: pure logic modules plus one page script each
+  scripts/build-site.mjs         builds docs, feature pages, sitemap and checks every link
 ```
 
 ### Releasing

@@ -1,0 +1,54 @@
+<div class="tabs" role="tablist" aria-label="JWT tool">
+  <button type="button" role="tab" id="jwt-tab-decode" aria-controls="jwt-decode" aria-selected="true">Decode and verify</button>
+  <button type="button" role="tab" id="jwt-tab-create" aria-controls="jwt-create" aria-selected="false" tabindex="-1">Create a token</button>
+</div>
+
+<div class="tool-grid tab-panel" id="jwt-decode" role="tabpanel" aria-labelledby="jwt-tab-decode">
+  <div class="tool-card">
+    <label class="tool-label" for="jwt-input">Token</label>
+    <textarea id="jwt-input" class="tool-input" rows="7" spellcheck="false" autocomplete="off" data-jwt-input></textarea>
+    <p class="tool-hint">Paste a JWT, with or without <code>Bearer</code>. The sample was signed with the secret <code>change-me</code>.</p>
+    <div class="tool-verify" data-jwt-verify>
+      <label class="tool-label" for="jwt-secret" data-jwt-secret-label>Shared secret (HS256)</label>
+      <input id="jwt-secret" class="tool-input" type="text" spellcheck="false" autocomplete="off" value="change-me" data-jwt-secret>
+      <label class="tool-label" for="jwt-jwks" data-jwt-jwks-label hidden>JWKS or public JWK (RS256)</label>
+      <textarea id="jwt-jwks" class="tool-input" rows="4" spellcheck="false" autocomplete="off" data-jwt-jwks hidden></textarea>
+      <p class="tool-result" data-jwt-signature aria-live="polite"></p>
+    </div>
+  </div>
+  <div class="tool-card">
+    <div class="tool-head"><h3>Decoded</h3><span class="tool-badge" data-jwt-status></span></div>
+    <p class="tool-error" data-jwt-error hidden></p>
+    <h4 class="tool-sub">Header</h4>
+    <pre class="tool-out" data-jwt-header></pre>
+    <h4 class="tool-sub">Payload</h4>
+    <pre class="tool-out" data-jwt-payload></pre>
+    <dl class="tool-times" data-jwt-times></dl>
+  </div>
+</div>
+
+<div class="tool-grid tab-panel" id="jwt-create" role="tabpanel" aria-labelledby="jwt-tab-create" hidden>
+  <div class="tool-card">
+    <label class="tool-label" for="jwt-alg">Algorithm</label>
+    <select id="jwt-alg" class="tool-input" data-create-alg>
+      <option value="HS256">HS256, shared secret</option>
+      <option value="RS256">RS256, key pair made in this browser</option>
+    </select>
+    <label class="tool-label" for="jwt-create-secret" data-create-secret-label>Secret</label>
+    <input id="jwt-create-secret" class="tool-input" type="text" spellcheck="false" autocomplete="off" value="change-me" data-create-secret>
+    <label class="tool-label" for="jwt-claims">Claims (JSON)</label>
+    <textarea id="jwt-claims" class="tool-input" rows="9" spellcheck="false" autocomplete="off" data-create-claims></textarea>
+    <p class="tool-hint">iat and exp are filled in for you when missing, with a one-hour lifetime.</p>
+    <p class="tool-error" data-create-error hidden></p>
+  </div>
+  <div class="tool-card">
+    <div class="tool-head"><h3>Signed token</h3><button type="button" class="btn secondary small" data-copy="[data-create-token]">Copy</button></div>
+    <pre class="tool-out tool-wrap" data-create-token></pre>
+    <button type="button" class="btn secondary small" data-create-decode>Decode this token</button>
+    <div data-create-jwks-box hidden>
+      <div class="tool-head"><h4 class="tool-sub">JWKS to verify it</h4><button type="button" class="btn secondary small" data-copy="[data-create-jwks]">Copy</button></div>
+      <pre class="tool-out" data-create-jwks></pre>
+      <p class="tool-hint">The private key never leaves this page and is gone when you close it.</p>
+    </div>
+  </div>
+</div>

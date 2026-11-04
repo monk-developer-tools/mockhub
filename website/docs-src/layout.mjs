@@ -14,10 +14,10 @@ export const groupAnchor = (group) => `group-${group.id}`;
 function menuItems(icon, menu) {
   const entries = menu.links
     ? menu.links.map(([name, title, text, href]) => ({ name, title, text, href }))
-    : PAGES.filter((p) => p.menu === menu.id).map((p) => ({ name: p.icon, title: p.nav[0], text: p.nav[1], href: `/${p.slug}/` }));
+    : PAGES.filter((p) => p.menu === menu.id && !p.hidden).map((p) => ({ name: p.icon, title: p.nav[0], text: p.nav[1], href: `/${p.slug}/` }));
   return entries.map((e) => `<a class="mega-item" href="${e.href}">
                 <span class="mega-icon">${icon(e.name, 18)}</span>
-                <span><strong>${esc(e.title)}</strong><small>${esc(e.text)}</small></span>
+                <span><strong>${esc(e.title)}${menu.badge ? ` <em class="mega-badge">${esc(menu.badge)}</em>` : ''}</strong><small>${esc(e.text)}</small></span>
               </a>`).join('\n              ');
 }
 
@@ -65,11 +65,12 @@ export function header(icon, current) {
   </header>`;
 }
 
-const pageLinks = (menu) => PAGES.filter((p) => p.menu === menu).map((p) => [p.nav[0], `/${p.slug}/`]);
+const pageLinks = (menu) => PAGES.filter((p) => p.menu === menu && !p.hidden).map((p) => [p.nav[0], `/${p.slug}/`]);
 
 const FOOTER = [
   ['Service virtualization', pageLinks('virtualization')],
   ['Mock servers', pageLinks('mock-servers')],
+  ['Free tools', [...pageLinks('tools'), ['All free tools', '/tools/']]],
   ['Resources', [['Documentation', '/docs/'], ['Tutorials', '/tutorials/'], ['Quick start', '/docs/quick-start/'], ['Helper reference', '/docs/helpers/'], ['API & CI', '/docs/api/'], ['Error codes', '/docs/error-codes/'], ['Deployment', '/docs/deploy/']]],
   ['Project', [['GitHub', GITHUB], ['Docker Hub', DOCKER_HUB], ['Releases', `${GITHUB}/releases`], ['Report an issue', `${GITHUB}/issues`], ['Live demo', DEMO]]],
 ];
