@@ -129,7 +129,15 @@ class AccessPolicyTest {
       "editorA, POST, /mockhub/api/orgs/orgB/datasets, false",
       "teamEditor, GET, /mockhub/api/orgs/orgA/datasets, true",
       "teamEditor, POST, /mockhub/api/orgs/orgA/datasets, false",
-      "nobody, GET, /mockhub/api/orgs/orgA/datasets, false"
+      "nobody, GET, /mockhub/api/orgs/orgA/datasets, false",
+      "viewerA, GET, /mockhub/api/orgs/orgA/connections, true",
+      "editorA, POST, /mockhub/api/orgs/orgA/connections, false",
+      "editorA, POST, /mockhub/api/orgs/orgA/connections/bank/test, false",
+      "managerA, POST, /mockhub/api/orgs/orgA/connections, true",
+      "managerA, PUT, /mockhub/api/orgs/orgA/connections/bank, true",
+      "managerA, POST, /mockhub/api/orgs/orgA/connections/bank/test, true",
+      "managerA, DELETE, /mockhub/api/orgs/orgB/connections/bank, false",
+      "nobody, GET, /mockhub/api/orgs/orgA/connections, false"
   })
   void decides(String who, String method, String path, boolean allowed) {
     // When

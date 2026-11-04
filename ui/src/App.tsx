@@ -20,6 +20,7 @@ import { BackupPage } from './pages/BackupPage';
 import { OrgPage } from './pages/OrgPage';
 import { TeamPage } from './pages/TeamPage';
 import { DatasetsPage } from './pages/datasets/DatasetsPage';
+import { ConnectionsPage } from './pages/connections/ConnectionsPage';
 import { ActivityTab } from './pages/project/ActivityTab';
 import { AuditPage } from './pages/AuditPage';
 import { AssistantTab } from './pages/project/AssistantTab';
@@ -43,6 +44,7 @@ const router = createBrowserRouter(
         { path: 'org', element: <OrgPage /> },
         { path: 'org/teams/:teamId', element: <TeamPage /> },
         { path: 'org/datasets', element: <DatasetsPage /> },
+        { path: 'org/connections', element: <ConnectionsPage /> },
         { path: 'admin/users', element: <UsersPage /> },
         { path: 'admin/sso', element: <SsoPage /> },
         { path: 'admin/ai', element: <AiSettingsPage /> },

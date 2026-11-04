@@ -430,6 +430,48 @@ export interface DatasetUpload {
   dataset: Dataset;
 }
 
+export type ConnectionType = 'oauth2' | 'header';
+
+export interface Connection {
+  key: string;
+  name: string;
+  type: ConnectionType;
+  tokenUrl?: string;
+  clientId?: string;
+  scope?: string;
+  audience?: string;
+  clientAuth?: 'basic' | 'body';
+  headerName: string;
+  headerPrefix: string;
+  hasSecret: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ConnectionInput {
+  key?: string;
+  name: string;
+  type: ConnectionType;
+  tokenUrl?: string;
+  clientId?: string;
+  scope?: string;
+  audience?: string;
+  clientAuth?: 'basic' | 'body';
+  headerName: string;
+  headerPrefix: string;
+  secret?: string;
+}
+
+export interface ConnectionTest {
+  ok: boolean;
+  headerName?: string;
+  preview?: string;
+  tokenType?: string;
+  expiresIn?: number;
+  scope?: string;
+  error?: string;
+}
+
 export interface StateContext {
   name: string;
   properties: Record<string, string>;
@@ -497,6 +539,7 @@ export interface CalloutEntry {
   error: string | null;
   durationMs: number;
   requestId: string | null;
+  attempt?: number;
 }
 
 export interface HistoryEntry {

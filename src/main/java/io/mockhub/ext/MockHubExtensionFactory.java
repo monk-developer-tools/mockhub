@@ -30,10 +30,13 @@ import io.mockhub.history.HistoryCalloutLog;
 import io.mockhub.history.HistoryRecorder;
 import io.mockhub.history.HistoryStore;
 import io.mockhub.history.TrafficCounters;
+import io.mockhub.controller.ConnectionController;
 import io.mockhub.controller.DatasetController;
 import io.mockhub.controller.HistoryController;
 import io.mockhub.Main;
 import io.mockhub.callout.SyncCalloutTransformer;
+import io.mockhub.connection.ConnectionAuth;
+import io.mockhub.connection.ConnectionProxyTransformer;
 import io.mockhub.controller.CalloutController;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -75,7 +78,12 @@ import io.mockhub.data.DataStore;
 import io.mockhub.data.FileDataStore;
 import io.mockhub.data.ProjectDataCleaner;
 import io.mockhub.data.RecordPolicy;
+import io.mockhub.connection.ConnectionService;
+import io.mockhub.connection.FileConnectionRepository;
+import io.mockhub.connection.SecretBox;
+import io.mockhub.connection.TokenClient;
 import io.mockhub.dataset.DatasetService;
+import io.mockhub.store.JsonFile;
 import io.mockhub.dataset.FileDatasetRepository;
 import io.mockhub.fake.DataGenerator;
 import io.mockhub.fake.FakeData;
@@ -224,7 +232,12 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     projectsRef.set(projects);
     TeamService teams = new TeamService(new FileTeamRepository(dataDir), List.of(users), clock);
     DatasetService datasets = new DatasetService(new FileDatasetRepository(dataDir), DatasetService.Limits.DEFAULT, clock);
-    OrganizationService orgs = new OrganizationService(new FileOrganizationRepository(dataDir), List.of(projects, teams, users, datasets), clock);
+    CalloutTargets calloutTargets = new CalloutTargets(new TargetGuard(config.calloutAllowPrivate, InetAddress::getAllByName, "MOCKHUB_CALLOUT_ALLOW_PRIVATE"),
+        () -> port.get() > 0 ? port.get() : services.getOptions().portNumber(), config.publicUrl);
+    ConnectionService connections = new ConnectionService(new FileConnectionRepository(dataDir),
+        SecretBox.of(config.secretKey, JsonFile.inDataDir(dataDir, "secret.key")),
+        new TokenClient(new JdkHttpSender(), url -> calloutTargets.resolve(url, null).uri()), clock);
+    OrganizationService orgs = new OrganizationService(new FileOrganizationRepository(dataDir), List.of(projects, teams, users, datasets, connections), clock);
     projects.assignOrphans(orgs.ensureDefault().id());
     orgs.findAll().forEach(o -> teams.ensureDefault(o.id()));
     projects.assignTeams(orgId -> teams.ensureDefault(orgId).id());
@@ -232,11 +245,11 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     StateScope stateScope = new StateScope();
     StateRepository stateRepository = new StateRepository(dataStore, () -> projects.findAll().stream().map(Project::id).toList(), config.maxRecords);
     CalloutLog calloutLog = new HistoryCalloutLog(history);
+    ConnectionAuth connectionAuth = new ConnectionAuth(connections, id -> projects.find(id).map(Project::orgId));
     CalloutService callouts = new CalloutService(
         new CalloutRenderer(services::getTemplateEngine),
-        new CalloutTargets(new TargetGuard(config.calloutAllowPrivate, InetAddress::getAllByName, "MOCKHUB_CALLOUT_ALLOW_PRIVATE"),
-            () -> port.get() > 0 ? port.get() : services.getOptions().portNumber(), config.publicUrl),
-        new JdkHttpSender(), calloutLog, clock);
+        calloutTargets,
+        new JdkHttpSender(), calloutLog, clock, connectionAuth, Thread::sleep);
     ScheduledExecutorService calloutScheduler = Executors.newScheduledThreadPool(4, r -> {
       Thread t = new Thread(r, "mockhub-callout");
       t.setDaemon(true);
@@ -317,10 +330,11 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
         new CalloutController(calloutLog),
         new ImportExportController(projects, stubs, exporters, importers, urls, new WireMockArchiveImporter(bodyFiles)),
         new AiController(aiSettings, aiProviders, chat, assistant, assistantJobs, projects, urls, new BodyGenerator(aiSettings, chat)),
-        new BackupController(new BackupService(orgs, teams, projects, gateway, dataStore, bodyFiles, datasets, clock)),
+        new BackupController(new BackupService(orgs, teams, projects, gateway, dataStore, bodyFiles, datasets, connections, clock)),
         new DataController(projects, stubs, dataStore, crud),
         new StateController(projects, stateRepository, clock),
         new DatasetController(orgs, datasets),
+        new ConnectionController(orgs, connections),
         new FilesController(projects, stubs, bodyFiles),
         new PlaygroundController(
             new PlaygroundService(new JdkHttpSender(), new TargetGuard(config.playgroundAllowPrivate, InetAddress::getAllByName),
@@ -362,6 +376,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
         new HistoryRecorder(projects::findForPath, history, traffic),
         new StateScopeListener(projects::findForPath, stateScope),
         new SyncCalloutTransformer(callouts),
+        new ConnectionProxyTransformer(connectionAuth),
         new RuntimeFilter(projects::findForPath, corsHeaders, rateLimiter, loadMeter),
         new ApiKeyFilter(projects::findForPath, corsForRequest::headers),
         new RuntimeTransformer(projects::find, rateLimiter, loadMeter),

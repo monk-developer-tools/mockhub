@@ -129,7 +129,10 @@ export function CalloutsTab() {
                     </td>
                     <td className={`callout-result ${outcome}`}>{outcome === 'failed' ? 'failed' : describeOutcome(e)}</td>
                     <td><span className="callout-cell-text" title={e.stubName ?? undefined}>{e.stubName ?? <span className="muted">unnamed stub</span>}</span></td>
-                    <td><span className="tag">{e.mode === 'sync' ? 'wait' : 'webhook'}</span></td>
+                    <td>
+                      <span className="tag">{e.mode === 'sync' ? 'wait' : 'webhook'}</span>
+                      {(e.attempt ?? 1) > 1 && <span className="tag" title="Retry">try {e.attempt}</span>}
+                    </td>
                     <td className="num muted">{e.durationMs}</td>
                   </tr>
                 );
@@ -171,6 +174,7 @@ export function CalloutsTab() {
             <p className="muted small">
               {selected.mode === 'sync' ? 'The caller waited for this call' : 'Sent after answering'}
               {selected.trigger && <> · triggered by <span className="mono">{selected.trigger.method} {selected.trigger.url}</span></>}
+              {(selected.attempt ?? 1) > 1 && <> · attempt {selected.attempt}</>}
               {' · '}{new Date(selected.at).toLocaleString()} · {selected.durationMs} ms
             </p>
             {selected.request && (

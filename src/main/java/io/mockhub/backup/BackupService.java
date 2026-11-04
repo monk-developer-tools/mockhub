@@ -9,6 +9,8 @@ import io.mockhub.Main;
 import io.mockhub.api.ApiException;
 import io.mockhub.api.Jsons;
 import io.mockhub.data.DataStore;
+import io.mockhub.connection.Connection;
+import io.mockhub.connection.ConnectionService;
 import io.mockhub.dataset.DatasetService;
 import io.mockhub.dataset.StoredDataset;
 import io.mockhub.files.BodyFiles;
@@ -51,10 +53,11 @@ public final class BackupService {
   private final DataStore data;
   private final BodyFiles files;
   private final DatasetService datasets;
+  private final ConnectionService connections;
   private final Clock clock;
 
   public BackupService(OrganizationService orgs, TeamService teams, ProjectService projects, StubGateway gateway, DataStore data,
-      BodyFiles files, DatasetService datasets, Clock clock) {
+      BodyFiles files, DatasetService datasets, ConnectionService connections, Clock clock) {
     this.orgs = orgs;
     this.teams = teams;
     this.projects = projects;
@@ -62,6 +65,7 @@ public final class BackupService {
     this.data = data;
     this.files = files;
     this.datasets = datasets;
+    this.connections = connections;
     this.clock = clock;
   }
 
@@ -104,6 +108,11 @@ public final class BackupService {
     for (Organization o : orgList) {
       List<StoredDataset> orgSets = datasets.snapshot(o.id());
       if (!orgSets.isEmpty()) sets.set(o.id(), Jsons.MAPPER.valueToTree(orgSets));
+    }
+    ObjectNode links = out.putObject("connections");
+    for (Organization o : orgList) {
+      List<Connection> orgLinks = connections.snapshot(o.id());
+      if (!orgLinks.isEmpty()) links.set(o.id(), Jsons.MAPPER.valueToTree(orgLinks));
     }
     ObjectNode records = out.putObject("data");
     ObjectNode bodyFiles = out.putObject("files");
@@ -192,11 +201,13 @@ public final class BackupService {
           orgs.restore(o);
           orgCount++;
           datasetCount += datasets.restore(o.id(), datasetsIn(file, o.id()), true);
+          connections.restore(o.id(), connectionsIn(file, o.id()), true);
         }
       }
     } else {
       for (String sourceOrg : chosen.stream().map(Project::orgId).filter(Objects::nonNull).collect(Collectors.toCollection(TreeSet::new))) {
         datasetCount += datasets.restore(target, datasetsIn(file, sourceOrg), false);
+        connections.restore(target, connectionsIn(file, sourceOrg), false);
       }
     }
     String fallbackOrg = target != null ? target : orgs.ensureDefault().id();
@@ -266,6 +277,13 @@ public final class BackupService {
       if (m.isObject()) mappings.add((ObjectNode) m);
     });
     return new Contents(orgList, teamList, projectList.stream().filter(p -> p != null && p.id() != null && p.slug() != null).toList(), mappings);
+  }
+
+  private static List<Connection> connectionsIn(JsonNode file, String orgId) {
+    JsonNode links = file.path("connections").path(orgId);
+    if (!links.isArray()) return List.of();
+    List<Connection> out = Jsons.MAPPER.convertValue(links, new TypeReference<List<Connection>>() {});
+    return out.stream().map(c -> c.withSecret("")).toList();
   }
 
   private static List<StoredDataset> datasetsIn(JsonNode file, String orgId) {

@@ -21,6 +21,9 @@ import type {
   BodyFile,
   CrudRequest,
   DataResource,
+  Connection,
+  ConnectionInput,
+  ConnectionTest,
   Dataset,
   DatasetFormat,
   DatasetLimits,
@@ -205,6 +208,14 @@ export const api = {
     request<void>(`${API}/projects/${projectId}/data/records?resource=${encodeURIComponent(resource)}&id=${encodeURIComponent(id)}`, { method: 'DELETE' }),
   clearResource: (projectId: string, resource: string) =>
     request<void>(`${API}/projects/${projectId}/data/records?resource=${encodeURIComponent(resource)}`, { method: 'DELETE' }),
+  connections: (orgId: string) => request<Connection[]>(`${API}/orgs/${orgId}/connections`),
+  createConnection: (orgId: string, body: ConnectionInput) =>
+    request<Connection>(`${API}/orgs/${orgId}/connections`, { method: 'POST', body: json(body) }),
+  updateConnection: (orgId: string, key: string, body: ConnectionInput) =>
+    request<Connection>(`${API}/orgs/${orgId}/connections/${encodeURIComponent(key)}`, { method: 'PUT', body: json(body) }),
+  deleteConnection: (orgId: string, key: string) => request<void>(`${API}/orgs/${orgId}/connections/${encodeURIComponent(key)}`, { method: 'DELETE' }),
+  testConnection: (orgId: string, key: string) =>
+    request<ConnectionTest>(`${API}/orgs/${orgId}/connections/${encodeURIComponent(key)}/test`, { method: 'POST' }),
   datasets: (orgId: string) => request<{ datasets: Dataset[]; limits: DatasetLimits }>(`${API}/orgs/${orgId}/datasets`),
   createDataset: (orgId: string, body: Partial<Pick<Dataset, 'key' | 'name' | 'description' | 'identity' | 'indexes'>>) =>
     request<Dataset>(`${API}/orgs/${orgId}/datasets`, { method: 'POST', body: json(body) }),

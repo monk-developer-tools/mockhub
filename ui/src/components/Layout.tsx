@@ -1,4 +1,4 @@
-import { Archive, BookOpenText, CaretRight, ClockCounterClockwise, Buildings, CircleHalf, Eye, GearSix, HardDrives, Key, MagnifyingGlass, Moon, PaperPlaneTilt, Plus, SidebarSimple, Sparkle, SquaresFour, Sun, Table, UsersThree } from '@phosphor-icons/react';
+import { Archive, BookOpenText, CaretRight, ClockCounterClockwise, Buildings, CircleHalf, Eye, GearSix, HardDrives, Key, MagnifyingGlass, Moon, PaperPlaneTilt, Plug, Plus, SidebarSimple, Sparkle, SquaresFour, Sun, Table, UsersThree } from '@phosphor-icons/react';
 import { useCallback, useMemo } from 'react';
 import { MOD_LABEL, useHotkeys } from '../state/hotkeys';
 import { CommandPalette } from './CommandPalette';
@@ -114,13 +114,18 @@ export function Layout() {
             </NavLink>
             {currentOrg && (
               <NavLink to="/org" title={collapsed ? 'Teams & people' : undefined}
-                className={({ isActive }) => (isActive && !location.pathname.startsWith('/org/datasets') ? 'active' : undefined)}>
+                className={({ isActive }) => (isActive && !location.pathname.startsWith('/org/datasets') && !location.pathname.startsWith('/org/connections') ? 'active' : undefined)}>
                 <Buildings size={17} /> <span className="nav-label">Teams & people</span>
               </NavLink>
             )}
             {currentOrg && (
               <NavLink to="/org/datasets" title={collapsed ? 'Datasets' : undefined}>
                 <Table size={17} /> <span className="nav-label">Datasets</span>
+              </NavLink>
+            )}
+            {currentOrg && (
+              <NavLink to="/org/connections" title={collapsed ? 'Connections' : undefined}>
+                <Plug size={17} /> <span className="nav-label">Connections</span>
               </NavLink>
             )}
             {canSeeAuditLog(session) && (

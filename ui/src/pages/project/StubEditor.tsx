@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { crudOf } from '../../model/crud';
 import { DynamicValueMenu } from '../../components/DynamicValueMenu';
 import { CalloutFields } from './CalloutFields';
+import { ConnectionSelect } from '../connections/ConnectionSelect';
+import { useConnectionKeys } from '../connections/useConnectionKeys';
 import type { EditorView } from '@codemirror/view';
 import { DataGeneratorDialog } from '../../components/DataGeneratorDialog';
 import { formatSize } from '../../model/files';
@@ -108,6 +110,7 @@ export function StubEditor({ project, moveTargets, stub, isNew, canEdit, onSaved
   const [editingTable, setEditingTable] = useState(false);
   const disabled = isDisabled(stub);
   const { files, reload: reloadFiles } = useProjectFiles(project.id);
+  const connectionKeys = useConnectionKeys(project.orgId);
   const toast = useToast();
   const initial = useMemo(() => fromStub(stub), [stub]);
   const [form, setForm] = useState<StubForm>(initial.form);
@@ -598,6 +601,7 @@ export function StubEditor({ project, moveTargets, stub, isNew, canEdit, onSaved
                   value={form.syncCallout}
                   readOnly={readOnly}
                   withDelay={false}
+                  connections={connectionKeys}
                   onChange={(patch) => update({ syncCallout: { ...form.syncCallout, ...patch } })}
                 />
               </div>
@@ -614,6 +618,8 @@ export function StubEditor({ project, moveTargets, stub, isNew, canEdit, onSaved
                   <span>Remove prefix <span className="hint">optional, default {project.basePath}</span></span>
                   <input type="text" className="mono" value={form.proxyRemovePrefix} onChange={(e) => update({ proxyRemovePrefix: e.target.value })} />
                 </label>
+                <ConnectionSelect label="Sign with" value={form.proxyConnection} keys={connectionKeys} disabled={readOnly}
+                  onChange={(proxyConnection) => update({ proxyConnection })} />
               </div>
             )}
 
@@ -784,6 +790,7 @@ export function StubEditor({ project, moveTargets, stub, isNew, canEdit, onSaved
                 value={w}
                 readOnly={readOnly}
                 withDelay
+                connections={connectionKeys}
                 onChange={(patch) => update({ webhooks: form.webhooks.map((x, j) => (j === i ? { ...x, ...patch } : x)) })}
                 onRemove={() => update({ webhooks: form.webhooks.filter((_, j) => j !== i) })}
               />

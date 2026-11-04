@@ -1,0 +1,44 @@
+<p>Callouts and proxies often call a real service that wants a token: a bank sandbox behind OAuth2, or a maps API with a key header. A <strong>connection</strong> holds that secret once for the whole organisation. A stub names the connection and MockHub sends the header for you, so no secret sits in a stub, an export or the request log.</p>
+
+<h3 id="connections-add">Add a connection</h3>
+<p>Open <strong>Connections</strong> in the sidebar and choose <strong>New connection</strong>. Only managers of the organisation can add, change, test or delete connections; everyone in it can see which exist.</p>
+<table>
+  <thead><tr><th>Type</th><th>You enter</th><th>MockHub sends</th></tr></thead>
+  <tbody>
+    <tr><td><strong>OAuth2 client credentials</strong></td><td>token URL, client id, client secret, optional scope and audience</td><td><code>Authorization: Bearer &lt;token&gt;</code></td></tr>
+    <tr><td><strong>API key header</strong></td><td>the header value</td><td><code>X-Api-Key: &lt;value&gt;</code></td></tr>
+  </tbody>
+</table>
+<p>The header name and value prefix can be changed for both, e.g. <code>Authorization</code> with prefix <code>Token </code>. For OAuth2, MockHub sends the client id and secret in a Basic auth header (or in the form body if the service wants that), keeps the token until 30 seconds before it expires and then fetches a new one. The token URL may be a path on this MockHub, which helps when you mock the identity provider too.</p>
+<p><strong>Test</strong> fetches a fresh token and shows a masked preview, how long it lasts and its scope, or the token endpoint's error.</p>
+
+<h3 id="connections-secrets">How secrets are kept</h3>
+<p>Secrets are encrypted with AES-256-GCM before they're written to disk and are never sent back to the browser; leave the secret empty when you edit a connection to keep the saved one. The key comes from <code>MOCKHUB_SECRET_KEY</code>. Without it, MockHub creates a random key in <code>mockhub/secret.key</code> inside the data folder. Keep that file, or set the variable, or saved secrets can't be read after a move.</p>
+<p><a href="#export">Backups</a> include connections without their secrets. Restoring keeps the secret of a connection that's already there; a new one needs its secret entered again.</p>
+
+<h3 id="connections-callouts">Use one in a callout</h3>
+<p>In a webhook or a wait-for-callout, pick the connection under <strong>Sign with</strong>. In JSON it's <code>connection</code>:</p>
+<pre><code>"serveEventListeners": [{
+  "name": "mockhub-callout",
+  "parameters": {
+    "method": "POST",
+    "url": "https://sandbox.bank.example/payments/{{jsonPath originalRequest.body '$.id'}}/confirm",
+    "connection": "bank",
+    "retry": { "count": 3 }
+  }
+}]</code></pre>
+<p>The header replaces one of the same name in the stub. The <a href="#webhooks">Callouts tab</a> shows it as <code>••• (connection bank)</code>, never the token. If the connection is missing or the token can't be fetched, the callout isn't sent and its entry says why, e.g. <em>Connection bank: There is no connection called bank in this organisation</em>.</p>
+
+<h3 id="connections-retries">Retries</h3>
+<p>A callout can try again when the target answers <code>429</code> or <code>5xx</code>, or can't be reached. Set <strong>Retries</strong> (up to 5) and the <strong>First wait</strong>, which doubles before each further try and is capped at 30 seconds:</p>
+<pre><code>"retry": { "count": 3, "backoffMs": 500, "statuses": "429,503" }</code></pre>
+<p><code>statuses</code> is optional and takes codes and classes such as <code>5xx</code>. Every attempt is its own entry in the Callouts tab with its attempt number. A webhook waits between tries in the background; a wait-for-callout keeps the caller waiting until the last try.</p>
+
+<h3 id="connections-proxy">Use one on a proxy</h3>
+<p>On a stub that <a href="#proxy">proxies</a> to a real service, pick the connection under <strong>Sign with</strong>. In JSON:</p>
+<pre><code>"response": {
+  "proxyBaseUrl": "https://sandbox.bank.example",
+  "transformers": ["mockhub-connection"],
+  "transformerParameters": { "connection": "bank" }
+}</code></pre>
+<p>Each proxied request gets the header once, replacing one the caller sent. Other <code>additionalProxyRequestHeaders</code> stay as they are. If the token can't be fetched the caller gets <code>502</code> with the reason.</p>

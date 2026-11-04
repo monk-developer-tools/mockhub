@@ -30,6 +30,13 @@ public final class CalloutListener implements ServeEventListener {
   @Override
   public void afterComplete(ServeEvent event, Parameters parameters) {
     CalloutSpec spec = CalloutSpec.from(parameters);
-    scheduler.schedule(() -> callouts.call(spec, event, CalloutService.ASYNC), spec.delayMs(), TimeUnit.MILLISECONDS);
+    scheduler.schedule(() -> run(spec, event, 1), spec.delayMs(), TimeUnit.MILLISECONDS);
+  }
+
+  private void run(CalloutSpec spec, ServeEvent event, int attempt) {
+    CalloutService.Outcome outcome = callouts.attempt(spec, event, CalloutService.ASYNC, attempt);
+    if (!callouts.shouldRetry(spec, outcome)) return;
+    int next = attempt + 1;
+    scheduler.schedule(() -> run(spec, event, next), spec.retry().backoffBefore(next), TimeUnit.MILLISECONDS);
   }
 }

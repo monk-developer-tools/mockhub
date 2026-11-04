@@ -15,7 +15,17 @@ public record CalloutEntry(
     Result response,
     String error,
     long durationMs,
-    String requestId) {
+    String requestId,
+    int attempt) {
+
+  public CalloutEntry {
+    attempt = Math.max(1, attempt);
+  }
+
+  public CalloutEntry(String id, String at, String projectId, String stubId, String stubName, String mode, Trigger trigger,
+      OutboundRequest request, Result response, String error, long durationMs, String requestId) {
+    this(id, at, projectId, stubId, stubName, mode, trigger, request, response, error, durationMs, requestId, 1);
+  }
 
   public record Trigger(String method, String url) {}
 

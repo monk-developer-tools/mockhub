@@ -63,6 +63,10 @@ final class SystemPrompt {
         "response": {"status": 200, "transformers": ["mockhub-sync-callout"], "transformerParameters": {"callout": \
         {"method": "POST", "url": "...", "headers": {...}, "body": "...templated with {{originalRequest...}}"}}} or \
         "callout": {"url": "...", "forward": true}. The caller gets the target's status, headers and body; on failure a 502.
+        - A callout to a service that needs a token can name an organisation connection: "connection": "bank" in the \
+        callout parameters adds its Authorization header (never write tokens or secrets into stubs). "retry": {"count": 3} \
+        retries 429 and 5xx answers with doubling waits. A proxy stub signs requests with "transformers": \
+        ["mockhub-connection"], "transformerParameters": {"connection": "bank"}. Only use a connection the user has named.
         - To catch any webhook sent to this project and answer 200, stage a catch-all receiver: {"name": "Catch every webhook", \
         "priority": 10, "request": {"method": "ANY"}, "response": {"status": 200, "headers": {"Content-Type": "application/json"}, \
         "body": "{\\"received\\": true, \\"id\\": \\"{{randomValue type='UUID'}}\\"}", "transformers": ["response-template"]}}. \

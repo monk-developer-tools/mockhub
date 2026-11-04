@@ -26,6 +26,11 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import io.mockhub.connection.ConnectionService;
+import io.mockhub.connection.FileConnectionRepository;
+import io.mockhub.connection.SecretBox;
+import io.mockhub.connection.TokenClient;
+import java.net.URI;
 import org.junit.jupiter.api.BeforeEach;
 import io.mockhub.dataset.DatasetFormat;
 import io.mockhub.dataset.DatasetService;
@@ -58,6 +63,7 @@ class BackupServiceTest {
     final StubService stubs;
     final BackupService backups;
     final DatasetService datasets;
+    final ConnectionService connections;
 
     Server(MutableClock clock) {
       AtomicReference<ProjectService> ref = new AtomicReference<>();
@@ -66,8 +72,13 @@ class BackupServiceTest {
       ref.set(projects);
       teams = new TeamService(new InMemoryTeamRepository(), List.of(), clock);
       datasets = new DatasetService(new FileDatasetRepository(tempDir()), DatasetService.Limits.DEFAULT, clock);
-      orgs = new OrganizationService(new InMemoryOrganizationRepository(), List.of(projects, teams, datasets), clock);
-      backups = new BackupService(orgs, teams, projects, gateway, new InMemoryDataStore(), new BodyFiles(tempDir()), datasets, clock);
+      Path keys = tempDir();
+      connections = new ConnectionService(new FileConnectionRepository(keys), SecretBox.of("backup test", keys.resolve("k")),
+          new TokenClient((uri, method, headers, body, timeout, max) -> {
+            throw new IllegalStateException("no token calls in backups");
+          }, URI::create), clock);
+      orgs = new OrganizationService(new InMemoryOrganizationRepository(), List.of(projects, teams, datasets, connections), clock);
+      backups = new BackupService(orgs, teams, projects, gateway, new InMemoryDataStore(), new BodyFiles(tempDir()), datasets, connections, clock);
     }
 
     Organization org(String name) {
@@ -284,6 +295,25 @@ class BackupServiceTest {
     assertThat(result.datasets()).isEqualTo(1);
     assertThat(source.names(retail, "banks")).containsExactly("Retail bank");
     assertThat(source.names(retail, "currencies")).containsExactly("Pound");
+  }
+
+  @Test
+  void carriesConnectionsWithoutTheirSecretsAndKeepsSecretsAlreadySaved() {
+    // Given
+    source.connections.create(payments.id(), tree("{'key':'bank','type':'header','headerName':'X-Api-Key','secret':'k-123'}"));
+    source.connections.create(payments.id(), tree("{'key':'maps','type':'header','headerName':'X-Api-Key','secret':'m-456'}"));
+    JsonNode file = source.backups.export(BackupSelection.of(Set.of(), Set.of(payByBank.id())));
+    Server fresh = new Server(clock);
+
+    // When
+    source.backups.restore(file, RestoreOptions.everything());
+    fresh.backups.restore(file, RestoreOptions.everything());
+
+    // Then
+    assertThat(file.get("connections").toString()).contains("bank").doesNotContain("k-123").doesNotContain("v1:");
+    assertThat(source.connections.header(payments.id(), "bank").value()).isEqualTo("k-123");
+    assertThat(fresh.connections.get(payments.id(), "bank").hasSecret()).isFalse();
+    assertThat(fresh.connections.list(payments.id())).hasSize(2);
   }
 
   @Test

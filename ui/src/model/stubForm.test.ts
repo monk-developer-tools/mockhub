@@ -400,4 +400,45 @@ describe('validation', () => {
     expect(validate(allZero)).toContain('At least one response needs a weight above zero.');
     expect(validate(badStatus)).toContain('Each other response needs a status between 100 and 599.');
   });
+
+  it('round-trips a webhook signed with a connection that retries', () => {
+    // Given
+    const original: Stub = {
+      request: { method: 'POST', urlPath: '/orders' },
+      response: { status: 202 },
+      serveEventListeners: [
+        { name: 'mockhub-callout', parameters: { method: 'POST', url: 'https://partner/cb', connection: 'bank', retry: { count: 3, backoffMs: 500, statuses: '503' } } },
+      ],
+    };
+
+    // When
+    const { form, unsupported } = fromStub(original);
+    const written = toStub(form, original);
+    const withoutRetry = toStub({ ...form, webhooks: [{ ...form.webhooks[0], retries: '0', connection: '' }] }, original);
+
+    // Then
+    expect(unsupported).toEqual([]);
+    expect(form.webhooks[0]).toMatchObject({ connection: 'bank', retries: '3', retryBackoff: '500', retryStatuses: '503' });
+    expect(written.serveEventListeners).toEqual(original.serveEventListeners);
+    expect(withoutRetry.serveEventListeners).toEqual([{ name: 'mockhub-callout', parameters: { method: 'POST', url: 'https://partner/cb' } }]);
+  });
+
+  it('signs a proxy with a connection and drops it when the connection is cleared', () => {
+    // Given
+    const original: Stub = {
+      request: { method: 'ANY', urlPathPattern: '/ledger/.*' },
+      response: { proxyBaseUrl: 'https://bank.test', transformers: ['mockhub-connection'], transformerParameters: { connection: 'bank' } },
+    };
+
+    // When
+    const { form, unsupported } = fromStub(original);
+    const written = toStub(form, original);
+    const cleared = toStub({ ...form, proxyConnection: '' }, original);
+
+    // Then
+    expect(unsupported).toEqual([]);
+    expect(form.proxyConnection).toBe('bank');
+    expect(written.response).toEqual(original.response);
+    expect(cleared.response).toEqual({ proxyBaseUrl: 'https://bank.test' });
+  });
 });

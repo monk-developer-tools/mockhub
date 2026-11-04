@@ -5205,3 +5205,27 @@ button.map-node:hover,
 .weighted-alt .weighted-row > .btn {
   margin-bottom: 6px;
 }
+
+.connection-examples code {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 12.5px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--surface-sunken);
+}
+
+.connection-test {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.connection-test.ok {
+  color: var(--ok);
+}
+
+.connection-test.failed {
+  color: var(--danger);
+}

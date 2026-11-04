@@ -25,6 +25,7 @@ public final class Config {
   public final int historyMaxMb;
   public final boolean publicTools;
   public final int maxRecords;
+  public final String secretKey;
 
   public Config(Map<String, String> env) {
     this.port = Integer.parseInt(env.getOrDefault("PORT", "8080"));
@@ -46,6 +47,7 @@ public final class Config {
     this.historyMaxMb = Math.max(1, Integer.parseInt(env.getOrDefault("MOCKHUB_HISTORY_MAX_MB", "200")));
     this.publicTools = Boolean.parseBoolean(env.getOrDefault("MOCKHUB_PUBLIC_TOOLS", "false"));
     this.maxRecords = Math.max(0, Integer.parseInt(env.getOrDefault("MOCKHUB_MAX_RECORDS", "10000")));
+    this.secretKey = env.getOrDefault("MOCKHUB_SECRET_KEY", "");
   }
 
   private static String trimTrailingSlash(String s) {

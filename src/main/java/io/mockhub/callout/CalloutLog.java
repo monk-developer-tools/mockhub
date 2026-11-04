@@ -18,7 +18,7 @@ public interface CalloutLog {
     CalloutEntry.Result response = s == null ? null
         : new CalloutEntry.Result(s.status(), s.headers(), cap(s.body()), s.truncated() || s.body().length() > MAX_STORED_BODY);
     return new CalloutEntry(e.id(), e.at(), e.projectId(), e.stubId(), e.stubName(), e.mode(), e.trigger(), request, response,
-        e.error(), e.durationMs(), e.requestId());
+        e.error(), e.durationMs(), e.requestId(), e.attempt());
   }
 
   private static String cap(String body) {

@@ -4,13 +4,20 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-public record CalloutSpec(String method, String url, Map<String, String> headers, String body, long delayMs, boolean forward) {
+public record CalloutSpec(String method, String url, Map<String, String> headers, String body, long delayMs, boolean forward,
+    String connection, CalloutRetry retry) {
   public CalloutSpec {
     method = method == null || method.isBlank() ? "POST" : method.trim();
     url = url == null ? "" : url.trim();
     headers = headers == null ? Map.of() : Map.copyOf(headers);
     body = body == null ? "" : body;
     delayMs = Math.max(0, delayMs);
+    connection = connection == null || connection.isBlank() ? null : connection.trim();
+    retry = retry == null ? CalloutRetry.NONE : retry;
+  }
+
+  public CalloutSpec(String method, String url, Map<String, String> headers, String body, long delayMs, boolean forward) {
+    this(method, url, headers, body, delayMs, forward, null, null);
   }
 
   public static CalloutSpec from(Map<String, ?> parameters) {
@@ -21,7 +28,9 @@ public record CalloutSpec(String method, String url, Map<String, String> headers
         headers(parameters.get("headers")),
         text(parameters.get("body")),
         delay(parameters.get("delay")),
-        Boolean.parseBoolean(String.valueOf(parameters.get("forward"))));
+        Boolean.parseBoolean(String.valueOf(parameters.get("forward"))),
+        text(parameters.get("connection")),
+        CalloutRetry.from(parameters.get("retry")));
   }
 
   private static String text(Object value) {

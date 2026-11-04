@@ -3,7 +3,8 @@ import type { EditorView } from '@codemirror/view';
 import { useRef } from 'react';
 import { CodeEditor, insertAtCursor } from '../../components/CodeEditor';
 import { DynamicValueMenu } from '../../components/DynamicValueMenu';
-import { WEBHOOK_METHODS, type Webhook } from '../../model/stubForm';
+import { MAX_RETRIES, WEBHOOK_METHODS, type Webhook } from '../../model/stubForm';
+import { ConnectionSelect } from '../connections/ConnectionSelect';
 import { KeyValueRows } from './MatcherRows';
 
 interface Props {
@@ -13,9 +14,10 @@ interface Props {
   onRemove?: () => void;
   readOnly: boolean;
   withDelay: boolean;
+  connections?: string[];
 }
 
-export function CalloutFields({ label, value: w, onChange, onRemove, readOnly, withDelay }: Props) {
+export function CalloutFields({ label, value: w, onChange, onRemove, readOnly, withDelay, connections = [] }: Props) {
   const bodyRef = useRef<EditorView | null>(null);
   const urlRef = useRef<HTMLInputElement>(null);
 
@@ -69,6 +71,25 @@ export function CalloutFields({ label, value: w, onChange, onRemove, readOnly, w
         </div>
         {!readOnly && <DynamicValueMenu scope="callout" label="Insert in URL" onInsert={insertIntoUrl} />}
       </div>
+      <div className="grid three">
+        <ConnectionSelect label="Sign with" value={w.connection ?? ''} keys={connections} disabled={readOnly}
+          onChange={(connection) => onChange({ connection })} />
+        <label className="field">
+          <span>Retries <span className="hint">0–{MAX_RETRIES}</span></span>
+          <input type="number" min={0} max={MAX_RETRIES} aria-label={`${label} retries`} placeholder="0" value={w.retries ?? ''} disabled={readOnly}
+            onChange={(e) => onChange({ retries: e.target.value })} />
+        </label>
+        <label className="field">
+          <span>First wait <span className="hint">ms, doubles each time</span></span>
+          <input type="number" min={0} aria-label={`${label} retry wait`} placeholder="1000" value={w.retryBackoff ?? ''}
+            disabled={readOnly || !(Number(w.retries) > 0)} onChange={(e) => onChange({ retryBackoff: e.target.value })} />
+        </label>
+      </div>
+      {Number(w.retries) > 0 && (
+        <p className="muted small">
+          Tries again on {w.retryStatuses?.trim() || '429 and 5xx'} answers and when the target can't be reached. Every attempt shows in the Callouts tab.
+        </p>
+      )}
       <div className="field">
         <span>Headers <span className="hint">{w.forward ? 'added to the forwarded headers' : 'templating works here too'}</span></span>
         <KeyValueRows rows={w.headers} onChange={(headers) => onChange({ headers })} disabled={readOnly} />

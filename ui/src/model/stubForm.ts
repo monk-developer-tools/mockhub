@@ -44,6 +44,10 @@ export interface Webhook {
   body: string;
   delay: string;
   forward: boolean;
+  connection?: string;
+  retries?: string;
+  retryBackoff?: string;
+  retryStatuses?: string;
 }
 
 export interface Alternative {
@@ -57,6 +61,8 @@ export const WEBHOOK_METHODS = ['POST', 'PUT', 'PATCH', 'GET', 'DELETE'];
 export const CALLOUT_LISTENER = 'mockhub-callout';
 export const SYNC_CALLOUT_TRANSFORMER = 'mockhub-sync-callout';
 export const WEIGHTED_TRANSFORMER = 'mockhub-weighted';
+export const CONNECTION_TRANSFORMER = 'mockhub-connection';
+export const MAX_RETRIES = 5;
 const CALLOUT_LISTENERS = new Set(['webhook', CALLOUT_LISTENER]);
 
 export function emptyWebhook(): Webhook {
@@ -112,6 +118,7 @@ export interface StubForm {
   fault: Fault;
   proxyBaseUrl: string;
   proxyRemovePrefix: string;
+  proxyConnection: string;
   soapVersion: '1.1' | '1.2';
   soapAction: string;
   soapOperation: string;
@@ -199,6 +206,7 @@ export function emptyForm(kind: StubKind = 'rest'): StubForm {
     fault: 'CONNECTION_RESET_BY_PEER',
     proxyBaseUrl: '',
     proxyRemovePrefix: '',
+    proxyConnection: '',
     soapVersion: '1.1',
     soapAction: '',
     soapOperation: soap ? 'Operation' : '',
@@ -359,7 +367,7 @@ export function fromStub(stub: Stub): Conversion {
   const transformers = Array.isArray(response.transformers) ? response.transformers.map(String) : [];
   form.templating = transformers.includes(TEMPLATE_TRANSFORMER);
   const waitsForCallout = transformers.includes(SYNC_CALLOUT_TRANSFORMER) && !response.fault && !response.proxyBaseUrl;
-  const known = new Set([TEMPLATE_TRANSFORMER, SYNC_CALLOUT_TRANSFORMER, WEIGHTED_TRANSFORMER]);
+  const known = new Set([TEMPLATE_TRANSFORMER, SYNC_CALLOUT_TRANSFORMER, WEIGHTED_TRANSFORMER, CONNECTION_TRANSFORMER]);
   if (transformers.some((t) => !known.has(t))) unsupported.push(`Transformers ${transformers.join(', ')}`);
   const transformerParameters = obj(response.transformerParameters);
   const weighted = transformers.includes(WEIGHTED_TRANSFORMER) && form.responseMode === 'direct';
@@ -395,10 +403,12 @@ export function fromStub(stub: Stub): Conversion {
   if (response.fault) form.fault = str(response.fault) as Fault;
   form.proxyBaseUrl = str(response.proxyBaseUrl);
   form.proxyRemovePrefix = str(response.proxyUrlPrefixToRemove);
+  const signsProxy = form.responseMode === 'proxy' && transformers.includes(CONNECTION_TRANSFORMER);
+  if (signsProxy) form.proxyConnection = str(transformerParameters.connection);
   for (const key of ['additionalProxyRequestHeaders', 'removeProxyRequestHeaders']) {
     if (response[key] !== undefined) unsupported.push(`Response ${key}`);
   }
-  const otherParameters = Object.keys(transformerParameters).filter((k) => !(waitsForCallout && k === 'callout') && !(weighted && k === 'responses'));
+  const otherParameters = Object.keys(transformerParameters).filter((k) => !(waitsForCallout && k === 'callout') && !(weighted && k === 'responses') && !(signsProxy && k === 'connection'));
   if (otherParameters.length) unsupported.push(`Response transformerParameters ${otherParameters.join(', ')}`);
   form.webhooks = [];
   for (const listener of Array.isArray(stub.serveEventListeners) ? stub.serveEventListeners : []) {
@@ -464,6 +474,9 @@ export function toStub(form: StubForm, original: Stub = {}): Stub {
   const parameters = { ...obj(response.transformerParameters) };
   delete parameters.callout;
   delete parameters.responses;
+  delete parameters.connection;
+  const signsProxy = form.responseMode === 'proxy' && Boolean(form.proxyConnection.trim());
+  if (signsProxy) parameters.connection = form.proxyConnection.trim();
   if (form.responseMode === 'callout') parameters.callout = writeCallout(form.syncCallout, false);
   if (Object.keys(parameters).length) response.transformerParameters = parameters;
   else delete response.transformerParameters;
@@ -485,6 +498,7 @@ export function toStub(form: StubForm, original: Stub = {}): Stub {
   }
   if (form.responseMode !== 'fault') writeDelay(response, form);
   if (form.templating && form.responseMode !== 'fault' && form.responseMode !== 'callout') response.transformers = [TEMPLATE_TRANSFORMER];
+  if (signsProxy) response.transformers = [...(Array.isArray(response.transformers) ? response.transformers : []), CONNECTION_TRANSFORMER];
   if (form.responseMode === 'direct' && form.alternatives.length) writeAlternatives(response, form);
   stub.response = response;
 
@@ -570,6 +584,19 @@ function readCallout(p: JsonObject): Webhook {
     body: typeof p.body === 'string' ? p.body : p.body !== undefined ? JSON.stringify(p.body, null, 2) : '',
     delay: str(obj(p.delay).milliseconds),
     forward: p.forward === true,
+    ...(p.connection ? { connection: str(p.connection) } : {}),
+    ...readRetry(p.retry),
+  };
+}
+
+function readRetry(raw: JsonObject[string]): Partial<Webhook> {
+  if (typeof raw === 'number' || typeof raw === 'string') return Number(raw) > 0 ? { retries: str(raw) } : {};
+  const r = obj(raw);
+  if (!(Number(r.count) > 0)) return {};
+  return {
+    retries: str(r.count),
+    ...(r.backoffMs !== undefined ? { retryBackoff: str(r.backoffMs) } : {}),
+    ...(r.statuses !== undefined ? { retryStatuses: Array.isArray(r.statuses) ? r.statuses.join(',') : str(r.statuses) } : {}),
   };
 }
 
@@ -580,6 +607,14 @@ function writeCallout(w: Webhook, withDelay: boolean): JsonObject {
   if (Object.keys(headers).length) parameters.headers = headers;
   if (!w.forward && w.body.trim() && w.method !== 'GET') parameters.body = w.body;
   if (withDelay && Number(w.delay) > 0) parameters.delay = { type: 'fixed', milliseconds: Number(w.delay) };
+  if (w.connection?.trim()) parameters.connection = w.connection.trim();
+  const retries = Math.min(MAX_RETRIES, Math.floor(Number(w.retries) || 0));
+  if (retries > 0) {
+    const retry: JsonObject = { count: retries };
+    if (Number(w.retryBackoff) > 0) retry.backoffMs = Number(w.retryBackoff);
+    if (w.retryStatuses?.trim()) retry.statuses = w.retryStatuses.trim();
+    parameters.retry = retry;
+  }
   return parameters;
 }
 

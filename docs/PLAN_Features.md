@@ -26,7 +26,7 @@ Legend: ✅ have it · 🟡 partial · ❌ missing
 | Advanced matching filters | Body JSONPath/XPath, regex, headers, query, cookies | ✅ | — |
 | Execution order of rules | Matching order view, drag or arrows to reorder | ✅ | — |
 | CRUD routes | CRUD resources with `_sort`, `_order`, `_limit`, `_offset` | 🟡 | F7 |
-| HTTP callout rule | Webhooks, forward, wait for callout, callout log | ✅ | F9 adds retries and OAuth |
+| HTTP callout rule | Webhooks, forward, wait for callout, callout log, retries, OAuth connections | ✅ | — |
 | Large and binary responses | Response files with content type | ✅ | — |
 | Template engine: request data, control flow, arrays, strings, maths, dates | Handlebars helpers and the Insert dynamic value picker | ✅ | — |
 | Template engine: state (counters, stores, lists) | State extension, saved per project | ✅ | — |
@@ -50,7 +50,7 @@ Legend: ✅ have it · 🟡 partial · ❌ missing
 | Stateful data management UI | Data tab for CRUD records and recorded state contexts | ✅ | — |
 | Datasets (CSV/JSON shared across projects) | Organisation datasets, helpers, browser, table editor | ✅ | — |
 | Sharing and teams | Organisations, teams, roles, SSO | ✅ | — |
-| API connections (stored OAuth for outbound calls) | Missing | ❌ | F9 |
+| API connections (stored OAuth for outbound calls) | Organisation connections for callouts and proxies, encrypted | ✅ | — |
 | Mock server security (required header) | Project API key header (401) and IP allow list (403) | ✅ | — |
 | AI rules generator | AI assistant with staged diffs | ✅ | — |
 | Agentic mode (MCP) | MCP server with 22 tools, direct or review tokens, audited | ✅ | — |
@@ -655,10 +655,10 @@ Goal: callouts and proxies reach authenticated partners.
 - Callout log stored on disk with the history store from F3.
 
 Checklist:
-- [ ] Connections with encrypted secrets
-- [ ] Token injection in callouts and proxies
-- [ ] Retries
-- [x] Tests, docs (unit, integration and system tests per item; Recorded state docs page, CRUD limits and error codes, config, limits and README)
+- [x] Connections with encrypted secrets (`io.mockhub.connection`: OAuth2 client credentials or a fixed header, AES-256-GCM with `MOCKHUB_SECRET_KEY` or a generated `mockhub/secret.key`, token cache until 30 s before expiry, test button with a masked preview; `/orgs/{id}/connections`, organisation manager to change; Connections page; up to 50 per organisation; in backups without secrets)
+- [x] Token injection in callouts and proxies (`connection` on webhooks and wait-for-callout replaces a same-named header and is logged as `••• (connection key)`; `mockhub-connection` transformer on proxy stubs adds the header once and keeps other proxy headers; "Sign with" in the stub editor)
+- [x] Retries (`retry: {count ≤ 5, backoffMs, statuses}`, default `429,5xx` plus network errors, wait doubling up to 30 s; webhooks reschedule in the background, wait-for-callout retries inline; each attempt logged with its number)
+- [x] Tests, docs (Connections & retries docs page, config, README)
 
 ### Phase F10 — More protocols
 
@@ -697,7 +697,7 @@ Checklist:
 - [ ] Custom domains
 - [ ] Mock these APIs button
 - [ ] Forward proxy with interception
-- [x] Tests, docs (unit, integration and system tests per item; Recorded state docs page, CRUD limits and error codes, config, limits and README)
+- [ ] Tests, docs
 
 ### Phase F12 — Local tunnel
 
@@ -714,7 +714,7 @@ Checklist:
 - [ ] Tunnel protocol and server side
 - [ ] CLI
 - [ ] Proxy and callout targets
-- [x] Tests, docs (unit, integration and system tests per item; Recorded state docs page, CRUD limits and error codes, config, limits and README)
+- [ ] Tests, docs
 
 ### Phase F13 — Contract drift detection
 
@@ -732,7 +732,7 @@ Checklist:
 - [ ] Drift detection job and findings API
 - [ ] Drift page and AI patch
 - [ ] Notifications
-- [x] Tests, docs (unit, integration and system tests per item; Recorded state docs page, CRUD limits and error codes, config, limits and README)
+- [ ] Tests, docs
 
 ## 3. Order and size
 

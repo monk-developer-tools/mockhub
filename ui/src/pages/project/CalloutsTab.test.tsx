@@ -10,7 +10,7 @@ const entries: CalloutEntry[] = [
     id: 'a', at: '2026-11-03T10:00:00Z', projectId: 'p1', stubId: 's1', stubName: 'Take payment', mode: 'async',
     trigger: { method: 'POST', url: '/pay/payments' },
     request: { method: 'POST', url: 'https://partner.test/cb', headers: [{ name: 'Content-Type', value: 'application/json' }], body: '{"id":"pay_1"}' },
-    response: { status: 204, headers: [], body: '', truncated: false }, error: null, durationMs: 31, requestId: null,
+    response: { status: 204, headers: [], body: '', truncated: false }, error: null, durationMs: 31, requestId: null, attempt: 2,
   },
   {
     id: 'b', at: '2026-11-03T10:00:05Z', projectId: 'p1', stubId: 's2', stubName: 'Check card', mode: 'sync',
@@ -50,6 +50,7 @@ describe('CalloutsTab', () => {
     const rows = await screen.findAllByRole('row');
     expect(rows).toHaveLength(3);
     expect(within(rows[1]).getByText('204')).toBeInTheDocument();
+    expect(within(rows[1]).getByText('try 2')).toBeInTheDocument();
     expect(within(rows[2]).getByText('failed')).toBeInTheDocument();
 
     // When
