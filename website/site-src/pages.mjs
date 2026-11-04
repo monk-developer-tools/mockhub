@@ -56,7 +56,6 @@ export const MENUS = [
 ];
 
 const shot = (name, alt) => ({ pair: name, alt });
-const tut = (name, alt) => ({ single: `/assets/img/tutorials/${name}.webp`, alt });
 
 export const PAGES = [
   {
@@ -145,7 +144,7 @@ curl https://mockhub.devops-monk.com/example-soap/ws/calculator?wsdl`,
       ['Add the behaviour you want to test', 'Pick a delay, a failure rate, a fault or weighted responses in the stub editor.'],
       ['Run your load test', 'Point k6, JMeter, Gatling or Locust at your app. The mock answers the same way every run.'],
     ],
-    shot: tut('chaos-2-delay', 'The Delay section of the stub editor with Realistic latency selected'),
+    shot: shot('faults', 'The stub editor with Realistic latency, a failure rate and a rate limit'),
     problem: {
       title: 'Why load tests lie when real APIs are involved',
       items: [
@@ -207,7 +206,7 @@ curl https://mockhub.devops-monk.com/example-soap/ws/calculator?wsdl`,
       ['Give every environment its project', 'Payments-dev and payments-qa answer on different base URLs from the same server.'],
       ['Promote with snapshots', 'Snapshot dev, compare it with qa, and pull it across. A safety snapshot is taken first.'],
     ],
-    shot: tut('snap-2-compare', 'Comparing two snapshots: stubs added, changed and removed'),
+    shot: shot('snapshots', 'Comparing a project with its Release 1.4 snapshot: two stubs added since'),
     problem: {
       title: 'Shared environments without the shared pain',
       items: [
@@ -268,7 +267,7 @@ payments.base-url: https://mocks.example.com/payments-qa`,
       ['Make the answers realistic', 'Swap static values for fake names, e-mails and prices, or turn a resource into CRUD that saves.'],
       ['Point the app at the mock', 'Switch to the real API with one base URL when it is ready.'],
     ],
-    shot: tut('openapi-1-import', 'The import panel with an OpenAPI file ready to import'),
+    shot: shot('openapi', 'Stubs generated from an OpenAPI file, grouped by tag, with one open in the editor'),
     problem: {
       title: 'Waiting on the backend costs weeks',
       items: [
@@ -316,13 +315,13 @@ payments.base-url: https://mocks.example.com/payments-qa`,
     description: 'Mock a payment provider and its callbacks: answer at once, then call your service back, forward the request to a partner, or wait for a partner\'s answer.',
     h1: 'Mock partner APIs, including the webhooks they send back',
     lede: 'Payment providers, shipping partners and identity services do not just answer. They call you back. MockHub answers at once and then calls your service, forwards requests, or waits for a partner and answers with its reply.',
-    hero: { shot: tut('webhook-1-editor', 'The stub editor with a webhook that calls back after the response') },
+    hero: { shot: shot('webhooks', 'A stub that calls back after answering, with a templated URL, headers and body') },
     steps: [
       ['Mock the partner\'s endpoint', 'Answer a payment request with 202 and a payment id, just like the provider does.'],
       ['Add the callback', 'Call your service back after a delay, with a body built from the original request.'],
       ['Watch it happen', 'The Callouts tab shows every callback, its answer and any error.'],
     ],
-    shot: tut('webhook-2-callouts', 'The Callouts tab listing callbacks with their status and timing'),
+    shot: shot('callouts', 'The Callouts tab with every callback sent, its headers, body and the answer it got'),
     problem: {
       title: 'Async integrations are the hardest to test',
       items: [
@@ -379,7 +378,7 @@ payments.base-url: https://mocks.example.com/payments-qa`,
       ['Ask in plain English', '"Add a 404 for unknown order ids and a 503 one call in ten."'],
       ['Review, then apply', 'Every change is shown as a diff. Nothing is saved until you approve it.'],
     ],
-    shot: tut('mcp-2-setup', 'Setting up MCP for a coding agent with a personal access token'),
+    shot: shot('mcp', 'A new access token with the MCP setup command for Claude Code'),
     problem: {
       title: 'Writing mocks by hand is slow',
       items: [
@@ -498,7 +497,7 @@ payments.base-url: https://mocks.example.com/payments-qa`,
       ['Review the generated stubs', 'One per operation, grouped by path, each with an example answer.'],
       ['Add the cases the spec leaves out', 'Errors, slow answers and fake data, in the form editor.'],
     ],
-    shot: tut('openapi-1-import', 'The import panel with an OpenAPI file selected'),
+    shot: shot('openapi', 'Stubs generated from an OpenAPI file, grouped by tag, with one open in the editor'),
     problem: {
       title: 'A spec alone is not a server',
       items: [
@@ -624,7 +623,7 @@ payments.base-url: https://mocks.example.com/payments-qa`,
       ['Call it like a real API', 'GET, POST, PUT, PATCH and DELETE work on /orders and /orders/{id}.'],
       ['See and edit the data', 'The Data tab lists every record and lets you add, edit, delete or clear them.'],
     ],
-    shot: tut('crud-2-data', 'The Data tab of a CRUD resource listing saved orders'),
+    shot: shot('crud', 'The Data tab listing customer records saved by a CRUD resource'),
     problem: {
       title: 'Static mocks forget everything',
       items: [
@@ -684,7 +683,7 @@ curl https://mocks.example.com/shop/orders/4
       ['Attach stubs to states', 'Each stub answers only in its state and can move to the next.'],
       ['Reset when you need to', 'Put a scenario back to the start, or jump to any state, from the Scenarios tab.'],
     ],
-    shot: tut('scenario-2-tab', 'The Scenarios tab showing a cart scenario and its current state'),
+    shot: shot('scenarios', 'A cart stub that answers only in the Started state and moves the scenario to Item added'),
     problem: {
       title: 'Flows need memory',
       items: [
@@ -732,13 +731,13 @@ curl https://mockhub.devops-monk.com/example-cart/cart
     description: 'Mock an OAuth token endpoint that issues real RS256 or HS256 JWTs, a JWKS endpoint your app can verify against, and endpoints that read claims from the bearer token.',
     h1: 'Mock OAuth with tokens your app can really verify',
     lede: 'Issue signed RS256 or HS256 JWTs from a token endpoint, publish the public keys as JWKS, and read claims from the bearer token in any response. Your app\'s real verification code runs unchanged.',
-    hero: { shot: tut('jwt-2-picker', 'The dynamic value picker showing JWT helpers: signed token, shared secret, JWKS and claims') },
+    hero: { shot: shot('jwt-templates', 'The template gallery with OAuth token, JWKS and bearer token templates') },
     steps: [
       ['Start from a template', 'OAuth token endpoint, JWKS public keys and Who am I are ready-made.'],
       ['Point your app at the mock', 'Set the issuer and JWKS URL to the mock\'s base URL.'],
       ['Read claims in other stubs', 'Answer with the user from the token, or 401 without one.'],
     ],
-    shot: tut('jwt-1-templates', 'The template gallery with the Auth and validation group'),
+    shot: shot('jwt', 'A token endpoint whose response signs a real RS256 JWT for the caller'),
     problem: {
       title: 'Auth blocks every test',
       items: [
@@ -791,7 +790,7 @@ curl https://mockhub.devops-monk.com/example-cart/cart
       ['Keep your URLs', 'Serve a project at the server root so existing clients need no change.'],
       ['Invite the team', 'Everyone edits in the UI, with roles and an audit log.'],
     ],
-    shot: tut('migrate-repo-2-stubs', 'Thousands of imported stubs grouped by folder in a project'),
+    shot: shot('wiremock-json', 'A stub in the JSON view: the same WireMock mapping format you already use'),
     problem: {
       title: 'WireMock is great. Running it for a team is not.',
       items: [

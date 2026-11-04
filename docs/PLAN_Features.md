@@ -517,7 +517,7 @@ Safety for the demo-server tools. Each tool:
   - [x] Six service-virtualization pages
   - [x] Eight mock-server pages
   - [x] Each page has a code example and an FAQ
-  - [ ] Fresh light and dark screenshots for every page
+  - [x] Fresh light and dark screenshots for every page (11 new pairs; tutorial images stay on the tutorials page)
 - W3 Browser-only tools:
   - [x] JWT
   - [x] cURL to stub

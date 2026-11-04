@@ -41,9 +41,8 @@ ${ogMeta(path, title)}
 ${extra}</head>`;
 }
 
-function picture({ pair, single, alt }, eager = false) {
+function picture({ pair, alt }, eager = false) {
   const load = eager ? 'fetchpriority="high"' : 'loading="lazy"';
-  if (single) return `<img src="${single}" alt="${esc(alt)}" width="1176" height="900" ${load}>`;
   const base = `/assets/img/shots/${pair}`;
   return `<picture>
             <source media="(prefers-color-scheme: dark)" srcset="${base}-dark.webp 1440w, ${base}-dark@2x.webp 2880w" sizes="(max-width: 1180px) 94vw, 1100px">
