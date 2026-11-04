@@ -78,7 +78,7 @@ const DELAYS: { value: DelayType; label: string }[] = [
 
 interface Props {
   project: Project;
-  projects: Project[];
+  moveTargets: Project[];
   stub: Stub;
   isNew: boolean;
   canEdit: boolean;
@@ -97,7 +97,7 @@ function withFile(form: StubForm, path: string, contentType: string): Partial<St
   return { responseBody: path, responseHeaders: [{ key: 'Content-Type', value: contentType }, ...headers] };
 }
 
-export function StubEditor({ project, projects, stub, isNew, canEdit, onSaved, onDeleted, onDirtyChange, usage, onToggled, aiEnabled = false }: Props) {
+export function StubEditor({ project, moveTargets, stub, isNew, canEdit, onSaved, onDeleted, onDirtyChange, usage, onToggled, aiEnabled = false }: Props) {
   const crud = crudOf(stub);
   const [generating, setGenerating] = useState(false);
   const [toggling, setToggling] = useState(false);
@@ -263,7 +263,7 @@ export function StubEditor({ project, projects, stub, isNew, canEdit, onSaved, o
                 <button className="btn ghost icon" title="Duplicate" aria-label="Duplicate" onClick={duplicate}>
                   <Copy size={15} />
                 </button>
-                {projects.length > 1 && (
+                {moveTargets.length > 0 && (
                   <button className="btn ghost icon" title="Move to another project" aria-label="Move to another project" onClick={() => setMoving(true)}>
                     <FolderSimplePlus size={15} />
                   </button>
@@ -863,13 +863,11 @@ export function StubEditor({ project, projects, stub, isNew, canEdit, onSaved, o
       {moving && (
         <Modal title="Move stub" description="The stub keeps its relative path under the new project's base URL." onClose={() => setMoving(false)}>
           <div className="rows">
-            {projects
-              .filter((p) => p.id !== project.id)
-              .map((p) => (
-                <button key={p.id} className="btn" style={{ justifyContent: 'flex-start' }} onClick={() => move(p.id)}>
-                  <span className="swatch" style={{ background: p.color }} /> {p.name} <span className="muted mono small">{p.basePath}</span>
-                </button>
-              ))}
+            {moveTargets.map((p) => (
+              <button key={p.id} className="btn" style={{ justifyContent: 'flex-start' }} onClick={() => move(p.id)}>
+                <span className="swatch" style={{ background: p.color }} /> {p.name} <span className="muted mono small">{p.basePath}</span>
+              </button>
+            ))}
           </div>
         </Modal>
       )}

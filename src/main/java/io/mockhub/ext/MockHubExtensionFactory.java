@@ -266,7 +266,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
         new ProjectController(projects, views, teamChoice),
         new RuntimeController(runtimeService),
         new ExampleController(examples, new ExampleInstaller(examples, projects, stubs, importers, crud, bodyFiles), views, teamChoice),
-        new StubController(stubs),
+        new StubController(stubs, projects),
         new RequestLogController(requestLog, history),
         new HistoryController(projects, history, traffic, Main.VERSION),
         new CalloutController(calloutLog),

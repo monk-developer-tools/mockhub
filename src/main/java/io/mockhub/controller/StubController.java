@@ -4,15 +4,19 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.mockhub.api.ApiException;
 import io.mockhub.api.ApiRouter;
 import io.mockhub.api.Response;
+import io.mockhub.auth.Principal;
+import io.mockhub.project.ProjectService;
 import io.mockhub.stub.StubService;
 import java.util.ArrayList;
 import java.util.List;
 
 public final class StubController implements ApiController {
   private final StubService stubs;
+  private final ProjectAccess access;
 
-  public StubController(StubService stubs) {
+  public StubController(StubService stubs, ProjectService projects) {
     this.stubs = stubs;
+    this.access = new ProjectAccess(projects);
   }
 
   @Override
@@ -28,11 +32,11 @@ public final class StubController implements ApiController {
     r.put("/projects/{id}/stubs/{stubId}/enabled", ctx ->
         stubs.setEnabled(ctx.path("id"), ctx.path("stubId"), ctx.json().path("enabled").asBoolean(true)));
     r.post("/projects/{id}/stubs/{stubId}/clone", ctx ->
-        Response.json(201, stubs.copy(ctx.path("id"), ctx.path("stubId"), ctx.query("target"))));
+        Response.json(201, stubs.copy(ctx.path("id"), ctx.path("stubId"), target(ctx.principal(), ctx.query("target"), ctx.path("id")))));
     r.post("/projects/{id}/stubs/{stubId}/move", ctx -> {
       String target = ctx.query("target");
       if (target == null) throw ApiException.badRequest("Query parameter 'target' is required");
-      return stubs.move(ctx.path("id"), ctx.path("stubId"), target);
+      return stubs.move(ctx.path("id"), ctx.path("stubId"), access.editable(ctx.principal(), target));
     });
     r.post("/projects/{id}/adopt/{stubId}", ctx ->
         stubs.adopt(ctx.path("id"), ctx.path("stubId"), Boolean.parseBoolean(ctx.query("prefix", "false"))));
@@ -46,5 +50,9 @@ public final class StubController implements ApiController {
     List<String> ids = new ArrayList<>();
     node.forEach(n -> ids.add(n.asText()));
     return ids;
+  }
+
+  private String target(Principal principal, String target, String projectId) {
+    return target == null || target.equals(projectId) ? projectId : access.editable(principal, target);
   }
 }

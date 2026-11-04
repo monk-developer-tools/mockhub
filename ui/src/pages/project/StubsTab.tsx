@@ -13,6 +13,7 @@ import { StubRoute } from '../../components/StubRoute';
 import { useToast } from '../../components/Toasts';
 import { describeUrl, emptyForm, errorPercentOf, isDisabled, toStub } from '../../model/stubForm';
 import { useApp } from '../../state/AppContext';
+import { moveTargets } from '../../model/moveTargets';
 import { useProject } from './ProjectPage';
 import { StubEditor } from './StubEditor';
 import { TemplateGallery } from './TemplateGallery';
@@ -34,7 +35,7 @@ function folderOf(stub: Stub) {
 
 export function StubsTab() {
   const { project, reloadProject } = useProject();
-  const { projects, canEdit, refreshProjects, aiStatus } = useApp();
+  const { projects, canEdit, refreshProjects, aiStatus, roleInTeam } = useApp();
   const { stubId } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
@@ -237,7 +238,7 @@ export function StubsTab() {
         <StubEditor
           key={String(draft ? 'draft' : selected.id)}
           project={project}
-          projects={projects}
+          moveTargets={moveTargets(projects, project.id, roleInTeam)}
           stub={selected}
           isNew={Boolean(draft)}
           canEdit={canEdit}

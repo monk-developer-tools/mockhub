@@ -5,19 +5,16 @@ import io.mockhub.api.ApiRouter;
 import io.mockhub.api.Ctx;
 import io.mockhub.api.Jsons;
 import io.mockhub.api.Response;
-import io.mockhub.auth.Principal;
-import io.mockhub.auth.Role;
-import io.mockhub.project.Project;
 import io.mockhub.project.ProjectService;
 import io.mockhub.snapshot.SnapshotService;
 
 public final class SnapshotController implements ApiController {
   private final SnapshotService snapshots;
-  private final ProjectService projects;
+  private final ProjectAccess access;
 
   public SnapshotController(SnapshotService snapshots, ProjectService projects) {
     this.snapshots = snapshots;
-    this.projects = projects;
+    this.access = new ProjectAccess(projects);
   }
 
   @Override
@@ -45,11 +42,6 @@ public final class SnapshotController implements ApiController {
 
   private String readableSource(Ctx ctx, String sourceId) {
     if (sourceId == null || sourceId.isBlank()) throw ApiException.badRequest("Choose the project to pull from");
-    Principal p = ctx.principal();
-    Project source = projects.find(sourceId).orElseThrow(() -> ApiException.notFound("Project " + sourceId));
-    if (!p.allowsProject(source.id()) || !p.canInTeam(source.orgId(), source.teamId(), Role.VIEWER)) {
-      throw ApiException.notFound("Project " + sourceId);
-    }
-    return source.id();
+    return access.readable(ctx.principal(), sourceId);
   }
 }

@@ -11,7 +11,7 @@ const stub: Stub = { id: 's1', request: { method: 'GET', urlPath: '/a' }, respon
 
 function Host({ canEdit = true }: { canEdit?: boolean }) {
   const [, setDirty] = useState(false);
-  return <StubEditor project={project} projects={[project]} stub={stub} isNew={false} canEdit={canEdit} onSaved={() => undefined} onDeleted={() => undefined} onDirtyChange={setDirty} />;
+  return <StubEditor project={project} moveTargets={[]} stub={stub} isNew={false} canEdit={canEdit} onSaved={() => undefined} onDeleted={() => undefined} onDirtyChange={setDirty} />;
 }
 
 describe('StubEditor', () => {
@@ -52,7 +52,7 @@ describe('StubEditor', () => {
     const usage = { count: 3, lastCalledAt: new Date().toISOString() };
 
     // When
-    renderWithShell(<StubEditor project={project} projects={[project]} stub={stub} isNew={false} canEdit onSaved={() => undefined}
+    renderWithShell(<StubEditor project={project} moveTargets={[]} stub={stub} isNew={false} canEdit onSaved={() => undefined}
       onDeleted={() => undefined} onDirtyChange={() => undefined} usage={usage} />);
 
     // Then
@@ -60,10 +60,28 @@ describe('StubEditor', () => {
     expect(screen.getByText('3 calls in the request log, last just now')).toBeInTheDocument();
   });
 
+  it('offers moving only when there is a project the person can edit', async () => {
+    // Given
+    const qa = { ...project, id: 'p2', name: 'Shop QA', basePath: '/shop-qa' };
+
+    // When
+    const { unmount } = renderWithShell(<StubEditor project={project} moveTargets={[]} stub={stub} isNew={false} canEdit onSaved={() => undefined}
+      onDeleted={() => undefined} onDirtyChange={() => undefined} />);
+    const withoutTargets = screen.queryByRole('button', { name: 'Move to another project' });
+    unmount();
+    renderWithShell(<StubEditor project={project} moveTargets={[qa]} stub={stub} isNew={false} canEdit onSaved={() => undefined}
+      onDeleted={() => undefined} onDirtyChange={() => undefined} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Move to another project' }));
+
+    // Then
+    expect(withoutTargets).not.toBeInTheDocument();
+    expect(within(screen.getByRole('dialog')).getByRole('button', { name: /Shop QA/ })).toHaveTextContent('/shop-qa');
+  });
+
   it('says where JSON urls start for a project at the root', () => {
     // Given
     const root = { ...project, basePath: '', root: true } as Project;
-    renderWithShell(<StubEditor project={root} projects={[root]} stub={stub} isNew={false} canEdit onSaved={() => undefined}
+    renderWithShell(<StubEditor project={root} moveTargets={[]} stub={stub} isNew={false} canEdit onSaved={() => undefined}
       onDeleted={() => undefined} onDirtyChange={() => undefined} />);
 
     // When
@@ -78,7 +96,7 @@ describe('StubEditor', () => {
     const off: Stub = { ...stub, metadata: { mockhub: { disabled: true } } };
 
     // When
-    renderWithShell(<StubEditor project={project} projects={[project]} stub={off} isNew={false} canEdit onSaved={() => undefined}
+    renderWithShell(<StubEditor project={project} moveTargets={[]} stub={off} isNew={false} canEdit onSaved={() => undefined}
       onDeleted={() => undefined} onDirtyChange={() => undefined} />);
 
     // Then
@@ -88,7 +106,7 @@ describe('StubEditor', () => {
 
   it('describes a failure rate and offers AI only when it is on', () => {
     // Given
-    renderWithShell(<StubEditor project={project} projects={[project]} stub={stub} isNew={false} canEdit onSaved={() => undefined}
+    renderWithShell(<StubEditor project={project} moveTargets={[]} stub={stub} isNew={false} canEdit onSaved={() => undefined}
       onDeleted={() => undefined} onDirtyChange={() => undefined} aiEnabled />);
 
     // When
@@ -170,7 +188,7 @@ describe('StubEditor', () => {
     }
     renderWithShell(
       <Routes>
-        <Route path="/" element={<StubEditor project={project} projects={[project]} stub={{ ...stub, name: 'List' }} isNew={false} canEdit onSaved={() => undefined}
+        <Route path="/" element={<StubEditor project={project} moveTargets={[]} stub={{ ...stub, name: 'List' }} isNew={false} canEdit onSaved={() => undefined}
           onDeleted={() => undefined} onDirtyChange={() => undefined} aiEnabled />} />
         <Route path="/projects/p1/assistant" element={<Probe />} />
       </Routes>,
