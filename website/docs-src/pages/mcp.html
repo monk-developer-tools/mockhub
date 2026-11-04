@@ -41,6 +41,7 @@ bearer_token_env_var = "MOCKHUB_TOKEN"</pre></div>
   <li><em>“Why is my webhook failing? Look at the recent callouts.”</em></li>
   <li><em>“Read openapi.yaml in this repo and mock every endpoint our service calls.”</em></li>
   <li><em>“Clear the request history, then run the tests and show me what didn't match.”</em></li>
+  <li><em>“Take a snapshot of Checkout, add the retry stubs, and restore it if the tests fail.”</em></li>
 </ul>
 <p>An agent with your code open is useful: it can read the client code or the contract, create the stubs, run your tests against the mock and fix what missed.</p>
 
@@ -56,13 +57,14 @@ bearer_token_env_var = "MOCKHUB_TOKEN"</pre></div>
     <tr><td>Requests</td><td><code>search_requests</code> (text, method, status, unmatched only, stub, header, last N minutes), <code>get_request</code>, <code>clear_requests</code></td></tr>
     <tr><td>Callouts</td><td><code>list_callouts</code>: recent webhooks and forwards with their results</td></tr>
     <tr><td>Data</td><td><code>create_crud_resource</code>, <code>list_data</code>, <code>list_records</code>, <code>save_record</code>, <code>delete_record</code></td></tr>
+    <tr><td>Snapshots</td><td><code>list_snapshots</code>, <code>create_snapshot</code>, <code>compare_snapshots</code>, <code>restore_snapshot</code>, <code>pull_from_project</code>: save a project before a change, see what changed and roll back. See <a href="#snapshots">snapshots</a></td></tr>
     <tr><td>Review</td><td><code>list_staged_changes</code></td></tr>
   </tbody>
 </table>
 <p>Read-only tools are marked as such, and deleting tools as destructive, so clients that ask before risky calls can do so. Request bodies and callout answers come from outside callers; MockHub tells the agent to treat them as data, not instructions.</p>
 
 <h3 id="mcp-review">Review mode</h3>
-<p>A token set to <em>Stage for review</em> can read everything in its scope, but its stub and runtime changes don't go live. They wait in the project's <strong>Assistant</strong> tab under <strong>Changes from agents</strong>, with the token name and time, and an editor applies or discards each one after looking at the JSON or the diff. This works even when the <a href="#ai">AI assistant</a> is off. Other changes, such as clearing requests or saving records, are refused for review tokens, and so is the REST API. Use review mode for agents you're trying out, or for shared projects where a person should see every change first.</p>
+<p>A token set to <em>Stage for review</em> can read everything in its scope, but its stub, runtime, snapshot and restore changes don't go live. They wait in the project's <strong>Assistant</strong> tab under <strong>Changes from agents</strong>, with the token name and time, and an editor applies or discards each one after looking at the JSON or the diff. This works even when the <a href="#ai">AI assistant</a> is off. Other changes, such as clearing requests, saving records or pulling from another project, are refused for review tokens, and so is the REST API. Use review mode for agents you're trying out, or for shared projects where a person should see every change first.</p>
 <table>
   <thead><tr><th>Endpoint</th><th>Purpose</th></tr></thead>
   <tbody>

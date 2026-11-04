@@ -54,7 +54,7 @@
               </a>
               <a class="mega-item" href="/docs/#group-exchange">
                 <span class="mega-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 256 256" aria-hidden="true"><path d="M176,48V208H80V48Z" opacity="0.2"></path><path d="M117.66,170.34a8,8,0,0,1,0,11.32l-32,32a8,8,0,0,1-11.32,0l-32-32a8,8,0,0,1,11.32-11.32L72,188.69V48a8,8,0,0,1,16,0V188.69l18.34-18.35A8,8,0,0,1,117.66,170.34Zm96-96-32-32a8,8,0,0,0-11.32,0l-32,32a8,8,0,0,0,11.32,11.32L168,67.31V208a8,8,0,0,0,16,0V67.31l18.34,18.35a8,8,0,0,0,11.32-11.32Z"></path></svg></span>
-                <span><strong>Import &amp; export</strong><small>Bring stubs in from contracts and WireMock, and take them to API clients.</small></span>
+                <span><strong>Import &amp; export</strong><small>Bring stubs in from contracts and WireMock, take them to API clients, and save snapshots to roll back or copy dev into qa.</small></span>
               </a>
               <a class="mega-item" href="/docs/#group-teams">
                 <span class="mega-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 256 256" aria-hidden="true"><path d="M168,144a40,40,0,1,1-40-40A40,40,0,0,1,168,144ZM64,56A32,32,0,1,0,96,88,32,32,0,0,0,64,56Zm128,0a32,32,0,1,0,32,32A32,32,0,0,0,192,56Z" opacity="0.2"></path><path d="M244.8,150.4a8,8,0,0,1-11.2-1.6A51.6,51.6,0,0,0,192,128a8,8,0,0,1,0-16,24,24,0,1,0-23.24-30,8,8,0,1,1-15.5-4A40,40,0,1,1,219,117.51a67.94,67.94,0,0,1,27.43,21.68A8,8,0,0,1,244.8,150.4ZM190.92,212a8,8,0,1,1-13.85,8,57,57,0,0,0-98.15,0,8,8,0,1,1-13.84-8,72.06,72.06,0,0,1,33.74-29.92,48,48,0,1,1,58.36,0A72.06,72.06,0,0,1,190.92,212ZM128,176a32,32,0,1,0-32-32A32,32,0,0,0,128,176ZM72,120a8,8,0,0,0-8-8A24,24,0,1,1,87.24,82a8,8,0,1,0,15.5-4A40,40,0,1,0,37,117.51,67.94,67.94,0,0,0,9.6,139.19a8,8,0,1,0,12.8,9.61A51.6,51.6,0,0,1,64,128,8,8,0,0,0,72,120Z"></path></svg></span>
@@ -279,6 +279,7 @@
             <a class="tut-card" href="#export"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19h14"/></svg></span><strong>Share with Postman and Bruno</strong><span>Collections that already work.</span><em>2 min</em></a>
             <a class="tut-card" href="#ai"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M18.5 15.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z"/></svg></span><strong>Let the AI assistant draft stubs</strong><span>Draft stubs or a single body.</span><em>5 min</em></a>
             <a class="tut-card" href="#mcp"><span class="tut-ico"><svg viewBox="0 0 24 24"><rect x="5" y="8" width="14" height="11" rx="2"/><path d="M12 4v4M9 13h.01M15 13h.01M9.5 16.5h5"/></svg></span><strong>Connect your coding agent</strong><span>Claude Code, Cursor or Codex over MCP.</span><em>4 min</em></a>
+            <a class="tut-card" href="#snapshots"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></span><strong>Snapshot and roll back</strong><span>Save, compare, restore, pull dev into qa.</span><em>3 min</em></a>
           </div>
         </div>
         <div class="tut-group">
@@ -322,6 +323,7 @@
         <a href="#export">Postman &amp; Bruno</a>
         <a href="#ai">AI assistant</a>
         <a href="#mcp">Coding agents (MCP)</a>
+        <a href="#snapshots">Snapshots</a>
         <h4>Teams</h4>
         <a href="#teams">Teams &amp; people</a>
         <a href="#sso">Microsoft sign-in</a>
@@ -1109,6 +1111,36 @@ done</code></pre>
             </li>
           </ol>
           <p class="tip"><strong>Keep tokens tight.</strong> Give a token the lowest access that works, only the projects it needs and a short expiry. Treat it like a password: keep it in your agent's config or a secret store, not in a repository. More in the <a href="/docs/mcp/">MCP docs</a>.</p>
+          <a class="next" href="#snapshots">Next: Snapshot and roll back</a>
+        </article>
+
+        <article class="tut" id="snapshots">
+          <p class="tut-meta"><span>Bring in what you have</span><span>3 min</span><span>Needs the editor role</span></p>
+          <h2>Snapshot and roll back</h2>
+          <p class="tut-intro">Save a project's mocks before a release, a demo or a risky change, see exactly what changed since, and put it back in one step. The same tab copies one project into another, such as dev into qa.</p>
+          <ol class="tut-steps">
+            <li>
+              <h3>Take a snapshot</h3>
+              <p>Open a project's <strong>Snapshots</strong> tab and select <strong>Take snapshot</strong>. Give it a name and, if you like, why you're saving it. It holds the stubs in their matching order, CRUD resources, response files and runtime behaviour. Stored records, request history and the API key value are left out.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/snap-1-take.webp" alt="The Take a snapshot dialog with the name Before retry rules and a purpose, and the Take snapshot button outlined" width="1176" height="900" loading="lazy"></figure>
+            </li>
+            <li>
+              <h3>See what changed since</h3>
+              <p>Select <strong>Compare with now</strong> on a snapshot. MockHub lists every stub added, changed, removed or moved since then; open one for its diff. Tick two snapshots and select <strong>Compare selected</strong> to compare them with each other.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/snap-2-compare.webp" alt="Changes since Release 1.4: one stub added, GET /reviews, opened to show its JSON, outlined" width="1176" height="900" loading="lazy"></figure>
+            </li>
+            <li>
+              <h3>Restore it</h3>
+              <p>Select <strong>Restore</strong>. MockHub shows what restoring changes and asks you to confirm, then saves the current state as a <em>safety</em> snapshot before it puts the old one back. Changed your mind? Restore the safety snapshot.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/snap-3-restore.webp" alt="The Restore Release 1.4 dialog showing one stub that restoring removes, with the Restore button outlined" width="1176" height="900" loading="lazy"></figure>
+            </li>
+            <li>
+              <h3>Pull dev into qa</h3>
+              <p>In the qa project, select <strong>Pull from a project</strong>, pick the source project and a version: as it is now, or one of its snapshots. The preview shows what changes; URLs move to this project's base path and response files come along. A safety snapshot is saved first here too.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/snap-4-pull.webp" alt="The Pull from another project dialog with the source project and version outlined, and a preview of stubs added and removed" width="1176" height="900" loading="lazy"></figure>
+            </li>
+          </ol>
+          <p class="tip"><strong>Keep a known-good state in Git.</strong> The download button saves a snapshot as one JSON file; <strong>Upload</strong> adds it to any project on any MockHub, ready to compare and restore. More in the <a href="/docs/snapshots/">snapshots docs</a>.</p>
           <a class="next" href="#teams">Next: Organise people into teams</a>
         </article>
 

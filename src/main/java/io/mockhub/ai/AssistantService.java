@@ -9,6 +9,7 @@ import io.mockhub.callout.CalloutLog;
 import io.mockhub.history.HistoryStore;
 import io.mockhub.project.Project;
 import io.mockhub.runtime.RuntimeService;
+import io.mockhub.snapshot.SnapshotService;
 import io.mockhub.stub.StubService;
 import java.time.Clock;
 import java.util.ArrayList;
@@ -29,9 +30,12 @@ public final class AssistantService {
   private final Clock clock;
   private final CalloutLog callouts;
   private final RuntimeService runtime;
+  private final SnapshotService snapshots;
 
-  public AssistantService(AiSettingsStore settings, ChatCompletions chat, StubService stubs, HistoryStore requestHistory, Clock clock, CalloutLog callouts, RuntimeService runtime) {
+  public AssistantService(AiSettingsStore settings, ChatCompletions chat, StubService stubs, HistoryStore requestHistory, Clock clock,
+      CalloutLog callouts, RuntimeService runtime, SnapshotService snapshots) {
     this.runtime = runtime;
+    this.snapshots = snapshots;
     this.settings = settings;
     this.chat = chat;
     this.stubs = stubs;
@@ -69,7 +73,7 @@ public final class AssistantService {
     List<Message> trimmed = prepare(history);
     AiSettings s = settings.get();
 
-    MockTools tools = new MockTools(stubs, requestHistory, clock, callouts, runtime, project.id(), pending);
+    MockTools tools = new MockTools(stubs, requestHistory, clock, callouts, runtime, snapshots::list, project.id(), pending);
     ArrayNode messages = Jsons.MAPPER.createArrayNode();
     messages.addObject().put("role", "system").put("content", SystemPrompt.forProject(project, mockUrl, stubs.stubsOf(project.id()).size()));
     if (!pending.isEmpty()) {
@@ -118,9 +122,11 @@ public final class AssistantService {
         prompt + last.promptTokens(), completion + last.completionTokens());
   }
 
-  public List<Applied> apply(String projectId, List<ProposedChange> changes) {
+  public List<Applied> apply(String projectId, List<ProposedChange> changes, String by) {
     List<Applied> results = new ArrayList<>();
-    for (ProposedChange c : changes) {
+    List<ProposedChange> ordered = new ArrayList<>(changes.stream().filter(c -> ProposedChange.SNAPSHOT.equals(c.action())).toList());
+    changes.stream().filter(c -> !ProposedChange.SNAPSHOT.equals(c.action())).forEach(ordered::add);
+    for (ProposedChange c : ordered) {
       try {
         String stubId = switch (c.action()) {
           case ProposedChange.CREATE -> stubs.create(projectId, c.stub()).path("id").asText();
@@ -131,6 +137,14 @@ public final class AssistantService {
           }
           case ProposedChange.RUNTIME -> {
             runtime.update(projectId, c.stub());
+            yield null;
+          }
+          case ProposedChange.SNAPSHOT -> {
+            snapshots.create(projectId, c.stub() == null ? Jsons.object() : c.stub(), by);
+            yield null;
+          }
+          case ProposedChange.RESTORE -> {
+            snapshots.restore(projectId, c.stubId(), by);
             yield null;
           }
           default -> throw ApiException.badRequest("Unknown change '" + c.action() + "'");

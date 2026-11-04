@@ -129,6 +129,11 @@ import io.mockhub.sso.SsoService;
 import io.mockhub.sso.SsoSettingsStore;
 import io.mockhub.stub.StubGateway;
 import io.mockhub.stub.StubService;
+import io.mockhub.snapshot.FileSnapshotRepository;
+import io.mockhub.snapshot.SnapshotCleanup;
+import io.mockhub.snapshot.SnapshotRepository;
+import io.mockhub.snapshot.SnapshotService;
+import io.mockhub.controller.SnapshotController;
 import io.mockhub.stub.WireMockStubGateway;
 import io.mockhub.team.FileTeamRepository;
 import io.mockhub.team.Team;
@@ -174,11 +179,12 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     HistoryStore history = new HistoryStore(historyDir, clock, Duration.ofDays(config.historyDays), config.historyMaxMb * 1024L * 1024L);
     TrafficCounters traffic = new TrafficCounters(historyDir, clock);
     StagedChanges staged = new StagedChanges(dataDir, clock);
+    SnapshotRepository snapshotStore = new FileSnapshotRepository(dataDir);
     UserService users = new UserService(new FileUserRepository(dataDir), config.users, new PasswordHasher(), clock);
     AccessTokenService accessTokens = new AccessTokenService(new FileAccessTokenRepository(dataDir), users::find,
         id -> projectsRef.get().find(id).isPresent(), clock);
     ProjectService projects = new ProjectService(new FileProjectRepository(dataDir),
-        List.of(stubs, new ProjectDataCleaner(dataStore, bodyFiles), history, traffic, staged, accessTokens), clock);
+        List.of(stubs, new ProjectDataCleaner(dataStore, bodyFiles), history, traffic, staged, accessTokens, new SnapshotCleanup(snapshotStore)), clock);
     projectsRef.set(projects);
     TeamService teams = new TeamService(new FileTeamRepository(dataDir), List.of(users), clock);
     OrganizationService orgs = new OrganizationService(new FileOrganizationRepository(dataDir), List.of(projects, teams, users), clock);
@@ -230,7 +236,8 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     ChatCompletions chat = new ChatCompletions(new JdkLlmTransport(), aiProviders, config.publicUrl);
     RateLimiter rateLimiter = new RateLimiter(clock);
     RuntimeService runtimeService = new RuntimeService(projects, new DefaultResponseStubs(stubs), rateLimiter);
-    AssistantService assistant = new AssistantService(aiSettings, chat, stubs, history, clock, calloutLog, runtimeService);
+    SnapshotService snapshots = new SnapshotService(snapshotStore, projects, stubs, runtimeService, bodyFiles, clock);
+    AssistantService assistant = new AssistantService(aiSettings, chat, stubs, history, clock, calloutLog, runtimeService, snapshots);
     AssistantJobs assistantJobs = new AssistantJobs(assistant, Executors.newCachedThreadPool(r -> {
       Thread t = new Thread(r, "mockhub-assistant");
       t.setDaemon(true);
@@ -273,10 +280,11 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
                 playgroundHistory, () -> "http://127.0.0.1:" + (port.get() > 0 ? port.get() : services.getOptions().portNumber()), clock),
             playgroundHistory, new DataGenerator(fakeData), config.publicUrl),
         new AccessTokenController(accessTokens, auth, projects, clock),
-        new StagedController(projects, staged, assistant));
+        new StagedController(projects, staged, assistant),
+        new SnapshotController(snapshots, projects));
     controllers.forEach(c -> c.register(api));
     McpTools mcpTools = new McpTools(new InternalApi(api.task(), policy),
-        new ReviewStager(staged, (projectId, pending) -> new MockTools(stubs, history, clock, calloutLog, runtimeService, projectId, pending), policy),
+        new ReviewStager(staged, (projectId, pending) -> new MockTools(stubs, history, clock, calloutLog, runtimeService, snapshots::list, projectId, pending), policy),
         resource("/mcp/reference.md"), clock);
     McpServer mcpServer = new McpServer(mcpTools, Main.VERSION);
 

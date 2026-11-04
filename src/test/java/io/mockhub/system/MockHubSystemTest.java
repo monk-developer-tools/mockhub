@@ -72,6 +72,38 @@ class MockHubSystemTest {
   }
 
   @Test
+  void aSnapshotTakenBeforeARestartRestoresStubsAndFilesAfterIt() throws Exception {
+    String projectId;
+    String snapshotId;
+    try (MockHubProcess hub = MockHubProcess.start(data, AUTH_ENV)) {
+      // Given
+      projectId = json(send(hub, "POST", API + "/projects", "{\"name\":\"Catalog\",\"slug\":\"catalog\"}")).get("id").asText();
+      String path = json(send(hub, "POST", API + "/projects/" + projectId + "/files?name=prices.csv", "sku,price\nA-1,9.99\n")).get("path").asText();
+      send(hub, "POST", API + "/projects/" + projectId + "/stubs",
+          "{\"name\":\"Prices\",\"request\":{\"method\":\"GET\",\"urlPath\":\"/prices\"},\"response\":{\"status\":200,\"bodyFileName\":\"" + path + "\"}}");
+      snapshotId = json(send(hub, "POST", API + "/projects/" + projectId + "/snapshots", "{\"name\":\"release 1\"}")).get("id").asText();
+
+      // When
+      String stubId = json(send(hub, "GET", API + "/projects/" + projectId + "/stubs", null)).get(0).get("id").asText();
+      send(hub, "DELETE", API + "/projects/" + projectId + "/stubs/" + stubId, null);
+      send(hub, "DELETE", API + "/projects/" + projectId + "/files?name=prices.csv", null);
+
+      // Then
+      assertThat(send(hub, "GET", "/catalog/prices", null).statusCode()).isEqualTo(404);
+    }
+
+    try (MockHubProcess restarted = MockHubProcess.start(data, AUTH_ENV)) {
+      // When
+      HttpResponse<String> restored = send(restarted, "POST", API + "/projects/" + projectId + "/snapshots/" + snapshotId + "/restore", "{}");
+
+      // Then
+      assertThat(restored.statusCode()).as(restored.body()).isEqualTo(200);
+      assertThat(send(restarted, "GET", "/catalog/prices", null).body()).contains("A-1,9.99");
+      assertThat(json(send(restarted, "GET", API + "/projects/" + projectId + "/snapshots", null))).hasSize(2);
+    }
+  }
+
+  @Test
   void organisationsUsersAndSessionsSurviveARestart() throws Exception {
     String token;
     String orgId;

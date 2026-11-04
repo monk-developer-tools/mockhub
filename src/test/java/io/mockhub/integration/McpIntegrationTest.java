@@ -160,6 +160,67 @@ class McpIntegrationTest {
   }
 
   @Test
+  void anAgentTakesASnapshotAndRollsBackAfterABadChange() throws Exception {
+    // Given
+    String secret = token("{\"name\":\"Claude Code\",\"role\":\"editor\"}");
+    tool(secret, "create_stub", "{\"project\":\"shop\",\"stub\":{\"name\":\"Items\",\"request\":{\"method\":\"GET\",\"urlPath\":\"/items\"},\"response\":{\"status\":200}}}");
+    JsonNode snapshot = content(tool(secret, "create_snapshot", "{\"project\":\"shop\",\"name\":\"before retries\",\"purpose\":\"try retry rules\"}"));
+    String stubId = content(tool(secret, "list_stubs", "{\"project\":\"shop\"}")).at("/0/id").asText();
+    tool(secret, "delete_stub", "{\"project\":\"shop\",\"stub_id\":\"" + stubId + "\"}");
+
+    // When
+    JsonNode diff = content(tool(secret, "compare_snapshots", "{\"project\":\"shop\",\"from\":\"" + snapshot.get("id").asText() + "\"}"));
+    JsonNode restored = content(tool(secret, "restore_snapshot", "{\"project\":\"shop\",\"snapshot_id\":\"" + snapshot.get("id").asText() + "\"}"));
+    JsonNode listed = content(tool(secret, "list_snapshots", "{\"project\":\"shop\"}"));
+
+    // Then
+    assertThat(diff.at("/counts/removed").asInt()).isEqualTo(1);
+    assertThat(diff.at("/stubs/0").has("before")).isFalse();
+    assertThat(restored.get("stubs").asInt()).isEqualTo(1);
+    assertThat(server.api().get("/shop/items").status()).isEqualTo(200);
+    assertThat(listed).hasSize(2);
+    assertThat(listed.get(1).get("createdBy").asText()).isEqualTo("admin via token “Claude Code”");
+    assertThat(admin.get(API + "/projects/" + shopId + "/audit").json().toString()).contains("restored").contains("before retries");
+  }
+
+  @Test
+  void aReviewTokenStagesARestoreAndCannotPull() throws Exception {
+    // Given
+    admin.post(API + "/projects/" + payId + "/stubs", "{\"name\":\"Status\",\"request\":{\"method\":\"GET\",\"urlPath\":\"/status\"},\"response\":{\"status\":200}}");
+    String v1 = admin.post(API + "/projects/" + payId + "/snapshots", "{\"name\":\"v1\"}").json().get("id").asText();
+    admin.post(API + "/projects/" + payId + "/stubs", "{\"name\":\"Extra\",\"request\":{\"method\":\"GET\",\"urlPath\":\"/extra\"},\"response\":{\"status\":200}}");
+    String secret = token("{\"name\":\"Cursor\",\"role\":\"editor\",\"mode\":\"review\"}");
+
+    // When
+    JsonNode staged = tool(secret, "restore_snapshot", "{\"project\":\"pay\",\"snapshot_id\":\"" + v1 + "\",\"summary\":\"Back to v1\"}");
+    JsonNode pull = tool(secret, "pull_from_project", "{\"project\":\"pay\",\"from_project\":\"shop\"}");
+    int extraBefore = server.api().get("/pay/extra").status();
+    String changeId = admin.get(API + "/projects/" + payId + "/staged").json().at("/0/change/id").asText();
+    admin.post(API + "/projects/" + payId + "/staged/apply", "{\"ids\":[\"" + changeId + "\"]}");
+
+    // Then
+    assertThat(content(staged).at("/change/staged").asText()).isEqualTo("restore");
+    assertThat(pull.get("isError").asBoolean()).isTrue();
+    assertThat(extraBefore).isEqualTo(200);
+    assertThat(server.api().get("/pay/extra").status()).isEqualTo(404);
+    assertThat(server.api().get("/pay/status").status()).isEqualTo(200);
+  }
+
+  @Test
+  void anAgentPullsOneProjectIntoAnother() throws Exception {
+    // Given
+    String secret = token("{\"name\":\"Codex\",\"role\":\"editor\"}");
+    admin.post(API + "/projects/" + shopId + "/stubs", "{\"name\":\"Items\",\"request\":{\"method\":\"GET\",\"urlPath\":\"/items\"},\"response\":{\"status\":200}}");
+
+    // When
+    JsonNode pulled = tool(secret, "pull_from_project", "{\"project\":\"pay\",\"from_project\":\"Shop\"}");
+
+    // Then
+    assertThat(pulled.get("isError").asBoolean()).as(pulled.toString()).isFalse();
+    assertThat(server.api().get("/pay/items").status()).isEqualTo(200);
+  }
+
+  @Test
   void aProjectTokenOnlySeesItsProject() throws Exception {
     // Given
     String secret = token("{\"name\":\"Shop only\",\"role\":\"editor\",\"projectIds\":[\"" + shopId + "\"]}");

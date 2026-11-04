@@ -284,7 +284,7 @@ export interface AssistantStep {
 
 export interface ProposedChange {
   id: string;
-  action: 'create' | 'update' | 'delete' | 'runtime';
+  action: 'create' | 'update' | 'delete' | 'runtime' | 'snapshot' | 'restore';
   stubId: string | null;
   stub: Stub | null;
   before: Stub | null;
@@ -579,4 +579,37 @@ export interface RuntimeSettings {
   latency: LatencyRule | null;
   cors: CorsRule | null;
   ipAllowList: string[];
+}
+
+export interface SnapshotSummary {
+  id: string;
+  name: string;
+  purpose: string;
+  createdAt: string;
+  createdBy: string;
+  safety: boolean;
+  sourceProjectName: string;
+  stubCount: number;
+  fileCount: number;
+  crudResources: string[];
+}
+
+export type SnapshotStubStatus = 'added' | 'removed' | 'changed' | 'moved';
+
+export interface SnapshotDiff {
+  from: string;
+  to: string;
+  identical: boolean;
+  counts: { added: number; removed: number; changed: number; unchanged: number };
+  stubs: { id: string; status: SnapshotStubStatus; name: string; method: string; url: string; before: Stub | null; after: Stub | null }[];
+  runtime: { changed: boolean; before: RuntimeSettings | null; after: RuntimeSettings | null };
+  apiKeyHeader: { changed: boolean; before: string | null; after: string | null };
+  files: { added: string[]; removed: string[]; changed: string[] };
+}
+
+export interface SnapshotRestoreResult {
+  name: string;
+  safety: SnapshotSummary;
+  stubs: number;
+  files: number;
 }

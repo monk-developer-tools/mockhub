@@ -169,6 +169,10 @@ screenshots, and the [live demo](https://mockhub.devops-monk.com/__admin/mockhub
 - **Persistence.** Every stub, including ones created through the native `/__admin` API, is written to `/data`.
   Admins can back up everything, whole organisations or single projects to one file, and later restore all of it
   or just the projects they pick, replacing existing ones or adding copies, into the original or another organisation.
+- **Snapshots.** Save a project's stubs, response files and runtime behaviour with a name and purpose, compare any
+  snapshot with now as a stub-by-stub diff, and restore it after a safety snapshot of the current state. Pull one
+  project into another (dev into qa) with URLs moved to the new base path, or move a snapshot between servers as a
+  file. Records, history and secrets are never included.
 - **AI assistant.** Connect OpenRouter, Hugging Face, a LiteLLM proxy or any OpenAI-compatible API, then describe the mocks you
   need in plain English or paste a spec. The assistant stages stubs, and you review each change as a diff before
   applying it. *Generate with AI* in the editor writes a single response body from a description.
@@ -418,8 +422,9 @@ Claude Desktop connects through `npx -y mcp-remote <url> --header "Authorization
 Tools: `list_projects`, `get_project`, `get_stub_reference`, `list_stubs`, `get_stub`, `create_stub`, `update_stub`,
 `delete_stub`, `set_stub_enabled`, `reorder_stubs`, `get_runtime`, `set_runtime`, `search_requests`, `get_request`,
 `clear_requests`, `list_callouts`, `list_data`, `create_crud_resource`, `list_records`, `save_record`,
-`delete_record` and `list_staged_changes`. They call the same API as the UI, so validation, roles and the audit log
-all apply. A token set to *stage for review* puts stub and runtime changes in the project's Assistant tab for an
+`delete_record`, `list_snapshots`, `create_snapshot`, `compare_snapshots`, `restore_snapshot`, `pull_from_project`
+and `list_staged_changes`. They call the same API as the UI, so validation, roles and the audit log
+all apply. A token set to *stage for review* puts stub, runtime, snapshot and restore changes in the project's Assistant tab for an
 editor to apply, and can't make other changes. Requests from a browser page on another origin are refused.
 
 Try: *“Which requests to Checkout found no stub in the last hour? Create stubs for them.”* or *“Make Payments 1.5 s
@@ -467,6 +472,12 @@ MockHub is a WireMock extension running inside a regular WireMock server:
 | POST | `/__admin/mockhub/api/projects/{id}/stubs/{stubId}/move?target=` | move a stub to another project |
 | PUT | `/__admin/mockhub/api/projects/{id}/stubs/{stubId}/enabled` | `{enabled}` → turn a stub on or off |
 | GET | `/__admin/mockhub/api/projects/{id}/usage` | calls and last call time per stub, from the request log |
+| GET/POST | `/__admin/mockhub/api/projects/{id}/snapshots` | list / take a snapshot (`{name, purpose}`) |
+| GET/DELETE | `/__admin/mockhub/api/projects/{id}/snapshots/{snapshotId}` | read / delete a snapshot; `GET …/download` saves it as a file |
+| GET | `/__admin/mockhub/api/projects/{id}/snapshots/compare?from=&to=current` | stub, file and runtime diff between two snapshots or a snapshot and now |
+| POST | `/__admin/mockhub/api/projects/{id}/snapshots/{snapshotId}/restore` | restore, after saving a safety snapshot |
+| POST | `/__admin/mockhub/api/projects/{id}/snapshots/upload` | add a downloaded snapshot file |
+| GET/POST | `/__admin/mockhub/api/projects/{id}/pull` | `GET …/pull/preview?from=&snapshot=` shows the change; `POST {from, snapshot}` pulls another project in |
 | GET/DELETE | `/__admin/mockhub/api/projects/{id}/requests?unmatched=&limit=` | WireMock's in-memory journal; DELETE also clears the project's history |
 | GET | `/__admin/mockhub/api/projects/{id}/history?q=&method=&status=&matched=&stub=&header=&from=&to=&limit=&offset=` | search the request history; returns items, total and facets |
 | GET | `/__admin/mockhub/api/projects/{id}/history/{entryId}` | one request with headers, bodies and the callouts it triggered |
@@ -563,6 +574,7 @@ src/main/java/io/mockhub
   ai/                            AI assistant: provider strategy (OpenRouter, Hugging Face, LiteLLM, OpenAI-compatible), tool loop, staged changes
   token/                         personal access tokens: model, repository port + file implementation, service
   mcp/                           MCP server: JSON-RPC transport, tools over the internal API, review stager
+  snapshot/                      snapshots: model, repository port + file implementation, diff, file format, service
   stub/                          project stubs: gateway port to WireMock, path re-rooting, metadata
   journal/                       request log per project
   callout/                       webhooks and wait-for-callout: listener, transformer, templating, target guard, log

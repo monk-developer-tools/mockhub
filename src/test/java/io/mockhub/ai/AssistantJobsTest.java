@@ -19,6 +19,9 @@ import io.mockhub.support.FakeStubGateway;
 import io.mockhub.support.InMemoryProjectRepository;
 import io.mockhub.support.MutableClock;
 import java.nio.file.Path;
+import io.mockhub.files.BodyFiles;
+import io.mockhub.snapshot.FileSnapshotRepository;
+import io.mockhub.snapshot.SnapshotService;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -51,9 +54,11 @@ class AssistantJobsTest {
     ProjectService projects = new ProjectService(new InMemoryProjectRepository(), List.of(stubs), Clock.systemUTC());
     ref.set(projects);
     orders = projects.create(tree("{'orgId':'org1','name':'Orders','slug':'orders'}"));
+    RuntimeService runtime = new RuntimeService(projects, new DefaultResponseStubs(stubs), new RateLimiter(Clock.systemUTC()));
     settings = new AiSettingsStore(dir, "");
     settings.save(new AiSettings(true, "litellm", "http://llm", "", "gpt-test", 0.2, 3));
-    assistant = new AssistantService(settings, new ChatCompletions(transport, AiProviders.defaults(), ""), stubs, new HistoryStore(dir.resolve("history"), Clock.systemUTC(), Duration.ofDays(1), Long.MAX_VALUE), Clock.systemUTC(), new InMemoryCalloutLog(100), new RuntimeService(projects, new DefaultResponseStubs(stubs), new RateLimiter(Clock.systemUTC())));
+    assistant = new AssistantService(settings, new ChatCompletions(transport, AiProviders.defaults(), ""), stubs, new HistoryStore(dir.resolve("history"), Clock.systemUTC(), Duration.ofDays(1), Long.MAX_VALUE), Clock.systemUTC(), new InMemoryCalloutLog(100), runtime,
+        new SnapshotService(new FileSnapshotRepository(dir), projects, stubs, runtime, new BodyFiles(dir), Clock.systemUTC()));
   }
 
   private static List<AssistantService.Message> ask(String text) {

@@ -1,0 +1,81 @@
+<p>A snapshot saves a project's mocks at one moment, so you can see what changed since and go back. Take one before a release, a demo or a risky change, compare it with now, and restore it if something breaks. You can also pull one project's mocks into another, for example dev into qa, and move a snapshot between servers as a file. Open a project's <strong>Snapshots</strong> tab.</p>
+
+<h3 id="snapshot-contents">What a snapshot holds</h3>
+<table>
+  <thead><tr><th>Included</th><th>Not included</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>
+        Every stub, in matching order, with its on or off state<br>
+        <a href="#crud">CRUD resource</a> definitions<br>
+        <a href="#files">Response files</a><br>
+        Runtime behaviour: <a href="#faults">delays and faults</a>, the <a href="#default-response">default response</a>, <a href="#rate-limits">rate limits</a>, <a href="#cors">CORS</a> and the <a href="#ip-allow-list">IP allow list</a><br>
+        The <a href="#api-keys">API key</a> header name
+      </td>
+      <td>
+        Records stored by CRUD resources<br>
+        <a href="#requests">Request history</a> and callouts<br>
+        The API key value, or any other secret<br>
+        The project's name, base path, team and members
+      </td>
+    </tr>
+  </tbody>
+</table>
+<p>Records are left out on purpose: they're test data that changes as tests run, and restoring stubs shouldn't undo a test's writes. Secrets are left out so a snapshot file is safe to share.</p>
+
+<h3 id="snapshot-take">Take and compare</h3>
+<p>Select <strong>Take snapshot</strong>, give it a name such as <em>release 1.4</em> and, if you like, a purpose. The list shows who took each one, when, and what it holds. <strong>Compare with now</strong> lists every stub that was added, changed, removed or moved in the matching order since then, with a before-and-after diff for each, plus changed response files and runtime behaviour. Tick two snapshots and select <strong>Compare selected</strong> to compare them with each other. Viewers can compare and download; taking, restoring, uploading, pulling and deleting need the editor role.</p>
+
+<h3 id="snapshot-restore">Restore</h3>
+<p>Select <strong>Restore</strong> on a snapshot. MockHub shows exactly what restoring changes and asks you to confirm. It then saves the current state as a <strong>safety snapshot</strong> named <em>Before restoring “release 1.4”</em>, puts back the stubs in their order, the response files and the runtime behaviour, and removes stubs and files the snapshot doesn't have. Stored records and the API key value stay as they are. If the restore was a mistake, restore the safety snapshot.</p>
+<p>A project keeps its last 10 safety snapshots and up to 50 of your own. Deleting a project deletes its snapshots.</p>
+
+<h3 id="snapshot-pull">Pull from another project</h3>
+<p>Select <strong>Pull from a project</strong> to replace this project's mocks with another project's, as they are now or as a saved snapshot. MockHub shows the difference first and saves a safety snapshot before it changes anything. URLs move to this project's base path, so stubs from <code>/shop-dev</code> answer at <code>/shop-qa</code>, and response files are copied across. Stubs get ids of their own in this project; pulling the same source again keeps them, so the diff shows only real changes. You can pull from any project you can view, and only into one you can edit. A token limited to some projects can't pull from others.</p>
+
+<h3 id="snapshot-files">Download and upload</h3>
+<p>The download button saves a snapshot as one JSON file, with response files inside it. <strong>Upload</strong> adds such a file to a project's list without changing anything; compare it, then restore it. Use files to keep a known-good state in your repository, or to move a project's mocks between MockHub servers. MockHub checks a file before it accepts it: it must be a <code>mockhub-snapshot</code> file, hold at most 5,000 stubs, have valid stubs and file names, and no file larger than 10 MB.</p>
+<div class="code"><pre>{
+  "format": "mockhub-snapshot",
+  "version": 1,
+  "name": "release 1.4",
+  "purpose": "Contract agreed with the mobile team",
+  "createdAt": "2026-11-03T10:15:00Z",
+  "createdBy": "Alex Morgan",
+  "project": { "id": "58b5108a", "name": "Bookshop" },
+  "settings": { "runtime": { … }, "apiKeyHeader": "X-API-Key" },
+  "stubs": [ … ],
+  "files": { "prices.csv": "aXNibixwcmljZQ…" }
+}</pre></div>
+<p>Stub URLs in the file are relative to the project's base path, and files are base64.</p>
+
+<h3 id="snapshot-agents">Assistant and agents</h3>
+<p>Ask the <a href="#ai">AI assistant</a> to <em>“take a snapshot called before-retries, then add retry stubs”</em> or to <em>“restore the release 1.4 snapshot”</em>. Both arrive as staged changes you apply, and a snapshot is always taken before the other changes in the same batch. Agents over <a href="#mcp">MCP</a> can list, take, compare and restore snapshots and pull from another project. A review-mode token stages snapshots and restores for a person to apply, and can't pull.</p>
+
+<h3 id="snapshot-api">API</h3>
+<div class="code"><pre><span class="c"># take a snapshot before deploying new stubs from CI</span>
+curl -X POST -H "Authorization: Bearer $MOCKHUB_TOKEN" $HUB/__admin/mockhub/api/projects/$ID/snapshots \
+  -d '{"name":"before build 412","purpose":"CI deploy"}'
+
+<span class="c"># what changed since then</span>
+curl -H "Authorization: Bearer $MOCKHUB_TOKEN" "$HUB/__admin/mockhub/api/projects/$ID/snapshots/compare?from=$SNAP&amp;to=current"
+
+<span class="c"># copy dev into qa</span>
+curl -X POST -H "Authorization: Bearer $MOCKHUB_TOKEN" $HUB/__admin/mockhub/api/projects/$QA/pull -d "{\"from\":\"$DEV\"}"</pre></div>
+<table>
+  <thead><tr><th>Endpoint</th><th>Purpose</th></tr></thead>
+  <tbody>
+    <tr><td><code>GET|POST /projects/{id}/snapshots</code></td><td>list, newest first; take one: <code>{name, purpose}</code></td></tr>
+    <tr><td><code>GET|DELETE /projects/{id}/snapshots/{snapshotId}</code></td><td>read the summary, delete</td></tr>
+    <tr><td><code>GET /projects/{id}/snapshots/compare?from=&amp;to=</code></td><td>compare two snapshots, or a snapshot with <code>current</code> (the default for <code>to</code>)</td></tr>
+    <tr><td><code>POST …/snapshots/{snapshotId}/restore</code></td><td>restore; the answer names the safety snapshot</td></tr>
+    <tr><td><code>GET …/snapshots/{snapshotId}/download</code></td><td>the snapshot as a file</td></tr>
+    <tr><td><code>POST /projects/{id}/snapshots/upload</code></td><td>add a snapshot file (send it as the body)</td></tr>
+    <tr><td><code>GET /projects/{id}/pull/preview?from=&amp;snapshot=</code></td><td>what pulling would change; <code>snapshot</code> defaults to <code>current</code></td></tr>
+    <tr><td><code>POST /projects/{id}/pull</code></td><td>pull: <code>{"from": projectId, "snapshot": "current"}</code></td></tr>
+  </tbody>
+</table>
+<p>Taking, uploading, restoring, deleting and pulling appear in the <a href="#audit">audit log</a>.</p>
+
+<h3 id="snapshot-backup">Snapshots and backups</h3>
+<p>Snapshots are stored in <code>/data/mockhub/snapshots</code>, one folder per project, so a copy of the data volume includes them. The backup file from <strong>Backup &amp; restore</strong> doesn't: it holds the projects as they are now. To keep a particular version with a backup, download that snapshot as a file.</p>

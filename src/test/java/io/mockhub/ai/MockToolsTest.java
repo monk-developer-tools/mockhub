@@ -17,6 +17,7 @@ import io.mockhub.project.ProjectService;
 import io.mockhub.runtime.DefaultResponseStubs;
 import io.mockhub.runtime.RateLimiter;
 import io.mockhub.runtime.RuntimeService;
+import io.mockhub.snapshot.Snapshot;
 import io.mockhub.stub.StubService;
 import io.mockhub.support.FakeStubGateway;
 import io.mockhub.support.InMemoryProjectRepository;
@@ -71,7 +72,7 @@ class MockToolsTest {
   @Test
   void stagesNewStubsWithoutTouchingTheServer() {
     // Given
-    MockTools tools = new MockTools(stubs, requestLog, clock, callouts, runtime, orders.id(), List.of());
+    MockTools tools = new MockTools(stubs, requestLog, clock, callouts, runtime, id -> List.of(), orders.id(), List.of());
 
     // When
     JsonNode result = run(tools, "create_stub", "{'stub':{'name':'Get','request':{'method':'GET','urlPathTemplate':'/items/{id}'},'response':{'status':200}},'summary':'Get one item'}");
@@ -87,9 +88,31 @@ class MockToolsTest {
   }
 
   @Test
+  void stagesTakingASnapshotFirstAndRestoringOnlyKnownSnapshots() {
+    // Given
+    Snapshot.Summary v1 = new Snapshot.Summary("s1", "v1", "", "2026-11-03T09:00:00Z", "Sam", false, "Orders", 1, 0, List.of());
+    MockTools tools = new MockTools(stubs, requestLog, clock, callouts, runtime, id -> List.of(v1), orders.id(), List.of());
+    run(tools, "create_stub", "{'stub':{'request':{'method':'GET','urlPath':'/x'},'response':{'status':200}},'summary':'x'}");
+
+    // When
+    JsonNode snapshot = run(tools, "create_snapshot", "{'name':'before x','purpose':'roll back'}");
+    JsonNode restore = run(tools, "restore_snapshot", "{'id':'s1','summary':'Go back to v1'}");
+    JsonNode unknown = run(tools, "restore_snapshot", "{'id':'nope','summary':'x'}");
+    JsonNode listed = run(tools, "list_snapshots", "{}");
+
+    // Then
+    assertThat(snapshot.get("staged").asText()).isEqualTo("snapshot");
+    assertThat(restore.get("staged").asText()).isEqualTo("restore");
+    assertThat(unknown.get("error").asText()).contains("list_snapshots");
+    assertThat(listed.get(0).get("name").asText()).isEqualTo("v1");
+    assertThat(tools.changes()).extracting(ProposedChange::action).containsExactly("snapshot", "create", "restore");
+    assertThat(tools.changes().get(2).stubId()).isEqualTo("s1");
+  }
+
+  @Test
   void reportsInvalidStubsAsToolErrors() {
     // Given
-    MockTools tools = new MockTools(stubs, requestLog, clock, callouts, runtime, orders.id(), List.of());
+    MockTools tools = new MockTools(stubs, requestLog, clock, callouts, runtime, id -> List.of(), orders.id(), List.of());
 
     // Then
     assertThat(run(tools, "create_stub", "{'stub':{'response':{'status':200}},'summary':'x'}").get("error").asText()).contains("request");
@@ -102,7 +125,7 @@ class MockToolsTest {
   @Test
   void updatesKeepTheOriginalForReviewAndReplaceEarlierProposals() {
     // Given
-    MockTools tools = new MockTools(stubs, requestLog, clock, callouts, runtime, orders.id(), List.of());
+    MockTools tools = new MockTools(stubs, requestLog, clock, callouts, runtime, id -> List.of(), orders.id(), List.of());
     String updated = "{'id':'" + existingId + "','stub':{'name':'List','request':{'method':'GET','urlPath':'/items'},'response':{'status':503}},'summary':'Make it fail'}";
 
     // When
@@ -122,7 +145,7 @@ class MockToolsTest {
   @Test
   void revisesOrDropsStagedStubsByChangeId() {
     // Given
-    MockTools tools = new MockTools(stubs, requestLog, clock, callouts, runtime, orders.id(), List.of());
+    MockTools tools = new MockTools(stubs, requestLog, clock, callouts, runtime, id -> List.of(), orders.id(), List.of());
     String changeId = run(tools, "create_stub", "{'stub':{'request':{'method':'POST','urlPath':'/items'},'response':{'status':201}},'summary':'Create'}").get("changeId").asText();
 
     // When
@@ -138,7 +161,7 @@ class MockToolsTest {
   void stagesDeletionsAndContinuesFromPendingChanges() {
     // Given
     ProposedChange pending = new ProposedChange("c-1", "create", null, json("{'request':{'urlPath':'/a'}}"), null, "earlier");
-    MockTools tools = new MockTools(stubs, requestLog, clock, callouts, runtime, orders.id(), List.of(pending));
+    MockTools tools = new MockTools(stubs, requestLog, clock, callouts, runtime, id -> List.of(), orders.id(), List.of(pending));
 
     // When
     run(tools, "delete_stub", "{'id':'" + existingId + "','summary':'obsolete'}");
@@ -158,7 +181,7 @@ class MockToolsTest {
         new CalloutEntry.Trigger("GET", "/orders/items"), new OutboundRequest("POST", "http://10.0.0.5/cb", List.of(), "{}"),
         null, "10.0.0.5 is a private or local address", 3, null));
     callouts.add(new CalloutEntry("3", "2026-11-03T10:00:02Z", "other-project", null, null, "async", null, null, null, "elsewhere", 1, null));
-    MockTools tools = new MockTools(stubs, requestLog, clock, callouts, runtime, orders.id(), List.of());
+    MockTools tools = new MockTools(stubs, requestLog, clock, callouts, runtime, id -> List.of(), orders.id(), List.of());
 
     // When
     JsonNode all = run(tools, "list_callouts", "{}");
@@ -179,7 +202,7 @@ class MockToolsTest {
     requestLog.record(request("a", NOW.minusSeconds(7_200), "GET", "/orders/items", 200, true, ""));
     requestLog.record(request("b", NOW.minusSeconds(60), "POST", "/orders/refunds", 404, false, "{\"reason\":\"damaged\"}"));
     requestLog.record(request("c", NOW.minusSeconds(30), "GET", "/orders/items/9", 200, true, ""));
-    MockTools tools = new MockTools(stubs, requestLog, clock, callouts, runtime, orders.id(), List.of());
+    MockTools tools = new MockTools(stubs, requestLog, clock, callouts, runtime, id -> List.of(), orders.id(), List.of());
 
     // When
     JsonNode unmatched = run(tools, "search_requests", "{'unmatched_only':true}");
@@ -203,7 +226,7 @@ class MockToolsTest {
   @Test
   void stagesRuntimeSettingsAndReadsThemBack() {
     // Given
-    MockTools tools = new MockTools(stubs, requestLog, clock, callouts, runtime, orders.id(), List.of());
+    MockTools tools = new MockTools(stubs, requestLog, clock, callouts, runtime, id -> List.of(), orders.id(), List.of());
 
     // When
     JsonNode staged = run(tools, "set_runtime", "{'settings':{'rateLimit':{'requests':5,'per':'minute'}},'summary':'Limit to 5 a minute'}");

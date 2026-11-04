@@ -18,6 +18,9 @@ import io.mockhub.support.FakeLlmTransport;
 import io.mockhub.support.FakeStubGateway;
 import io.mockhub.support.InMemoryProjectRepository;
 import java.nio.file.Path;
+import io.mockhub.files.BodyFiles;
+import io.mockhub.snapshot.FileSnapshotRepository;
+import io.mockhub.snapshot.SnapshotService;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.List;
@@ -40,6 +43,7 @@ class AssistantServiceTest {
   private AiSettingsStore settings;
   private AssistantService assistant;
   private RuntimeService runtime;
+  private SnapshotService snapshots;
 
   @BeforeEach
   void setUp() {
@@ -52,7 +56,8 @@ class AssistantServiceTest {
     runtime = new RuntimeService(projects, new DefaultResponseStubs(stubs), new RateLimiter(Clock.systemUTC()));
     settings = new AiSettingsStore(dir, "");
     settings.save(new AiSettings(true, "litellm", "http://llm", "", "gpt-test", 0.2, 3));
-    assistant = new AssistantService(settings, new ChatCompletions(transport, AiProviders.defaults(), ""), stubs, new HistoryStore(dir.resolve("history"), Clock.systemUTC(), Duration.ofDays(1), Long.MAX_VALUE), Clock.systemUTC(), new InMemoryCalloutLog(100), runtime);
+    assistant = new AssistantService(settings, new ChatCompletions(transport, AiProviders.defaults(), ""), stubs, new HistoryStore(dir.resolve("history"), Clock.systemUTC(), Duration.ofDays(1), Long.MAX_VALUE), Clock.systemUTC(), new InMemoryCalloutLog(100), runtime,
+        snapshots = new SnapshotService(new FileSnapshotRepository(dir), projects, stubs, runtime, new BodyFiles(dir), Clock.systemUTC()));
   }
 
   private static List<AssistantService.Message> ask(String text) {
@@ -159,12 +164,34 @@ class AssistantServiceTest {
         new ProposedChange("c-4", "runtime", null, json("{'rateLimit':{'requests':3,'per':'second'}}"), null, "limit"));
 
     // When
-    List<AssistantService.Applied> results = assistant.apply(orders.id(), changes);
+    List<AssistantService.Applied> results = assistant.apply(orders.id(), changes, "Sam");
 
     // Then
     assertThat(results).extracting(AssistantService.Applied::ok).containsExactly(true, true, false, true);
     assertThat(stubs.list(orders.id()).findValuesAsText("urlPath")).containsExactly("/new");
     assertThat(runtime.current(orders.id()).rateLimit().requests()).isEqualTo(3);
+  }
+
+  @Test
+  void takesAStagedSnapshotBeforeTheOtherChangesAndRestoresOneOnRequest() {
+    // Given
+    stubs.create(orders.id(), json("{'request':{'method':'GET','urlPath':'/old'}}"));
+    List<ProposedChange> changes = List.of(
+        new ProposedChange("c-1", "create", null, json("{'request':{'method':'GET','urlPath':'/new'},'response':{'status':200}}"), null, "new"),
+        new ProposedChange("c-2", "snapshot", null, json("{'name':'before new','purpose':'roll back'}"), null, "Take snapshot"));
+
+    // When
+    List<AssistantService.Applied> applied = assistant.apply(orders.id(), changes, "Sam");
+    String snapshotId = snapshots.list(orders.id()).get(0).id();
+    List<AssistantService.Applied> restored = assistant.apply(orders.id(),
+        List.of(new ProposedChange("c-3", "restore", snapshotId, null, null, "Roll back")), "Sam");
+
+    // Then
+    assertThat(applied).extracting(AssistantService.Applied::changeId).containsExactly("c-2", "c-1");
+    assertThat(snapshots.get(orders.id(), snapshotId).stubs()).hasSize(1);
+    assertThat(snapshots.get(orders.id(), snapshotId).createdBy()).isEqualTo("Sam");
+    assertThat(restored).extracting(AssistantService.Applied::ok).containsExactly(true);
+    assertThat(stubs.list(orders.id()).findValuesAsText("urlPath")).containsExactly("/old");
   }
 
   @Test

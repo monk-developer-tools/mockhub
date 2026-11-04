@@ -12,6 +12,7 @@ import io.mockhub.history.HistoryPage;
 import io.mockhub.history.HistoryQuery;
 import io.mockhub.history.HistoryStore;
 import io.mockhub.runtime.RuntimeService;
+import io.mockhub.snapshot.Snapshot;
 import io.mockhub.stub.StubService;
 import java.time.Clock;
 import java.time.Instant;
@@ -21,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
 
 public final class MockTools {
   private static final String[] URL_KEYS = {"url", "urlPath", "urlPathTemplate", "urlPathPattern", "urlPattern"};
@@ -31,15 +33,18 @@ public final class MockTools {
   private final Clock clock;
   private final CalloutLog callouts;
   private final RuntimeService runtime;
+  private final Function<String, List<Snapshot.Summary>> snapshots;
   private final String projectId;
   private final List<ProposedChange> changes;
 
-  public MockTools(StubService stubs, HistoryStore history, Clock clock, CalloutLog callouts, RuntimeService runtime, String projectId, List<ProposedChange> pending) {
+  public MockTools(StubService stubs, HistoryStore history, Clock clock, CalloutLog callouts, RuntimeService runtime,
+      Function<String, List<Snapshot.Summary>> snapshots, String projectId, List<ProposedChange> pending) {
     this.stubs = stubs;
     this.history = history;
     this.clock = clock;
     this.callouts = callouts;
     this.runtime = runtime;
+    this.snapshots = snapshots;
     this.projectId = projectId;
     this.changes = new ArrayList<>(pending);
   }
@@ -86,6 +91,13 @@ public final class MockTools {
             + "cors {origins, methods, headers, credentials, simulateFailure}; ipAllowList [IP or CIDR].");
     tools.add(tool("set_runtime", "Stage new runtime behaviour for the whole project. Read get_runtime first and send the complete settings, not a patch. A single stub's rate limit goes in its metadata.mockhub.rateLimit instead.",
         props(Jsons.object().<ObjectNode>set("settings", runtimeSchema).set("summary", str("What changes and why")), "settings", "summary")));
+    tools.add(tool("list_snapshots", "List the project's saved snapshots, newest first, with id, name, purpose, author, time and stub count.", Jsons.object()));
+    tools.add(tool("create_snapshot", "Stage taking a snapshot of the project's stubs, response files and runtime behaviour, so the user can roll back later. "
+        + "Stage it before risky changes; it is taken before the other staged changes when applied.",
+        props(Jsons.object().<ObjectNode>set("name", str("Short name, such as before-retry-rules")).set("purpose", str("Why it is taken")), "name")));
+    tools.add(tool("restore_snapshot", "Stage restoring a snapshot: stubs, response files and runtime behaviour go back to how they were. "
+        + "MockHub saves the current state as a safety snapshot first. Stored records and the API key are not changed.",
+        props(Jsons.object().<ObjectNode>set("id", str("Snapshot id from list_snapshots")).set("summary", str("Why it is restored")), "id", "summary")));
     return tools;
   }
 
@@ -101,6 +113,9 @@ public final class MockTools {
         case "delete_stub" -> delete(text(args, "id"), args.path("summary").asText(""));
         case "get_runtime" -> getRuntime();
         case "set_runtime" -> setRuntime(args.path("settings"), args.path("summary").asText(""));
+        case "list_snapshots" -> Jsons.MAPPER.<JsonNode>valueToTree(snapshots.apply(projectId));
+        case "create_snapshot" -> createSnapshot(text(args, "name"), args.path("purpose").asText(""));
+        case "restore_snapshot" -> restoreSnapshot(text(args, "id"), args.path("summary").asText(""));
         default -> Jsons.object().put("error", "Unknown tool " + name);
       });
     } catch (ApiException | AiException e) {
@@ -240,6 +255,27 @@ public final class MockTools {
     ProposedChange change = new ProposedChange(newId(), ProposedChange.RUNTIME, null, clean, before, summary);
     changes.add(change);
     return Jsons.object().put("staged", "runtime").put("changeId", change.id());
+  }
+
+  private ObjectNode createSnapshot(String name, String purpose) {
+    String trimmed = name.trim();
+    if (trimmed.isEmpty() || trimmed.length() > 80) throw ApiException.badRequest("Give the snapshot a name of up to 80 characters");
+    changes.removeIf(c -> c.action().equals(ProposedChange.SNAPSHOT));
+    ProposedChange change = new ProposedChange(newId(), ProposedChange.SNAPSHOT, null,
+        Jsons.object().put("name", trimmed).put("purpose", purpose), null, "Take snapshot “" + trimmed + "”");
+    changes.add(0, change);
+    return Jsons.object().put("staged", "snapshot").put("changeId", change.id());
+  }
+
+  private ObjectNode restoreSnapshot(String id, String summary) {
+    Snapshot.Summary found = snapshots.apply(projectId).stream().filter(s -> s.id().equals(id)).findFirst()
+        .orElseThrow(() -> ApiException.notFound("Snapshot " + id + "; call list_snapshots for the ids"));
+    changes.removeIf(c -> c.action().equals(ProposedChange.RESTORE));
+    ProposedChange change = new ProposedChange(newId(), ProposedChange.RESTORE, found.id(),
+        Jsons.object().put("name", found.name()).put("createdAt", found.createdAt()).put("stubCount", found.stubCount()), null,
+        summary.isBlank() ? "Restore snapshot “" + found.name() + "”" : summary);
+    changes.add(change);
+    return Jsons.object().put("staged", "restore").put("changeId", change.id());
   }
 
   static ObjectNode summary(JsonNode stub, String id) {

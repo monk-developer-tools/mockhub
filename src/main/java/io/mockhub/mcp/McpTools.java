@@ -192,6 +192,46 @@ public final class McpTools {
         call -> direct(call, "changing data", RequestMethod.DELETE,
             "/projects/" + projectId(call) + "/data/records?resource=" + enc(call.text("resource")) + "&id=" + enc(call.text("id")), null));
 
+    add("list_snapshots", "List snapshots", "List the project's snapshots, newest first: id, name, purpose, author, time, stub and file counts. Safety snapshots are taken automatically before a restore or pull.",
+        schema(project()), true, false, call -> get(call, "/projects/" + projectId(call) + "/snapshots"));
+    add("create_snapshot", "Take a snapshot",
+        "Save the project's stubs, response files and runtime behaviour so you can compare or roll back later. Take one before risky changes.",
+        schema(project(), req("name", "string", "Short name, such as before-retry-rules"), prop("purpose", "string", "Why it is taken")), false, false, call -> {
+          ObjectNode body = Jsons.object().put("name", call.text("name")).put("purpose", Optional.ofNullable(call.optional("purpose")).orElse(""));
+          String id = projectId(call);
+          if (call.principal().reviewOnly()) return stager.stage(call.principal(), id, "create_snapshot", body);
+          return send(call, RequestMethod.POST, "/projects/" + id + "/snapshots", body);
+        });
+    add("compare_snapshots", "Compare snapshots",
+        "List the stubs added, removed, changed or moved between two states of a project, plus runtime and file changes. Use snapshot ids or current.",
+        schema(project(), req("from", "string", "Snapshot id, or current"), prop("to", "string", "Snapshot id, or current (the default)")), true, false, call -> {
+          String to = Optional.ofNullable(call.optional("to")).orElse("current");
+          ObjectNode diff = (ObjectNode) get(call, "/projects/" + projectId(call) + "/snapshots/compare?from=" + enc(call.text("from")) + "&to=" + enc(to));
+          diff.path("stubs").forEach(stub -> {
+            ((ObjectNode) stub).remove("before");
+            ((ObjectNode) stub).remove("after");
+          });
+          return diff;
+        });
+    add("restore_snapshot", "Restore a snapshot",
+        "Put the project's stubs, response files and runtime behaviour back to a snapshot. MockHub saves the current state as a safety snapshot first. Stored records and the API key are not changed.",
+        schema(project(), req("snapshot_id", "string", "The snapshot id"), summaryProp()), false, true, call -> {
+          String id = projectId(call);
+          if (call.principal().reviewOnly()) {
+            return stager.stage(call.principal(), id, "restore_snapshot", Jsons.object().put("id", call.text("snapshot_id")).put("summary", summary(call)));
+          }
+          return send(call, RequestMethod.POST, "/projects/" + id + "/snapshots/" + enc(call.text("snapshot_id")) + "/restore", Jsons.object());
+        });
+    add("pull_from_project", "Pull from another project",
+        "Replace this project's stubs, response files and runtime behaviour with another project's, rewriting the base path; for example from dev into qa. A safety snapshot of this project is taken first.",
+        schema(project(), req("from_project", "string", "The project to copy from: id, slug, name or base path"),
+            prop("snapshot_id", "string", "A snapshot of that project; leave out for its current state")), false, true, call -> {
+          String target = projectId(call);
+          String source = projectId(new Call(Jsons.object().put("project", call.text("from_project")), call.request(), call.principal()));
+          ObjectNode body = Jsons.object().put("from", source).put("snapshot", Optional.ofNullable(call.optional("snapshot_id")).orElse("current"));
+          return direct(call, "pulling from another project", RequestMethod.POST, "/projects/" + target + "/pull", body);
+        });
+
     add("list_staged_changes", "List staged changes", "List changes waiting for review in the project's Assistant tab.",
         schema(project()), true, false, call -> get(call, "/projects/" + projectId(call) + "/staged"));
   }

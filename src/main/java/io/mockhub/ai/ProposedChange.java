@@ -7,4 +7,6 @@ public record ProposedChange(String id, String action, String stubId, JsonNode s
   public static final String UPDATE = "update";
   public static final String DELETE = "delete";
   public static final String RUNTIME = "runtime";
+  public static final String SNAPSHOT = "snapshot";
+  public static final String RESTORE = "restore";
 }

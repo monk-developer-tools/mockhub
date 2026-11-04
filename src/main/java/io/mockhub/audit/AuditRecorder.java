@@ -17,7 +17,7 @@ import java.util.UUID;
 
 public final class AuditRecorder implements ChangeAudit {
 
-  enum Name { PROJECT, STUB, ORG, TEAM, USER, BODY_NAME, BODY_USERNAME, BODY_RESOURCE, PARAM_FORMAT, NONE }
+  enum Name { PROJECT, STUB, ORG, TEAM, USER, BODY_NAME, BODY_USERNAME, BODY_RESOURCE, PARAM_FORMAT, RESULT_NAME, NONE }
 
   record Rule(String action, String target, Name name) {
     boolean createsProject() {
@@ -70,7 +70,12 @@ public final class AuditRecorder implements ChangeAudit {
       Map.entry("POST /auth/tokens", new Rule("created", "access token", Name.BODY_NAME)),
       Map.entry("DELETE /auth/tokens/{tokenId}", new Rule("revoked", "access token", Name.NONE)),
       Map.entry("POST /projects/{id}/staged/apply", new Rule("applied", "staged changes", Name.NONE)),
-      Map.entry("DELETE /projects/{id}/staged/{changeId}", new Rule("discarded", "staged change", Name.NONE)));
+      Map.entry("DELETE /projects/{id}/staged/{changeId}", new Rule("discarded", "staged change", Name.NONE)),
+      Map.entry("POST /projects/{id}/snapshots", new Rule("took", "snapshot", Name.BODY_NAME)),
+      Map.entry("POST /projects/{id}/snapshots/upload", new Rule("uploaded", "snapshot", Name.RESULT_NAME)),
+      Map.entry("DELETE /projects/{id}/snapshots/{snapshotId}", new Rule("deleted", "snapshot", Name.RESULT_NAME)),
+      Map.entry("POST /projects/{id}/snapshots/{snapshotId}/restore", new Rule("restored", "snapshot", Name.RESULT_NAME)),
+      Map.entry("POST /projects/{id}/pull", new Rule("pulled", "stubs from", Name.RESULT_NAME)));
 
   private final AuditLog log;
   private final AuditNames names;
@@ -93,7 +98,7 @@ public final class AuditRecorder implements ChangeAudit {
     if (rule == null) return Pending.NONE;
     AuditEntry entry = describe(rule, change);
     return result -> {
-      AuditEntry e = createdProject(entry, rule, result);
+      AuditEntry e = resultName(createdProject(entry, rule, result), rule, result);
       log.append(new AuditEntry(UUID.randomUUID().toString(), Instant.now(clock).toString(), e.actorId(), e.actor(),
           e.action(), e.target(), e.targetName(), e.details(), e.orgId(), e.teamId(), e.projectId(), e.projectName()));
     };
@@ -106,6 +111,13 @@ public final class AuditRecorder implements ChangeAudit {
     if (id.isEmpty()) return e;
     return new AuditEntry(e.id(), e.at(), e.actorId(), e.actor(), e.action(), e.target(), or(e.targetName(), text(node, "name")), e.details(),
         or(text(node, "orgId"), e.orgId()), or(text(node, "teamId"), e.teamId()), id, or(text(node, "name"), e.targetName()));
+  }
+
+  private static AuditEntry resultName(AuditEntry e, Rule rule, Object result) {
+    if (rule.name() != Name.RESULT_NAME || result == null) return e;
+    String name = text(asJson(result), "name");
+    return new AuditEntry(e.id(), e.at(), e.actorId(), e.actor(), e.action(), e.target(), name, e.details(), e.orgId(), e.teamId(),
+        e.projectId(), e.projectName());
   }
 
   private static JsonNode asJson(Object result) {
@@ -147,6 +159,7 @@ public final class AuditRecorder implements ChangeAudit {
       case BODY_USERNAME -> text(body, "username");
       case BODY_RESOURCE -> text(body, "resource");
       case PARAM_FORMAT -> change.param("format");
+      case RESULT_NAME -> "";
       case NONE -> "";
     };
   }

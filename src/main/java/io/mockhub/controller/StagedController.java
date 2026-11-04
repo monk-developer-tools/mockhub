@@ -29,7 +29,7 @@ public final class StagedController implements ApiController {
     r.post("/projects/{id}/staged/apply", ctx -> {
       Project project = projects.get(ctx.path("id"));
       List<String> ids = ids(ctx.json().path("ids"));
-      List<AssistantService.Applied> results = assistant.apply(project.id(), staged.take(project.id(), ids));
+      List<AssistantService.Applied> results = assistant.apply(project.id(), staged.take(project.id(), ids), ctx.principal().label());
       staged.remove(project.id(), results.stream().filter(AssistantService.Applied::ok).map(AssistantService.Applied::changeId).toList());
       ObjectNode out = Jsons.object();
       out.put("applied", results.stream().filter(AssistantService.Applied::ok).count());

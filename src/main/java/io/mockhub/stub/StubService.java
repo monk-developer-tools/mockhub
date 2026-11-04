@@ -9,6 +9,8 @@ import io.mockhub.api.Jsons;
 import io.mockhub.project.Project;
 import io.mockhub.project.ProjectListener;
 import io.mockhub.project.ProjectService;
+import io.mockhub.runtime.ProjectScopeMatcher;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -71,6 +73,34 @@ public final class StubService implements ProjectListener {
       gateway.update(Jsons.toWireMock(node, StubMapping.class));
     }
     return list(p.id());
+  }
+
+  public List<ObjectNode> inMatchingOrder(String projectId) {
+    Project p = projects.get().get(projectId);
+    return gateway.findAll().stream()
+        .filter(s -> p.id().equals(StubMetadata.projectId(s)) && !StubMetadata.isManaged(s))
+        .map(s -> relative(s, p))
+        .toList();
+  }
+
+  public int replaceAll(String projectId, List<? extends JsonNode> relativeStubs) {
+    Project p = projects.get().get(projectId);
+    List<StubMapping> incoming = new ArrayList<>();
+    for (JsonNode stub : relativeStubs) {
+      ObjectNode node = toAbsolute(stub, p);
+      String id = node.path("id").asText("");
+      UUID uuid = id.isEmpty() ? UUID.randomUUID() : parseId(id);
+      StubMapping existing = gateway.findById(uuid).orElse(null);
+      if (existing != null && !p.id().equals(StubMetadata.projectId(existing))) {
+        uuid = UUID.nameUUIDFromBytes((p.id() + ":" + uuid).getBytes(StandardCharsets.UTF_8));
+      }
+      node.put("id", uuid.toString()).put("uuid", uuid.toString());
+      ProjectScopeMatcher.retarget(node, p.id());
+      incoming.add(Jsons.toWireMock(node, StubMapping.class));
+    }
+    stubsOf(p.id()).stream().filter(s -> !StubMetadata.isManaged(s)).forEach(s -> gateway.remove(s.getId()));
+    for (int i = incoming.size() - 1; i >= 0; i--) gateway.add(incoming.get(i));
+    return incoming.size();
   }
 
   public ObjectNode get(String projectId, String stubId) {

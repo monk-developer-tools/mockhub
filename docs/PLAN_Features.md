@@ -46,7 +46,7 @@ Legend: ✅ have it · 🟡 partial · ❌ missing
 | Local tunnelling | Missing | ❌ | F12 |
 | White-labelled domains | Missing | ❌ | F11 |
 | Request history: search, facets, 10-day retention | On-disk history, search, facets, HAR, configurable retention (default 7 days) | ✅ | — |
-| Snapshots: create, restore, pull to another endpoint | Server backup and restore only | 🟡 | F5 |
+| Snapshots: create, restore, pull to another endpoint | Snapshots with diff, restore, pull between projects, file download and upload | ✅ | — |
 | Stateful data management UI | Data tab for CRUD records; counters and stores not visible | 🟡 | F7 |
 | Datasets (CSV/JSON shared across projects) | Missing | ❌ | F8 |
 | Sharing and teams | Organisations, teams, roles, SSO | ✅ | — |
@@ -274,10 +274,19 @@ Goal: save, compare and restore a project's configuration, and promote it betwee
 - Assistant and MCP: create and restore snapshots, so "try this change and roll back" works by chat.
 
 Checklist:
-- [ ] Snapshot store and API
-- [ ] Diff and restore with a safety snapshot
-- [ ] Pull between projects
-- [ ] UI, tests, docs
+- [x] Snapshot store and API
+- [x] Diff and restore with a safety snapshot
+- [x] Pull between projects
+- [x] UI, tests, docs
+
+Notes: snapshots live in `data/mockhub/snapshots/{projectId}` and are deleted with the project; the backup file does
+not include them (download one to keep a version). Stubs are stored project-relative in matching order and restored
+in reverse so equal-priority order is kept; managed default-response stubs are rebuilt from the runtime settings.
+Restoring or pulling never changes the API key or stored records. A pull gives stubs ids derived from the target
+project and the source id, so pulling again shows only real changes. The last 10 safety snapshots are kept and up to
+50 others per project. The pull source needs view access, and a scoped token can't pull from outside its scope.
+Review tokens and the assistant stage snapshot and restore changes; a snapshot in a batch is applied first.
+Restore swaps stubs one by one, so a caller can briefly see a partial set during a large restore.
 
 ### Phase F6 — Template engine completion
 

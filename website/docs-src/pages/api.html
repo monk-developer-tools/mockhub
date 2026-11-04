@@ -46,6 +46,7 @@ curl -o failed.har "$HUB/__admin/mockhub/api/projects/$ID/history-export?status=
     <tr><td><code>GET /examples</code>, <code>POST /examples/{id}/install</code></td><td>built-in examples</td></tr>
     <tr><td><code>GET|POST /auth/tokens</code>, <code>DELETE /auth/tokens/{tokenId}</code></td><td>your <a href="#access-tokens">access tokens</a>: list, create, revoke</td></tr>
     <tr><td><code>GET /projects/{id}/staged</code>, <code>POST …/staged/apply</code>, <code>DELETE …/staged/{changeId}</code></td><td>changes staged by <a href="#mcp-review">review tokens</a>: list, apply <code>{"ids":[…]}</code>, discard</td></tr>
+    <tr><td><code>GET|POST /projects/{id}/snapshots</code>, <code>…/snapshots/compare</code>, <code>…/{snapshotId}/restore</code>, <code>POST /projects/{id}/pull</code></td><td><a href="#snapshots">snapshots</a>: list, take, compare, restore, download, upload and pull from another project; see <a href="#snapshot-api">every endpoint</a></td></tr>
     <tr><td><code>GET /audit</code></td><td>recent changes; filter with <code>orgId</code>, <code>projectId</code>, <code>actorId</code>, <code>limit</code></td></tr>
     <tr><td><code>GET /projects/{id}/audit</code></td><td>one project's changes</td></tr>
     <tr><td><code>GET /backup</code></td><td>everything as one file</td></tr>

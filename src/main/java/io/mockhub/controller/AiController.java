@@ -110,7 +110,7 @@ public final class AiController implements ApiController {
     });
     r.post("/projects/{id}/ai/apply", ctx -> {
       Project project = projects.get(ctx.path("id"));
-      List<AssistantService.Applied> results = assistant.apply(project.id(), changes(ctx.json().path("changes")));
+      List<AssistantService.Applied> results = assistant.apply(project.id(), changes(ctx.json().path("changes")), ctx.principal().label());
       ObjectNode out = Jsons.object();
       out.put("applied", results.stream().filter(AssistantService.Applied::ok).count());
       out.set("results", Jsons.MAPPER.valueToTree(results));

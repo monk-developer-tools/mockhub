@@ -2,6 +2,9 @@ import type {
   AccessToken,
   NewAccessToken,
   StagedChange,
+  SnapshotSummary,
+  SnapshotDiff,
+  SnapshotRestoreResult,
   CalloutEntry,
   HistoryDetail,
   HistoryPage,
@@ -207,6 +210,23 @@ export const api = {
   deleteFile: (projectId: string, name: string) =>
     request<void>(`${API}/projects/${projectId}/files?name=${encodeURIComponent(name)}`, { method: 'DELETE' }),
   resetData: (projectId: string) => request<void>(`${API}/projects/${projectId}/data`, { method: 'DELETE' }),
+  snapshots: (projectId: string) => request<SnapshotSummary[]>(`${API}/projects/${projectId}/snapshots`),
+  createSnapshot: (projectId: string, name: string, purpose: string) =>
+    request<SnapshotSummary>(`${API}/projects/${projectId}/snapshots`, { method: 'POST', body: json({ name, purpose }) }),
+  deleteSnapshot: (projectId: string, snapshotId: string) =>
+    request<SnapshotSummary>(`${API}/projects/${projectId}/snapshots/${encodeURIComponent(snapshotId)}`, { method: 'DELETE' }),
+  compareSnapshots: (projectId: string, from: string, to: string) =>
+    request<SnapshotDiff>(`${API}/projects/${projectId}/snapshots/compare?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`),
+  restoreSnapshot: (projectId: string, snapshotId: string) =>
+    request<SnapshotRestoreResult>(`${API}/projects/${projectId}/snapshots/${encodeURIComponent(snapshotId)}/restore`, { method: 'POST', body: '{}' }),
+  downloadSnapshot: (projectId: string, snapshotId: string) =>
+    download(`${API}/projects/${projectId}/snapshots/${encodeURIComponent(snapshotId)}/download`),
+  uploadSnapshot: (projectId: string, file: string) =>
+    request<SnapshotSummary>(`${API}/projects/${projectId}/snapshots/upload`, { method: 'POST', body: file }),
+  previewPull: (projectId: string, from: string, snapshot: string) =>
+    request<SnapshotDiff>(`${API}/projects/${projectId}/pull/preview?from=${encodeURIComponent(from)}&snapshot=${encodeURIComponent(snapshot)}`),
+  pull: (projectId: string, from: string, snapshot: string) =>
+    request<SnapshotRestoreResult>(`${API}/projects/${projectId}/pull`, { method: 'POST', body: json({ from, snapshot }) }),
   stagedChanges: (projectId: string) => request<StagedChange[]>(`${API}/projects/${projectId}/staged`),
   applyStaged: (projectId: string, ids: string[]) =>
     request<ApplyResult>(`${API}/projects/${projectId}/staged/apply`, { method: 'POST', body: json({ ids }) }),

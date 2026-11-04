@@ -7,6 +7,7 @@ import { DashboardPage } from './pages/DashboardPage';
 import { ExamplesPage } from './pages/ExamplesPage';
 import { LoginPage } from './pages/LoginPage';
 import { ImportExportTab } from './pages/project/ImportExportTab';
+import { SnapshotsTab } from './pages/project/snapshots/SnapshotsTab';
 import { OverviewTab } from './pages/project/OverviewTab';
 import { ProjectPage } from './pages/project/ProjectPage';
 import { ProjectSettingsTab } from './pages/project/ProjectSettingsTab';
@@ -59,6 +60,7 @@ const router = createBrowserRouter(
             { path: 'callouts', element: <CalloutsTab /> },
             { path: 'scenarios', element: <ScenariosTab /> },
             { path: 'import-export', element: <ImportExportTab /> },
+            { path: 'snapshots', element: <SnapshotsTab /> },
             { path: 'activity', element: <ActivityTab /> },
             { path: 'settings', element: <ProjectSettingsTab /> },
           ],

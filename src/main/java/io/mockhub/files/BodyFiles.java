@@ -128,7 +128,7 @@ public final class BodyFiles {
     return file;
   }
 
-  private static void checkName(String name) {
+  public static void checkName(String name) {
     if (name == null || name.isEmpty() || name.length() > MAX_NAME_LENGTH) throw ApiException.badRequest("Give the file a name, e.g. invoices/42.pdf");
     for (String segment : name.split("/", -1)) {
       if (!SEGMENT.matcher(segment).matches() || segment.equals(".") || segment.equals("..")) {
