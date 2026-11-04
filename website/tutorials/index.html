@@ -215,6 +215,7 @@
         <div class="ctas">
           <a class="btn primary" href="#first-project">Start with the basics</a>
           <a class="link-chevron" href="#use-cases">Find your use case</a>
+          <a class="link-chevron" href="#no-account">Try it without an account</a>
           <a class="link-chevron" href="/__admin/mockhub/ui/">Follow along in the live demo</a>
         </div>
       </div>
@@ -356,6 +357,7 @@
         <div class="tut-group">
           <h2>The basics</h2>
           <div class="tut-cards">
+            <a class="tut-card" href="#no-account"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M13 3L5 13h6l-1 8 8-10h-6z"/></svg></span><strong>Try MockHub without an account</strong><span>A mock URL in your browser, no sign-up.</span><em>3 min</em></a>
             <a class="tut-card" href="#tour"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M4 5h7v7H4zM13 5h7v7h-7zM4 14h7v5H4zM13 14h7v5h-7z"/></svg></span><strong>Tour of the examples</strong><span>Every feature, ready to try.</span><em>10 min</em></a>
             <a class="tut-card" href="#first-project"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M4 7a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M12 11v5M9.5 13.5h5"/></svg></span><strong>Create your first project</strong><span>One base URL for one service.</span><em>2 min</em></a>
             <a class="tut-card" href="#first-stub"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M8 4H7a2 2 0 0 0-2 2v3.5a2 2 0 0 1-2 2 2 2 0 0 1 2 2V17a2 2 0 0 0 2 2h1M16 4h1a2 2 0 0 1 2 2v3.5a2 2 0 0 0 2 2 2 2 0 0 0-2 2V17a2 2 0 0 1-2 2h-1"/></svg></span><strong>Add your first stub</strong><span>Match a request, send a response.</span><em>4 min</em></a>
@@ -410,6 +412,7 @@
       <aside class="tut-toc" aria-label="Tutorials">
         <a href="#use-cases">Use cases</a>
         <h4>The basics</h4>
+        <a href="#no-account">Without an account</a>
         <a href="#tour">Tour of the examples</a>
         <a href="#first-project">Your first project</a>
         <a href="#first-stub">Your first stub</a>
@@ -445,6 +448,41 @@
       </aside>
 
       <div class="tut-body">
+
+        <article class="tut" id="no-account">
+          <p class="tut-meta"><span>The basics</span><span>3 min</span><span>No account needed</span></p>
+          <h2>Try MockHub without an account</h2>
+          <p class="tut-intro">The <a href="/tools/instant-mock/">instant mock</a> page gives you a mock API on the MockHub demo in one click. There is nothing to install and no sign-up, so it's the quickest way to see how stubs work before you run MockHub yourself.</p>
+          <ol class="tut-steps">
+            <li>
+              <h3>Choose how to start</h3>
+              <p>Open <a href="/tools/instant-mock/">the instant mock page</a> and pick a tab. <strong>Sample stubs</strong> gives you <code>GET /hello</code> and <code>GET /users/{id}</code>. <strong>OpenAPI or WSDL</strong> makes one stub per operation from your spec. <strong>CSV or JSON records</strong> turns up to 50 records into a REST resource that keeps what you send. <strong>Example</strong> starts from one of MockHub's built-in examples. Then select the create button.</p>
+              <figure class="tut-shot narrow"><img src="/assets/img/tutorials/instant-1-start.webp" alt="The instant mock start card with the Sample stubs, OpenAPI or WSDL, CSV or JSON records and Example tabs outlined" width="670" height="350" loading="lazy"></figure>
+            </li>
+            <li>
+              <h3>Keep the two links</h3>
+              <p>The first is your mock's URL. Anyone who has it can call the mock, so point your app or tests at it. The second is the private link to edit the mock. Keep it to yourself: anyone who has it can change or delete the mock. This browser remembers it too.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/instant-2-mock.webp" alt="The Your mock card with the mock URL and the private link to edit it outlined" width="1176" height="550" loading="lazy"></figure>
+              <p class="tip"><strong>Good to know.</strong> An instant mock holds up to 20 stubs, answers 1,000 requests a day and is deleted 7 days after its last change.</p>
+            </li>
+            <li>
+              <h3>Change what it answers</h3>
+              <p>Select a stub to edit it, or <strong>Add a stub</strong>. Set the method, the path (use <code>{id}</code> for a part that changes), the status, the content type, a delay and the body. With <strong>Fill in values from the request</strong> on, <code>{{request.path.id}}</code> in the body becomes the id from the URL. <strong>Edit as JSON</strong> takes any WireMock stub JSON, for header or body matching and more. Select <strong>Save stub</strong>, and the mock answers with it right away.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/instant-3-edit.webp" alt="The Add a stub form outlined, set to GET /orders/{id} with a body that uses request.path.id" width="1176" height="715" loading="lazy"></figure>
+            </li>
+            <li>
+              <h3>Call it and watch the requests</h3>
+              <p>Use <strong>Try it</strong> on the page, or call the URL from anywhere, for example <code>curl https://mockhub.devops-monk.com/m-…/orders/42</code>. Every call shows up under <strong>Recent requests</strong> within a few seconds, matched or not, so you can see why a request missed.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/instant-4-try.webp" alt="Try it with GET /orders/42 answering id 42, and the call listed under Recent requests, both outlined" width="1176" height="500" loading="lazy"></figure>
+            </li>
+            <li>
+              <h3>Keep it</h3>
+              <p><strong>Export</strong> downloads your stubs as WireMock mappings. <a href="/docs/import/">Import</a> them into your own MockHub, or use them with any WireMock server.</p>
+            </li>
+          </ol>
+          <p class="tip"><strong>Good to know.</strong> To keep things fast and safe for everyone, instant mocks can't proxy, call out, send webhooks, read files or use regex, XPath or schema matching. Run MockHub yourself for all of that. The other <a href="/tools/">free tools</a> include a webhook catcher and a template playground.</p>
+          <a class="next" href="#tour">Next: Tour of the examples</a>
+        </article>
 
         <article class="tut" id="tour">
           <p class="tut-meta"><span>The basics</span><span>10 min</span><span>Needs the editor role</span></p>

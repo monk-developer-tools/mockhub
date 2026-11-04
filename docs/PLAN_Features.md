@@ -543,10 +543,10 @@ Safety for the demo-server tools. Each tool:
   - [x] "Keep it" export (claim dropped, see notes)
 - W6 Compare and polish:
   - [ ] vs WireMock, vs Mockoon and vs Postman mock servers pages, factual and dated
-  - [ ] Homepage hero CTA becomes "Try it free, no login"
+  - [x] Homepage hero CTA becomes "Try it free, no login"
   - [ ] Lighthouse 95+ on every page
   - [ ] Phone, dark-mode and keyboard pass
-- Docs, a tutorial ("Try MockHub without an account"), README, deploy (demo env flag, nginx limits)
+- [x] Docs, a tutorial ("Try MockHub without an account"), README, deploy (demo env flag, nginx limits)
 
 Notes (W1, W2): pages live in `website/site-src/pages.mjs` and render through `website/site-src/render.mjs`. The build
 writes them to `website/<slug>/`, lists the generated folders in `website/.gitignore`, and writes `sitemap.xml` and
