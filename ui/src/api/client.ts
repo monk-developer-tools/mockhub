@@ -21,6 +21,11 @@ import type {
   BodyFile,
   CrudRequest,
   DataResource,
+  Dataset,
+  DatasetFormat,
+  DatasetLimits,
+  DatasetMode,
+  DatasetUpload,
   StateContext,
   RestorePreview,
   RestoreRequest,
@@ -200,6 +205,26 @@ export const api = {
     request<void>(`${API}/projects/${projectId}/data/records?resource=${encodeURIComponent(resource)}&id=${encodeURIComponent(id)}`, { method: 'DELETE' }),
   clearResource: (projectId: string, resource: string) =>
     request<void>(`${API}/projects/${projectId}/data/records?resource=${encodeURIComponent(resource)}`, { method: 'DELETE' }),
+  datasets: (orgId: string) => request<{ datasets: Dataset[]; limits: DatasetLimits }>(`${API}/orgs/${orgId}/datasets`),
+  createDataset: (orgId: string, body: Partial<Pick<Dataset, 'key' | 'name' | 'description' | 'identity' | 'indexes'>>) =>
+    request<Dataset>(`${API}/orgs/${orgId}/datasets`, { method: 'POST', body: json(body) }),
+  updateDataset: (orgId: string, key: string, body: Partial<Pick<Dataset, 'name' | 'description' | 'identity' | 'indexes'>>) =>
+    request<Dataset>(`${API}/orgs/${orgId}/datasets/${encodeURIComponent(key)}`, { method: 'PUT', body: json(body) }),
+  deleteDataset: (orgId: string, key: string) => request<void>(`${API}/orgs/${orgId}/datasets/${encodeURIComponent(key)}`, { method: 'DELETE' }),
+  uploadDataset: (orgId: string, key: string, format: DatasetFormat, mode: DatasetMode, file: Blob) =>
+    request<DatasetUpload>(`${API}/orgs/${orgId}/datasets/${encodeURIComponent(key)}/upload?format=${format}&mode=${mode}`, {
+      method: 'POST',
+      body: file,
+      headers: { 'Content-Type': 'text/plain' },
+    }),
+  datasetRecords: (orgId: string, key: string, params: { q?: string; offset?: number; limit?: number; filters?: Record<string, string> }) => {
+    const query = new URLSearchParams();
+    if (params.q) query.set('q', params.q);
+    if (params.offset) query.set('offset', String(params.offset));
+    if (params.limit) query.set('limit', String(params.limit));
+    Object.entries(params.filters ?? {}).forEach(([k, v]) => query.set(k, v));
+    return request<{ total: number; records: Record<string, unknown>[] }>(`${API}/orgs/${orgId}/datasets/${encodeURIComponent(key)}/records?${query}`);
+  },
   stateContexts: (projectId: string) => request<{ contexts: StateContext[] }>(`${API}/projects/${projectId}/state`),
   saveStateContext: (projectId: string, name: string, body: { properties: Record<string, string>; list: Record<string, string>[] }) =>
     request<StateContext>(`${API}/projects/${projectId}/state/context?name=${encodeURIComponent(name)}`, { method: 'PUT', body: json(body) }),

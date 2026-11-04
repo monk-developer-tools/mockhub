@@ -395,6 +395,40 @@ export interface DataResource {
   crud: boolean;
 }
 
+export type DatasetColumnType = 'string' | 'number' | 'boolean' | 'json';
+export type DatasetFormat = 'csv' | 'json' | 'ndjson';
+export type DatasetMode = 'replace' | 'upsert' | 'add';
+
+export interface Dataset {
+  orgId: string;
+  key: string;
+  name: string;
+  description: string;
+  identity: string[];
+  indexes: string[];
+  columns: { name: string; type: DatasetColumnType }[];
+  recordCount: number;
+  bytes: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DatasetLimits {
+  maxUploadBytes: number;
+  maxRecords: number;
+  maxRecordBytes: number;
+  maxDatasets: number;
+  maxIdentity: number;
+  maxIndexes: number;
+}
+
+export interface DatasetUpload {
+  added: number;
+  updated: number;
+  skipped: number;
+  dataset: Dataset;
+}
+
 export interface StateContext {
   name: string;
   properties: Record<string, string>;

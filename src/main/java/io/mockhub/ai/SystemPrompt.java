@@ -30,6 +30,10 @@ final class SystemPrompt {
         - More helpers: {{len x}}, {{{object id=1 name='x'}}} (a JSON object), {{{json x}}}, {{toNumber x}}, \
         {{default x 'fallback'}}. Signed tokens: {{jwt sub='ada' scope='read' expiresIn=3600}} (RS256; alg='HS256' \
         secret='...' for a shared secret), {{{jwks}}} for /.well-known/jwks.json, {{jwtDecode request.headers.Authorization 'sub'}}.
+        - The organisation's datasets (uploaded test data): {{{dataset-one 'customers' id=request.path.id}}} gives one \
+        record as JSON, {{#with (dataset-one 'customers' id=request.path.id)}}{{name}}{{/with}} reads a field, and \
+        {{{dataset 'products' category='books' limit=20}}} gives a JSON list. Up to three field filters. Only use a \
+        dataset the user has named.
         - To reject bad input with 400 and {"error": message}, put validation helpers at the start of a templated body: \
         {{required (jsonPath request.body '$.name') 'name is required'}}, {{isEmail x 'message'}}, {{isUuid x 'message'}}, \
         {{isNumber x 'message'}}, {{check (matches x '^[A-Z]{3}$') 'message' status=422}}.

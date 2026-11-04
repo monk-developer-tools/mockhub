@@ -2636,6 +2636,58 @@ kbd {
   align-items: start;
 }
 
+.dataset-columns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.dataset-examples {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.dataset-examples li {
+  display: grid;
+  grid-template-columns: 170px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.dataset-examples code {
+  overflow-wrap: anywhere;
+  font-size: 12.5px;
+}
+
+.lookup-row {
+  display: grid;
+  grid-template-columns: minmax(0, 200px) minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.dataset-result {
+  max-height: 320px;
+  overflow: auto;
+}
+
+@media (max-width: 720px) {
+  .dataset-examples li {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .dataset-examples li > span {
+    grid-column: 1 / -1;
+  }
+
+  .choice-cards.three {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .data-resources ul {
   list-style: none;
   margin: 0;

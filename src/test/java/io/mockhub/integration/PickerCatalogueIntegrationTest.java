@@ -45,8 +45,18 @@ class PickerCatalogueIntegrationTest {
   void start() {
     server = MockHubServer.start(data);
     api = server.api();
-    projectId = api.post(API + "/projects", "{\"name\":\"Catalogue\",\"slug\":\"cat\"}").json().get("id").asText();
+    JsonNode project = api.post(API + "/projects", "{\"name\":\"Catalogue\",\"slug\":\"cat\"}").json();
+    projectId = project.get("id").asText();
+    dataset(project.get("orgId").asText(), "customers", "id,name,city\n0b9a3c56-8f7e-4d6b-9a2c-1e2f3a4b5c6d,Ada,London\n");
+    dataset(project.get("orgId").asText(), "products", "id,name,category\n1,Dune,books\n2,Pen,office\n");
+    dataset(project.get("orgId").asText(), "orders", "id,status\n1,open\n2,paid\n");
     api.post(API + "/projects/" + projectId + "/stubs", "{\"request\":{\"method\":\"POST\",\"urlPath\":\"/receiver\"},\"response\":{\"status\":204}}");
+  }
+
+  private void dataset(String orgId, String key, String csv) {
+    String datasets = API + "/orgs/" + orgId + "/datasets";
+    assertThat(api.post(datasets, "{\"key\":\"" + key + "\"}").status()).isEqualTo(201);
+    assertThat(api.post(datasets + "/" + key + "/upload?format=csv", csv).status()).isEqualTo(200);
   }
 
   @AfterEach

@@ -18,12 +18,13 @@ class DatasetIntegrationTest {
   private MockHubServer server;
   private ApiClient api;
   private String datasets;
+  private String orgId;
 
   @BeforeEach
   void start() {
     server = MockHubServer.start(data);
     api = server.api();
-    String orgId = api.post(API + "/orgs", "{\"name\":\"Retail\"}").json().get("id").asText();
+    orgId = api.post(API + "/orgs", "{\"name\":\"Retail\"}").json().get("id").asText();
     datasets = API + "/orgs/" + orgId + "/datasets";
   }
 
@@ -107,5 +108,29 @@ class DatasetIntegrationTest {
     assertThat(afterRestart.get("total").asInt()).isEqualTo(3);
     assertThat(deleted.status()).as(deleted.body()).isIn(200, 204);
     assertThat(data.resolve("mockhub/datasets").toFile().list()).isEmpty();
+  }
+
+  @Test
+  void stubsOfTheOrganisationsProjectsAnswerFromADataset() {
+    // Given
+    customers();
+    String projectId = api.post(API + "/projects", "{\"name\":\"Shop\",\"slug\":\"shop\",\"orgId\":\"" + orgId + "\"}").json().get("id").asText();
+    api.post(API + "/projects/" + projectId + "/stubs", """
+        {"request":{"method":"GET","urlPathTemplate":"/customers/{id}"},
+         "response":{"status":200,"transformers":["response-template"],
+           "body":"{{#with (dataset-one 'customers' id=request.path.id)}}{{name}} from {{city}}{{else}}unknown{{/with}}"}}""");
+    api.post(API + "/projects/" + projectId + "/stubs", """
+        {"request":{"method":"GET","urlPath":"/vips"},
+         "response":{"status":200,"transformers":["response-template"],
+           "body":"{{#each (dataset 'customers' vip=true)}}{{name}}{{/each}}"}}""");
+
+    // When
+    String ada = api.get("/shop/customers/1").body();
+    String missing = api.get("/shop/customers/42").body();
+
+    // Then
+    assertThat(ada).isEqualTo("Ada from London");
+    assertThat(missing).isEqualTo("unknown");
+    assertThat(api.get("/shop/vips").body()).isEqualTo("Ada");
   }
 }

@@ -640,7 +640,7 @@ Goal: upload test data once and use it from any project in the organisation.
 
 Checklist:
 - [x] Dataset store, upload and indexes (`io.mockhub.dataset`: CSV with typed or inferred columns, JSON, NDJSON; replace, upsert and add modes by up to 3 identity fields; up to 5 indexes; 20 MB, 100,000 records, 64 KB per record, 100 datasets per organisation; `/orgs/{id}/datasets` API, editor role in the organisation to change)
-- [ ] Template helpers
+- [x] Template helpers (`dataset-one` and `dataset` with up to 3 equality filters and `limit`; organisation found from the request's project; Datasets group in the picker)
 - [ ] Browser and test data editor
 - [ ] Backup, tests, docs
 

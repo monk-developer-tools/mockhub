@@ -260,6 +260,35 @@
       ]
     },
     {
+      "id": "datasets",
+      "name": "Datasets",
+      "scope": "response",
+      "items": [
+        {
+          "label": "One record's field",
+          "expression": "{{#with (dataset-one 'customers' id=$R.path.id)}}{{name}}{{else}}Not found{{/with}}",
+          "hint": "From your organisation's datasets; filter on up to 3 fields"
+        },
+        {
+          "label": "One record as JSON",
+          "expression": "{{{dataset-one 'customers' id=$R.path.id}}}"
+        },
+        {
+          "label": "Matching records as JSON",
+          "expression": "{{{dataset 'customers' city=$R.query.city limit=20}}}",
+          "hint": "Up to 100 records unless you set limit (at most 1,000)"
+        },
+        {
+          "label": "Loop over records",
+          "expression": "{{#each (dataset 'products' category='books')}}{{name}}{{#unless @last}}, {{/unless}}{{/each}}"
+        },
+        {
+          "label": "Count matching records",
+          "expression": "{{len (dataset 'orders' status='open')}}"
+        }
+      ]
+    },
+    {
       "id": "compare",
       "name": "Comparison operators",
       "items": [

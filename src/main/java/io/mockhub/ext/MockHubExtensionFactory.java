@@ -106,6 +106,7 @@ import io.mockhub.template.JwtHelpers;
 import io.mockhub.template.JwtKeys;
 import io.mockhub.template.ValidationHelpers;
 import io.mockhub.template.ValidationTransformer;
+import io.mockhub.template.DatasetHelpers;
 import io.mockhub.template.ValueHelpers;
 import io.mockhub.template.WeightedTransformer;
 import io.mockhub.auth.ProjectScope;
@@ -289,6 +290,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     FakeData fakeData = new FakeData(config.fakeLocale);
     FakeHelpers fakeHelpers = new FakeHelpers(fakeData);
     ValueHelpers valueHelpers = new ValueHelpers();
+    DatasetHelpers datasetHelpers = new DatasetHelpers(datasets, () -> stateScope.current().flatMap(projects::find).map(Project::orgId));
     ValidationHelpers validationHelpers = new ValidationHelpers();
     JwtHelpers jwtHelpers = new JwtHelpers(new JwtKeys(dataDir), clock);
     CorsHeaders corsHeaders = new CorsHeaders(config.stubCors);
@@ -367,6 +369,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
         new ProjectScopeMatcher(projects::findForPath),
         fakeHelpers,
         valueHelpers,
+        datasetHelpers,
         validationHelpers,
         new ValidationTransformer(),
         new WeightedTransformer(() -> ThreadLocalRandom.current().nextDouble()),
