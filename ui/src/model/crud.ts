@@ -20,7 +20,7 @@ export function crudOf(stub: Stub): CrudInfo | null {
 export function crudEndpoints(resource: string, idField = 'id') {
   const item = `/${resource}/{${idField}}`;
   return [
-    { method: 'GET', path: `/${resource}`, does: 'List records. Filter with ?field=value, sort with _sort and _order, page with _limit and _offset.' },
+    { method: 'GET', path: `/${resource}`, does: 'List records. Filter with ?field=value or ?price[gte]=10, sort with sort=-price,name, page with page and size.' },
     { method: 'GET', path: item, does: 'Read one record, or 404.' },
     { method: 'POST', path: `/${resource}`, does: `Create a record. The ${idField} is generated unless you send one.` },
     { method: 'PUT', path: item, does: 'Replace a record.' },

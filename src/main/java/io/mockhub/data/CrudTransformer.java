@@ -14,6 +14,7 @@ import io.mockhub.stub.StubMetadata;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -79,9 +80,11 @@ public final class CrudTransformer implements ResponseDefinitionTransformerV2 {
   }
 
   private ResponseDefinition list(String projectId, CrudResource resource, Request request) {
-    Map<String, String> query = new LinkedHashMap<>();
-    Urls.splitQueryFromUrl(request.getUrl()).forEach((k, v) -> query.put(k, v.firstValue()));
-    CrudService.Page page = crud.list(projectId, resource, query);
+    Map<String, List<String>> params = new LinkedHashMap<>();
+    Urls.splitQueryFromUrl(request.getUrl()).forEach((k, v) -> params.put(k, v.values()));
+    CrudQuery.Parsed parsed = CrudQuery.parse(params);
+    if (parsed instanceof CrudQuery.Invalid invalid) return json(400, CrudService.error(invalid.message()));
+    CrudService.Page page = crud.list(projectId, resource, ((CrudQuery.Ok) parsed).query());
     ArrayNode items = Jsons.MAPPER.createArrayNode();
     page.items().forEach(items::add);
     return new ResponseDefinitionBuilder().withStatus(200)

@@ -50,7 +50,7 @@ stub mappings whose URLs are RELATIVE to the base path: write "/orders/{id}", ne
 ## State
 - Scenarios: "scenarioName", "requiredScenarioState", "newScenarioState". The first state is "Started".
 - An API that stores data: create a CRUD resource with create_crud_resource. It answers GET (list with ?field=value,
-  _sort, _order, _limit, _offset), GET one, POST, PUT, PATCH and DELETE, and keeps records you can read and change with
+  ?price[gte]=10 and [gt] [lte] [lt] [ne], dotted fields, sort=-price,name, page and size or limit and offset), GET one, POST, PUT, PATCH and DELETE, and keeps records you can read and change with
   list_records, save_record and delete_record.
 
 ## Webhooks and callouts

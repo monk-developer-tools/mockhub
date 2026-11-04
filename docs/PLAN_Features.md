@@ -624,7 +624,7 @@ Goal: the Data tab manages all state, and CRUD resources accept Beeceptor's quer
 
 Checklist:
 - [ ] State viewer and persistence
-- [ ] CRUD query syntax and pagination
+- [x] CRUD query syntax and pagination (`CrudQuery`: eq/ne/gt/gte/lt/lte, OR on repeats, dotted fields, `sort=-a,b`, `page/size`, old `_sort` style kept)
 - [ ] Limits and errors
 - [ ] Tests, docs
 

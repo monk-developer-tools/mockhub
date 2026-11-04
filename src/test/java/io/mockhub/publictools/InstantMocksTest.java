@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.mockhub.data.CrudQuery;
 import io.mockhub.data.CrudResource;
 import io.mockhub.data.CrudService;
 import io.mockhub.data.FileDataStore;
@@ -20,7 +21,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -165,6 +165,6 @@ class InstantMocksTest {
     assertThat(shown).hasSize(1);
     assertThat(shown.get(0).path("response").path("transformers").get(0).asText()).isEqualTo("mockhub-crud");
     CrudResource users = new CrudResource("users", "id", CrudResource.IdType.NUMBER);
-    assertThat(crud.list(created.projectId(), users, Map.of()).total()).isEqualTo(2);
+    assertThat(crud.list(created.projectId(), users, CrudQuery.ALL).total()).isEqualTo(2);
   }
 }

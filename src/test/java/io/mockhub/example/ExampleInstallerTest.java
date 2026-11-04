@@ -3,6 +3,7 @@ package io.mockhub.example;
 import static io.mockhub.support.Fixtures.tree;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mockhub.data.CrudQuery;
 import io.mockhub.data.CrudResource;
 import io.mockhub.data.CrudService;
 import io.mockhub.files.BodyFiles;
@@ -20,7 +21,6 @@ import io.mockhub.support.FakeStubGateway;
 import io.mockhub.support.InMemoryProjectRepository;
 import java.time.Clock;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -85,7 +85,7 @@ class ExampleInstallerTest {
 
     // Then
     CrudResource orders = new CrudResource("orders", "id", CrudResource.IdType.NUMBER);
-    assertThat(crud.list(project.id(), orders, Map.of()).total()).isEqualTo(3);
+    assertThat(crud.list(project.id(), orders, CrudQuery.ALL).total()).isEqualTo(3);
     assertThat(gateway.findAll()).extracting(s -> s.getName()).contains("CRUD: orders", "CRUD: customers", "Order summary next to the CRUD resource");
   }
 

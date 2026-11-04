@@ -6,6 +6,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.mockhub.support.InMemoryDataStore;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -64,9 +66,9 @@ class CrudServiceTest {
     crud.seed("p", numbered, tree("[{'name':'Cy','age':30,'team':'a'},{'name':'Ada','age':9,'team':'b'},{'name':'Bo','age':100,'team':'a'}]"));
 
     // When
-    CrudService.Page team = crud.list("p", numbered, Map.of("team", "a"));
-    CrudService.Page byAge = crud.list("p", numbered, Map.of("_sort", "age"));
-    CrudService.Page page = crud.list("p", numbered, Map.of("_sort", "name", "_order", "desc", "_limit", "1", "_offset", "1"));
+    CrudService.Page team = crud.list("p", numbered, query(Map.of("team", "a")));
+    CrudService.Page byAge = crud.list("p", numbered, query(Map.of("_sort", "age")));
+    CrudService.Page page = crud.list("p", numbered, query(Map.of("_sort", "name", "_order", "desc", "_limit", "1", "_offset", "1")));
 
     // Then
     assertThat(team.items()).extracting(r -> r.get("name").asText()).containsExactly("Cy", "Bo");
@@ -100,5 +102,11 @@ class CrudServiceTest {
     assertThat(third).isEqualTo(new CrudService.Invalid("Two records at most"));
     assertThat(bigger).isEqualTo(new CrudService.Invalid("Too big"));
     assertThat(limited.get("p", numbered, "1").orElseThrow().has("bio")).isFalse();
+  }
+
+  private static CrudQuery query(Map<String, String> params) {
+    Map<String, List<String>> multi = new LinkedHashMap<>();
+    params.forEach((k, v) -> multi.put(k, List.of(v)));
+    return ((CrudQuery.Ok) CrudQuery.parse(multi)).query();
   }
 }

@@ -4,16 +4,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.mockhub.api.Jsons;
 import java.nio.charset.StandardCharsets;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 
 public final class CrudService {
-  private static final Set<String> CONTROL = Set.of("_sort", "_order", "_limit", "_offset");
-
   private final DataStore store;
   private final RecordPolicy policy;
 
@@ -38,20 +33,9 @@ public final class CrudService {
 
   public record Conflict(String message) implements Result {}
 
-  public Page list(String projectId, CrudResource resource, Map<String, String> query) {
-    List<ObjectNode> all = store.list(projectId, resource.name()).stream()
-        .filter(r -> query.entrySet().stream()
-            .filter(e -> !CONTROL.contains(e.getKey()))
-            .allMatch(e -> r.path(e.getKey()).asText().equals(e.getValue())))
-        .toList();
-    String sort = query.get("_sort");
-    if (sort != null && !sort.isBlank()) {
-      Comparator<ObjectNode> by = Comparator.comparing((ObjectNode r) -> r.path(sort), CrudService::compare);
-      all = all.stream().sorted("desc".equalsIgnoreCase(query.get("_order")) ? by.reversed() : by).toList();
-    }
-    int offset = Math.max(0, number(query.get("_offset"), 0));
-    int limit = Math.max(0, number(query.get("_limit"), Integer.MAX_VALUE));
-    List<ObjectNode> page = all.stream().skip(offset).limit(limit).toList();
+  public Page list(String projectId, CrudResource resource, CrudQuery query) {
+    List<ObjectNode> all = query.apply(store.list(projectId, resource.name()));
+    List<ObjectNode> page = all.stream().skip(query.offset()).limit(query.limit()).toList();
     return new Page(page, all.size());
   }
 
@@ -151,19 +135,6 @@ public final class CrudService {
     record.removeAll();
     record.set(idField, id);
     record.setAll(copy);
-  }
-
-  private static int compare(JsonNode a, JsonNode b) {
-    if (a.isNumber() && b.isNumber()) return Double.compare(a.asDouble(), b.asDouble());
-    return a.asText().compareToIgnoreCase(b.asText());
-  }
-
-  private static int number(String value, int fallback) {
-    try {
-      return value == null ? fallback : Integer.parseInt(value);
-    } catch (NumberFormatException e) {
-      return fallback;
-    }
   }
 
   public static ObjectNode error(String message) {

@@ -82,6 +82,31 @@ class CrudIntegrationTest {
   }
 
   @Test
+  void filtersWithOperatorsSortsByManyFieldsAndPagesBySize() {
+    // Given
+    api.post(API + "/projects/" + projectId + "/crud",
+        "{\"resource\":\"products\",\"idType\":\"number\",\"seed\":["
+            + "{\"name\":\"Pen\",\"price\":2.5,\"brand\":{\"country\":\"UK\"}},"
+            + "{\"name\":\"Desk\",\"price\":180,\"brand\":{\"country\":\"SE\"}},"
+            + "{\"name\":\"Lamp\",\"price\":35,\"brand\":{\"country\":\"UK\"}},"
+            + "{\"name\":\"Chair\",\"price\":95,\"brand\":{\"country\":\"DE\"}}]}");
+
+    // When
+    JsonNode range = api.get("/shop/products?price%5Bgte%5D=35&price%5Blt%5D=180&sort=-price").json();
+    JsonNode either = api.get("/shop/products?brand.country=SE&brand.country=DE&sort=name").json();
+    ApiClient.Result second = api.get("/shop/products?sort=price&page=2&size=3");
+    ApiClient.Result unknown = api.get("/shop/products?price%5Bbetween%5D=1");
+
+    // Then
+    assertThat(range.findValuesAsText("name")).containsExactly("Chair", "Lamp");
+    assertThat(either.findValuesAsText("name")).containsExactly("Chair", "Desk");
+    assertThat(second.json().findValuesAsText("name")).containsExactly("Desk");
+    assertThat(second.header("X-Total-Count")).isEqualTo("4");
+    assertThat(unknown.status()).isEqualTo(400);
+    assertThat(unknown.json().get("error").asText()).contains("price[between]");
+  }
+
+  @Test
   void explainsBadRequests() {
     // Given
     customers();

@@ -884,7 +884,7 @@ PAGES.push(
     ],
     faq: [
       ['What are the limits?', 'Up to 20 stubs, 1,000 requests a day, 64 KB per stub and per request body, and 200 stored records of up to 4 KB each. Spec files go up to 500 KB, and you can start with up to 50 records. A mock is deleted 7 days after its last change.'],
-      ['What happens to my records?', 'Records become a REST resource: GET lists them (with filters, _sort and _limit), POST adds one, and GET, PUT, PATCH and DELETE work on one record by id. Changes are kept until the mock is deleted.'],
+      ['What happens to my records?', 'Records become a REST resource: GET lists them (with filters such as price[gte]=10, sorting and pages), POST adds one, and GET, PUT, PATCH and DELETE work on one record by id. Changes are kept until the mock is deleted.'],
       ['What can\'t an instant mock do?', 'Proxying, files, webhooks, and regex, XPath or schema matching are turned off on the public demo. When you start from a spec or an example, stubs that need them are left out and listed. Run MockHub yourself to use them.'],
       ['Who can see or change my mock?', 'Anyone with the mock URL can call it. Only someone with the private link can change it. Don\'t put real secrets in it.'],
       ['Can I keep it?', 'Export downloads the stubs as WireMock mappings. Import them into your own MockHub or any WireMock server.'],

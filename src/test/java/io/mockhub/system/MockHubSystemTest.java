@@ -209,6 +209,33 @@ class MockHubSystemTest {
   }
 
   @Test
+  void crudRecordsAnswerFilteredSortedAndPagedQueriesAfterARestart() throws Exception {
+    String query = "/shop/orders?total%5Bgte%5D=20&status=paid&status=shipped&sort=-total&page=1&size=2";
+    try (MockHubProcess hub = MockHubProcess.start(data, AUTH_ENV)) {
+      // Given
+      String id = json(send(hub, "POST", API + "/projects", "{\"name\":\"Shop\",\"slug\":\"shop\"}")).get("id").asText();
+      send(hub, "POST", API + "/projects/" + id + "/crud", "{\"resource\":\"orders\",\"idType\":\"number\"}");
+
+      // When
+      for (String order : new String[] {"{\"total\":12,\"status\":\"paid\"}", "{\"total\":40,\"status\":\"paid\"}",
+          "{\"total\":75,\"status\":\"shipped\"}", "{\"total\":99,\"status\":\"cancelled\"}", "{\"total\":25,\"status\":\"shipped\"}"}) {
+        send(hub, "POST", "/shop/orders", order);
+      }
+
+      // Then
+      HttpResponse<String> page = send(hub, "GET", query, null);
+      assertThat(json(page).findValuesAsText("total")).containsExactly("75", "40");
+      assertThat(page.headers().firstValue("X-Total-Count")).contains("3");
+    }
+
+    // When
+    try (MockHubProcess restarted = MockHubProcess.start(data, AUTH_ENV)) {
+      // Then
+      assertThat(json(send(restarted, "GET", query.replace("page=1", "page=2"), null)).findValuesAsText("total")).containsExactly("25");
+    }
+  }
+
+  @Test
   void stubsWithVeryLongUrlsAreSavedAndSurviveARestart() throws Exception {
     String path = "/customers/search/" + "where-custom-fields-email-equals-someone-at-example-com-and-".repeat(5);
     try (MockHubProcess hub = MockHubProcess.start(data, AUTH_ENV)) {

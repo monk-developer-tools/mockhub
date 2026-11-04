@@ -2,7 +2,7 @@
 <table>
   <thead><tr><th>Request</th><th>Does</th></tr></thead>
   <tbody>
-    <tr><td><code>GET /customers</code></td><td>list; filter with <code>?city=London</code>, sort with <code>_sort=name&amp;_order=desc</code>, page with <code>_limit</code> and <code>_offset</code>; the total is in <code>X-Total-Count</code></td></tr>
+    <tr><td><code>GET /customers</code></td><td>list; filter, sort and page it (see <a href="#crud-query">below</a>); the total is in <code>X-Total-Count</code></td></tr>
     <tr><td><code>GET /customers/{id}</code></td><td>one record, or 404</td></tr>
     <tr><td><code>POST /customers</code></td><td>create; the id is generated (1, 2, 3 or a UUID) unless you send one; 201 with a <code>Location</code> header</td></tr>
     <tr><td><code>PUT /customers/{id}</code></td><td>replace</td></tr>
@@ -10,4 +10,22 @@
     <tr><td><code>DELETE /customers/{id}</code></td><td>delete; 204</td></tr>
   </tbody>
 </table>
+<h3 id="crud-query">Filter, sort and page</h3>
+<p>Add these to a list request, e.g. <code>GET /products?price[gte]=10&amp;brand.country=UK&amp;sort=-price&amp;page=2&amp;size=20</code>:</p>
+<table>
+  <thead><tr><th>Write</th><th>Gives</th></tr></thead>
+  <tbody>
+    <tr><td><code>city=London</code></td><td>records whose <code>city</code> is exactly <code>London</code></td></tr>
+    <tr><td><code>status=paid&amp;status=shipped</code></td><td>either value: a repeated field means OR</td></tr>
+    <tr><td><code>price[gte]=10</code>, <code>[gt]</code>, <code>[lte]</code>, <code>[lt]</code></td><td>comparisons; numbers compare as numbers, other values as text, so ISO dates work too</td></tr>
+    <tr><td><code>stock[ne]=0</code></td><td>not equal, including records without the field</td></tr>
+    <tr><td><code>brand.country=UK</code></td><td>a nested field; on a list such as <code>tags=office</code>, any item matches</td></tr>
+    <tr><td><code>active=true</code></td><td>booleans and numbers match their text, so <code>price=180</code> finds <code>180.0</code></td></tr>
+    <tr><td><code>sort=-price,name</code></td><td>sort by several fields; a minus sorts that field high to low</td></tr>
+    <tr><td><code>page=2&amp;size=20</code></td><td>pages from 1; <code>size</code> defaults to 20</td></tr>
+    <tr><td><code>limit=10&amp;offset=30</code></td><td>the same, counted in records</td></tr>
+  </tbody>
+</table>
+<p>Filters combine with AND. An unknown operator such as <code>price[between]=1</code> or a bad number such as <code>page=0</code> gets a 400 with a message. The json-server style <code>_sort=name&amp;_order=desc</code>, <code>_limit</code> and <code>_offset</code> still work. Because <code>sort</code>, <code>page</code>, <code>size</code>, <code>limit</code> and <code>offset</code> control the list, you can't filter on fields with those names.</p>
+
 <p>Records are kept per project in <code>/data/mockhub/data</code>, survive restarts and are included in backups. The <strong>Data</strong> tab lists them and lets you add, edit, delete or clear them. For custom stateful flows, the <a href="https://github.com/wiremock/wiremock-state-extension">WireMock state extension</a> is included too (its state lives in memory).</p>
