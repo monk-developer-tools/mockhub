@@ -232,6 +232,7 @@ All configuration is through environment variables.
 | `MOCKHUB_FAKE_LOCALE` | `en` | Default language for `{{fake ...}}` data, e.g. `de`, `fr`, `en-GB` |
 | `MOCKHUB_PLAYGROUND_ALLOW_PRIVATE` | `false` | Let the Playground call private and local addresses (blocked by default so the server can't reach your internal network) |
 | `MOCKHUB_CALLOUT_ALLOW_PRIVATE` | `false` | Let webhooks and *wait for callout* stubs call private and local addresses. Calls to MockHub's own mock URLs always work. Set it to `true` for callbacks to services on your own network, e.g. `host.docker.internal` |
+| `MOCKHUB_PUBLIC_TOOLS` | `false` | Turn on the no-login tools under `/__public/` (HTTP echo, webhook bins, template render, fake data) with per-address limits. Meant for a public demo; see [Public tools](https://mockhub.devops-monk.com/docs/config/#public-tools) |
 | `WIREMOCK_OPTIONS` | empty | Any extra [WireMock CLI option](https://wiremock.org/docs/standalone/java-jar/), e.g. `--async-response-enabled true --verbose` |
 
 ## Webhooks and callouts

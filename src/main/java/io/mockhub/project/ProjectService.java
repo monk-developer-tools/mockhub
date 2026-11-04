@@ -14,7 +14,7 @@ import java.util.UUID;
 import java.util.function.Function;
 
 public final class ProjectService implements OrganizationListener {
-  private static final List<String> RESERVED_SLUGS = List.of("__admin", "__files", "mappings", "health");
+  private static final List<String> RESERVED_SLUGS = List.of("__admin", "__files", "__public", "mappings", "health");
   private static final String[] PALETTE = {"#6366f1", "#0ea5e9", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#14b8a6"};
 
   private final ProjectRepository repository;

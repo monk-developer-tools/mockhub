@@ -321,6 +321,22 @@ class MockHubSystemTest {
     }
   }
 
+  @Test
+  void publicToolsWorkWithoutLoginWhenTurnedOn() throws Exception {
+    try (MockHubProcess hub = MockHubProcess.start(data, Map.of("MOCKHUB_PUBLIC_TOOLS", "true"))) {
+      // When
+      HttpResponse<String> echo = sendAnonymously(hub, "POST", "/__public/echo/hello?x=1", "{\"a\":1}");
+      HttpResponse<String> render = sendAnonymously(hub, "POST", "/__public/render",
+          "{\"template\":\"{{request.query.who}} {{#each (range 1 3)}}{{this}}{{/each}}\",\"request\":{\"url\":\"/?who=team\"}}");
+
+      // Then
+      assertThat(echo.statusCode()).isEqualTo(200);
+      assertThat(json(echo).get("path").asText()).isEqualTo("/hello");
+      assertThat(render.statusCode()).isEqualTo(200);
+      assertThat(json(render).get("output").asText()).isEqualTo("team 123");
+    }
+  }
+
   private HttpResponse<String> send(MockHubProcess hub, String method, String path, String body) throws IOException, InterruptedException {
     HttpRequest.Builder b = HttpRequest.newBuilder(URI.create(hub.baseUrl() + path))
         .method(method, body == null ? HttpRequest.BodyPublishers.noBody() : HttpRequest.BodyPublishers.ofString(body))

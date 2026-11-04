@@ -18,7 +18,7 @@ public final class RateLimiter {
     long now = clock.millis();
     long length = limit.window().toMillis();
     String id = key + "|" + limit.requests() + "/" + limit.per();
-    Window window = windows.compute(id, (k, w) -> w == null || now >= w.start + length ? new Window(now, 1) : new Window(w.start, w.count + 1));
+    Window window = windows.compute(id, (k, w) -> w == null || now >= w.start + length ? new Window(now, 1, length) : new Window(w.start, w.count + 1, length));
     long reset = Math.max(1, (window.start + length - now + 999) / 1000);
     boolean allowed = window.count <= limit.requests();
     return new Decision(allowed, limit.requests(), Math.max(0, limit.requests() - window.count), reset);
@@ -28,5 +28,14 @@ public final class RateLimiter {
     windows.keySet().removeIf(k -> k.startsWith(keyPrefix + "|") || k.startsWith(keyPrefix + ":"));
   }
 
-  private record Window(long start, int count) {}
+  public void prune() {
+    long now = clock.millis();
+    windows.values().removeIf(w -> now >= w.start + w.length);
+  }
+
+  int size() {
+    return windows.size();
+  }
+
+  private record Window(long start, int count, long length) {}
 }

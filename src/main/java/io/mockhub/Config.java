@@ -23,6 +23,7 @@ public final class Config {
   public final int auditRetentionDays;
   public final int historyDays;
   public final int historyMaxMb;
+  public final boolean publicTools;
 
   public Config(Map<String, String> env) {
     this.port = Integer.parseInt(env.getOrDefault("PORT", "8080"));
@@ -42,6 +43,7 @@ public final class Config {
     this.auditRetentionDays = Math.max(1, Integer.parseInt(env.getOrDefault("MOCKHUB_AUDIT_RETENTION_DAYS", "90")));
     this.historyDays = Math.max(1, Integer.parseInt(env.getOrDefault("MOCKHUB_HISTORY_DAYS", "7")));
     this.historyMaxMb = Math.max(1, Integer.parseInt(env.getOrDefault("MOCKHUB_HISTORY_MAX_MB", "200")));
+    this.publicTools = Boolean.parseBoolean(env.getOrDefault("MOCKHUB_PUBLIC_TOOLS", "false"));
   }
 
   private static String trimTrailingSlash(String s) {

@@ -80,6 +80,14 @@ import io.mockhub.playground.JdkHttpSender;
 import io.mockhub.playground.PlaygroundHistory;
 import io.mockhub.playground.PlaygroundService;
 import io.mockhub.playground.TargetGuard;
+import io.mockhub.publictools.BinTool;
+import io.mockhub.publictools.Bins;
+import io.mockhub.publictools.EchoTool;
+import io.mockhub.publictools.FakeTool;
+import io.mockhub.publictools.PublicLimits;
+import io.mockhub.publictools.PublicToolsFilter;
+import io.mockhub.publictools.RenderTool;
+import io.mockhub.publictools.TemplatePlayground;
 import java.net.InetAddress;
 import io.mockhub.files.BodyFiles;
 import io.mockhub.fake.FakeHelpers;
@@ -153,7 +161,10 @@ import java.util.ArrayList;
 import java.util.List;
 import org.wiremock.extensions.state.CaffeineStore;
 import org.wiremock.extensions.state.StateExtension;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -254,6 +265,10 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     AuditRecorder auditRecorder = new AuditRecorder(auditLog, new ServiceAuditNames(projects, stubs, teams, orgs, users), clock);
 
     FakeData fakeData = new FakeData(config.fakeLocale);
+    FakeHelpers fakeHelpers = new FakeHelpers(fakeData);
+    ValueHelpers valueHelpers = new ValueHelpers();
+    ValidationHelpers validationHelpers = new ValidationHelpers();
+    JwtHelpers jwtHelpers = new JwtHelpers(new JwtKeys(dataDir), clock);
     CorsHeaders corsHeaders = new CorsHeaders(config.stubCors);
     LoadMeter loadMeter = new LoadMeter(clock);
     CorsForRequest corsForRequest = new CorsForRequest(projects::findForPath, corsHeaders);
@@ -294,7 +309,18 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
         resource("/mcp/reference.md"), clock);
     McpServer mcpServer = new McpServer(mcpTools, Main.VERSION);
 
+    PublicLimits publicLimits = new PublicLimits(rateLimiter);
+    Bins bins = new Bins(clock);
+    PublicToolsFilter publicTools = new PublicToolsFilter(config.publicTools, publicLimits, List.of(
+        new EchoTool(),
+        new BinTool(bins, publicLimits),
+        new FakeTool(new DataGenerator(fakeData), publicLimits),
+        new RenderTool(new TemplatePlayground(List.of(fakeHelpers, valueHelpers, validationHelpers, jwtHelpers), renderWorkers(), 2000), publicLimits)));
+    maintenance.scheduleWithFixedDelay(() -> safely(bins::prune), 10, 10, TimeUnit.MINUTES);
+    maintenance.scheduleWithFixedDelay(() -> safely(rateLimiter::prune), 10, 10, TimeUnit.MINUTES);
+
     List<Extension> extensions = new ArrayList<>(List.of(
+        publicTools,
         new PersistenceListener(),
         new CrudTransformer(crud),
         new ErrorRateTransformer(() -> ThreadLocalRandom.current().nextDouble()),
@@ -307,12 +333,12 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
         new RuntimeTransformer(projects::find, rateLimiter, loadMeter),
         new CorsTransformer(corsForRequest),
         new ProjectScopeMatcher(projects::findForPath),
-        new FakeHelpers(fakeData),
-        new ValueHelpers(),
-        new ValidationHelpers(),
+        fakeHelpers,
+        valueHelpers,
+        validationHelpers,
         new ValidationTransformer(),
         new WeightedTransformer(() -> ThreadLocalRandom.current().nextDouble()),
-        new JwtHelpers(new JwtKeys(dataDir), clock),
+        jwtHelpers,
         new AuthFilter(auth, policy),
         new MockHubAdminExtension(api, new McpTask(mcpServer, principals))));
     extensions.addAll(new StateExtension(new CaffeineStore()).create(services));
@@ -328,11 +354,19 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     }
   }
 
+  private static ExecutorService renderWorkers() {
+    return new ThreadPoolExecutor(2, 2, 0, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(8), r -> {
+      Thread t = new Thread(r, "mockhub-public-render");
+      t.setDaemon(true);
+      return t;
+    });
+  }
+
   private static void safely(Runnable task) {
     try {
       task.run();
     } catch (RuntimeException e) {
-      System.getLogger(MockHubExtensionFactory.class.getName()).log(System.Logger.Level.WARNING, "History maintenance failed: " + e.getMessage());
+      System.getLogger(MockHubExtensionFactory.class.getName()).log(System.Logger.Level.WARNING, "Maintenance failed: " + e.getMessage());
     }
   }
 }

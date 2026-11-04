@@ -524,14 +524,15 @@ Safety for the demo-server tools. Each tool:
   - [x] Stub JSON checker
   - [x] Tests for every parser and converter (`node --test website/tests/`, run in CI)
 - W4 Demo-server tools, backend:
-  - [ ] `MOCKHUB_PUBLIC_TOOLS` flag
-  - [ ] Echo, status and delay
-  - [ ] Webhook bins with SSE
+  - [x] `MOCKHUB_PUBLIC_TOOLS` flag
+  - [x] Echo, status and delay
+  - [x] Webhook bins (polling instead of SSE)
   - [ ] Anonymous projects with capability links, limits and a cleanup job
-  - [ ] Template render endpoint
-  - [ ] Fake data endpoint
-  - [ ] Rate limiting and safety rules above
-  - [ ] Unit, integration and system tests, including an SSRF refusal test
+  - [x] Template render endpoint
+  - [x] Fake data endpoint
+  - [x] Rate limiting and safety rules above (for the tools built so far)
+  - [x] Unit, integration and system tests for the tools built so far
+  - [ ] SSRF refusal test, with anonymous projects
 - W5 Demo-server tools, UI:
   - [ ] Trimmed instant-mock editor reusing the stub form and picker
   - [ ] Bin viewer
@@ -554,6 +555,18 @@ anchor, a missing image or an image without alt text. nginx serves `<path>/index
 everything else to the demo. The examples page is generated from `src/main/resources/examples`. Pages reuse existing
 product screenshots for now. The build also stopped indenting code blocks in the docs, which had broken every
 multi-line example.
+
+Notes (W4): the tools live in `io.mockhub.publictools` behind one request filter, `PublicToolsFilter`, which runs
+before every other extension and only looks at `/__public/**`. When the flag is off it passes those requests on, so
+private installs behave as before. Limits per client address use the existing `RateLimiter`: 120 requests a minute in
+total, 30 renders or fake-data calls a minute, and 10 new bins an hour. Bins live in memory (200 bins, 50 requests
+each, 10 KB per stored body, deleted after 24 idle hours), and their tokens are stored as SHA-256 hashes. The bin
+viewer will poll `?after={seq}` rather than hold an SSE connection, which is simpler behind nginx and costs little at
+these sizes. The render endpoint doesn't use WireMock's engine as is, because a template can loop over request data
+and an output cap after rendering is too late. It builds its own Handlebars with the same helpers, each wrapped to
+count calls, loop runs, text produced and size arguments against a per-render budget with a 2-second deadline. It
+streams output into a 256 KB writer and runs on two worker threads with a short queue. `systemValue`, `hostname`,
+`assign` and partials are off. Fake-data expressions may not contain numbers above 1,000.
 
 Notes (W3): the tools are plain ES modules in `website/assets/js/tools/`: pure logic (`jwt.js`, `curl.js`,
 `stubcheck.js`) plus one page script each, with markup in `website/site-src/tools/`. They are tested with Node's

@@ -18,9 +18,11 @@ if [ ! -f "$BASE/mockhub.env" ]; then
 MOCKHUB_PUBLIC_URL=$PUBLIC_URL
 MOCKHUB_USERS=admin:$admin_password:admin,demo:demo:viewer
 MOCKHUB_JOURNAL_MAX_ENTRIES=2000
+MOCKHUB_PUBLIC_TOOLS=true
 ENV
   echo "Created $BASE/mockhub.env (admin password inside)."
 fi
+grep -q '^MOCKHUB_PUBLIC_TOOLS=' "$BASE/mockhub.env" || echo 'MOCKHUB_PUBLIC_TOOLS=true' >> "$BASE/mockhub.env"
 
 if [ -d "$BASE/src/.git" ]; then
   git -C "$BASE/src" fetch --quiet origin main
