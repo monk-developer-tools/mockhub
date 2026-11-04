@@ -24,6 +24,17 @@ stub mappings whose URLs are RELATIVE to the base path: write "/orders/{id}", ne
 - Realistic data: {{fake 'Name.fullName'}}, {{fake 'Internet.emailAddress'}}, {{fake 'Address.city'}},
   {{fake 'Company.name'}}, {{fake 'Number.numberBetween' 1 100}}, {{fake 'Name.fullName' locale='de'}}.
 
+## More helpers
+- Values: {{len x}}, {{{object id=1 name='x'}}} builds a JSON object, {{{json x}}}, {{toNumber x}}, {{default x 'fallback'}}.
+- Tokens: {{jwt sub='ada' scope='read' expiresIn=3600}} signs RS256 with the server key; alg='HS256' secret='...' uses a
+  shared secret. Serve {{{jwks}}} at /.well-known/jwks.json. {{jwtDecode request.headers.Authorization 'sub'}} reads a
+  claim (the signature is not checked).
+- Validation: start a templated body with {{required x 'message'}}, {{isEmail x 'message'}}, {{isUuid x 'message'}},
+  {{isNumber x 'message'}} or {{check (matches x 'regex') 'message' status=422}}. A failed rule answers 400 (or the
+  status given) with {"error": message}. Without a message isEmail, isUuid and isNumber return true or false.
+- Weighted responses: "transformers": ["mockhub-weighted"] with "transformerParameters": {"responses": [{"weight": 9,
+  "status": 200}, {"weight": 1, "status": 503, "body": "..."}]}. An entry without a body keeps the stub's body.
+
 ## Latency and failures
 - One stub: "fixedDelayMilliseconds": 300, or "delayDistribution": {"type": "uniform", "lower": 100, "upper": 400}.
 - Faults: "fault": "CONNECTION_RESET_BY_PEER", "EMPTY_RESPONSE", "MALFORMED_RESPONSE_CHUNK" or "RANDOM_DATA_THEN_CLOSE".

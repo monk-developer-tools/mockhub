@@ -207,6 +207,87 @@ export const TEMPLATES: StubTemplate[] = [
     stub: { name: 'Connection dropped', request: { method: 'GET', urlPath: '/unstable' }, response: { fault: 'CONNECTION_RESET_BY_PEER' } },
   },
   {
+    id: 'weighted',
+    category: 'Errors & faults',
+    name: 'Flaky endpoint by weight',
+    description: '9 in 10 calls succeed, 1 in 10 gets a 503 with Retry-After.',
+    stub: {
+      name: 'Sometimes busy',
+      request: { method: 'GET', urlPath: '/inventory' },
+      response: {
+        status: 200,
+        headers: json,
+        jsonBody: { inStock: 12 },
+        transformers: ['mockhub-weighted'],
+        transformerParameters: {
+          responses: [
+            { weight: 9, status: 200 },
+            { weight: 1, status: 503, headers: { 'Retry-After': '5' }, body: '{"error": "Busy, try again"}' },
+          ],
+        },
+      },
+    },
+  },
+  {
+    id: 'oauth-token',
+    category: 'Auth & validation',
+    name: 'OAuth token endpoint',
+    description: 'Issues a signed RS256 access token for the user in the request.',
+    stub: {
+      name: 'Issue access token',
+      request: { method: 'POST', urlPath: '/oauth/token' },
+      response: {
+        status: 200,
+        headers: json,
+        body: '{\n  "access_token": "{{jwt sub=(default (formData request.body \'f\').username (jsonPath request.body \'$.username\')) scope=\'read write\' expiresIn=3600}}",\n  "token_type": "Bearer",\n  "expires_in": 3600\n}',
+        transformers: ['response-template'],
+      },
+    },
+  },
+  {
+    id: 'jwks',
+    category: 'Auth & validation',
+    name: 'JWKS public keys',
+    description: 'Lets clients verify tokens from the OAuth token endpoint.',
+    stub: {
+      name: 'Signing keys',
+      request: { method: 'GET', urlPath: '/.well-known/jwks.json' },
+      response: { status: 200, headers: json, body: '{{{jwks}}}', transformers: ['response-template'] },
+    },
+  },
+  {
+    id: 'jwt-me',
+    category: 'Auth & validation',
+    name: 'Who am I, from the bearer token',
+    description: 'Answers 401 without a token, otherwise reads its claims.',
+    stub: {
+      name: 'Current user',
+      request: { method: 'GET', urlPath: '/me' },
+      response: {
+        status: 200,
+        headers: json,
+        body: "{{check request.headers.Authorization 'Send a bearer token' status=401}}{\n  \"user\": \"{{jwtDecode request.headers.Authorization 'sub'}}\",\n  \"scope\": \"{{jwtDecode request.headers.Authorization 'scope'}}\"\n}",
+        transformers: ['response-template'],
+      },
+    },
+  },
+  {
+    id: 'validate-body',
+    category: 'Auth & validation',
+    name: 'Validate the request body',
+    description: 'Answers 400 with a message when a field is missing or not an e-mail.',
+    stub: {
+      name: 'Sign up',
+      request: { method: 'POST', urlPath: '/signup' },
+      response: {
+        status: 201,
+        headers: json,
+        body: "{{required (jsonPath request.body '$.name') 'name is required'}}{{isEmail (jsonPath request.body '$.email') 'Enter a valid e-mail'}}{\n  \"id\": \"{{randomValue type='UUID'}}\",\n  \"name\": \"{{jsonPath request.body '$.name'}}\"\n}",
+        transformers: ['response-template'],
+      },
+    },
+  },
+  {
     id: 'scenario-start',
     category: 'Stateful',
     name: 'Scenario: first call',

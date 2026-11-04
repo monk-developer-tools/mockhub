@@ -265,6 +265,7 @@
             <a class="tut-card" href="#scenarios"><span class="tut-ico"><svg viewBox="0 0 24 24"><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.3 11l7.4-4M8.3 13l7.4 4"/></svg></span><strong>Answer differently as state changes</strong><span>Carts, checkouts and other flows.</span><em>4 min</em></a>
             <a class="tut-card" href="#webhooks"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M4 12h9M10 8l4 4-4 4"/><circle cx="18" cy="12" r="2.5"/></svg></span><strong>Send webhooks and serve files</strong><span>Callbacks, PDFs and images.</span><em>3 min</em></a>
             <a class="tut-card" href="#api-key"><span class="tut-ico"><svg viewBox="0 0 24 24"><circle cx="8" cy="12" r="3.5"/><path d="M11.5 12H21M17 12v3M20 12v2"/></svg></span><strong>Require an API key</strong><span>Reject calls without the header.</span><em>2 min</em></a>
+            <a class="tut-card" href="#jwt-validation"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg></span><strong>Mock OAuth, validate input, mix responses</strong><span>Signed tokens, 400s and flaky answers.</span><em>4 min</em></a>
             <a class="tut-card" href="#chaos"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M3 14h4l2-6 4 10 2-6h6"/></svg></span><strong>Simulate slow and failing services</strong><span>Delays, faults and random failures.</span><em>3 min</em></a>
             <a class="tut-card" href="#runtime"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M4 18a8 8 0 1 1 16 0"/><path d="M12 18l4-6"/></svg></span><strong>Behave like the real API</strong><span>Default errors, rate limits, load and CORS.</span><em>4 min</em></a>
           </div>
@@ -315,6 +316,7 @@
         <a href="#chaos">Delays &amp; faults</a>
         <a href="#webhooks">Webhooks &amp; files</a>
         <a href="#api-key">API keys</a>
+        <a href="#jwt-validation">JWT, validation &amp; weights</a>
         <h4>Bring in what you have</h4>
         <a href="#soap">SOAP from WSDL</a>
         <a href="#openapi">OpenAPI import</a>
@@ -890,6 +892,31 @@ curl -X POST $MOCK/example-soap/ws/calculator -H "Content-Type: text/xml" -d \
               <figure class="tut-shot narrow"><img src="/assets/img/tutorials/snippets-1-csharp.webp" alt="The Call it from your code panel showing a C# snippet that sends the X-API-Key header" width="686" height="255" loading="lazy"></figure>
             </li>
           </ol>
+          <a class="next" href="#jwt-validation">Next: Mock OAuth, validate input, mix responses</a>
+        </article>
+
+        <article class="tut" id="jwt-validation">
+          <p class="tut-meta"><span>Realistic mocks</span><span>4 min</span><span>Needs the editor role</span></p>
+          <h2>Mock OAuth, validate input, mix responses</h2>
+          <p class="tut-intro">Issue real signed tokens your app can verify, answer 400 when a request is wrong, and make an endpoint fail now and then, all without writing code.</p>
+          <ol class="tut-steps">
+            <li>
+              <h3>Start from an auth template</h3>
+              <p>On the <strong>Stubs</strong> tab, open <strong>Start from a template</strong> and pick <strong>Auth &amp; validation</strong>. <strong>OAuth token endpoint</strong> issues an RS256 token for the user in the request, <strong>JWKS public keys</strong> lets your app verify it, <strong>Who am I</strong> reads the bearer token's claims, and <strong>Validate the request body</strong> answers 400 when a field is missing.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/jwt-1-templates.webp" alt="The Start from a template dialog with the Auth and validation group: OAuth token endpoint, JWKS public keys, Who am I and Validate the request body" width="1176" height="900" loading="lazy"></figure>
+            </li>
+            <li>
+              <h3>Insert token helpers from the picker</h3>
+              <p>In any response body, open <strong>Insert dynamic value</strong> and search <code>jwt</code>. <code>{{jwt}}</code> signs a token with the server's key, or with your own secret for HS256. <code>{{jwtDecode}}</code> reads a claim from the <code>Authorization</code> header. The <strong>Validation</strong> group adds <code>required</code>, <code>isEmail</code> and <code>check</code>, which stop the response and answer <code>{"error": "…"}</code> with a 400, or the status you give.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/jwt-2-picker.webp" alt="The Insert dynamic value picker filtered to jwt, showing signed token, shared secret, JWKS and claim helpers" width="1176" height="900" loading="lazy"></figure>
+            </li>
+            <li>
+              <h3>Add other responses with weights</h3>
+              <p>Under <strong>Other responses</strong>, click <strong>Add another response</strong>. Give the main response weight 9 and a 503 weight 1, and about one call in ten fails. Each one can change the status, headers and body, and templating still applies. The <code>X-MockHub-Weighted-Choice</code> header says which one was picked.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/jwt-3-weighted.webp" alt="The Other responses section with the main response at weight 9 (about 90% of calls) and a 503 at weight 1 (about 10%)" width="1176" height="900" loading="lazy"></figure>
+            </li>
+          </ol>
+          <p>More in the docs: <a href="/docs/jwt/">JWT &amp; OAuth</a>, <a href="/docs/validation/">Validation</a> and <a href="/docs/faults/#weighted">Weighted responses</a>.</p>
           <a class="next" href="#soap">Next: Mock a SOAP service</a>
         </article>
 

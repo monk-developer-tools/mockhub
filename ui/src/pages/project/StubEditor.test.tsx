@@ -173,7 +173,7 @@ describe('StubEditor', () => {
     // When
     await userEvent.click(screen.getByRole('button', { name: /Insert dynamic value/ }));
     await userEvent.type(screen.getByRole('searchbox', { name: 'Search dynamic values' }), 'uuid');
-    await userEvent.click(screen.getByRole('button', { name: /^UUID/ }));
+    await userEvent.click(screen.getByRole('button', { name: /^UUID\s*{{randomValue/ }));
 
     // Then
     expect(screen.getByRole('checkbox', { name: /Response templating/ })).toBeChecked();

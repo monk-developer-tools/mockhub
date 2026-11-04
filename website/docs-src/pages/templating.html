@@ -13,4 +13,5 @@
     <tr><td><code>{{#if …}} {{#eq a 'b'}} {{#each …}}</code></td><td>conditionals and loops</td></tr>
   </tbody>
 </table>
+<p>MockHub adds a few of its own: <code>{{len x}}</code> for the length of text or a list, <code>{{{object id=1 name='Ada'}}}</code> to build a JSON object, <code>{{{json x}}}</code> to write any value as JSON, <code>{{toNumber x}}</code> so a value lands in JSON without quotes, and <code>{{default x 'fallback'}}</code>. There are also helpers to <a href="#jwt">sign and read JWTs</a> and to <a href="#validation">validate requests</a>.</p>
 <p>You don't need to remember these. Above the body, <strong>Insert dynamic value</strong> opens a searchable menu of every helper, grouped as request components, control flow, data manipulation, stateful helpers, comparison, string, arithmetic and date operators, array helpers, random values and Faker. A click inserts the helper at the cursor and turns templating on. See the <a href="https://wiremock.org/docs/response-templating/">WireMock templating reference</a> for the full list.</p>

@@ -35,6 +35,8 @@ export const GROUPS = [
       { slug: 'helpers', title: 'Helper reference', icon: 'ListMagnifyingGlass', description: 'Every helper the picker offers, by category, ready to copy.' },
       { slug: 'fake-data', title: 'Fake data', icon: 'Sparkle', description: 'Realistic names, e-mails, addresses and products in many languages.' },
       { slug: 'data-generator', title: 'Data generator', icon: 'Table', description: 'Generate up to 1,000 typed records for a body or a CRUD resource.' },
+      { slug: 'jwt', title: 'JWT & OAuth', icon: 'Key', description: 'Sign tokens your clients accept, publish a JWKS and read claims from bearer tokens.' },
+      { slug: 'validation', title: 'Validate requests', icon: 'CheckCircle', description: 'Answer 400 with a message when a field is missing, not an e-mail or not a UUID.' },
       { slug: 'scenarios', title: 'Scenarios', icon: 'FlowArrow', description: 'Stateful flows where the same call answers differently as state changes.' },
     ],
   },
@@ -53,7 +55,7 @@ export const GROUPS = [
     icon: 'Gauge',
     description: 'Latency, failures, limits and access rules for your mocks.',
     pages: [
-      { slug: 'faults', title: 'Delays & faults', icon: 'Lightning', description: 'Delays for a stub or a whole project, slower answers under load, dropped connections and failure rates.' },
+      { slug: 'faults', title: 'Delays & faults', icon: 'Lightning', description: 'Delays for a stub or a whole project, slower answers under load, dropped connections, failure rates and weighted responses.' },
       { slug: 'default-response', title: 'Default response', icon: 'ArrowUDownLeft', description: 'Answer calls no stub matches with your own status, headers and body.' },
       { slug: 'rate-limits', title: 'Rate limits', icon: 'Gauge', description: 'Limit calls per second, minute or hour for a project or one stub, with 429 and Retry-After.' },
       { slug: 'api-keys', title: 'API keys', icon: 'Key', description: 'Make a project answer only when a request carries the right key.' },

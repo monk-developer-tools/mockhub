@@ -5105,3 +5105,33 @@ button.map-node:hover,
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.weighted-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.weighted-row .field {
+  width: 110px;
+}
+
+.weighted-label {
+  margin: 0 0 8px;
+  flex: 1;
+  min-width: 140px;
+}
+
+.weighted-alt {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+}
+
+.weighted-alt .weighted-row > .btn {
+  margin-bottom: 6px;
+}

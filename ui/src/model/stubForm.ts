@@ -46,9 +46,17 @@ export interface Webhook {
   forward: boolean;
 }
 
+export interface Alternative {
+  weight: string;
+  status: string;
+  headers: KeyValue[];
+  body: string;
+}
+
 export const WEBHOOK_METHODS = ['POST', 'PUT', 'PATCH', 'GET', 'DELETE'];
 export const CALLOUT_LISTENER = 'mockhub-callout';
 export const SYNC_CALLOUT_TRANSFORMER = 'mockhub-sync-callout';
+export const WEIGHTED_TRANSFORMER = 'mockhub-weighted';
 const CALLOUT_LISTENERS = new Set(['webhook', CALLOUT_LISTENER]);
 
 export function emptyWebhook(): Webhook {
@@ -60,6 +68,10 @@ export function emptyWebhook(): Webhook {
     delay: '',
     forward: false,
   };
+}
+
+export function emptyAlternative(): Alternative {
+  return { weight: '1', status: '503', headers: [], body: '{\n  "error": "Service unavailable"\n}' };
 }
 
 export function emptySyncCallout(): Webhook {
@@ -113,6 +125,8 @@ export interface StubForm {
   errorBody: string;
   rateRequests: string;
   ratePer: RatePeriod;
+  mainWeight: string;
+  alternatives: Alternative[];
 }
 
 export interface Conversion {
@@ -198,6 +212,8 @@ export function emptyForm(kind: StubKind = 'rest'): StubForm {
     errorBody: '',
     rateRequests: '',
     ratePer: 'minute',
+    mainWeight: '1',
+    alternatives: [],
   };
 }
 
@@ -343,8 +359,11 @@ export function fromStub(stub: Stub): Conversion {
   const transformers = Array.isArray(response.transformers) ? response.transformers.map(String) : [];
   form.templating = transformers.includes(TEMPLATE_TRANSFORMER);
   const waitsForCallout = transformers.includes(SYNC_CALLOUT_TRANSFORMER) && !response.fault && !response.proxyBaseUrl;
-  if (transformers.some((t) => t !== TEMPLATE_TRANSFORMER && t !== SYNC_CALLOUT_TRANSFORMER)) unsupported.push(`Transformers ${transformers.join(', ')}`);
+  const known = new Set([TEMPLATE_TRANSFORMER, SYNC_CALLOUT_TRANSFORMER, WEIGHTED_TRANSFORMER]);
+  if (transformers.some((t) => !known.has(t))) unsupported.push(`Transformers ${transformers.join(', ')}`);
   const transformerParameters = obj(response.transformerParameters);
+  const weighted = transformers.includes(WEIGHTED_TRANSFORMER) && form.responseMode === 'direct';
+  if (weighted) readAlternatives(form, transformerParameters.responses);
   if (waitsForCallout) {
     form.responseMode = 'callout';
     form.templating = false;
@@ -379,7 +398,7 @@ export function fromStub(stub: Stub): Conversion {
   for (const key of ['additionalProxyRequestHeaders', 'removeProxyRequestHeaders']) {
     if (response[key] !== undefined) unsupported.push(`Response ${key}`);
   }
-  const otherParameters = Object.keys(transformerParameters).filter((k) => !(waitsForCallout && k === 'callout'));
+  const otherParameters = Object.keys(transformerParameters).filter((k) => !(waitsForCallout && k === 'callout') && !(weighted && k === 'responses'));
   if (otherParameters.length) unsupported.push(`Response transformerParameters ${otherParameters.join(', ')}`);
   form.webhooks = [];
   for (const listener of Array.isArray(stub.serveEventListeners) ? stub.serveEventListeners : []) {
@@ -444,6 +463,7 @@ export function toStub(form: StubForm, original: Stub = {}): Stub {
   }
   const parameters = { ...obj(response.transformerParameters) };
   delete parameters.callout;
+  delete parameters.responses;
   if (form.responseMode === 'callout') parameters.callout = writeCallout(form.syncCallout, false);
   if (Object.keys(parameters).length) response.transformerParameters = parameters;
   else delete response.transformerParameters;
@@ -465,6 +485,7 @@ export function toStub(form: StubForm, original: Stub = {}): Stub {
   }
   if (form.responseMode !== 'fault') writeDelay(response, form);
   if (form.templating && form.responseMode !== 'fault' && form.responseMode !== 'callout') response.transformers = [TEMPLATE_TRANSFORMER];
+  if (form.responseMode === 'direct' && form.alternatives.length) writeAlternatives(response, form);
   stub.response = response;
 
   const otherListeners = (Array.isArray(stub.serveEventListeners) ? stub.serveEventListeners : []).filter((l) => !CALLOUT_LISTENERS.has(str(obj(l).name)));
@@ -506,6 +527,39 @@ export function toStub(form: StubForm, original: Stub = {}): Stub {
   else delete meta.sampleRequest;
   stub.metadata = { ...metadata, mockhub: meta };
   return stub;
+}
+
+function readAlternatives(form: StubForm, source: Json | undefined) {
+  const entries = (Array.isArray(source) ? source : []).map(obj);
+  const first = entries[0];
+  const isMain = first && first.body === undefined && first.jsonBody === undefined && first.headers === undefined;
+  form.mainWeight = isMain ? str(first.weight ?? 1) : '0';
+  form.alternatives = (isMain ? entries.slice(1) : entries).map((e) => ({
+    weight: str(e.weight ?? 1),
+    status: str(e.status ?? 200),
+    headers: Object.entries(obj(e.headers)).map(([key, value]) => ({ key, value: str(value) })),
+    body: e.jsonBody !== undefined ? JSON.stringify(e.jsonBody, null, 2) : str(e.body),
+  }));
+}
+
+function writeAlternatives(response: JsonObject, form: StubForm) {
+  const responses: Json[] = [{ weight: Number(form.mainWeight) || 0, status: Number(form.status) || 200 }];
+  for (const a of form.alternatives) {
+    const entry: JsonObject = { weight: Number(a.weight) || 0, status: Number(a.status) || 200 };
+    const headers: JsonObject = {};
+    for (const h of a.headers) if (h.key.trim()) headers[h.key.trim()] = h.value;
+    if (Object.keys(headers).length) entry.headers = headers;
+    if (a.body.trim()) entry.body = a.body;
+    responses.push(entry);
+  }
+  response.transformerParameters = { ...obj(response.transformerParameters), responses };
+  response.transformers = [...(Array.isArray(response.transformers) ? response.transformers : []), WEIGHTED_TRANSFORMER];
+}
+
+export function weightShares(form: StubForm): number[] {
+  const weights = [form.mainWeight, ...form.alternatives.map((a) => a.weight)].map((w) => Math.max(0, Number(w) || 0));
+  const total = weights.reduce((a, b) => a + b, 0);
+  return weights.map((w) => (total ? Math.round((w / total) * 1000) / 10 : 0));
 }
 
 function readCallout(p: JsonObject): Webhook {
@@ -594,6 +648,15 @@ export function validate(form: StubForm): string[] {
     if (!Number.isInteger(status) || status < 100 || status > 599) errors.push('Status must be a number between 100 and 599.');
     if (form.bodyType === 'json' && form.responseBody.trim() && !form.templating && !tryParseJson(form.responseBody).ok) {
       errors.push('The JSON body is not valid JSON. Fix it, switch to Text, or turn on templating.');
+    }
+  }
+  if (form.responseMode === 'direct' && form.alternatives.length) {
+    const weights = [form.mainWeight, ...form.alternatives.map((a) => a.weight)];
+    if (weights.some((w) => !(Number(w) >= 0))) errors.push('Each response weight must be zero or a positive number.');
+    else if (!weights.some((w) => Number(w) > 0)) errors.push('At least one response needs a weight above zero.');
+    for (const a of form.alternatives) {
+      const status = Number(a.status);
+      if (!Number.isInteger(status) || status < 100 || status > 599) errors.push('Each other response needs a status between 100 and 599.');
     }
   }
   if (form.responseMode === 'proxy' && !/^https?:\/\//.test(form.proxyBaseUrl)) errors.push('Proxy target must start with http:// or https://');

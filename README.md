@@ -163,6 +163,11 @@ screenshots, and the [live demo](https://mockhub.devops-monk.com/__admin/mockhub
 - **Insert dynamic value.** Response and webhook bodies have a searchable menu of every template helper, grouped like
   request components, control flow, data manipulation, dates, arrays, state and Faker. A click inserts the helper at
   the cursor and turns templating on.
+- **JWT, validation and weighted responses.** `{{jwt}}` signs RS256 or HS256 tokens with claims from the request,
+  `{{{jwks}}}` publishes the public key and `{{jwtDecode}}` reads a bearer token, so a mock OAuth server takes three
+  stubs. `{{required}}`, `{{isEmail}}`, `{{isUuid}}`, `{{isNumber}}` and `{{check}}` answer 400 (or your status) with a
+  message when the request is wrong. A stub can answer with one of several responses by weight. Also `len`, `object`,
+  `json`, `toNumber` and `default`. Every entry in the helper picker is rendered against a real server in CI.
 - **Response files.** Upload PDFs, images or large JSON (up to 10 MB) and serve them as response bodies.
 - **Built-in examples:** ten ready-made projects that cover every feature: REST matching, fake data, templating, real-world matching patterns, CRUD with saved data, stateful scenarios, webhooks, faults and failure rates, an OpenAPI import with response files, and a SOAP calculator from WSDL. The [tour of the examples](https://mockhub.devops-monk.com/tutorials/#tour) has commands to try with each.
   Install one with a click and copy what you need. The editor also has a template gallery.
@@ -574,6 +579,7 @@ src/main/java/io/mockhub
   ai/                            AI assistant: provider strategy (OpenRouter, Hugging Face, LiteLLM, OpenAI-compatible), tool loop, staged changes
   token/                         personal access tokens: model, repository port + file implementation, service
   mcp/                           MCP server: JSON-RPC transport, tools over the internal API, review stager
+  template/                      template helpers (values, validation, JWT) and weighted responses
   snapshot/                      snapshots: model, repository port + file implementation, diff, file format, service
   stub/                          project stubs: gateway port to WireMock, path re-rooting, metadata
   journal/                       request log per project

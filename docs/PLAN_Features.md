@@ -30,7 +30,7 @@ Legend: ✅ have it · 🟡 partial · ❌ missing
 | Large and binary responses | Response files with content type | ✅ | — |
 | Template engine: request data, control flow, arrays, strings, maths, dates | Handlebars helpers and the Insert dynamic value picker | ✅ | — |
 | Template engine: state (counters, stores, lists) | State extension in memory | 🟡 | F7 |
-| Template engine: JWT, `len`, `object`, `json`, validation helpers | Missing | ❌ | F6 |
+| Template engine: JWT, `len`, `object`, `json`, validation helpers | JWT sign/decode/JWKS, value and validation helpers, weighted responses | ✅ | — |
 | Fake data and locales | `fake` helper, server locale, data generator | ✅ | — |
 | SOAP from WSDL | WSDL import, SOAP faults | ✅ | F10 adds SOAPAction auto-detect |
 | REST from OpenAPI with generated data | OpenAPI import with realistic data | ✅ | — |
@@ -303,10 +303,246 @@ Goal: close the helper gaps so every Beeceptor template has a MockHub equivalent
   server.
 
 Checklist:
-- [ ] JWT helpers and JWKS template
-- [ ] Miscellaneous and validation helpers
-- [ ] Weighted responses
-- [ ] Picker, docs, tests
+- [x] JWT helpers and JWKS template
+- [x] Miscellaneous and validation helpers
+- [x] Weighted responses
+- [x] Picker, docs, tests
+
+Notes: the picker catalogue moved to `ui/src/model/dynamicValues.json` (with a `$R` placeholder for the request
+variable) so the UI, the generated helper docs and `PickerCatalogueIntegrationTest` share it; the test renders every
+entry against a real server, in a response or, for callout-only entries, a callout. Validation helpers throw a marked
+template error that a response transformer turns into 400 (or `status=`) with `{"error": message}`. The RS256 key is
+created on first use in `data/mockhub/jwt-key.json`; it is not in backups or snapshots. `jwtDecode` does not check
+signatures. Weighted responses work in either transformer order; an entry without a body keeps the stub's body and
+the answer carries `X-MockHub-Weighted-Choice`. `matches` is WireMock's own helper, so `check` wraps it for validation.
+
+### Phase F6b — Product website and no-login tools
+
+Goal: mockhub.devops-monk.com reads like a professional product site such as beeceptor.com. Every feature has its own
+page reachable straight from the menu, and a visitor can use real MockHub features without an account. Studied pages
+(November 2026): beeceptor.com home, /soap-mock-server/, /openapi-mock-server/, /crud-api/, /csv-to-api/,
+/webhook-integration/, /service-virtualization/, /performance-testing-service-virtualization/, /ai/,
+/resources/http-echo/, /resources/test-data-generator/, /resources/2fa-code-generator/, /http-debugger/,
+/virtual-sandbox/explore/.
+
+We list only what MockHub really does: no GraphQL, gRPC or local-tunnel pages until F10 and F12 ship.
+
+#### Navigation
+
+Header: logo, then four menus and two buttons.
+- **Service Virtualization** (who it is for):
+  - Service virtualization overview (`/service-virtualization/`)
+  - Performance and chaos testing (`/performance-testing/`): delays, faults, weighted responses, rate limits
+  - Test environments per team (`/test-environments/`): projects, teams, roles, snapshots, pull dev into qa
+  - Frontend before backend (`/contract-first/`): OpenAPI import, fake data, CRUD
+  - Partner APIs and webhooks (`/webhook-mocking/`): callouts, wait-for-partner
+  - AI and MCP (`/ai/`): assistant, coding agents over MCP
+- **Mock Servers** (what you mock):
+  - REST / JSON mock API (`/mock-api/`)
+  - OpenAPI mock server (`/openapi-mock-server/`)
+  - SOAP mock server from WSDL (`/soap-mock-server/`)
+  - CRUD API that stores data (`/crud-api/`)
+  - Stateful mocks (`/stateful-mocks/`): scenarios, state helpers
+  - JWT and OAuth mock server (`/oauth-mock-server/`)
+  - Move from WireMock (`/wiremock-alternative/`)
+  - Ready-made examples (`/examples/`): the bundled example projects, each with a live URL
+- **Tools** (free, no sign-up), each marked with a "No login" badge in the menu:
+  - Instant mock server (`/tools/instant-mock/`)
+  - HTTP echo (`/tools/http-echo/`)
+  - Webhook catcher (`/tools/webhook-catcher/`)
+  - Template playground (`/tools/template-playground/`)
+  - Fake data generator (`/tools/fake-data/`)
+  - JWT encoder and decoder (`/tools/jwt/`)
+  - cURL to stub (`/tools/curl-to-stub/`)
+- **Resources**: Docs, Tutorials, Changelog, Compare, GitHub.
+- Buttons: "Get started" (ghost, to quick start) and "Try it free, no login" (primary, to the instant mock).
+
+Mega menus show an icon, a title and a one-line description per entry, plus a side panel with one featured link,
+like Beeceptor's. They open on click or hover, close on Escape or when focus leaves, and on phones become accordions.
+
+Footer, in five columns:
+- Mock servers
+- Service virtualization
+- Free tools
+- Resources: Docs, Tutorials, Helper reference, API reference, Changelog
+- Compare and project: vs WireMock, vs Mockoon, vs Postman mock servers, GitHub, licence, security
+
+Bottom bar: demo status (live check of the demo's health endpoint), Privacy, Terms, ©.
+
+#### Page template (one data file, many pages)
+
+Pages come from `website/site-src/pages.mjs`, one object per page, rendered by `build-site.mjs` into `/<slug>/index.html`
+with the shared header and footer. A page lists these sections in this order and leaves out any it does not need:
+1. **Hero:**
+   - An eyebrow (the menu group).
+   - An H1 that names the outcome.
+   - A one-line subtitle.
+   - Two CTAs: "Try it, no login", or the page's own tool, and "Read the docs".
+   - On the right, a live widget or a product screenshot in a browser frame.
+2. **Proof strip.** Works with: OpenAPI, WSDL, WireMock, Postman, Bruno, Docker, Kubernetes, Entra ID.
+3. **How it works.** Three numbered steps, each with a small screenshot.
+4. **The problem.** Three or four pain cards ("Why contracts alone aren't enough").
+5. **Benefit grid.** Six to nine cards, each with an icon, a title, two lines of text and a link to the docs.
+6. **Code example.** A request and its answer, with tabs (cURL, JavaScript, Python, Java), copy button, and a "Run it"
+   button that calls the live demo.
+7. **FAQ.** Four to eight questions, as `<details>` elements with FAQPage structured data.
+8. **Related.** Three cards linking to sibling pages.
+9. **Closing band.** One sentence that defines the term, for search, plus the two CTAs.
+
+#### Professional UI standards for the site
+
+The site uses one design system, defined as tokens in `website/assets/site.css`.
+
+Typography:
+- One sans family for text and one mono family for code, both self-hosted.
+- Type scale 14/16/18/22/28/36/48/60, line length 60–75 characters.
+- Headings tight (1.1), body 1.6.
+
+Colour:
+- Light and dark themes defined as tokens.
+- One brand accent, used only for actions and highlights.
+- Neutral greys for surfaces.
+- Status colours used only for status.
+- WCAG AA contrast in both themes.
+
+Layout:
+- 12-column grid, max width 1200 px.
+- Section rhythm on an 8 px scale.
+- Generous whitespace.
+- Phone layout at 360 px with no horizontal scroll and a 16 px gutter.
+
+Imagery:
+- Real product screenshots only: fresh, light and dark pairs, at DPR 2 in WebP, inside a consistent browser frame
+  with a soft shadow.
+- No stock photos.
+- Icons from one set (Phosphor) at one weight.
+
+Components:
+- Buttons: primary, secondary and ghost.
+- Badges, including a "No login" badge.
+- Cards: feature, use case and pain.
+- Step list, code tabs, FAQ accordion, comparison table, CTA band, toast, live-request widget.
+- One stylesheet, no framework, under 60 KB.
+
+Motion:
+- Fade and rise on scroll, at most 200 ms.
+- Respects `prefers-reduced-motion`.
+- Nothing autoplays.
+
+Quality bar:
+- Lighthouse 95+ for performance, accessibility, best practices and SEO on every page.
+- Keyboard navigation and visible focus everywhere.
+- No layout shift: images carry width and height.
+
+SEO:
+- Unique title and description on every page.
+- Canonical URLs.
+- Open Graph image per page, generated at build time from the page title.
+- `sitemap.xml` and `robots.txt`.
+- SoftwareApplication structured data on the home page, FAQPage on feature pages.
+- The build fails on a broken internal link or a missing alt text.
+
+#### No-login tools
+
+There are two kinds of tool: tools that run only in the browser, and tools that run on the public demo server.
+
+**Browser-only tools** (static, nothing is sent anywhere):
+- **JWT encoder and decoder.** Paste a token to see its header and claims, with expiry shown in local time. Build and
+  sign HS256 or RS256 tokens with WebCrypto, and verify against a pasted JWKS or secret. Links to the JWT mock-server
+  page.
+- **cURL to stub.** Paste a cURL command and get a WireMock / MockHub stub JSON:
+  - The method, path, query, headers and body become matchers.
+  - Editable as a form.
+  - Copy, download, or "Open in instant mock".
+- **Stub JSON checker.** Paste WireMock JSON to get it validated against the schema, formatted, and explained in
+  plain English ("matches GET /orders/{id} when header X is present").
+
+**Demo-server tools.** These run on the public demo with `MOCKHUB_PUBLIC_TOOLS=true`, which is off by default so
+private installs never expose them:
+- **HTTP echo**
+  - Any method on `/echo/**` answers JSON describing the request: method, path, query, headers, body, parsed form or
+    multipart, client IP and size.
+  - Also `/status/{code}`, `/delay/{ms}` (up to 10 s) and `/headers`.
+  - Nothing is stored.
+- **Webhook catcher**
+  - "Create a bin" returns `/bin/{id}` and a private view link.
+  - Every request sent there is captured and shown live (SSE), with headers, body, a replay-as-cURL button, and a
+    configurable response status and body.
+  - A bin keeps its last 100 requests and is deleted 24 hours after the last request.
+- **Instant mock server**
+  - "Create mock" makes a temporary anonymous project with a random slug (`/s/{slug}/...`) and a secret manage link
+    (capability URL, token stored hashed). No account.
+  - Opens a trimmed editor: the real stub form, the dynamic-value picker, templates, the traffic list and "Try it".
+  - Can start empty, from an uploaded OpenAPI or WSDL file (up to 500 KB, the existing importers), from a CSV or JSON
+    file as a CRUD resource (up to 50 records), or from a bundled example.
+  - Limits:
+    - 20 stubs.
+    - 1,000 requests a day.
+    - 64 KB per body.
+    - 100 requests of history.
+    - Deleted 7 days after the last change.
+  - "Keep it" exports a backup, or claims the project into an account on instances with sign-in.
+- **Template playground**
+  - Type a Handlebars template and a sample request (method, path, headers, body), then see the rendered answer,
+    status and errors as you type.
+  - Uses the real WireMock engine and every MockHub helper.
+  - The left rail is the picker catalogue (`dynamicValues.json`), so every helper is one click away.
+- **Fake data generator**
+  - Pick fields from the Datafaker catalogue (name, e-mail, address, IBAN…), a locale and a count up to 100.
+  - Output as JSON, CSV or SQL inserts.
+  - "Host as API" turns the result into an instant mock.
+
+Safety for the demo-server tools. Each tool:
+- Refuses outbound calls: no proxy, callouts, webhooks or `fileName` responses in anonymous projects, to stop SSRF.
+- Has a per-IP rate limit (for example 60 requests a minute and 5 new bins or mocks an hour) and returns 429 with
+  `Retry-After`.
+- Caps request size (1 MB echo, 64 KB elsewhere).
+- Has render time limits on templates.
+- Is cleaned up by a scheduled job.
+- Serves pages with `noindex` on anonymous URLs.
+- Has a strict CSP and a "Report abuse" link.
+- Keeps no personal data beyond the captured requests, and says so on the page.
+
+#### Checklist
+
+- W1 Site framework:
+  - [ ] Tokens and component CSS (the UI standards above)
+  - [ ] `pages.mjs` data file and page renderer
+  - [ ] New header with the four mega menus and a phone accordion
+  - [ ] Five-column footer
+  - [ ] Sitemap, robots, OG image generation, structured data
+  - [ ] Link and alt-text checks in the build
+- W2 Feature pages:
+  - [ ] Six service-virtualization pages
+  - [ ] Eight mock-server pages
+  - [ ] Each page has fresh light and dark screenshots, a code example and an FAQ
+- W3 Browser-only tools:
+  - [ ] JWT
+  - [ ] cURL to stub
+  - [ ] Stub JSON checker
+  - [ ] vitest for every parser and converter
+- W4 Demo-server tools, backend:
+  - [ ] `MOCKHUB_PUBLIC_TOOLS` flag
+  - [ ] Echo, status and delay
+  - [ ] Webhook bins with SSE
+  - [ ] Anonymous projects with capability links, limits and a cleanup job
+  - [ ] Template render endpoint
+  - [ ] Fake data endpoint
+  - [ ] Rate limiting and safety rules above
+  - [ ] Unit, integration and system tests, including an SSRF refusal test
+- W5 Demo-server tools, UI:
+  - [ ] Trimmed instant-mock editor reusing the stub form and picker
+  - [ ] Bin viewer
+  - [ ] Playground
+  - [ ] Fake data page
+  - [ ] Spec, CSV and example starters
+  - [ ] "Keep it" export and claim
+- W6 Compare and polish:
+  - [ ] vs WireMock, vs Mockoon and vs Postman mock servers pages, factual and dated
+  - [ ] Homepage hero CTA becomes "Try it free, no login"
+  - [ ] Lighthouse 95+ on every page
+  - [ ] Phone, dark-mode and keyboard pass
+- Docs, a tutorial ("Try MockHub without an account"), README, deploy (demo env flag, nginx limits)
 
 ### Phase F7 — State and CRUD parity
 
@@ -444,6 +680,7 @@ Checklist:
 | F4 Tokens and MCP | M | High value, reuses the assistant's tools |
 | F5 Snapshots | M | Safe rollback before bigger changes |
 | F6 Template engine | S | Picker parity |
+| F6b Website and no-login tools | L | Every feature gets a page; visitors try MockHub without an account |
 | F7 State and CRUD | S | Small, user-visible |
 | F8 Datasets | M | Builds on F7 |
 | F9 API connections | S | Builds on F3 |

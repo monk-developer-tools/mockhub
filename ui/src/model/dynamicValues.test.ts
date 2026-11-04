@@ -21,9 +21,28 @@ describe('dynamic values', () => {
     // Then
     expect(groups.map((g) => g.name)).toEqual([
       'Request components', 'Response components', 'Control flow', 'Data manipulation', 'Stateful helpers', 'Comparison operators',
-      'String operators', 'Arithmetic operators', 'Date operators', 'Array helpers', 'Random values', 'Faker',
+      'String operators', 'Arithmetic operators', 'Date operators', 'Array helpers', 'JWT & OAuth', 'Random values', 'Faker',
     ]);
     for (const g of groups) expect(new Set(g.items.map((i) => i.label)).size).toBe(g.items.length);
+  });
+
+  it('offers validation only in responses, where a failed rule answers 400', () => {
+    // When
+    const response = dynamicValues('response').map((g) => g.name);
+    const callout = dynamicValues('callout').map((g) => g.name);
+
+    // Then
+    expect(response).toContain('Validation');
+    expect(callout).not.toContain('Validation');
+  });
+
+  it('fills in the request variable everywhere', () => {
+    // When
+    const expressions = [...dynamicValues('response'), ...dynamicValues('callout')].flatMap((g) => g.items.map((i) => i.expression));
+
+    // Then
+    expect(expressions.filter((e) => e.includes('$R.'))).toEqual([]);
+    expect(expressions).toContain('{{jwtDecode originalRequest.headers.Authorization \'sub\'}}');
   });
 
   it('searches across group names, labels and expressions with every word', () => {

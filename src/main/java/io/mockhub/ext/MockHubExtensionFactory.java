@@ -83,6 +83,12 @@ import io.mockhub.playground.TargetGuard;
 import java.net.InetAddress;
 import io.mockhub.files.BodyFiles;
 import io.mockhub.fake.FakeHelpers;
+import io.mockhub.template.JwtHelpers;
+import io.mockhub.template.JwtKeys;
+import io.mockhub.template.ValidationHelpers;
+import io.mockhub.template.ValidationTransformer;
+import io.mockhub.template.ValueHelpers;
+import io.mockhub.template.WeightedTransformer;
 import io.mockhub.auth.ProjectScope;
 import io.mockhub.auth.AuthService;
 import io.mockhub.auth.Principal;
@@ -302,6 +308,11 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
         new CorsTransformer(corsForRequest),
         new ProjectScopeMatcher(projects::findForPath),
         new FakeHelpers(fakeData),
+        new ValueHelpers(),
+        new ValidationHelpers(),
+        new ValidationTransformer(),
+        new WeightedTransformer(() -> ThreadLocalRandom.current().nextDouble()),
+        new JwtHelpers(new JwtKeys(dataDir), clock),
         new AuthFilter(auth, policy),
         new MockHubAdminExtension(api, new McpTask(mcpServer, principals))));
     extensions.addAll(new StateExtension(new CaffeineStore()).create(services));

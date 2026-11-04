@@ -1,0 +1,551 @@
+{
+  "groups": [
+    {
+      "id": "request",
+      "name": "Request components",
+      "items": [
+        {
+          "label": "Whole body",
+          "expression": "{{{$R.body}}}",
+          "hint": "Raw request body, triple braces keep JSON as is"
+        },
+        {
+          "label": "JSON body field",
+          "expression": "{{jsonPath $R.body '$.id'}}",
+          "hint": "Any JSONPath, e.g. $.items[0].name"
+        },
+        {
+          "label": "XML body field",
+          "expression": "{{xPath $R.body '/order/id/text()'}}",
+          "input": "xml"
+        },
+        {
+          "label": "SOAP body field",
+          "expression": "{{soapXPath $R.body '/GetOrder/id/text()'}}",
+          "input": "soap"
+        },
+        {
+          "label": "Form field",
+          "expression": "{{formData $R.body 'form'}}{{form.email}}",
+          "hint": "application/x-www-form-urlencoded",
+          "input": "form"
+        },
+        {
+          "label": "Path",
+          "expression": "{{$R.path}}"
+        },
+        {
+          "label": "Path segment",
+          "expression": "{{$R.pathSegments.[1]}}",
+          "hint": "Zero-based, the base path counts"
+        },
+        {
+          "label": "Path variable",
+          "expression": "{{$R.path.id}}",
+          "hint": "With a /orders/{id} path template"
+        },
+        {
+          "label": "Query parameter",
+          "expression": "{{$R.query.page}}"
+        },
+        {
+          "label": "Header",
+          "expression": "{{$R.headers.X-Request-Id}}"
+        },
+        {
+          "label": "Cookie",
+          "expression": "{{$R.cookies.session}}"
+        },
+        {
+          "label": "Method",
+          "expression": "{{$R.method}}"
+        },
+        {
+          "label": "URL with query",
+          "expression": "{{$R.url}}"
+        },
+        {
+          "label": "Base URL",
+          "expression": "{{$R.baseUrl}}",
+          "hint": "Scheme, host and port the caller used"
+        },
+        {
+          "label": "Request id",
+          "expression": "{{$R.id}}"
+        },
+        {
+          "label": "Client IP",
+          "expression": "{{$R.clientIp}}"
+        }
+      ]
+    },
+    {
+      "id": "response",
+      "name": "Response components",
+      "scope": "callout",
+      "items": [
+        {
+          "label": "Mock response body",
+          "expression": "{{{originalResponse.body}}}",
+          "hint": "The body this stub just answered with"
+        },
+        {
+          "label": "Mock response JSON field",
+          "expression": "{{jsonPath originalResponse.body '$.id'}}"
+        },
+        {
+          "label": "Mock response status",
+          "expression": "{{originalResponse.status}}"
+        },
+        {
+          "label": "Mock response header",
+          "expression": "{{originalResponse.headers.Content-Type}}"
+        }
+      ]
+    },
+    {
+      "id": "control",
+      "name": "Control flow",
+      "items": [
+        {
+          "label": "If / else",
+          "expression": "{{#if (eq (jsonPath $R.body '$.type') 'gold')}}10{{else}}0{{/if}}",
+          "hint": "Pick a value by a condition"
+        },
+        {
+          "label": "Unless",
+          "expression": "{{#unless $R.query.debug}}hidden{{/unless}}"
+        },
+        {
+          "label": "Loop over a JSON array",
+          "expression": "[{{#each (jsonPath $R.body '$.items') as |item|}}{\"id\": \"{{item.id}}\"}{{#unless @last}},{{/unless}}{{/each}}]"
+        },
+        {
+          "label": "Repeat N times",
+          "expression": "[{{#each (range 1 3) as |n|}}{\"n\": {{n}} }{{#unless @last}},{{/unless}}{{/each}}]"
+        },
+        {
+          "label": "Value or default",
+          "expression": "{{val $R.query.page default='1'}}"
+        }
+      ]
+    },
+    {
+      "id": "data",
+      "name": "Data manipulation",
+      "items": [
+        {
+          "label": "Parse JSON and read fields",
+          "expression": "{{#with (parseJson $R.body)}}{{id}}{{/with}}"
+        },
+        {
+          "label": "To JSON",
+          "expression": "{{toJson (jsonPath $R.body '$.customer')}}"
+        },
+        {
+          "label": "Pretty-print JSON",
+          "expression": "{{formatJson $R.body}}"
+        },
+        {
+          "label": "Merge JSON",
+          "expression": "{{jsonMerge $R.body '{\"status\": \"CREATED\"}'}}"
+        },
+        {
+          "label": "Remove a JSON field",
+          "expression": "{{jsonRemove $R.body '$.password'}}"
+        },
+        {
+          "label": "Add to a JSON array",
+          "expression": "{{jsonArrayAdd '[1, 2]' '3'}}"
+        },
+        {
+          "label": "Regex extract",
+          "expression": "{{regexExtract $R.path '[0-9]+'}}"
+        },
+        {
+          "label": "Size of a list or text",
+          "expression": "{{size (jsonPath $R.body '$.items')}}"
+        },
+        {
+          "label": "Base64 encode",
+          "expression": "{{base64 $R.body padding=false}}"
+        },
+        {
+          "label": "Base64 decode",
+          "expression": "{{base64 'aGVsbG8=' decode=true}}"
+        },
+        {
+          "label": "URL encode",
+          "expression": "{{urlEncode $R.query.q}}"
+        },
+        {
+          "label": "Format XML",
+          "expression": "{{formatXml $R.body}}",
+          "input": "xml"
+        },
+        {
+          "label": "Length of text or a list",
+          "expression": "{{len (jsonPath $R.body '$.items')}}",
+          "hint": "Characters in text, entries in a list or object"
+        },
+        {
+          "label": "Build a JSON object",
+          "expression": "{{{object id=(jsonPath $R.body '$.id') status='CREATED'}}}",
+          "hint": "Each name=value becomes a field"
+        },
+        {
+          "label": "Any value as JSON",
+          "expression": "{{{json (jsonPath $R.body '$.name')}}}",
+          "hint": "Quotes text, keeps numbers and objects; pretty=true to indent"
+        },
+        {
+          "label": "Text to number",
+          "expression": "{{toNumber (jsonPath $R.body '$.amount') default=0}}",
+          "hint": "So it lands in JSON without quotes"
+        },
+        {
+          "label": "Value or a fallback",
+          "expression": "{{default $R.query.page '1'}}",
+          "hint": "Uses the fallback when the value is missing or blank"
+        }
+      ]
+    },
+    {
+      "id": "validation",
+      "name": "Validation",
+      "scope": "response",
+      "items": [
+        {
+          "label": "Required, or answer 400",
+          "expression": "{{required (jsonPath $R.body '$.name') 'name is required'}}",
+          "hint": "Answers {\"error\": message} with status 400 when the value is missing"
+        },
+        {
+          "label": "E-mail, or answer 400",
+          "expression": "{{isEmail (jsonPath $R.body '$.email') 'Enter a valid e-mail'}}"
+        },
+        {
+          "label": "UUID, or answer 400",
+          "expression": "{{isUuid (jsonPath $R.body '$.id') 'id must be a UUID'}}"
+        },
+        {
+          "label": "Number, or answer 400",
+          "expression": "{{isNumber (jsonPath $R.body '$.amount') 'amount must be a number'}}"
+        },
+        {
+          "label": "Any rule, with your status",
+          "expression": "{{check (matches (jsonPath $R.body '$.code') '^[A-Z]{3}$') 'code must be three capital letters' status=422}}",
+          "hint": "check fails when the condition is false; status= picks 400 to 599"
+        },
+        {
+          "label": "Test without failing",
+          "expression": "{{#if (isEmail (jsonPath $R.body '$.email'))}}valid{{else}}invalid{{/if}}",
+          "hint": "Without a message, isEmail, isUuid and isNumber answer true or false"
+        }
+      ]
+    },
+    {
+      "id": "state",
+      "name": "Stateful helpers",
+      "items": [
+        {
+          "label": "Read saved state",
+          "expression": "{{state context=(jsonPath $R.body '$.id') property='status' default='NEW'}}",
+          "hint": "Saved by a recordState listener"
+        },
+        {
+          "label": "State exists?",
+          "expression": "{{#if (state context=$R.path.id property='status')}}yes{{else}}no{{/if}}"
+        }
+      ]
+    },
+    {
+      "id": "compare",
+      "name": "Comparison operators",
+      "items": [
+        {
+          "label": "Equals",
+          "expression": "{{#if (eq $R.query.status 'paid')}}…{{/if}}"
+        },
+        {
+          "label": "Not equals",
+          "expression": "{{#if (neq $R.method 'GET')}}…{{/if}}"
+        },
+        {
+          "label": "Greater than",
+          "expression": "{{#if (gt (jsonPath $R.body '$.amount') 1000)}}REVIEW{{else}}OK{{/if}}"
+        },
+        {
+          "label": "Less than",
+          "expression": "{{#if (lt (jsonPath $R.body '$.age') 18)}}minor{{/if}}"
+        },
+        {
+          "label": "And / or / not",
+          "expression": "{{#if (and (eq $R.method 'POST') (not $R.query.dryRun))}}…{{/if}}"
+        },
+        {
+          "label": "Contains",
+          "expression": "{{#if (contains $R.body 'urgent')}}…{{/if}}"
+        },
+        {
+          "label": "Matches regex",
+          "expression": "{{#if (matches $R.path '.*/v2/.*')}}…{{/if}}"
+        }
+      ]
+    },
+    {
+      "id": "string",
+      "name": "String operators",
+      "items": [
+        {
+          "label": "Upper case",
+          "expression": "{{upper $R.query.code}}"
+        },
+        {
+          "label": "Lower case",
+          "expression": "{{lower $R.headers.X-Region}}"
+        },
+        {
+          "label": "Capitalize",
+          "expression": "{{capitalize (jsonPath $R.body '$.name')}}"
+        },
+        {
+          "label": "Trim",
+          "expression": "{{trim (jsonPath $R.body '$.name')}}"
+        },
+        {
+          "label": "Replace",
+          "expression": "{{replace $R.path '/v1/' '/v2/'}}"
+        },
+        {
+          "label": "Substring",
+          "expression": "{{substring (jsonPath $R.body '$.card') 0 4}}"
+        },
+        {
+          "label": "Abbreviate",
+          "expression": "{{abbreviate (jsonPath $R.body '$.text') 20}}"
+        },
+        {
+          "label": "Default if empty",
+          "expression": "{{defaultIfEmpty $R.query.lang 'en'}}"
+        }
+      ]
+    },
+    {
+      "id": "math",
+      "name": "Arithmetic operators",
+      "items": [
+        {
+          "label": "Add / subtract / multiply",
+          "expression": "{{math 10 '*' 3}}",
+          "hint": "Operators: + - * / %"
+        },
+        {
+          "label": "Random integer",
+          "expression": "{{randomInt lower=1 upper=100}}"
+        },
+        {
+          "label": "Random decimal",
+          "expression": "{{randomDecimal lower=1 upper=100}}"
+        },
+        {
+          "label": "Number format",
+          "expression": "{{numberFormat 1234.5 '#,##0.00'}}"
+        }
+      ]
+    },
+    {
+      "id": "date",
+      "name": "Date operators",
+      "items": [
+        {
+          "label": "Now (ISO 8601)",
+          "expression": "{{now}}"
+        },
+        {
+          "label": "Now, formatted",
+          "expression": "{{now format='yyyy-MM-dd HH:mm:ss'}}"
+        },
+        {
+          "label": "In 3 days",
+          "expression": "{{now offset='3 days' format='yyyy-MM-dd'}}"
+        },
+        {
+          "label": "Epoch milliseconds",
+          "expression": "{{now format='epoch'}}"
+        },
+        {
+          "label": "Unix seconds",
+          "expression": "{{now format='unix'}}"
+        },
+        {
+          "label": "Parse and reformat a date",
+          "expression": "{{date (parseDate '2026-11-03') format='dd MMM yyyy'}}"
+        },
+        {
+          "label": "Start of the month",
+          "expression": "{{date (truncateDate (now) 'first day of month') format='yyyy-MM-dd'}}"
+        }
+      ]
+    },
+    {
+      "id": "array",
+      "name": "Array helpers",
+      "items": [
+        {
+          "label": "Pick one at random",
+          "expression": "{{pickRandom 'NEW' 'PAID' 'SHIPPED'}}"
+        },
+        {
+          "label": "Make an array",
+          "expression": "{{toJson (array 'a' 'b' 'c')}}"
+        },
+        {
+          "label": "Add to an array",
+          "expression": "{{toJson (arrayAdd (array 1 2) 3)}}"
+        },
+        {
+          "label": "Remove from an array",
+          "expression": "{{toJson (arrayRemove (array 1 2 3) position='end')}}"
+        },
+        {
+          "label": "Join with commas",
+          "expression": "{{arrayJoin ',' (array 'a' 'b' 'c')}}"
+        },
+        {
+          "label": "Range of numbers",
+          "expression": "{{toJson (range 1 5)}}"
+        }
+      ]
+    },
+    {
+      "id": "jwt",
+      "name": "JWT & OAuth",
+      "items": [
+        {
+          "label": "Signed token (RS256)",
+          "expression": "{{jwt sub=(jsonPath $R.body '$.username') scope='read write' expiresIn=3600}}",
+          "hint": "Signed with this server's key; any name=value becomes a claim"
+        },
+        {
+          "label": "Token with a shared secret (HS256)",
+          "expression": "{{jwt sub='my-client' alg='HS256' secret='change-me'}}"
+        },
+        {
+          "label": "Public keys (JWKS)",
+          "expression": "{{{jwks}}}",
+          "hint": "Serve at /.well-known/jwks.json so clients can verify RS256 tokens"
+        },
+        {
+          "label": "Claim from the bearer token",
+          "expression": "{{jwtDecode $R.headers.Authorization 'sub'}}",
+          "hint": "Reads the token without checking its signature"
+        },
+        {
+          "label": "All claims as JSON",
+          "expression": "{{{json (jwtDecode $R.headers.Authorization)}}}"
+        }
+      ]
+    },
+    {
+      "id": "random",
+      "name": "Random values",
+      "items": [
+        {
+          "label": "UUID",
+          "expression": "{{randomValue type='UUID'}}"
+        },
+        {
+          "label": "Alphanumeric code",
+          "expression": "{{randomValue length=8 type='ALPHANUMERIC' uppercase=true}}"
+        },
+        {
+          "label": "Digits",
+          "expression": "{{randomValue length=6 type='NUMERIC'}}"
+        },
+        {
+          "label": "Hex token",
+          "expression": "{{randomValue length=32 type='HEXADECIMAL'}}"
+        },
+        {
+          "label": "Hostname",
+          "expression": "{{hostname}}"
+        }
+      ]
+    },
+    {
+      "id": "faker",
+      "name": "Faker",
+      "items": [
+        {
+          "label": "Full name",
+          "expression": "{{fake 'Name.fullName'}}"
+        },
+        {
+          "label": "First name",
+          "expression": "{{fake 'Name.firstName'}}"
+        },
+        {
+          "label": "E-mail",
+          "expression": "{{fake 'Internet.emailAddress'}}"
+        },
+        {
+          "label": "Phone",
+          "expression": "{{fake 'PhoneNumber.phoneNumber'}}"
+        },
+        {
+          "label": "Username",
+          "expression": "{{fake 'Internet.username'}}"
+        },
+        {
+          "label": "Street address",
+          "expression": "{{fake 'Address.streetAddress'}}"
+        },
+        {
+          "label": "City",
+          "expression": "{{fake 'Address.city'}}"
+        },
+        {
+          "label": "Country",
+          "expression": "{{fake 'Address.country'}}"
+        },
+        {
+          "label": "Postcode",
+          "expression": "{{fake 'Address.zipCode'}}"
+        },
+        {
+          "label": "Company",
+          "expression": "{{fake 'Company.name'}}"
+        },
+        {
+          "label": "Product",
+          "expression": "{{fake 'Commerce.productName'}}"
+        },
+        {
+          "label": "Price",
+          "expression": "{{fake 'Commerce.price'}}"
+        },
+        {
+          "label": "IBAN",
+          "expression": "{{fake 'Finance.iban'}}"
+        },
+        {
+          "label": "Credit card number",
+          "expression": "{{fake 'Finance.creditCard'}}"
+        },
+        {
+          "label": "Number 1–100",
+          "expression": "{{fake 'Number.numberBetween' 1 100}}"
+        },
+        {
+          "label": "Sentence",
+          "expression": "{{fake 'Lorem.sentence'}}"
+        },
+        {
+          "label": "Name in German",
+          "expression": "{{fake 'Name.fullName' locale='de'}}"
+        }
+      ]
+    }
+  ]
+}

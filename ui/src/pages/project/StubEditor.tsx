@@ -36,6 +36,7 @@ import {
 } from '../../model/stubForm';
 import { BodyMatcherRows, KeyValueRows, ValueMatcherRows } from './MatcherRows';
 import { TryIt } from './TryIt';
+import { WeightedResponses } from './WeightedResponses';
 import { CodeSnippets } from '../../components/CodeSnippets';
 import { sampleRequest } from '../../model/sampleRequest';
 
@@ -618,6 +619,8 @@ export function StubEditor({ project, moveTargets, stub, isNew, canEdit, onSaved
               </label>
             )}
           </div>
+
+          {form.responseMode === 'direct' && <WeightedResponses form={form} update={update} readOnly={readOnly} soap={soap} />}
 
           {form.responseMode !== 'fault' && (
             <div className="section">

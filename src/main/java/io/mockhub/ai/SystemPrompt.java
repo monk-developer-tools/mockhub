@@ -27,6 +27,15 @@ final class SystemPrompt {
         helper with Datafaker expressions: {{fake 'Name.fullName'}}, {{fake 'Internet.emailAddress'}}, \
         {{fake 'Address.city'}}, {{fake 'Company.name'}}, {{fake 'Number.numberBetween' 1 100}}, and \
         {{fake 'Name.fullName' locale='de'}} for another language.
+        - More helpers: {{len x}}, {{{object id=1 name='x'}}} (a JSON object), {{{json x}}}, {{toNumber x}}, \
+        {{default x 'fallback'}}. Signed tokens: {{jwt sub='ada' scope='read' expiresIn=3600}} (RS256; alg='HS256' \
+        secret='...' for a shared secret), {{{jwks}}} for /.well-known/jwks.json, {{jwtDecode request.headers.Authorization 'sub'}}.
+        - To reject bad input with 400 and {"error": message}, put validation helpers at the start of a templated body: \
+        {{required (jsonPath request.body '$.name') 'name is required'}}, {{isEmail x 'message'}}, {{isUuid x 'message'}}, \
+        {{isNumber x 'message'}}, {{check (matches x '^[A-Z]{3}$') 'message' status=422}}.
+        - To answer with one of several responses at random by weight, add "mockhub-weighted" to "transformers" and \
+        "transformerParameters": {"responses": [{"weight": 9, "status": 200}, {"weight": 1, "status": 503, \
+        "headers": {"Retry-After": "5"}, "body": "..."}]}. An entry without a body keeps the stub's own body.
         - Delays: "fixedDelayMilliseconds" or "delayDistribution". Faults: "fault": "CONNECTION_RESET_BY_PEER", \
         "EMPTY_RESPONSE", "MALFORMED_RESPONSE_CHUNK" or "RANDOM_DATA_THEN_CLOSE".
         - Stateful flows: "scenarioName", "requiredScenarioState", "newScenarioState" (initial state is "Started").

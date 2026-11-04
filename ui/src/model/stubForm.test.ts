@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Stub } from '../api/types';
-import { applySoapDefaults, emptyForm, errorPercentOf, fromStub, isDisabled, soapFault, toStub, validate } from './stubForm';
+import { applySoapDefaults, emptyAlternative, emptyForm, errorPercentOf, fromStub, isDisabled, soapFault, toStub, validate, weightShares } from './stubForm';
 
 describe('stub form conversion', () => {
   it('reads a REST stub into the form', () => {
@@ -339,5 +339,65 @@ describe('validation', () => {
 
     // Then
     expect(errors).toContain('Enter the URL to call, e.g. https://partner.example.com/authorize');
+  });
+
+  it('writes other responses by weight after the normal one and reads them back', () => {
+    // Given
+    const form = { ...emptyForm(), url: '/orders', templating: true, mainWeight: '9' };
+    form.alternatives = [{ weight: '1', status: '503', headers: [{ key: 'Retry-After', value: '5' }], body: '{"error":"busy"}' }];
+
+    // When
+    const stub = toStub(form);
+    const back = fromStub(stub);
+
+    // Then
+    expect(stub.response).toMatchObject({
+      status: 200,
+      transformers: ['response-template', 'mockhub-weighted'],
+      transformerParameters: { responses: [{ weight: 9, status: 200 }, { weight: 1, status: 503, headers: { 'Retry-After': '5' }, body: '{"error":"busy"}' }] },
+    });
+    expect(back.unsupported).toEqual([]);
+    expect(back.form.mainWeight).toBe('9');
+    expect(back.form.alternatives).toEqual(form.alternatives);
+    expect(back.form.templating).toBe(true);
+    expect(weightShares(back.form)).toEqual([90, 10]);
+  });
+
+  it('reads weighted responses written by hand, where every entry has its own body', () => {
+    // Given
+    const stub: Stub = {
+      request: { method: 'GET', urlPath: '/coin' },
+      response: { status: 200, transformers: ['mockhub-weighted'], transformerParameters: { responses: [{ weight: 1, status: 200, jsonBody: { side: 'heads' } }, { weight: 1, status: 200, body: 'tails' }] } },
+    };
+
+    // When
+    const { form, unsupported } = fromStub(stub);
+
+    // Then
+    expect(unsupported).toEqual([]);
+    expect(form.mainWeight).toBe('0');
+    expect(form.alternatives.map((a) => a.body)).toEqual(['{\n  "side": "heads"\n}', 'tails']);
+  });
+
+  it('drops the weighted transformer when the other responses are removed', () => {
+    // Given
+    const stub = toStub({ ...emptyForm(), alternatives: [emptyAlternative()] });
+
+    // When
+    const plain = toStub({ ...fromStub(stub).form, alternatives: [] }, stub);
+
+    // Then
+    expect(plain.response).not.toHaveProperty('transformers');
+    expect(plain.response).not.toHaveProperty('transformerParameters');
+  });
+
+  it('asks for usable weights and statuses', () => {
+    // Given
+    const allZero = { ...emptyForm(), mainWeight: '0', alternatives: [{ ...emptyAlternative(), weight: '0' }] };
+    const badStatus = { ...emptyForm(), alternatives: [{ ...emptyAlternative(), status: '42' }] };
+
+    // When / Then
+    expect(validate(allZero)).toContain('At least one response needs a weight above zero.');
+    expect(validate(badStatus)).toContain('Each other response needs a status between 100 and 599.');
   });
 });

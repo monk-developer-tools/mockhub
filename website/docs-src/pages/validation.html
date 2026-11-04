@@ -1,0 +1,24 @@
+<p>Make a stub answer like a real API when the request is wrong: a missing field, an e-mail that isn't one, an id that isn't a UUID. Put validation helpers at the start of a templated response body. When a rule fails, MockHub answers <code>400</code> (or the status you choose) with a JSON message instead of the normal response:</p>
+<div class="code"><pre>{{required (jsonPath request.body '$.name') 'name is required'}}
+{{isEmail (jsonPath request.body '$.email') 'Enter a valid e-mail'}}
+{{check (matches (jsonPath request.body '$.code') '^[A-Z]{3}$') 'code must be three capital letters' status=422}}
+{ "id": "{{randomValue type='UUID'}}", "name": "{{jsonPath request.body '$.name'}}" }</pre></div>
+<p>A call without a name gets:</p>
+<div class="code"><pre>HTTP/1.1 400 Bad Request
+Content-Type: application/json
+
+{"error":"name is required","status":400}</pre></div>
+
+<h3 id="validation-helpers">Helpers</h3>
+<table>
+  <thead><tr><th>Helper</th><th>Fails when</th></tr></thead>
+  <tbody>
+    <tr><td><code>{{required value 'message'}}</code></td><td>the value is missing or blank</td></tr>
+    <tr><td><code>{{isEmail value 'message'}}</code></td><td>it isn't an e-mail address</td></tr>
+    <tr><td><code>{{isUuid value 'message'}}</code></td><td>it isn't a UUID</td></tr>
+    <tr><td><code>{{isNumber value 'message'}}</code></td><td>it isn't a number</td></tr>
+    <tr><td><code>{{check condition 'message'}}</code></td><td>the condition is false; use it with <code>matches</code>, <code>eq</code>, <code>gt</code>, <code>and</code> and the other comparison helpers</td></tr>
+  </tbody>
+</table>
+<p>Add <code>status=422</code> (any status from 400 to 599) to any of them. Rules run in order and the first one that fails answers. Without a message, <code>isEmail</code>, <code>isUuid</code> and <code>isNumber</code> just answer true or false, for use in <code>{{#if}}</code>. Validation works in responses only, not in <a href="#webhooks">webhook</a> bodies.</p>
+<p>To validate against a schema, or to match only valid requests, use <a href="#matching">request matching</a> instead: a stub that doesn't match lets a more general one, such as a 400 stub, answer.</p>

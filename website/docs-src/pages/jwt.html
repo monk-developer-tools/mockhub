@@ -1,0 +1,29 @@
+<p>Mock an OAuth or OpenID provider, or any API that hands out and reads JSON Web Tokens. MockHub signs real tokens your client libraries accept, publishes the public key as a JWKS, and reads claims from incoming bearer tokens. Turn on <strong>Response templating</strong> for the stub; <strong>Insert dynamic value → JWT &amp; OAuth</strong> has every helper ready to insert.</p>
+
+<h3 id="jwt-sign">Sign a token</h3>
+<div class="code"><pre>{
+  "access_token": "{{jwt sub=(jsonPath request.body '$.username') scope='read write' expiresIn=3600}}",
+  "token_type": "Bearer",
+  "expires_in": 3600
+}</pre></div>
+<table>
+  <thead><tr><th>Option</th><th>What it does</th></tr></thead>
+  <tbody>
+    <tr><td>any <code>name=value</code></td><td>becomes a claim: <code>sub</code>, <code>scope</code>, <code>aud</code>, <code>iss</code>, <code>roles</code>…</td></tr>
+    <tr><td><code>claims=(parseJson …)</code></td><td>adds every field of a JSON object as claims</td></tr>
+    <tr><td><code>expiresIn</code></td><td>seconds until <code>exp</code>; default 3600. <code>iat</code> is always now</td></tr>
+    <tr><td><code>alg</code></td><td><code>RS256</code> (default), signed with this server's private key, or <code>HS256</code> with <code>secret='…'</code></td></tr>
+  </tbody>
+</table>
+<p>MockHub creates a 2048-bit RSA key the first time it signs a token and keeps it in <code>/data/mockhub/jwt-key.json</code>, so tokens and keys stay valid across restarts. RS256 tokens carry the key's <code>kid</code>. The key is only for test tokens: never reuse it for anything real. It isn't part of backups or snapshots, so a new server has a new key.</p>
+
+<h3 id="jwt-jwks">Publish the public key</h3>
+<p>Add a stub for <code>GET /.well-known/jwks.json</code> with the body <code>{{{jwks}}}</code> (triple braces keep the JSON as is). Point your service's JWKS or issuer setting at it and it verifies MockHub's RS256 tokens like real ones. The stub editor's template gallery has <strong>OAuth token endpoint</strong> and <strong>JWKS public keys</strong> ready to add.</p>
+
+<h3 id="jwt-decode">Read the caller's token</h3>
+<div class="code"><pre>{{check request.headers.Authorization 'Send a bearer token' status=401}}
+{
+  "user": "{{jwtDecode request.headers.Authorization 'sub'}}",
+  "claims": {{{json (jwtDecode request.headers.Authorization)}}}
+}</pre></div>
+<p><code>jwtDecode</code> takes a token, with or without <code>Bearer </code> in front. With a claim name it gives that claim; without one it gives every claim, ready for <code>json</code>, <code>lookup</code> or <code>#with</code>. It doesn't check the signature or expiry: a mock reads what it's given. To refuse calls without a token, use <a href="#validation">check</a> as above.</p>

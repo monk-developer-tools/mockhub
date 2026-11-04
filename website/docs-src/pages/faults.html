@@ -11,3 +11,17 @@
 <p>A global delay for every project on the server is on the <strong>Server</strong> page.</p>
 <p><strong>Random failures.</strong> Under <strong>Failures</strong>, make a share of calls fail, for example 10%, with an error status or a network fault. The rest get the normal response. Failed calls carry <code>X-MockHub-Simulated-Error: true</code>. Without a body of your own, REST stubs answer <code>{"error":"Simulated failure"}</code> and SOAP stubs answer a SOAP fault. In JSON, it's stored on the stub as:</p>
 <div class="code"><pre>"metadata": { "mockhub": { "errorRate": { "percent": 10, "status": 503 } } }</pre></div>
+<h3 id="weighted">Weighted responses</h3>
+<p>Answer with one of several responses, picked at random by weight: 9 in 10 calls succeed and 1 in 10 gets a 503, or a coin toss between two bodies. In the stub editor, under <strong>Other responses</strong>, select <strong>Add another response</strong> and give each a weight, status, headers and an optional body. An empty body keeps the body above. The editor shows the share of calls each gets. Every answer carries <code>X-MockHub-Weighted-Choice</code> with the number of the response picked, 1 being the main one, so tests can tell them apart. Templating applies to whichever response is picked.</p>
+<div class="code"><pre>"response": {
+  "status": 200,
+  "jsonBody": { "inStock": 12 },
+  "transformers": ["mockhub-weighted"],
+  "transformerParameters": {
+    "responses": [
+      { "weight": 9, "status": 200 },
+      { "weight": 1, "status": 503, "headers": { "Retry-After": "5" }, "body": "{\"error\": \"Busy\"}" }
+    ]
+  }
+}</pre></div>
+<p>Use weighted responses when each outcome needs its own body or headers. For a plain error rate, <strong>Failures</strong> is simpler.</p>
