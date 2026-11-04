@@ -1,0 +1,17 @@
+/docs/
+/sitemap.xml
+/robots.txt
+/service-virtualization/
+/performance-testing/
+/test-environments/
+/contract-first/
+/webhook-mocking/
+/ai/
+/mock-api/
+/openapi-mock-server/
+/soap-mock-server/
+/crud-api/
+/stateful-mocks/
+/oauth-mock-server/
+/wiremock-alternative/
+/examples/

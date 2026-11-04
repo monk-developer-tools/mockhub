@@ -506,16 +506,18 @@ Safety for the demo-server tools. Each tool:
 #### Checklist
 
 - W1 Site framework:
-  - [ ] Tokens and component CSS (the UI standards above)
-  - [ ] `pages.mjs` data file and page renderer
-  - [ ] New header with the four mega menus and a phone accordion
-  - [ ] Five-column footer
-  - [ ] Sitemap, robots, OG image generation, structured data
-  - [ ] Link and alt-text checks in the build
+  - [x] Tokens and component CSS (the UI standards above)
+  - [x] `pages.mjs` data file and page renderer
+  - [x] New header with the mega menus and a phone accordion
+  - [x] Five-column footer
+  - [x] Sitemap, robots, structured data
+  - [ ] OG image per page, generated from the page title
+  - [x] Link and alt-text checks in the build
 - W2 Feature pages:
-  - [ ] Six service-virtualization pages
-  - [ ] Eight mock-server pages
-  - [ ] Each page has fresh light and dark screenshots, a code example and an FAQ
+  - [x] Six service-virtualization pages
+  - [x] Eight mock-server pages
+  - [x] Each page has a code example and an FAQ
+  - [ ] Fresh light and dark screenshots for every page
 - W3 Browser-only tools:
   - [ ] JWT
   - [ ] cURL to stub
@@ -543,6 +545,15 @@ Safety for the demo-server tools. Each tool:
   - [ ] Lighthouse 95+ on every page
   - [ ] Phone, dark-mode and keyboard pass
 - Docs, a tutorial ("Try MockHub without an account"), README, deploy (demo env flag, nginx limits)
+
+Notes (W1, W2): pages live in `website/site-src/pages.mjs` and render through `website/site-src/render.mjs`. The build
+writes them to `website/<slug>/`, lists the generated folders in `website/.gitignore`, and writes `sitemap.xml` and
+`robots.txt`. Menus are built from the page data, so a page appears in its menu and the footer as soon as it is added.
+The Tools menu appears when the first tool page exists. The build fails on any internal link to a missing page or
+anchor, a missing image or an image without alt text. nginx serves `<path>/index.html` when it exists and proxies
+everything else to the demo. The examples page is generated from `src/main/resources/examples`. Pages reuse existing
+product screenshots for now. The build also stopped indenting code blocks in the docs, which had broken every
+multi-line example.
 
 ### Phase F7 — State and CRUD parity
 

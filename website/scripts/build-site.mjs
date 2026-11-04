@@ -4,6 +4,8 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { GROUPS } from '../docs-src/docs.mjs';
 import { featureCards, footer as siteFooter, groupAnchor, header as siteHeader, useCases } from '../docs-src/layout.mjs';
+import { PAGES as FEATURES } from '../site-src/pages.mjs';
+import { SITE, renderFeature } from '../site-src/render.mjs';
 
 const website = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repo = resolve(website, '..');
@@ -144,7 +146,12 @@ function toc(page) {
 
 function renderPage(page, index) {
   const edit = `${EDIT}/${GENERATED[page.slug] ?? `website/docs-src/pages/${page.slug}.html`}`;
-  const body = rewrite(page).trimEnd().split('\n').join('\n      ');
+  let inPre = false;
+  const body = rewrite(page).trimEnd().split('\n').map((line, i) => {
+    const indented = i === 0 || inPre ? line : `      ${line}`;
+    inPre = (inPre || line.includes('<pre')) && !line.includes('</pre>');
+    return indented;
+  }).join('\n');
   return `${head(`${page.title} — MockHub docs`, page.description)}
 <body>
 ${header()}
@@ -273,20 +280,66 @@ const inject = (file, current) => {
 inject('index.html', 'home');
 inject(join('tutorials', 'index.html'), 'tutorials');
 
+function exampleProjects() {
+  const dir = join(repo, 'src', 'main', 'resources', 'examples');
+  return JSON.parse(readFileSync(join(dir, 'index.json'), 'utf8')).map((e) => {
+    const stubs = (JSON.parse(readFileSync(join(dir, e.file), 'utf8')).stubs ?? []).map((stub) => ({
+      method: stub.request?.method ?? 'ANY',
+      path: stub.request?.urlPath ?? stub.request?.url ?? stub.request?.urlPathTemplate ?? stub.request?.urlPathPattern ?? stub.request?.urlPattern ?? '/',
+      plain: Boolean(stub.request?.urlPath ?? stub.request?.url) && stub.response?.status !== undefined,
+    })).filter((stub, i, all) => stub.path !== '/.*' && all.findIndex((o) => o.method === stub.method && o.path === stub.path) === i);
+    const call = stubs.find((stub) => stub.method === 'GET' && stub.plain && !stub.path.includes('{'));
+    return { ...e, stubs, call: call?.path };
+  });
+}
+
+const generatedList = join(website, '.gitignore');
+if (existsSync(generatedList)) {
+  for (const line of readFileSync(generatedList, 'utf8').split('\n')) {
+    const dir = line.match(/^\/([a-z0-9-]+)\/$/)?.[1];
+    if (dir && dir !== 'docs' && dir !== 'assets' && dir !== 'tutorials') rmSync(join(website, dir), { recursive: true, force: true });
+  }
+}
+const featureContext = { icon, header: siteHeader(icon, ''), footer: siteFooter(icon), examples: exampleProjects() };
+for (const page of FEATURES) {
+  if (existsSync(join(website, page.slug)) && !existsSync(join(website, page.slug, 'index.html'))) throw new Error(`Feature slug ${page.slug} clashes with a folder in website/`);
+  mkdirSync(join(website, page.slug), { recursive: true });
+  writeFileSync(join(website, page.slug, 'index.html'), renderFeature(page, featureContext));
+}
+const urls = ['/', '/tutorials/', '/docs/', ...pages.map((p) => p.url), ...FEATURES.map((p) => `/${p.slug}/`)];
+writeFileSync(join(website, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${urls.map((u) => `  <url><loc>${SITE}${u}</loc></url>`).join('\n')}
+</urlset>
+`);
+writeFileSync(join(website, 'robots.txt'), `User-agent: *\nAllow: /\nDisallow: /__admin/\n\nSitemap: ${SITE}/sitemap.xml\n`);
+writeFileSync(generatedList, ['/docs/', '/sitemap.xml', '/robots.txt', ...FEATURES.map((p) => `/${p.slug}/`)].join('\n') + '\n');
+
 const groupAnchors = new Set(GROUPS.map(groupAnchor));
-const siteFiles = [join(website, 'index.html'), join(website, 'tutorials', 'index.html'), ...pages.map((p) => join(out, p.slug, 'index.html'))];
+const siteFiles = [join(website, 'index.html'), join(website, 'tutorials', 'index.html'), join(out, 'index.html'), ...pages.map((p) => join(out, p.slug, 'index.html')), ...FEATURES.map((p) => join(website, p.slug, 'index.html'))];
 const broken = [];
+const where = (file) => file.replace(website, '');
 for (const file of siteFiles) {
   const content = readFileSync(file, 'utf8');
   for (const [, href] of content.matchAll(/href="([^"]*)"/g)) {
-    if (!/^(\/|#|https?:\/\/|mailto:)/.test(href)) broken.push(`${file.replace(website, '')}: ${href || '(empty)'}`);
+    if (!/^(\/|#|https?:\/\/|mailto:)/.test(href)) broken.push(`${where(file)}: ${href || '(empty)'}`);
   }
-  for (const [, path, hash] of content.matchAll(/href="(\/docs\/[^"#]*)(?:#([^"]*))?"/g)) {
+  for (const [, path, hash] of content.matchAll(/href="(\/(?!\/)[^"#?]*)(?:\?[^"#]*)?(?:#([^"]*))?"/g)) {
+    if (path.startsWith('/__admin/')) continue;
     const target = join(website, path, path.endsWith('/') ? 'index.html' : '');
-    if (!existsSync(target)) broken.push(`${file.replace(website, '')}: ${path}`);
-    else if (hash && path !== '/docs/' && !readFileSync(target, 'utf8').includes(`id="${hash}"`)) broken.push(`${file.replace(website, '')}: ${path}#${hash}`);
-    else if (hash && path === '/docs/' && !anchors.has(hash) && !groupAnchors.has(hash)) broken.push(`${file.replace(website, '')}: /docs/#${hash}`);
+    if (!existsSync(target)) broken.push(`${where(file)}: ${path}`);
+    else if (hash && path === '/docs/') {
+      if (!anchors.has(hash) && !groupAnchors.has(hash)) broken.push(`${where(file)}: /docs/#${hash}`);
+    } else if (hash && target.endsWith('.html') && !readFileSync(target, 'utf8').includes(`id="${hash}"`)) broken.push(`${where(file)}: ${path}#${hash}`);
+  }
+  for (const [tag] of content.matchAll(/<img\b[^>]*>/g)) {
+    if (!/\salt="/.test(tag)) broken.push(`${where(file)}: image without alt text ${tag.slice(0, 80)}`);
+  }
+  for (const [, list] of content.matchAll(/\s(?:src|srcset)="([^"]+)"/g)) {
+    for (const src of list.split(',').map((part) => part.trim().split(/\s+/)[0])) {
+      if (src.startsWith('/') && !src.startsWith('//') && !existsSync(join(website, src))) broken.push(`${where(file)}: missing file ${src}`);
+    }
   }
 }
-if (broken.length) throw new Error(`Links to missing docs pages:\n  ${broken.join('\n  ')}`);
-console.log(`Built ${pages.length} docs pages and the landing page into ${out.replace(repo + '/', '')}`);
+if (broken.length) throw new Error(`Broken links or images:\n  ${broken.join('\n  ')}`);
+console.log(`Built ${pages.length} docs pages, ${FEATURES.length} feature pages and the landing page`);

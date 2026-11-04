@@ -10,8 +10,10 @@ How mockhub.devops-monk.com runs on a VPS that already hosts other sites. Everyt
 | Demo data and secrets | `/opt/mockhub/data`, `/opt/mockhub/mockhub.env` |
 | TLS | `certbot --nginx -d mockhub.devops-monk.com` |
 
-nginx serves the website pages (`/`, `/docs/`, `/assets/`) from disk and proxies everything else to the demo, so the UI
-lives at `/__admin/mockhub/ui/` and the example mocks at paths like `/example-petstore/pets`.
+nginx serves the website pages (`/`, `/docs/`, `/tutorials/`, `/assets/`, the sitemap and every feature page folder such
+as `/openapi-mock-server/`) from disk and proxies everything else to the demo, so the UI lives at `/__admin/mockhub/ui/`
+and the example mocks at paths like `/example-petstore/pets`. A demo project whose base path matches a feature page
+folder would be hidden behind that page, so don't create one.
 
 ## First install
 

@@ -1,0 +1,855 @@
+export const DEMO = '/__admin/mockhub/ui/';
+
+export const MENUS = [
+  {
+    id: 'virtualization',
+    title: 'Service Virtualization',
+    side: {
+      title: 'Why mock at all?',
+      links: [
+        ['Lightning', 'Quick start', '/docs/quick-start/'],
+        ['GraduationCap', 'Step-by-step tutorials', '/tutorials/'],
+        ['Signpost', 'Which feature when', '/docs/use-cases/'],
+      ],
+      feature: ['Open the live demo', 'Sign in as demo / demo and look around.', DEMO],
+    },
+  },
+  {
+    id: 'mock-servers',
+    title: 'Mock Servers',
+    side: {
+      title: 'Bring what you have',
+      links: [
+        ['FileArrowUp', 'Import a contract', '/docs/import/'],
+        ['ArrowSquareIn', 'Moving from WireMock', '/docs/migrate/'],
+        ['Export', 'Postman and Bruno export', '/docs/export/'],
+      ],
+      feature: ['Ready-made examples', 'Ten example projects, live on the demo.', '/examples/'],
+    },
+  },
+  {
+    id: 'resources',
+    title: 'Resources',
+    links: [
+      ['BookOpen', 'Documentation', 'Every feature, explained with examples.', '/docs/'],
+      ['GraduationCap', 'Tutorials', 'Short walkthroughs with screenshots.', '/tutorials/'],
+      ['ListMagnifyingGlass', 'Helper reference', 'Every template helper in the picker.', '/docs/helpers/'],
+      ['TerminalWindow', 'API & CI', 'Drive MockHub from scripts and pipelines.', '/docs/api/'],
+      ['Robot', 'MCP for coding agents', 'Claude Code, Cursor and Codex.', '/docs/mcp/'],
+      ['GithubLogo', 'GitHub', 'Source, issues and releases.', 'https://github.com/monk-developer-tools/mockhub'],
+    ],
+  },
+];
+
+const shot = (name, alt) => ({ pair: name, alt });
+const tut = (name, alt) => ({ single: `/assets/img/tutorials/${name}.webp`, alt });
+
+export const PAGES = [
+  {
+    slug: 'service-virtualization',
+    menu: 'virtualization',
+    icon: 'Cube',
+    nav: ['Service virtualization', 'Stand-ins for every service you depend on.'],
+    title: 'Service virtualization you run yourself — MockHub',
+    description: 'Self-hosted service virtualization for REST and SOAP. Give every dependency its own URL, simulate latency and failures, and share mocks with your whole team.',
+    h1: 'Service virtualization for every API your team depends on',
+    lede: 'Replace the services you call with mocks that behave like them: realistic data, state, webhooks, delays and failures. Self-hosted, built on WireMock, and shared by the whole team.',
+    hero: {
+      try: [
+        ['REST', 'GET', '/example-petstore/pets/42'],
+        ['SOAP', 'POST', '/example-soap/ws/calculator', 'text/xml', '<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/"><s:Body><Add xmlns="http://example.com/calculator"><a>2</a><b>3</b></Add></s:Body></s:Envelope>'],
+        ['State', 'GET', '/example-cart/cart'],
+        ['Chaos', 'GET', '/example-chaos/flaky'],
+      ],
+    },
+    steps: [
+      ['Create a project per service', 'Each project gets its own base URL, such as /payments or /crm, so your app only changes a host name.'],
+      ['Add stubs your way', 'Import an OpenAPI, WSDL or WireMock folder, write stubs in the form editor, or let the AI assistant draft them.'],
+      ['Point tests and environments at it', 'Every call is logged, near misses are explained, and the mocks survive restarts.'],
+    ],
+    shot: shot('overview', 'A MockHub project overview with its base URL, stubs and recent traffic'),
+    problem: {
+      title: 'Real dependencies slow every team down',
+      items: [
+        ['Shared test environments break', 'Another team deploys, data changes and your tests fail for reasons you do not own.'],
+        ['Sandboxes cost money or do not exist', 'Partners charge per call, rate-limit you or have no test environment at all.'],
+        ['Edge cases are hard to trigger', 'Timeouts, 503s and odd payloads almost never happen on demand.'],
+        ['Mocks live in scattered repos', 'Every team has its own WireMock folder that nobody else can find or reuse.'],
+      ],
+    },
+    benefits: {
+      title: 'Everything a virtual service needs',
+      items: [
+        ['MagnifyingGlass', 'Full WireMock matching', 'URL, query, header, cookie, JSON and XML body matchers with priorities.', '/docs/matching/'],
+        ['BracketsCurly', 'Dynamic responses', '180 template helpers, fake data, JWTs and validation.', '/docs/templating/'],
+        ['Database', 'State that remembers', 'Scenarios and CRUD resources that save what you send.', '/docs/crud/'],
+        ['ArrowBendUpRight', 'Webhooks and callouts', 'Call back after answering or wait for a partner.', '/docs/webhooks/'],
+        ['Lightning', 'Delays and faults', 'Fixed, random and realistic latency, resets and failure rates.', '/docs/faults/'],
+        ['UsersThree', 'Teams and roles', 'Organisations, teams, viewer, editor and admin roles, Entra ID sign-in.', '/docs/auth/'],
+        ['Camera', 'Snapshots', 'Save, compare and roll back a project, or copy dev into qa.', '/docs/snapshots/'],
+        ['ListChecks', 'Request history', 'Search every call and see why a request missed.', '/docs/requests/'],
+        ['Sparkle', 'AI and MCP', 'Draft stubs in chat or from your coding agent.', '/docs/ai/'],
+      ],
+    },
+    example: {
+      title: 'One server, many services',
+      text: 'Each project answers under its own base path. Tests point at the same host and pick the service by path.',
+      code: `# the Petstore service
+curl https://mockhub.devops-monk.com/example-petstore/pets/42
+
+# the SOAP calculator on the same server
+curl https://mockhub.devops-monk.com/example-soap/ws/calculator?wsdl`,
+    },
+    faq: [
+      ['What is the difference between mocking and service virtualization?', 'A mock usually answers one test. Service virtualization replaces a whole dependency for every test and environment, with state, latency and failures. MockHub does both: start with one stub and grow it into a virtual service.'],
+      ['Does MockHub run in my network?', 'Yes. It is one Docker image that runs on a laptop, a VM, Kubernetes or AWS ECS. Nothing leaves your network unless you proxy to a real service.'],
+      ['Can I keep my existing WireMock stubs?', 'Yes. MockHub is built on WireMock 3, so mappings, templates and the admin API work unchanged. Import a folder and every URL keeps working.'],
+      ['Is it free?', 'Yes. MockHub is free and open source. There are no seats, no request limits and no paid tier.'],
+    ],
+    related: ['performance-testing', 'test-environments', 'wiremock-alternative'],
+    definition: 'Service virtualization is the practice of replacing the APIs and services an application depends on with programmable stand-ins that behave like the real thing, so teams can develop and test without waiting on, paying for or breaking those dependencies.',
+  },
+  {
+    slug: 'performance-testing',
+    menu: 'virtualization',
+    icon: 'Gauge',
+    nav: ['Performance and chaos testing', 'Latency, faults and failure rates on demand.'],
+    title: 'Mock APIs for performance and chaos testing — MockHub',
+    description: 'Remove third-party APIs from load and resilience tests. Simulate latency, connection resets, 503s, rate limits and weighted failures with MockHub.',
+    h1: 'Load and chaos tests without third-party APIs in the way',
+    lede: 'Keep the behaviour of the services you call and drop their limits. Add realistic latency, random failures, connection resets and rate limits per stub, and prove your timeouts and retries before production does.',
+    hero: {
+      try: [
+        ['Jitter', 'GET', '/example-chaos/jittery'],
+        ['Unreliable', 'GET', '/example-chaos/unreliable'],
+        ['Flaky', 'GET', '/example-chaos/flaky'],
+        ['429', 'GET', '/example-chaos/rate-limited'],
+      ],
+    },
+    steps: [
+      ['Mock the dependency', 'Import its contract or record a few answers, so the mock returns the same shapes.'],
+      ['Add the behaviour you want to test', 'Pick a delay, a failure rate, a fault or weighted responses in the stub editor.'],
+      ['Run your load test', 'Point k6, JMeter, Gatling or Locust at your app. The mock answers the same way every run.'],
+    ],
+    shot: tut('chaos-2-delay', 'The Delay section of the stub editor with Realistic latency selected'),
+    problem: {
+      title: 'Why load tests lie when real APIs are involved',
+      items: [
+        ['Sandboxes throttle you', 'Partner sandboxes cap requests far below the load you need to test.'],
+        ['Latency is never the same twice', 'You cannot tell if your change or their network moved the numbers.'],
+        ['Failures do not happen on demand', 'The retry and circuit-breaker code you wrote is the code least tested.'],
+      ],
+    },
+    benefits: {
+      title: 'Simulate what production throws at you',
+      items: [
+        ['Timer', 'Fixed and random delays', 'A fixed wait, a uniform range or a log-normal curve with a long tail.', '/docs/faults/'],
+        ['Drop', 'Trickled bodies', 'Send the body in chunks over a set time to test streaming and read timeouts.', '/docs/faults/'],
+        ['PlugsConnected', 'Network faults', 'Connection resets, empty answers and garbage bytes.', '/docs/faults/'],
+        ['Percent', 'Failure rate per stub', 'Fail a share of calls with a status or a network fault.', '/docs/faults/'],
+        ['Scales', 'Weighted responses', 'Answer 200 nine times in ten and 503 the tenth.', '/docs/faults/#weighted'],
+        ['HandPalm', 'Rate limits', 'Per project or per stub, with a 429 and Retry-After.', '/docs/rate-limits/'],
+      ],
+    },
+    example: {
+      title: 'Fail one call in ten',
+      text: 'Weighted responses pick an answer by weight on every call. Templating still applies to whichever one is picked.',
+      code: `{
+  "request": { "method": "GET", "urlPath": "/quotes" },
+  "response": {
+    "status": 200,
+    "jsonBody": { "price": 42 },
+    "transformers": ["mockhub-weighted"],
+    "transformerParameters": {
+      "responses": [
+        { "weight": 9, "status": 200 },
+        { "weight": 1, "status": 503, "jsonBody": { "error": "busy" } }
+      ]
+    }
+  }
+}`,
+    },
+    faq: [
+      ['How much load can one MockHub server take?', 'It is WireMock underneath, on Jetty. Size it like any Java service, and put several behind a load balancer when one is not enough.'],
+      ['Are delays per stub or global?', 'Both. Set a delay on a stub, or a global delay for every project on the Server page.'],
+      ['Can I turn chaos on and off without editing stubs?', 'Yes. Switch a stub off or on from the list, or keep a chaos variant at a higher priority and toggle it.'],
+      ['Does it work in CI?', 'Yes. Run the Docker image as a service container and create stubs through the API with an access token.'],
+    ],
+    related: ['service-virtualization', 'mock-api', 'stateful-mocks'],
+    definition: 'Performance testing with service virtualization means replacing third-party and internal dependencies with mocks that keep their behaviour, including latency and errors, so load and resilience tests measure your system and not someone else\'s sandbox.',
+  },
+  {
+    slug: 'test-environments',
+    menu: 'virtualization',
+    icon: 'TestTube',
+    nav: ['Test environments per team', 'Projects, roles, snapshots and dev-to-qa copies.'],
+    title: 'Mock servers for shared test environments — MockHub',
+    description: 'One MockHub server for every team and environment: projects with their own URLs, roles, an audit log, snapshots and a one-click copy from dev into qa.',
+    h1: 'One mock server for every team and every test environment',
+    lede: 'Give each team its own projects, each environment its own copy, and everyone a UI. Roles decide who edits, the audit log shows who changed what, and snapshots roll back a bad change in a click.',
+    hero: { shot: shot('teams', 'The Teams page with teams, their members and roles') },
+    steps: [
+      ['Create teams and invite people', 'Sign in with Microsoft Entra ID or local accounts. Give each person viewer, editor or admin.'],
+      ['Give every environment its project', 'Payments-dev and payments-qa answer on different base URLs from the same server.'],
+      ['Promote with snapshots', 'Snapshot dev, compare it with qa, and pull it across. A safety snapshot is taken first.'],
+    ],
+    shot: tut('snap-2-compare', 'Comparing two snapshots: stubs added, changed and removed'),
+    problem: {
+      title: 'Shared environments without the shared pain',
+      items: [
+        ['Who changed the mock?', 'Plain WireMock has no users, so a broken stub has no author.'],
+        ['QA drifts from dev', 'Copying JSON files between servers by hand misses stubs and breaks URLs.'],
+        ['One mistake breaks every test run', 'There is no undo for a deleted mapping.'],
+      ],
+    },
+    benefits: {
+      title: 'Built for teams',
+      items: [
+        ['UsersThree', 'Organisations and teams', 'Group projects by team and see only your own.', '/docs/auth/'],
+        ['ShieldCheck', 'Roles', 'Viewer, editor and admin, per team.', '/docs/auth/'],
+        ['MicrosoftOutlookLogo', 'Entra ID sign-in', 'Single sign-on set up from the UI.', '/docs/sso/'],
+        ['ClockCounterClockwise', 'Audit log', 'Every change with who, when and a diff.', '/docs/audit/'],
+        ['Camera', 'Snapshots and pull', 'Roll back, or copy dev into qa safely.', '/docs/snapshots/'],
+        ['Key', 'Access tokens', 'Personal tokens for CI and coding agents.', '/docs/access-tokens/'],
+        ['Archive', 'Backup and restore', 'Everything or one project, as one file.', '/docs/persistence/'],
+        ['Lock', 'API keys and IP lists', 'Protect a mock like the real service.', '/docs/api-keys/'],
+      ],
+    },
+    example: {
+      title: 'Same server, one URL per environment',
+      text: 'Point each environment\'s configuration at its own project. Nothing else changes.',
+      code: `# application-dev.yml
+payments.base-url: https://mocks.example.com/payments-dev
+
+# application-qa.yml
+payments.base-url: https://mocks.example.com/payments-qa`,
+    },
+    faq: [
+      ['Can a team see another team\'s projects?', 'Only if it is given a role there. Admins see everything.'],
+      ['What happens when I pull dev into qa?', 'MockHub takes a snapshot of qa first, then replaces its stubs with dev\'s. Roll back from that snapshot if you need to.'],
+      ['How long is the audit log kept?', 'Ninety days by default. Each entry is also printed to standard output, so your log platform keeps its own copy.'],
+      ['Do I need Entra ID?', 'No. Local accounts work out of the box. Entra ID is optional.'],
+    ],
+    related: ['service-virtualization', 'wiremock-alternative', 'ai'],
+    definition: 'A test environment mock server gives every team and environment its own isolated, versioned stand-ins for the services they call, with access control and history, so shared environments stay stable while teams change their mocks independently.',
+  },
+  {
+    slug: 'contract-first',
+    menu: 'virtualization',
+    icon: 'Browser',
+    nav: ['Frontend before backend', 'Build against the contract on day one.'],
+    title: 'Build the frontend before the backend exists — MockHub',
+    description: 'Import an OpenAPI contract and build against realistic, stateful answers on day one: fake data, CRUD resources that save, and CORS that just works.',
+    h1: 'Build the frontend before the backend exists',
+    lede: 'Import the OpenAPI contract and start building the same day. Answers come with realistic fake data, CRUD resources remember what you save, and CORS is handled for the browser.',
+    hero: {
+      try: [
+        ['Books', 'GET', '/example-bookshop/books'],
+        ['Customer', 'GET', '/example-fake-data/customers/7'],
+        ['Orders', 'GET', '/example-orders/orders'],
+      ],
+    },
+    steps: [
+      ['Import the contract', 'Drop in an OpenAPI 3 or Swagger 2 file. MockHub creates one stub per operation with example answers.'],
+      ['Make the answers realistic', 'Swap static values for fake names, e-mails and prices, or turn a resource into CRUD that saves.'],
+      ['Point the app at the mock', 'Switch to the real API with one base URL when it is ready.'],
+    ],
+    shot: tut('openapi-1-import', 'The import panel with an OpenAPI file ready to import'),
+    problem: {
+      title: 'Waiting on the backend costs weeks',
+      items: [
+        ['The API is not ready', 'Frontend and mobile teams sit idle or build against guesses.'],
+        ['Static JSON files lie', 'They never change, never fail and never remember what you posted.'],
+        ['The browser blocks your mock', 'CORS errors on a hand-rolled mock eat the first afternoon.'],
+      ],
+    },
+    benefits: {
+      title: 'Realistic from the first call',
+      items: [
+        ['FileCode', 'OpenAPI import', 'OpenAPI 3 and Swagger 2, one stub per operation.', '/docs/import/'],
+        ['UserList', 'Fake data', 'Names, addresses, prices and dates in many languages.', '/docs/fake-data/'],
+        ['Table', 'Data generator', 'Generate 20 or 1,000 records in one click.', '/docs/data-generator/'],
+        ['Database', 'CRUD that saves', 'POST, then GET it back. Filter, sort and page.', '/docs/crud/'],
+        ['Globe', 'CORS handled', 'Preflights answered for you, per project.', '/docs/cors/'],
+        ['Export', 'Postman and Bruno', 'Hand the mock to testers as a working collection.', '/docs/export/'],
+      ],
+    },
+    example: {
+      title: 'Fake data in the response',
+      text: 'Every call returns a different, realistic customer.',
+      code: `{
+  "id": "{{request.path.id}}",
+  "name": "{{fake 'Name.fullName'}}",
+  "email": "{{fake 'Internet.emailAddress'}}",
+  "city": "{{fake 'Address.city'}}"
+}`,
+    },
+    faq: [
+      ['What if the contract changes?', 'Take a snapshot, import the new version, and compare the two snapshots to see exactly what changed. Roll back if you need to.'],
+      ['Can the frontend call the mock straight from the browser?', 'Yes. Turn on CORS for the project and preflights are answered for you.'],
+      ['Do I need to write templates?', 'No. The picker inserts any helper at the cursor, and the AI assistant can write a body for you.'],
+      ['Can I share the mock with testers?', 'Yes. Export a Postman or Bruno collection that already points at the mock.'],
+    ],
+    related: ['openapi-mock-server', 'crud-api', 'mock-api'],
+    definition: 'Contract-first development means agreeing the API contract first and building client and server in parallel against it, with a mock server standing in for the API until the real implementation is ready.',
+  },
+  {
+    slug: 'webhook-mocking',
+    menu: 'virtualization',
+    icon: 'ArrowBendUpRight',
+    nav: ['Partner APIs and webhooks', 'Callbacks, forwards and wait-for-partner.'],
+    title: 'Mock partner APIs and their webhooks — MockHub',
+    description: 'Mock a payment provider and its callbacks: answer at once, then call your service back, forward the request to a partner, or wait for a partner\'s answer.',
+    h1: 'Mock partner APIs, including the webhooks they send back',
+    lede: 'Payment providers, shipping partners and identity services do not just answer. They call you back. MockHub answers at once and then calls your service, forwards requests, or waits for a partner and answers with its reply.',
+    hero: { shot: tut('webhook-1-editor', 'The stub editor with a webhook that calls back after the response') },
+    steps: [
+      ['Mock the partner\'s endpoint', 'Answer a payment request with 202 and a payment id, just like the provider does.'],
+      ['Add the callback', 'Call your service back after a delay, with a body built from the original request.'],
+      ['Watch it happen', 'The Callouts tab shows every callback, its answer and any error.'],
+    ],
+    shot: tut('webhook-2-callouts', 'The Callouts tab listing callbacks with their status and timing'),
+    problem: {
+      title: 'Async integrations are the hardest to test',
+      items: [
+        ['Callbacks need a public URL', 'Partner sandboxes cannot reach your laptop or CI runner.'],
+        ['Timing is out of your hands', 'You cannot make the callback arrive late, twice, or not at all.'],
+        ['Failures are invisible', 'When a webhook fails in a sandbox, you rarely see why.'],
+      ],
+    },
+    benefits: {
+      title: 'Every webhook pattern',
+      items: [
+        ['ArrowBendUpRight', 'Call back after answering', 'With a delay, headers and a templated body.', '/docs/webhooks/'],
+        ['ArrowsLeftRight', 'Forward a request', 'Send the call on to a partner and log both sides.', '/docs/webhooks/'],
+        ['HourglassHigh', 'Wait for a partner', 'Call out first, then answer with what came back.', '/docs/webhooks/'],
+        ['Tray', 'Catch-all receiver', 'Capture any webhook sent to a project.', '/docs/requests/'],
+        ['ListChecks', 'Callout log', 'Every callout, its answer and its error.', '/docs/webhooks/'],
+        ['Key', 'Signed tokens', 'Add a JWT or an API key to the callback.', '/docs/jwt/'],
+      ],
+    },
+    example: {
+      title: 'Answer, then call back',
+      text: 'A payment answers 202 at once. Two seconds later MockHub posts the result to the callbackUrl from the request.',
+      code: `"serveEventListeners": [{
+  "name": "mockhub-callout",
+  "parameters": {
+    "method": "POST",
+    "url": "{{jsonPath originalRequest.body '$.callbackUrl'}}",
+    "body": "{ \\"reference\\": \\"{{jsonPath originalRequest.body '$.reference'}}\\", \\"status\\": \\"SETTLED\\" }",
+    "delay": { "type": "fixed", "milliseconds": 2000 }
+  }
+}]`,
+    },
+    faq: [
+      ['Can the callback reach a service on my laptop?', 'If MockHub runs on your laptop or in the same network as the service, yes. Run it next to what it calls.'],
+      ['Can a callback carry data from the request?', 'Yes. Use originalRequest in the callback\'s URL, headers and body.'],
+      ['What if the callback fails?', 'The Callouts tab shows the status, the time taken and the error.'],
+      ['Can I test a partner calling me twice?', 'Yes. Add two webhooks to the stub with different delays.'],
+    ],
+    related: ['service-virtualization', 'oauth-mock-server', 'stateful-mocks'],
+    definition: 'Webhook mocking simulates a partner that calls your service back after a request, so asynchronous flows such as payments and shipping updates can be tested end to end without the partner\'s sandbox.',
+  },
+  {
+    slug: 'ai',
+    menu: 'virtualization',
+    icon: 'Sparkle',
+    nav: ['AI assistant and MCP', 'Draft stubs in chat or from your coding agent.'],
+    title: 'AI mock server with MCP for coding agents — MockHub',
+    description: 'Describe an API in plain English and review the stubs the assistant drafts, or let Claude Code, Cursor and Codex manage mocks over MCP. Bring your own model.',
+    h1: 'Describe the API. Review the stubs. Ship.',
+    lede: 'The built-in assistant drafts stubs, bodies and templates from a sentence, and you approve every change before it is saved. Coding agents get the same tools over MCP, with your access token and the same review.',
+    hero: { shot: shot('assistant', 'The AI assistant drafting stubs for a project, with changes waiting for review') },
+    steps: [
+      ['Connect a model', 'OpenRouter, Hugging Face, a LiteLLM proxy or any OpenAI-compatible endpoint, including Ollama and vLLM.'],
+      ['Ask in plain English', '"Add a 404 for unknown order ids and a 503 one call in ten."'],
+      ['Review, then apply', 'Every change is shown as a diff. Nothing is saved until you approve it.'],
+    ],
+    shot: tut('mcp-2-setup', 'Setting up MCP for a coding agent with a personal access token'),
+    problem: {
+      title: 'Writing mocks by hand is slow',
+      items: [
+        ['JSON matchers are fiddly', 'One wrong bracket and the stub never matches.'],
+        ['Templates have their own syntax', 'Handlebars helpers are powerful and easy to forget.'],
+        ['Agents need the mock too', 'Your coding agent writes the client but cannot set up the API it calls.'],
+      ],
+    },
+    benefits: {
+      title: 'AI that stays in your control',
+      items: [
+        ['ChatCircleText', 'Chat to draft stubs', 'Matchers, bodies, faults and webhooks from a sentence.', '/docs/ai/'],
+        ['GitDiff', 'Review before saving', 'Every change waits for approval as a diff.', '/docs/ai/'],
+        ['Robot', 'MCP server', 'Claude Code, Cursor and Codex manage mocks.', '/docs/mcp/'],
+        ['Key', 'Your model, your key', 'Any OpenAI-compatible model, hosted or local.', '/docs/ai/'],
+        ['ClockCounterClockwise', 'Audited', 'Applied changes appear in the audit log like any other.', '/docs/audit/'],
+        ['BracketsCurly', 'Body drafting', 'Generate one realistic body in the editor.', '/docs/ai/'],
+      ],
+    },
+    example: {
+      title: 'Connect Claude Code',
+      text: 'Create a personal access token in MockHub, then add the MCP server.',
+      code: `claude mcp add --transport http mockhub https://mocks.example.com/__admin/mockhub/mcp \\
+  --header "Authorization: Bearer mh_…"`,
+    },
+    faq: [
+      ['Which models work?', 'Any model with tool calling behind an OpenAI-compatible API: OpenAI, Azure OpenAI, OpenRouter, Hugging Face, LiteLLM, Ollama, vLLM or LM Studio.'],
+      ['Does my data leave the network?', 'Only if your model is hosted outside it. Point MockHub at a local model to keep everything inside.'],
+      ['Can the assistant delete stubs?', 'It can propose it, and you approve or reject each change.'],
+      ['Is MCP safe for production mocks?', 'Agents use your personal token and your role, and changes can wait for review.'],
+    ],
+    related: ['service-virtualization', 'mock-api', 'test-environments'],
+    definition: 'An AI mock server uses a language model to turn plain-English descriptions into mock API stubs, and exposes the same capabilities to coding agents through the Model Context Protocol (MCP).',
+  },
+  {
+    slug: 'mock-api',
+    menu: 'mock-servers',
+    icon: 'BracketsCurly',
+    nav: ['REST and JSON mock API', 'Match any request, answer anything.'],
+    title: 'REST and JSON mock API server — MockHub',
+    description: 'Create a REST mock API in minutes: match on path, query, headers and JSON body, answer with templates and fake data, and see every call in the request log.',
+    h1: 'A REST mock API in minutes, with a real editor',
+    lede: 'Match requests on anything WireMock can, answer with static JSON or templates, and test each stub in the editor with one click. No JSON files to hand-edit unless you want to.',
+    hero: {
+      try: [
+        ['GET', 'GET', '/example-petstore/pets/42'],
+        ['POST', 'POST', '/example-petstore/pets', 'application/json', '{"name":"Rex","type":"dog"}'],
+        ['Random', 'GET', '/example-templating/users/random'],
+      ],
+    },
+    steps: [
+      ['Create a project', 'It gets a base URL like /petstore.'],
+      ['Add a stub', 'Pick a method and path, add matchers, and write the response with the picker.'],
+      ['Try it', 'Send a real request from the editor and copy the call in seven languages.'],
+    ],
+    shot: shot('editor', 'The stub editor with the request matchers and response for GET /pets/{id}'),
+    problem: {
+      title: 'Why not just a JSON file?',
+      items: [
+        ['Static files cannot branch', 'A real API answers 404, 400 and 201 depending on the request.'],
+        ['Nobody sees what was called', 'Without a log you cannot tell if your app called the mock at all.'],
+        ['Edits need a developer', 'Testers cannot change a hard-coded response.'],
+      ],
+    },
+    benefits: {
+      title: 'Everything a REST mock needs',
+      items: [
+        ['MagnifyingGlass', 'Rich matching', 'Path templates, regex, JSONPath, headers and cookies.', '/docs/matching/'],
+        ['BracketsCurly', 'Templating', 'Echo the request, compute values, branch on input.', '/docs/templating/'],
+        ['UserList', 'Fake data', 'Realistic values that change on every call.', '/docs/fake-data/'],
+        ['FileText', 'Response files', 'Serve PDFs, images and CSV files.', '/docs/files/'],
+        ['PaperPlaneTilt', 'Playground', 'Call mocks or real APIs and keep the history.', '/docs/playground/'],
+        ['ListChecks', 'Request log', 'See every call and why a near miss failed.', '/docs/requests/'],
+        ['ToggleRight', 'Switch stubs off', 'Pause a stub and see which ones are used.', '/docs/stub-controls/'],
+        ['CheckCircle', 'Validation', 'Answer 400 with a message when input is wrong.', '/docs/validation/'],
+      ],
+    },
+    example: {
+      title: 'Echo the id from the path',
+      text: 'A path template captures the id, and the template puts it in the answer.',
+      code: `curl https://mockhub.devops-monk.com/example-petstore/pets/42
+
+{
+  "id": "42",
+  "name": "Pet 42",
+  "status": "available"
+}`,
+    },
+    faq: [
+      ['Is this WireMock?', 'Yes, WireMock 3 is the engine, so every matcher and helper you know works.'],
+      ['Can I edit the JSON directly?', 'Yes. Every stub has a JSON view next to the form.'],
+      ['How do I return different answers for the same path?', 'Add stubs with different matchers or priorities, or branch inside a template.'],
+      ['Do mocks survive a restart?', 'Always. Every stub is saved to disk.'],
+    ],
+    related: ['openapi-mock-server', 'crud-api', 'stateful-mocks'],
+    definition: 'A REST mock API is a server that imitates a real REST API by matching incoming HTTP requests and returning predefined or generated JSON responses, so clients can be built and tested without the real service.',
+  },
+  {
+    slug: 'openapi-mock-server',
+    menu: 'mock-servers',
+    icon: 'FileCode',
+    nav: ['OpenAPI mock server', 'Working stubs from a spec in one step.'],
+    title: 'OpenAPI and Swagger mock server — MockHub',
+    description: 'Turn an OpenAPI 3 or Swagger 2 spec into a working mock server in one step: one stub per operation, example answers, and realistic fake data.',
+    h1: 'Turn an OpenAPI spec into a working mock server',
+    lede: 'Upload OpenAPI 3 or Swagger 2 and get one stub per operation, answering with the spec\'s examples or values generated from its schemas. Then refine any answer in the editor.',
+    hero: {
+      try: [
+        ['List books', 'GET', '/example-bookshop/books'],
+        ['Not found', 'GET', '/example-bookshop/books/000'],
+        ['CSV file', 'GET', '/example-bookshop/price-list.csv'],
+      ],
+    },
+    steps: [
+      ['Upload the spec', 'JSON or YAML, OpenAPI 3.x or Swagger 2.0.'],
+      ['Review the generated stubs', 'One per operation, grouped by path, each with an example answer.'],
+      ['Add the cases the spec leaves out', 'Errors, slow answers and fake data, in the form editor.'],
+    ],
+    shot: tut('openapi-1-import', 'The import panel with an OpenAPI file selected'),
+    problem: {
+      title: 'A spec alone is not a server',
+      items: [
+        ['Examples are static', 'The same example for every id does not test much.'],
+        ['Errors are missing', 'Most specs never show what a 404 or 503 looks like in practice.'],
+        ['Generated mocks are throwaway', 'Many tools regenerate everything and lose your edits.'],
+      ],
+    },
+    benefits: {
+      title: 'From contract to realistic mock',
+      items: [
+        ['FileCode', 'OpenAPI 3 and Swagger 2', 'JSON or YAML, with an optional prefix such as /api/v1 stripped.', '/docs/import/'],
+        ['Path', 'Path templates', 'Parameters become path templates that match any id.', '/docs/matching/'],
+        ['BracketsCurly', 'Example answers', 'From the spec\'s examples, or built from schemas.', '/docs/import/'],
+        ['UserList', 'Fake data', 'Replace static values with realistic ones.', '/docs/fake-data/'],
+        ['Lightning', 'Errors and delays', 'Add the failure cases the spec leaves out.', '/docs/faults/'],
+        ['Export', 'Postman and Bruno', 'Export a collection that calls the mock.', '/docs/export/'],
+      ],
+    },
+    example: {
+      title: 'One operation, one stub',
+      text: 'GET /books/{isbn} in the spec becomes a stub that matches any ISBN.',
+      code: `curl https://mockhub.devops-monk.com/example-bookshop/books
+
+[
+  {
+    "isbn": "978-0-00-000001-1",
+    "title": "The Quiet Harbour",
+    "author": "E. Marsh",
+    "price": 12.99
+  },
+  ...
+]`,
+    },
+    faq: [
+      ['Which versions are supported?', 'OpenAPI 3 and Swagger 2, in JSON or YAML.'],
+      ['Can I import into an existing project?', 'Yes. Imported stubs are added next to the ones you already have.'],
+      ['Does it validate requests against the schema?', 'Not automatically. Use validation helpers or body matchers for the rules you care about.'],
+      ['Can I strip a prefix like /api/v1?', 'Yes. Set the prefix when importing and the stubs match the shorter paths.'],
+    ],
+    related: ['contract-first', 'mock-api', 'soap-mock-server'],
+    definition: 'An OpenAPI mock server reads an OpenAPI (Swagger) specification and serves responses for each described operation, letting teams use an API before it is implemented.',
+  },
+  {
+    slug: 'soap-mock-server',
+    menu: 'mock-servers',
+    icon: 'FileText',
+    nav: ['SOAP mock server', 'Straight from a WSDL.'],
+    title: 'SOAP mock server from a WSDL — MockHub',
+    description: 'Mock a SOAP service from its WSDL: one stub per operation with envelopes from the schema, a working ?wsdl endpoint, XPath matching and SOAP faults.',
+    h1: 'Mock a SOAP service straight from its WSDL',
+    lede: 'Upload the WSDL and MockHub creates a stub per operation, with request and response envelopes generated from the schema. It serves ?wsdl pointing at the mock and answers unknown operations with a proper SOAP fault.',
+    hero: {
+      try: [
+        ['Add 2 + 3', 'POST', '/example-soap/ws/calculator', 'text/xml', '<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/"><s:Body><Add xmlns="http://example.com/calculator"><a>2</a><b>3</b></Add></s:Body></s:Envelope>'],
+        ['Fault', 'POST', '/example-soap/ws/calculator', 'text/xml', '<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/"><s:Body><Add xmlns="http://example.com/calculator"><a>-1</a><b>3</b></Add></s:Body></s:Envelope>'],
+        ['WSDL', 'GET', '/example-soap/ws/calculator?wsdl'],
+      ],
+    },
+    steps: [
+      ['Upload the WSDL', 'Set the endpoint path if it differs from the WSDL\'s address.'],
+      ['Get a stub per operation', 'Each matches its operation element in the body and answers with an envelope from the schema.'],
+      ['Refine with XPath', 'Match on values in the body and answer differently for each.'],
+    ],
+    shot: shot('soap', 'A SOAP operation stub with XPath matching and its response envelope'),
+    problem: {
+      title: 'SOAP is still everywhere',
+      items: [
+        ['Banks, insurers and governments run on it', 'And their test environments are rarely available.'],
+        ['Envelopes are tedious by hand', 'Namespaces and nested types are easy to get wrong.'],
+        ['Most mock tools skipped SOAP', 'REST-first tools leave you writing XML strings.'],
+      ],
+    },
+    benefits: {
+      title: 'SOAP done properly',
+      items: [
+        ['FileText', 'WSDL import', 'Operations, types and envelopes from the schema.', '/docs/soap/'],
+        ['Globe', '?wsdl endpoint', 'Served with its address pointing at the mock.', '/docs/soap/'],
+        ['Code', 'XPath matching', 'Match on values inside the envelope.', '/docs/matching/'],
+        ['WarningCircle', 'SOAP faults', 'Unknown operations answer a proper fault.', '/docs/soap/'],
+        ['BracketsCurly', 'Templated envelopes', 'Echo values from the request with soapXPath.', '/docs/templating/'],
+        ['Lock', 'API keys', 'Missing keys get a SOAP fault, not JSON.', '/docs/api-keys/'],
+      ],
+    },
+    example: {
+      title: 'Echo a value from the envelope',
+      text: 'soapXPath reads from the SOAP body without the namespace noise.',
+      code: `<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <AddResponse>
+      <result>{{math (soapXPath request.body '/Add/a') '+' (soapXPath request.body '/Add/b')}}</result>
+    </AddResponse>
+  </soap:Body>
+</soap:Envelope>`,
+    },
+    faq: [
+      ['What does the import create?', 'A stub per operation of the service\'s SOAP binding, the ?wsdl endpoint, and a low-priority SOAP fault for operations without a mock.'],
+      ['Can I write SOAP stubs by hand?', 'Yes. Choose SOAP stub, enter the operation element such as GetCustomer, and MockHub matches it for you.'],
+      ['Can one operation answer differently per value?', 'Yes. Add XPath conditions on fields in the body, one stub per answer.'],
+      ['Does the mock serve the WSDL?', 'Yes, at ?wsdl, with the address rewritten to the mock\'s URL.'],
+    ],
+    related: ['openapi-mock-server', 'mock-api', 'service-virtualization'],
+    definition: 'A SOAP mock server simulates a SOAP web service from its WSDL, answering SOAP envelopes for each operation so clients can be tested without the real service.',
+  },
+  {
+    slug: 'crud-api',
+    menu: 'mock-servers',
+    icon: 'Database',
+    nav: ['CRUD API that saves data', 'POST it, then GET it back.'],
+    title: 'Stateful CRUD mock API — MockHub',
+    description: 'One stub gives you a full REST resource: list, filter, create, update and delete records that are saved, survive restarts and can be edited in the UI.',
+    h1: 'A CRUD API that remembers what you save',
+    lede: 'Turn one stub into a full REST resource. POST a record and GET it back, filter and sort lists, update and delete. Data is saved, survives restarts and can be edited in the Data tab.',
+    hero: {
+      try: [
+        ['List', 'GET', '/example-orders/orders'],
+        ['One', 'GET', '/example-orders/orders/1'],
+        ['Filter', 'GET', '/example-orders/orders?status=PAID'],
+      ],
+    },
+    steps: [
+      ['Add a CRUD resource', 'Name the path, such as /orders, and MockHub answers every method on it.'],
+      ['Call it like a real API', 'GET, POST, PUT, PATCH and DELETE work on /orders and /orders/{id}.'],
+      ['See and edit the data', 'The Data tab lists every record and lets you add, edit, delete or clear them.'],
+    ],
+    shot: tut('crud-2-data', 'The Data tab of a CRUD resource listing saved orders'),
+    problem: {
+      title: 'Static mocks forget everything',
+      items: [
+        ['POST returns 201, GET still says empty', 'End-to-end flows break as soon as they read back.'],
+        ['Writing state by hand is a project', 'Scenarios for every record do not scale.'],
+        ['Test data goes stale', 'Nobody remembers what the seed looked like.'],
+      ],
+    },
+    benefits: {
+      title: 'A resource, not a response',
+      items: [
+        ['Database', 'Full CRUD', 'GET, POST, PUT, PATCH and DELETE on one path.', '/docs/crud/'],
+        ['Funnel', 'Filter, sort and page', 'Query by any field, sort and page through results.', '/docs/crud/'],
+        ['FloppyDisk', 'Saved to disk', 'Records survive restarts and backups.', '/docs/persistence/'],
+        ['Table', 'Edit in the UI', 'Add, change or delete records in the Data tab.', '/docs/crud/'],
+        ['Broom', 'Clear in one click', 'Empty a resource before a test run.', '/docs/crud/'],
+        ['Sparkle', 'Generated seed data', 'Fill a resource with realistic records.', '/docs/data-generator/'],
+      ],
+    },
+    example: {
+      title: 'Create, then read back',
+      text: 'The id is assigned for you and the record is saved.',
+      code: `curl -X POST https://mocks.example.com/shop/orders \\
+  -H 'Content-Type: application/json' -d '{"customer":"Ada","total":42}'
+{"id":4,"customer":"Ada","total":42}
+
+curl https://mocks.example.com/shop/orders/4
+{"id":4,"customer":"Ada","total":42}`,
+    },
+    faq: [
+      ['Where is the data kept?', 'In the MockHub data folder, next to the stubs, and in backups.'],
+      ['Can I mix CRUD with normal stubs?', 'Yes. A normal stub such as /orders/summary can sit next to the resource.'],
+      ['How do I start a test run from known data?', 'Clear the resource in the Data tab, then POST the records your test needs.'],
+      ['Can I validate what is posted?', 'Yes, with matchers or validation helpers on a stub in front of the resource.'],
+    ],
+    related: ['stateful-mocks', 'contract-first', 'mock-api'],
+    definition: 'A CRUD mock API stores records sent to it and serves them back through create, read, update and delete operations, behaving like a simple real REST backend for testing and prototyping.',
+  },
+  {
+    slug: 'stateful-mocks',
+    menu: 'mock-servers',
+    icon: 'FlowArrow',
+    nav: ['Stateful mocks', 'Answer differently as state changes.'],
+    title: 'Stateful mock server with scenarios — MockHub',
+    description: 'Model flows like carts and checkouts with scenarios: the same call answers differently as state moves from step to step, with a visual editor.',
+    h1: 'Mocks that move through a flow',
+    lede: 'Carts, checkouts, onboarding: real APIs answer differently as state changes. Scenarios move a project from one state to the next, and the same call answers differently in each.',
+    hero: {
+      try: [
+        ['Cart', 'GET', '/example-cart/cart'],
+        ['Add item', 'POST', '/example-cart/cart/items', 'application/json', '{"sku":"BOOK-1","qty":1}'],
+        ['Checkout', 'POST', '/example-cart/cart/checkout'],
+      ],
+    },
+    steps: [
+      ['Name the states', 'Started, item added, checked out.'],
+      ['Attach stubs to states', 'Each stub answers only in its state and can move to the next.'],
+      ['Reset when you need to', 'Put a scenario back to the start, or jump to any state, from the Scenarios tab.'],
+    ],
+    shot: tut('scenario-2-tab', 'The Scenarios tab showing a cart scenario and its current state'),
+    problem: {
+      title: 'Flows need memory',
+      items: [
+        ['One answer is not enough', 'GET /cart should be empty before you add an item and full after.'],
+        ['Tests depend on order', 'Without state you fake each step with a different URL.'],
+        ['Hard to see where you are', 'Plain WireMock hides scenario state in the admin API.'],
+      ],
+    },
+    benefits: {
+      title: 'State you can see',
+      items: [
+        ['FlowArrow', 'Scenarios', 'WireMock scenarios with a visual editor.', '/docs/scenarios/'],
+        ['Eye', 'Current state', 'See and set each scenario\'s state in the UI.', '/docs/scenarios/'],
+        ['ArrowCounterClockwise', 'Reset', 'Back to the start before each test.', '/docs/scenarios/'],
+        ['Database', 'CRUD resources', 'When you need data, not just states.', '/docs/crud/'],
+        ['BracketsCurly', 'State helpers', 'Read and write values across calls in templates.', '/docs/helpers/'],
+        ['TerminalWindow', 'Reset from CI', 'WireMock\'s scenario API works with a MockHub token.', '/docs/migrate/'],
+      ],
+    },
+    example: {
+      title: 'Same call, different answers',
+      text: 'The cart is empty, then holds an item, then is checked out.',
+      code: `curl https://mockhub.devops-monk.com/example-cart/cart
+{"items":[],"total":0}
+
+curl -X POST https://mockhub.devops-monk.com/example-cart/cart/items -d '{"sku":"BOOK-1"}'
+curl https://mockhub.devops-monk.com/example-cart/cart
+{"items":[{"sku":"BOOK-1","qty":1}],"total":12.99}`,
+    },
+    faq: [
+      ['Are scenarios per user?', 'No, a scenario has one state per project. Use separate projects or CRUD data for parallel tests.'],
+      ['Can I start in the middle of a flow?', 'Yes. Jump a scenario to any state from the Scenarios tab.'],
+      ['Do states survive a restart?', 'Stubs do. Scenario states are kept in memory and start again from the beginning.'],
+      ['Is this the same as WireMock scenarios?', 'Yes, with a UI on top, so existing mappings keep working.'],
+    ],
+    related: ['crud-api', 'mock-api', 'webhook-mocking'],
+    definition: 'A stateful mock keeps track of what has happened in earlier calls and answers later calls accordingly, so multi-step flows like shopping carts can be tested against a mock.',
+  },
+  {
+    slug: 'oauth-mock-server',
+    menu: 'mock-servers',
+    icon: 'Key',
+    nav: ['JWT and OAuth mock server', 'Signed tokens, JWKS and claims.'],
+    title: 'OAuth and JWT mock server — MockHub',
+    description: 'Mock an OAuth token endpoint that issues real RS256 or HS256 JWTs, a JWKS endpoint your app can verify against, and endpoints that read claims from the bearer token.',
+    h1: 'Mock OAuth with tokens your app can really verify',
+    lede: 'Issue signed RS256 or HS256 JWTs from a token endpoint, publish the public keys as JWKS, and read claims from the bearer token in any response. Your app\'s real verification code runs unchanged.',
+    hero: { shot: tut('jwt-2-picker', 'The dynamic value picker showing JWT helpers: signed token, shared secret, JWKS and claims') },
+    steps: [
+      ['Start from a template', 'OAuth token endpoint, JWKS public keys and Who am I are ready-made.'],
+      ['Point your app at the mock', 'Set the issuer and JWKS URL to the mock\'s base URL.'],
+      ['Read claims in other stubs', 'Answer with the user from the token, or 401 without one.'],
+    ],
+    shot: tut('jwt-1-templates', 'The template gallery with the Auth and validation group'),
+    problem: {
+      title: 'Auth blocks every test',
+      items: [
+        ['Real identity providers need real users', 'Test accounts expire, need MFA, or are shared and locked.'],
+        ['Fake tokens fail verification', 'A hard-coded string will not pass your JWT library.'],
+        ['Claims drive behaviour', 'Roles and scopes in the token change what your app does.'],
+      ],
+    },
+    benefits: {
+      title: 'Auth flows, mocked',
+      items: [
+        ['Key', 'RS256 and HS256', 'Signed with a server key or your own secret.', '/docs/jwt/'],
+        ['Globe', 'JWKS endpoint', 'Public keys your app verifies against.', '/docs/jwt/'],
+        ['IdentificationCard', 'Claims from the request', 'sub, scope, roles and any custom claim.', '/docs/jwt/'],
+        ['UserFocus', 'Read the bearer token', 'jwtDecode reads any claim in a response.', '/docs/jwt/'],
+        ['CheckCircle', 'Validation', 'Answer 400 or 401 with a clear message.', '/docs/validation/'],
+        ['Lock', 'API keys', 'Require a key like the real service.', '/docs/api-keys/'],
+      ],
+    },
+    example: {
+      title: 'A token endpoint in one stub',
+      text: 'The user name comes from the request, and the token lasts ten minutes.',
+      code: `{
+  "access_token": "{{jwt sub=(jsonPath request.body '$.username') scope='read write' expiresIn=600}}",
+  "token_type": "Bearer",
+  "expires_in": 600
+}`,
+    },
+    faq: [
+      ['Does jwtDecode check the signature?', 'No. It reads claims so a mock can answer with them. Verification is your app\'s job.'],
+      ['Where is the RS256 key kept?', 'It is created on first use in the data folder and reused after restarts.'],
+      ['Can I use my own secret?', 'Yes, with alg=\'HS256\' and secret=\'...\'.'],
+      ['Is this an identity provider?', 'No. It mocks the endpoints your app calls so tests do not need one.'],
+    ],
+    related: ['webhook-mocking', 'mock-api', 'test-environments'],
+    definition: 'An OAuth mock server imitates the token and key endpoints of an identity provider, issuing signed JSON Web Tokens that applications can verify, so authentication flows can be tested without a real provider.',
+  },
+  {
+    slug: 'wiremock-alternative',
+    menu: 'mock-servers',
+    icon: 'ArrowSquareIn',
+    nav: ['Move from WireMock', 'Your folders, your URLs, unchanged.'],
+    title: 'WireMock with a UI, teams and AI — MockHub',
+    description: 'Keep WireMock and add a web UI, projects, teams, an audit log and an AI assistant. Import a mappings folder or a whole mock repository and every URL keeps working.',
+    h1: 'Keep WireMock. Add everything around it.',
+    lede: 'MockHub is WireMock 3 with a web UI, projects, teams, an audit log, snapshots and an AI assistant. Import your mappings folder or a whole repository of mocks and every URL keeps working.',
+    hero: { shot: shot('migrate', 'Importing a WireMock mappings folder into a MockHub project') },
+    steps: [
+      ['Import the folder', 'Drop in mappings and __files, or a zip of a whole mock repository.'],
+      ['Keep your URLs', 'Serve a project at the server root so existing clients need no change.'],
+      ['Invite the team', 'Everyone edits in the UI, with roles and an audit log.'],
+    ],
+    shot: tut('migrate-repo-2-stubs', 'Thousands of imported stubs grouped by folder in a project'),
+    problem: {
+      title: 'WireMock is great. Running it for a team is not.',
+      items: [
+        ['JSON files in many repos', 'Every team keeps its own mappings, and nobody can find them.'],
+        ['No users, no history', 'You cannot tell who changed a stub or roll it back.'],
+        ['Testers cannot edit', 'Every change needs a developer and a deploy.'],
+      ],
+    },
+    benefits: {
+      title: 'What MockHub adds',
+      items: [
+        ['Browser', 'Web UI', 'A form editor, a JSON view and one-click testing.', '/docs/first-stub/'],
+        ['FolderSimple', 'Projects', 'One base URL per service, many per server.', '/docs/concepts/'],
+        ['UsersThree', 'Teams and roles', 'Viewer, editor and admin, with Entra ID.', '/docs/auth/'],
+        ['ClockCounterClockwise', 'Audit log', 'Who changed what, with a diff.', '/docs/audit/'],
+        ['Camera', 'Snapshots', 'Roll back and copy between environments.', '/docs/snapshots/'],
+        ['Sparkle', 'AI assistant', 'Draft stubs from a sentence, review the diff.', '/docs/ai/'],
+        ['FloppyDisk', 'Always persistent', 'Every stub is saved, not just the marked ones.', '/docs/persistence/'],
+        ['Export', 'Export anywhere', 'WireMock JSON, Postman and Bruno.', '/docs/export/'],
+      ],
+    },
+    example: {
+      title: 'Your admin API still works',
+      text: 'Scripts that call WireMock\'s admin API keep working, with a MockHub token or HTTP Basic auth.',
+      code: `curl -X POST https://mocks.example.com/__admin/mappings \\
+  -H "Authorization: Bearer mh_…" \\
+  -d '{"request":{"method":"GET","url":"/health"},"response":{"status":200}}'`,
+    },
+    faq: [
+      ['Will my templates still work?', 'Yes. WireMock\'s Handlebars helpers are all there, plus MockHub\'s own.'],
+      ['How big an import can it take?', 'Tested with 20,000 files in one import.'],
+      ['Can I go back to plain WireMock?', 'Yes. Export a project as WireMock JSON at any time.'],
+      ['Is MockHub affiliated with WireMock Inc.?', 'No. It is an independent open-source project built on the open-source WireMock.'],
+    ],
+    related: ['service-virtualization', 'test-environments', 'mock-api'],
+    definition: 'MockHub is an open-source alternative way to run WireMock for teams: the same engine and mapping format, with a web UI, projects, access control, history and AI on top.',
+  },
+];
+
+PAGES.push({
+  slug: 'examples',
+  menu: 'mock-servers',
+  kind: 'examples',
+  icon: 'Books',
+  nav: ['Ready-made examples', 'Ten projects, live on the demo.'],
+  title: 'Mock API examples you can call right now — MockHub',
+  description: 'Ten ready-made MockHub projects running on the public demo: REST, SOAP, fake data, CRUD, scenarios, webhooks, chaos and real-world matching patterns.',
+  h1: 'Mock API examples you can call right now',
+  lede: 'Every example runs on the public demo. Call it from this page or a terminal, then open it in the demo to see how it is built. Install any of them on your own server in one click.',
+  docs: '/docs/quick-start/',
+  tutorial: '/tutorials/#tour',
+  related: ['mock-api', 'service-virtualization', 'stateful-mocks'],
+  definition: 'Example mock APIs are ready-made projects that show a technique working end to end, so you can copy the pattern instead of starting from a blank stub.',
+});
+
+const LINKS = {
+  'service-virtualization': ['/docs/concepts/', '/tutorials/#tour'],
+  'performance-testing': ['/docs/faults/', '/tutorials/#chaos'],
+  'test-environments': ['/docs/auth/', '/tutorials/#teams'],
+  'contract-first': ['/docs/import/', '/tutorials/#openapi'],
+  'webhook-mocking': ['/docs/webhooks/', '/tutorials/#webhooks'],
+  ai: ['/docs/ai/', '/tutorials/#ai'],
+  'mock-api': ['/docs/first-stub/', '/tutorials/#first-stub'],
+  'openapi-mock-server': ['/docs/import/', '/tutorials/#openapi'],
+  'soap-mock-server': ['/docs/soap/', '/tutorials/#soap'],
+  'crud-api': ['/docs/crud/', '/tutorials/#crud'],
+  'stateful-mocks': ['/docs/scenarios/', '/tutorials/#scenarios'],
+  'oauth-mock-server': ['/docs/jwt/', '/tutorials/#jwt-validation'],
+  'wiremock-alternative': ['/docs/migrate/', '/tutorials/#migrate'],
+};
+for (const page of PAGES) {
+  const [docs, tutorial] = LINKS[page.slug] ?? [];
+  page.docs ??= docs;
+  page.tutorial ??= tutorial;
+}

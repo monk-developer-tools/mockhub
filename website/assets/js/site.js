@@ -150,34 +150,57 @@
     });
   }
 
-  const trigger = document.querySelector('.nav-menu-trigger');
-  const mega = document.getElementById('product-menu');
-  if (trigger && mega) {
-    const hover = window.matchMedia('(hover: hover) and (min-width: 961px)');
+  const hover = window.matchMedia('(hover: hover) and (min-width: 961px)');
+  const menus = Array.from(document.querySelectorAll('.nav-menu')).map((menu) => {
+    const trigger = menu.querySelector('.nav-menu-trigger');
+    const mega = menu.querySelector('.mega');
     let timer;
     const setOpen = (open) => {
       clearTimeout(timer);
       mega.hidden = !open;
       trigger.setAttribute('aria-expanded', String(open));
     };
-    trigger.addEventListener('click', () => setOpen(mega.hidden));
-    const menu = trigger.parentElement;
-    menu.addEventListener('mouseenter', () => hover.matches && setOpen(true));
-    menu.addEventListener('mouseleave', () => {
-      if (hover.matches) timer = setTimeout(() => setOpen(false), 160);
+    return { menu, trigger, mega, setOpen, later: () => (timer = setTimeout(() => setOpen(false), 160)) };
+  });
+  menus.forEach((m) => {
+    m.trigger.addEventListener('click', () => {
+      const open = m.mega.hidden;
+      menus.forEach((other) => other !== m && other.setOpen(false));
+      m.setOpen(open);
     });
-    document.addEventListener('click', (e) => {
-      if (!menu.contains(e.target)) setOpen(false);
+    m.menu.addEventListener('mouseenter', () => {
+      if (!hover.matches) return;
+      menus.forEach((other) => other !== m && other.setOpen(false));
+      m.setOpen(true);
     });
+    m.menu.addEventListener('mouseleave', () => hover.matches && m.later());
+    m.menu.addEventListener('focusout', (e) => {
+      if (!m.menu.contains(e.relatedTarget)) m.setOpen(false);
+    });
+  });
+  if (menus.length) {
+    document.addEventListener('click', (e) => menus.forEach((m) => !m.menu.contains(e.target) && m.setOpen(false)));
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && !mega.hidden) {
-        setOpen(false);
-        trigger.focus();
+      if (e.key !== 'Escape') return;
+      const open = menus.find((m) => !m.mega.hidden);
+      if (open) {
+        open.setOpen(false);
+        open.trigger.focus();
       }
     });
-    menu.addEventListener('focusout', (e) => {
-      if (!menu.contains(e.relatedTarget)) setOpen(false);
-    });
+  }
+
+  const status = document.querySelector('[data-demo-status]');
+  if (status && 'fetch' in window) {
+    const host = location.hostname === 'mockhub.devops-monk.com' ? '' : 'https://mockhub.devops-monk.com';
+    fetch(`${host}/__admin/health`, { cache: 'no-store' })
+      .then((res) => {
+        status.dataset.state = res.ok ? 'up' : 'down';
+        status.querySelector('a').textContent = res.ok ? 'Live demo is up' : 'Live demo is not answering';
+      })
+      .catch(() => {
+        status.dataset.state = 'down';
+      });
   }
 
   const tryCard = document.querySelector('[data-try]');

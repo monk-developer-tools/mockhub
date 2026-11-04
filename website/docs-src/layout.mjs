@@ -1,20 +1,50 @@
 import { GROUPS } from './docs.mjs';
+import { DEMO, MENUS, PAGES } from '../site-src/pages.mjs';
+
+export { DEMO };
 
 export const GITHUB = 'https://github.com/monk-developer-tools/mockhub';
 export const DOCKER_HUB = 'https://hub.docker.com/r/abhaypratap/mockhub';
-export const DEMO = '/__admin/mockhub/ui/';
 
 const esc = (text) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const chevron = '<svg class="chev" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 3.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
 export const groupAnchor = (group) => `group-${group.id}`;
 
+function menuItems(icon, menu) {
+  const entries = menu.links
+    ? menu.links.map(([name, title, text, href]) => ({ name, title, text, href }))
+    : PAGES.filter((p) => p.menu === menu.id).map((p) => ({ name: p.icon, title: p.nav[0], text: p.nav[1], href: `/${p.slug}/` }));
+  return entries.map((e) => `<a class="mega-item" href="${e.href}">
+                <span class="mega-icon">${icon(e.name, 18)}</span>
+                <span><strong>${esc(e.title)}</strong><small>${esc(e.text)}</small></span>
+              </a>`).join('\n              ');
+}
+
+function menuSide(icon, side) {
+  if (!side) return '';
+  const [title, text, href] = side.feature;
+  return `<div class="mega-side">
+              <h4>${esc(side.title)}</h4>
+              ${side.links.map(([name, label, link]) => `<a href="${link}">${icon(name, 16)}${esc(label)}</a>`).join('\n              ')}
+              <a class="mega-demo" href="${href}">
+                <strong>${esc(title)}</strong>
+                <span>${esc(text)}</span>
+              </a>
+            </div>`;
+}
+
 export function header(icon, current) {
   const mark = (name) => (current === name ? ' aria-current="page"' : '');
-  const items = GROUPS.map((g) => `<a class="mega-item" href="/docs/#${groupAnchor(g)}">
-                <span class="mega-icon">${icon(g.icon, 18)}</span>
-                <span><strong>${esc(g.title)}</strong><small>${esc(g.description)}</small></span>
-              </a>`).join('\n              ');
+  const menus = MENUS.map((m) => `<div class="nav-menu">
+          <button class="nav-menu-trigger" type="button" aria-expanded="false" aria-controls="menu-${m.id}">${esc(m.title)} ${chevron}</button>
+          <div class="mega${m.side ? '' : ' mega-narrow'}" id="menu-${m.id}" hidden>
+            <div class="mega-groups">
+              ${menuItems(icon, m)}
+            </div>
+            ${menuSide(icon, m.side)}
+          </div>
+        </div>`).join('\n        ');
   return `<a class="skip" href="#content">Skip to content</a>
   <header class="nav">
     <div class="wrap">
@@ -23,29 +53,9 @@ export function header(icon, current) {
         <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 6h14M3 14h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
       </button>
       <nav class="nav-links" id="nav-links" aria-label="Main">
-        <div class="nav-menu">
-          <button class="nav-menu-trigger" type="button" aria-expanded="false" aria-controls="product-menu">Product ${chevron}</button>
-          <div class="mega" id="product-menu" hidden>
-            <div class="mega-groups">
-              ${items}
-            </div>
-            <div class="mega-side">
-              <h4>Start here</h4>
-              <a href="/docs/quick-start/">${icon('Lightning', 16)}Quick start</a>
-              <a href="/tutorials/">${icon('GraduationCap', 16)}Step-by-step tutorials</a>
-              <a href="/#use-cases">${icon('Signpost', 16)}Use cases</a>
-              <a href="/docs/migrate/">${icon('ArrowSquareIn', 16)}Moving from WireMock</a>
-              <a class="mega-demo" href="${DEMO}">
-                <strong>Open the live demo</strong>
-                <span>Sign in as demo / demo and look around.</span>
-              </a>
-            </div>
-          </div>
-        </div>
-        <a href="/#use-cases">Use cases</a>
+        ${menus}
         <a href="/docs/"${mark('docs')}>Docs</a>
         <a href="/tutorials/"${mark('tutorials')}>Tutorials</a>
-        <a href="${GITHUB}">${icon('GithubLogo', 16)}GitHub</a>
         <span class="nav-ctas">
           <a class="nav-ghost" href="/docs/quick-start/">Get started</a>
           <a class="pill" href="${DEMO}">Try the demo</a>
@@ -55,11 +65,13 @@ export function header(icon, current) {
   </header>`;
 }
 
+const pageLinks = (menu) => PAGES.filter((p) => p.menu === menu).map((p) => [p.nav[0], `/${p.slug}/`]);
+
 const FOOTER = [
-  ['Product', [['Features', '/#features'], ['Use cases', '/#use-cases'], ['AI assistant', '/#ai'], ['Moving from WireMock', '/#migrate'], ['Teams', '/#teams'], ['Live demo', DEMO]]],
-  ['Docs', [['Quick start', '/docs/quick-start/'], ['Request matching', '/docs/matching/'], ['Webhooks & callouts', '/docs/webhooks/'], ['Helper reference', '/docs/helpers/'], ['Error codes', '/docs/error-codes/'], ['API & CI', '/docs/api/']]],
-  ['Learn', [['Tutorials', '/tutorials/'], ['Concepts', '/docs/concepts/'], ['Which feature when', '/docs/use-cases/'], ['Deployment', '/docs/deploy/'], ['Configuration', '/docs/config/']]],
-  ['Project', [['GitHub', GITHUB], ['Docker Hub', DOCKER_HUB], ['Report an issue', `${GITHUB}/issues`], ['Releases', `${GITHUB}/releases`]]],
+  ['Service virtualization', pageLinks('virtualization')],
+  ['Mock servers', pageLinks('mock-servers')],
+  ['Resources', [['Documentation', '/docs/'], ['Tutorials', '/tutorials/'], ['Quick start', '/docs/quick-start/'], ['Helper reference', '/docs/helpers/'], ['API & CI', '/docs/api/'], ['Error codes', '/docs/error-codes/'], ['Deployment', '/docs/deploy/']]],
+  ['Project', [['GitHub', GITHUB], ['Docker Hub', DOCKER_HUB], ['Releases', `${GITHUB}/releases`], ['Report an issue', `${GITHUB}/issues`], ['Live demo', DEMO]]],
 ];
 
 export function footer(icon) {
@@ -80,7 +92,10 @@ export function footer(icon) {
         </div>
         ${cols}
       </div>
-      <p class="legal">MockHub is built on WireMock and is not affiliated with WireMock Inc.</p>
+      <div class="footer-bottom">
+        <p class="legal">MockHub is built on WireMock and is not affiliated with WireMock Inc.</p>
+        <p class="demo-status" data-demo-status><span class="try-dot" aria-hidden="true"></span><a href="${DEMO}">Live demo</a></p>
+      </div>
     </div>
   </footer>`;
 }
@@ -97,12 +112,12 @@ export function featureCards(icon) {
 }
 
 const USE_CASES = [
-  ['TestTube', 'Test environments without the real services', 'Give every dependency its own mock URL in QA and CI. Tests stop failing because another team\'s service is down or out of data.', '/docs/concepts/', 'How projects and base paths work'],
-  ['Browser', 'Frontend work before the backend exists', 'Import the OpenAPI contract and build against realistic answers on day one, with fake data and CRUD resources that remember.', '/docs/import/', 'Import a contract'],
-  ['ArrowBendUpRight', 'Partner APIs and their webhooks', 'Mock the payment provider and its callbacks: answer at once, then call your service back, or wait for a partner\'s reply.', '/docs/webhooks/', 'Webhooks and callouts'],
-  ['Lightning', 'Failure and resilience testing', 'Slow answers, dropped connections and a failure rate per stub, so you can prove timeouts and retries before production does.', '/docs/faults/', 'Delays and faults'],
-  ['ArrowSquareIn', 'One home for scattered WireMock mocks', 'Move every team\'s mappings into one server with a UI, sign-in and an audit log, and keep every URL they call today.', '/docs/migrate/', 'Moving from WireMock'],
-  ['PresentationChart', 'Demos and training that never break', 'Stable data and stateful scenarios that walk through a flow the same way every time, for demos, workshops and support.', '/docs/scenarios/', 'Scenarios'],
+  ['TestTube', 'Test environments without the real services', 'Give every dependency its own mock URL in QA and CI. Tests stop failing because another team\'s service is down or out of data.', '/test-environments/', 'Test environments per team'],
+  ['Browser', 'Frontend work before the backend exists', 'Import the OpenAPI contract and build against realistic answers on day one, with fake data and CRUD resources that remember.', '/contract-first/', 'Frontend before backend'],
+  ['ArrowBendUpRight', 'Partner APIs and their webhooks', 'Mock the payment provider and its callbacks: answer at once, then call your service back, or wait for a partner\'s reply.', '/webhook-mocking/', 'Partner APIs and webhooks'],
+  ['Lightning', 'Failure and resilience testing', 'Slow answers, dropped connections and a failure rate per stub, so you can prove timeouts and retries before production does.', '/performance-testing/', 'Performance and chaos testing'],
+  ['ArrowSquareIn', 'One home for scattered WireMock mocks', 'Move every team\'s mappings into one server with a UI, sign-in and an audit log, and keep every URL they call today.', '/wiremock-alternative/', 'Moving from WireMock'],
+  ['PresentationChart', 'Demos and training that never break', 'Stable data and stateful scenarios that walk through a flow the same way every time, for demos, workshops and support.', '/stateful-mocks/', 'Stateful mocks'],
 ];
 
 export function useCases(icon) {
