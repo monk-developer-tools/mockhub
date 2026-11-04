@@ -1,0 +1,47 @@
+<div class="tool-grid">
+  <form class="tool-card" data-echo-form>
+    <div class="tool-row">
+      <div>
+        <label class="tool-label" for="echo-method">Method</label>
+        <select id="echo-method" class="tool-input" data-echo-method>
+          <option>GET</option><option selected>POST</option><option>PUT</option><option>PATCH</option><option>DELETE</option>
+        </select>
+      </div>
+      <div class="tool-grow">
+        <label class="tool-label" for="echo-path">Path after <code>/__public/echo</code></label>
+        <input id="echo-path" class="tool-input" type="text" spellcheck="false" autocomplete="off" value="/orders?status=new" data-echo-path>
+      </div>
+    </div>
+    <label class="tool-label" for="echo-headers">Headers, one per line</label>
+    <textarea id="echo-headers" class="tool-input" rows="3" spellcheck="false" autocomplete="off" data-echo-headers>Content-Type: application/json
+X-Request-Id: demo-123</textarea>
+    <label class="tool-label" for="echo-body">Body</label>
+    <textarea id="echo-body" class="tool-input" rows="5" spellcheck="false" autocomplete="off" data-echo-body>{"item": "tea", "quantity": 2}</textarea>
+    <div class="tool-actions-row">
+      <button type="submit" class="btn primary" data-echo-send>Send request</button>
+      <span class="tool-hint" data-echo-meta aria-live="polite"></span>
+    </div>
+    <p class="tool-error" data-echo-error hidden></p>
+  </form>
+  <div class="tool-card">
+    <div class="tool-head">
+      <h3>What the server received</h3>
+      <span class="tool-actions"><button type="button" class="btn secondary small" data-copy="[data-echo-output]">Copy</button></span>
+    </div>
+    <pre class="tool-out tool-tall" data-echo-output>Send a request to see it here.</pre>
+    <div class="tool-head">
+      <h4 class="tool-sub">Same request from a terminal</h4>
+      <span class="tool-actions"><button type="button" class="btn secondary small" data-copy="[data-echo-curl]">Copy</button></span>
+    </div>
+    <pre class="tool-out" data-echo-curl></pre>
+  </div>
+</div>
+<div class="tool-card tool-endpoints">
+  <h3>More endpoints</h3>
+  <dl class="tool-list" data-echo-endpoints>
+    <dt><code>ANY /__public/echo/**</code></dt><dd>Describes the request: method, path, query, headers, body, parsed JSON or form, and size. Bodies up to 1 MB.</dd>
+    <dt><code>GET /__public/headers</code></dt><dd>Just the request headers.</dd>
+    <dt><code>ANY /__public/status/{code}</code></dt><dd>Answers with that status, for example <code>/__public/status/503</code>.</dd>
+    <dt><code>ANY /__public/delay/{ms}</code></dt><dd>Answers after a delay of up to 10,000 ms, to test timeouts.</dd>
+  </dl>
+</div>

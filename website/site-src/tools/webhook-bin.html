@@ -1,0 +1,67 @@
+<div class="tool-card tool-start" data-bin-start>
+  <h3>Get a URL that catches webhooks</h3>
+  <p>Point a payment provider, a CI system or your own code at it, then watch each request arrive here.</p>
+  <div class="tool-actions-row">
+    <button type="button" class="btn primary" data-bin-create>Create a bin</button>
+  </div>
+  <p class="tool-error" data-bin-create-error hidden></p>
+</div>
+
+<div data-bin-live hidden>
+  <div class="tool-card">
+    <div class="tool-head">
+      <h3>Your bin</h3>
+      <span class="tool-actions">
+        <button type="button" class="btn secondary small" data-copy="[data-bin-url]">Copy URL</button>
+        <button type="button" class="btn ghost small" data-bin-forget>New bin</button>
+      </span>
+    </div>
+    <pre class="tool-out tool-url" data-bin-url></pre>
+    <p class="tool-hint">Send anything to this URL or any path under it. The bin keeps the last 50 requests and is deleted after 24 hours without one. Only this browser holds the key to read it.</p>
+    <div class="tool-head"><h4 class="tool-sub">Try it from a terminal</h4><span class="tool-actions"><button type="button" class="btn secondary small" data-copy="[data-bin-try]">Copy</button></span></div>
+    <pre class="tool-out" data-bin-try></pre>
+  </div>
+
+  <div class="tool-grid tool-bin">
+    <div class="tool-card">
+      <div class="tool-head">
+        <h3>Requests <span class="tool-badge" data-bin-count>0</span></h3>
+        <span class="tool-actions">
+          <span class="tool-live" data-bin-polling aria-live="polite">Waiting for requests…</span>
+          <button type="button" class="btn ghost small" data-bin-clear>Clear</button>
+        </span>
+      </div>
+      <p class="tool-error" data-bin-error hidden></p>
+      <ul class="tool-requests" data-bin-list aria-label="Captured requests"></ul>
+      <p class="tool-hint" data-bin-empty>Nothing yet. Send a request to the URL above.</p>
+    </div>
+    <div class="tool-card">
+      <div class="tool-head">
+        <h3>Request details</h3>
+        <span class="tool-actions"><button type="button" class="btn secondary small" data-copy="[data-bin-curl]" data-bin-curl-copy hidden>Copy as cURL</button></span>
+      </div>
+      <div data-bin-detail><p class="tool-hint">Pick a request to see its headers and body.</p></div>
+      <pre class="tool-out" data-bin-curl hidden></pre>
+    </div>
+  </div>
+
+  <form class="tool-card" data-bin-reply>
+    <h3>What the bin answers</h3>
+    <div class="tool-row">
+      <div>
+        <label class="tool-label" for="bin-status">Status</label>
+        <input id="bin-status" class="tool-input" type="number" min="100" max="599" value="200" data-bin-status>
+      </div>
+      <div class="tool-grow">
+        <label class="tool-label" for="bin-type">Content type</label>
+        <input id="bin-type" class="tool-input" type="text" spellcheck="false" value="application/json" data-bin-type>
+      </div>
+    </div>
+    <label class="tool-label" for="bin-body">Body, up to 4 KB</label>
+    <textarea id="bin-body" class="tool-input" rows="3" spellcheck="false" data-bin-body>{"ok":true}</textarea>
+    <div class="tool-actions-row">
+      <button type="submit" class="btn secondary">Save answer</button>
+      <span class="tool-hint" data-bin-reply-note aria-live="polite"></span>
+    </div>
+  </form>
+</div>

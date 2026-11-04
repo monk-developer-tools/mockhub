@@ -1,0 +1,47 @@
+<div class="tool-grid">
+  <div class="tool-card">
+    <div class="tool-head">
+      <label class="tool-label" for="tpl-input">Template</label>
+      <span class="tool-actions">
+        <label class="sr-only" for="tpl-example">Load an example</label>
+        <select id="tpl-example" class="tool-input tool-select-small" data-tpl-example></select>
+      </span>
+    </div>
+    <textarea id="tpl-input" class="tool-input tool-code" rows="11" spellcheck="false" autocomplete="off" data-tpl-input></textarea>
+    <label class="tool-label" for="tpl-helper">Insert a helper</label>
+    <select id="tpl-helper" class="tool-input" data-tpl-helper><option value="">Choose a helper to insert at the cursor…</option></select>
+    <p class="tool-hint" data-tpl-helper-hint>The same list as <strong>Insert dynamic value</strong> in MockHub's stub editor. <a href="/docs/helpers/">All helpers</a></p>
+  </div>
+  <div class="tool-card">
+    <h3>Sample request</h3>
+    <div class="tool-row">
+      <div>
+        <label class="tool-label" for="tpl-method">Method</label>
+        <select id="tpl-method" class="tool-input" data-tpl-method>
+          <option>GET</option><option selected>POST</option><option>PUT</option><option>PATCH</option><option>DELETE</option>
+        </select>
+      </div>
+      <div class="tool-grow">
+        <label class="tool-label" for="tpl-url">URL</label>
+        <input id="tpl-url" class="tool-input" type="text" spellcheck="false" autocomplete="off" data-tpl-url>
+      </div>
+    </div>
+    <label class="tool-label" for="tpl-headers">Headers, one per line</label>
+    <textarea id="tpl-headers" class="tool-input" rows="2" spellcheck="false" autocomplete="off" data-tpl-headers></textarea>
+    <label class="tool-label" for="tpl-body">Body</label>
+    <textarea id="tpl-body" class="tool-input" rows="4" spellcheck="false" autocomplete="off" data-tpl-body></textarea>
+  </div>
+</div>
+<div class="tool-card">
+  <div class="tool-head">
+    <h3>Rendered response <span class="tool-badge" data-tpl-status hidden></span></h3>
+    <span class="tool-actions">
+      <span class="tool-live" data-tpl-state aria-live="polite"></span>
+      <button type="button" class="btn secondary small" data-copy="[data-tpl-output]">Copy</button>
+    </span>
+  </div>
+  <p class="tool-error" data-tpl-error hidden></p>
+  <pre class="tool-out tool-tall" data-tpl-output></pre>
+  <p class="tool-hint">Rendered by MockHub's real template engine on the demo server, with the <code>systemValue</code> and <code>hostname</code> helpers, partials and <code>assign</code> turned off. Loops, sizes and output are capped. In a stub, turn on templating for the response to use the same template.</p>
+</div>
+<!-- catalogue -->

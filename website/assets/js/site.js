@@ -41,7 +41,8 @@
         const selected = t === tab;
         t.setAttribute('aria-selected', String(selected));
         t.tabIndex = selected ? 0 : -1;
-        document.getElementById(t.getAttribute('aria-controls')).hidden = !selected;
+        const panel = document.getElementById(t.getAttribute('aria-controls'));
+        if (panel) panel.hidden = !selected;
       });
     };
     tabs.forEach((tab, i) => {

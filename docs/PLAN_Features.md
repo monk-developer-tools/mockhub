@@ -535,9 +535,10 @@ Safety for the demo-server tools. Each tool:
   - [ ] SSRF refusal test, with anonymous projects
 - W5 Demo-server tools, UI:
   - [ ] Trimmed instant-mock editor reusing the stub form and picker
-  - [ ] Bin viewer
-  - [ ] Playground
-  - [ ] Fake data page
+  - [x] Bin viewer
+  - [x] Playground
+  - [x] Fake data page
+  - [x] HTTP echo page
   - [ ] Spec, CSV and example starters
   - [ ] "Keep it" export and claim
 - W6 Compare and polish:
@@ -567,6 +568,14 @@ and an output cap after rendering is too late. It builds its own Handlebars with
 count calls, loop runs, text produced and size arguments against a per-render budget with a 2-second deadline. It
 streams output into a 256 KB writer and runs on two worker threads with a short queue. `systemValue`, `hostname`,
 `assign` and partials are off. Fake-data expressions may not contain numbers above 1,000.
+
+Notes (W5, first part): the four server tools are website pages, `/tools/webhook-bin/`, `/tools/http-echo/`,
+`/tools/template-playground/` and `/tools/fake-data/`, that call `/__public/` on the same origin. They are built like
+the browser tools: markup in `website/site-src/tools/`, a page script each, and shared logic in `http.js` (header
+parsing, cURL, error wording) and `fakeformat.js` (CSV and SQL), both tested with `node --test`. The playground's helper
+list and the fake data types are embedded at build time from the UI's `dynamicValues.json` and `generator.ts`, so they
+match the product. The bin page keeps the bin's token in `localStorage` and polls every 2 seconds while the tab is
+visible. The tools index splits the server tools from the browser tools, and each server tool says what it stores.
 
 Notes (W3): the tools are plain ES modules in `website/assets/js/tools/`: pure logic (`jwt.js`, `curl.js`,
 `stubcheck.js`) plus one page script each, with markup in `website/site-src/tools/`. They are tested with Node's

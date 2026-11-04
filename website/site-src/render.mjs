@@ -249,7 +249,17 @@ function examplesGrid(examples, icon) {
     </section>`;
 }
 
-const SCRIPTS = { jwt: 'jwt-page.js', 'curl-to-stub': 'curl-page.js', 'stub-checker': 'stubcheck-page.js' };
+const SCRIPTS = {
+  jwt: 'jwt-page.js',
+  'curl-to-stub': 'curl-page.js',
+  'stub-checker': 'stubcheck-page.js',
+  'http-echo': 'echo-page.js',
+  'webhook-bin': 'bin-page.js',
+  'template-playground': 'playground-page.js',
+  'fake-data': 'fake-page.js',
+};
+
+const BROWSER_NOTE = 'Runs in your browser. Nothing you paste is sent anywhere.';
 
 function toolHero(page, icon) {
   return `<section class="hero fp-hero tool-hero">
@@ -257,14 +267,16 @@ function toolHero(page, icon) {
         <p class="eyebrow">${icon(page.icon, 16)}${page.kind === 'tool' ? 'Free tool' : 'Free tools'} · no login</p>
         <h1>${esc(page.h1)}</h1>
         <p class="lede">${esc(page.lede)}</p>
-        <p class="tool-private">${icon('ShieldCheck', 16)}Runs in your browser. Nothing you paste is sent anywhere.</p>
+        <p class="tool-private">${icon(page.server ? 'CloudCheck' : 'ShieldCheck', 16)}${esc(page.privacy ?? BROWSER_NOTE)}</p>
       </div>
     </section>`;
 }
 
-const toolBody = (page, tools) => `<section class="tool-section" aria-label="${esc(page.nav[0])}">
+const catalogueScript = (data) => `<script type="application/json" id="tool-catalogue">${JSON.stringify(data).replace(/</g, '\\u003c')}</script>`;
+
+const toolBody = (page, ctx) => `<section class="tool-section" aria-label="${esc(page.nav[0])}">
       <div class="wrap fp-wide">
-        ${tools[page.tool].trim().split('\n').join('\n        ')}
+        ${ctx.tools[page.tool].replace('<!-- catalogue -->', () => catalogueScript(ctx.catalogues[page.tool] ?? [])).trim().split('\n').join('\n        ')}
       </div>
     </section>`;
 
@@ -285,23 +297,30 @@ const toolSteps = (page) => `<section class="alt" aria-labelledby="how">
     </section>`;
 
 function toolsIndex(page, icon) {
-  const cards = PAGES.filter((p) => p.kind === 'tool').map((p) => `<a class="fp-benefit reveal" href="/${p.slug}/">
+  const group = (server, id, eyebrow, title, alt) => {
+    const list = PAGES.filter((p) => p.kind === 'tool' && Boolean(p.server) === server);
+    const cards = list.map((p) => `<a class="fp-benefit reveal" href="/${p.slug}/">
             <span class="feature-icon">${icon(p.icon, 22)}</span>
             <h3>${esc(p.nav[0])}</h3>
             <p>${esc(p.description)}</p>
             <span class="fp-more" aria-hidden="true">Open the tool</span>
           </a>`).join('\n          ');
-  return `<section class="alt" aria-labelledby="all-tools">
+    return `<section${alt ? ' class="alt"' : ''} aria-labelledby="${id}">
       <div class="wrap fp-wide">
         <div class="section-head reveal">
-          <p class="eyebrow">${icon('ShieldCheck', 16)}Runs in your browser</p>
-          <h2 id="all-tools">Pick a tool</h2>
+          <p class="eyebrow">${icon(server ? 'CloudCheck' : 'ShieldCheck', 16)}${esc(eyebrow)}</p>
+          <h2 id="${id}">${esc(title)}</h2>
         </div>
-        <div class="fp-benefits cols-3">
+        <div class="fp-benefits cols-${list.length % 4 === 0 ? 4 : 3}">
           ${cards}
         </div>
       </div>
     </section>`;
+  };
+  return [
+    group(true, 'server-tools', 'On the MockHub demo server', 'Send real requests', true),
+    group(false, 'browser-tools', 'In your browser, nothing sent', 'Work with stubs and tokens', false),
+  ].join('\n\n    ');
 }
 
 function structured(page) {
@@ -339,7 +358,7 @@ function structured(page) {
 const LAYOUTS = {
   examples: (page, ctx) => [hero(page, ctx.icon), examplesGrid(ctx.examples, ctx.icon), related(page, ctx.icon), closing(page)],
   'tools-index': (page, ctx) => [toolHero(page, ctx.icon), toolsIndex(page, ctx.icon), related(page, ctx.icon), closing(page)],
-  tool: (page, ctx) => [toolHero(page, ctx.icon), toolBody(page, ctx.tools), toolSteps(page), faq(page), related(page, ctx.icon), closing(page)],
+  tool: (page, ctx) => [toolHero(page, ctx.icon), toolBody(page, ctx), toolSteps(page), faq(page), related(page, ctx.icon), closing(page)],
   feature: (page, ctx) => [hero(page, ctx.icon), steps(page), problem(page, ctx.icon), benefits(page, ctx.icon), example(page), faq(page), related(page, ctx.icon), closing(page)],
 };
 

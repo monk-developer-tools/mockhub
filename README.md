@@ -193,8 +193,9 @@ screenshots, and the [live demo](https://mockhub.devops-monk.com/__admin/mockhub
   open an entry for the full local and UTC time, and download it as CSV. Kept for 90 days and written to stdout.
 - **Users and single sign-on.** Create users in the UI, or let people sign in with **Microsoft Entra ID** (Azure AD).
   Entra groups and app roles can map to organisation roles. Mock endpoints always stay open.
-- **Free tools, no login.** A JWT encoder and decoder, cURL to stub, and a stub JSON checker run in your browser at
-  [mockhub.devops-monk.com/tools](https://mockhub.devops-monk.com/tools/).
+- **Free tools, no login.** At [mockhub.devops-monk.com/tools](https://mockhub.devops-monk.com/tools/): a webhook
+  catcher, an HTTP echo, a response template playground and a fake data generator run on the demo server
+  (`MOCKHUB_PUBLIC_TOOLS`). A JWT encoder and decoder, cURL to stub and a stub JSON checker run in your browser.
 
 ## Quick start
 
@@ -567,7 +568,7 @@ a missing image or an image without alt text:
 
 ```bash
 node --disable-warning=ExperimentalWarning website/scripts/build-site.mjs
-node --test website/tests/*.test.mjs                  # the free tools' logic (JWT, cURL to stub, stub checker)
+node --test website/tests/*.test.mjs                  # the free tools' logic (JWT, cURL, stub checker, CSV/SQL, HTTP)
 ```
 
 ### Code layout

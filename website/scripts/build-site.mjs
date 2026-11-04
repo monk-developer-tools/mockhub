@@ -13,12 +13,14 @@ const out = join(website, 'docs');
 const pagesDir = join(website, 'docs-src', 'pages');
 const EDIT = 'https://github.com/monk-developer-tools/mockhub/edit/main';
 const GENERATED = { helpers: 'ui/src/model/dynamicValues.ts' };
+const GENERATOR = 'ui/src/model/generator.ts';
 
 const uiRequire = createRequire(join(repo, 'ui', 'package.json'));
 const React = (await import(pathToFileURL(uiRequire.resolve('react')).href)).default;
 const { renderToStaticMarkup } = await import(pathToFileURL(uiRequire.resolve('react-dom/server')).href);
 const icons = await import(pathToFileURL(join(repo, 'ui', 'node_modules', '@phosphor-icons', 'react', 'dist', 'ssr', 'index.es.js')).href);
 const { dynamicValues } = await import(pathToFileURL(join(repo, GENERATED.helpers)).href);
+const { GENERATOR_TYPES } = await import(pathToFileURL(join(repo, GENERATOR)).href);
 
 const icon = (name, size = 20) => {
   const component = icons[name];
@@ -301,7 +303,11 @@ if (existsSync(generatedList)) {
   }
 }
 const tools = Object.fromEntries(readdirSync(join(website, 'site-src', 'tools')).map((f) => [f.replace(/\.html$/, ''), readFileSync(join(website, 'site-src', 'tools', f), 'utf8')]));
-const featureContext = { icon, header: siteHeader(icon, ''), footer: siteFooter(icon), examples: exampleProjects(), tools };
+const catalogues = {
+  'template-playground': dynamicValues('response').map((g) => ({ name: g.name, items: g.items.map(({ label, expression }) => ({ label, expression })) })),
+  'fake-data': GENERATOR_TYPES,
+};
+const featureContext = { icon, header: siteHeader(icon, ''), footer: siteFooter(icon), examples: exampleProjects(), tools, catalogues };
 for (const page of FEATURES) {
   if (existsSync(join(website, page.slug)) && !existsSync(join(website, page.slug, 'index.html'))) throw new Error(`Feature slug ${page.slug} clashes with a folder in website/`);
   mkdirSync(join(website, page.slug), { recursive: true });
