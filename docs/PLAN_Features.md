@@ -542,7 +542,7 @@ Safety for the demo-server tools. Each tool:
   - [x] Spec, CSV and example starters, and "Host as API" on the fake data page
   - [x] "Keep it" export (claim dropped, see notes)
 - W6 Compare and polish:
-  - [ ] vs WireMock, vs Mockoon and vs Postman mock servers pages, factual and dated
+  - [x] vs WireMock, vs Mockoon and vs Postman mock servers pages, factual and dated (checked 4 November 2026; Apache-2.0 LICENSE added)
   - [x] Homepage hero CTA becomes "Try it free, no login"
   - [ ] Lighthouse 95+ on every page
   - [ ] Phone, dark-mode and keyboard pass

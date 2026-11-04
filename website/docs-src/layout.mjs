@@ -69,7 +69,7 @@ const pageLinks = (menu) => PAGES.filter((p) => p.menu === menu && !p.hidden).ma
 
 const FOOTER = [
   ['Service virtualization', pageLinks('virtualization')],
-  ['Mock servers', pageLinks('mock-servers')],
+  ['Mock servers', [...pageLinks('mock-servers'), ...PAGES.filter((p) => p.kind === 'compare').map((p) => [p.nav[0], `/${p.slug}/`])]],
   ['Free tools', [...pageLinks('tools'), ['All free tools', '/tools/']]],
   ['Resources', [['Documentation', '/docs/'], ['Tutorials', '/tutorials/'], ['Quick start', '/docs/quick-start/'], ['Helper reference', '/docs/helpers/'], ['API & CI', '/docs/api/'], ['Error codes', '/docs/error-codes/'], ['Deployment', '/docs/deploy/']]],
   ['Project', [['GitHub', GITHUB], ['Docker Hub', DOCKER_HUB], ['Releases', `${GITHUB}/releases`], ['Report an issue', `${GITHUB}/issues`], ['Live demo', DEMO]]],

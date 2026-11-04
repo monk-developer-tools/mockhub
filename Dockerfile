@@ -26,7 +26,8 @@ RUN jlink \
 FROM gcr.io/distroless/base-nossl-debian12:nonroot
 LABEL org.opencontainers.image.title="MockHub" \
       org.opencontainers.image.description="Team mock server for REST and SOAP built on WireMock, with a web UI" \
-      org.opencontainers.image.source="https://github.com/monk-developer-tools/mockhub"
+      org.opencontainers.image.source="https://github.com/monk-developer-tools/mockhub" \
+      org.opencontainers.image.licenses="Apache-2.0"
 COPY --from=runtime /jre /opt/java
 COPY --from=runtime --chown=65532:65532 /data /data
 COPY --from=jar /src/build/libs/mockhub.jar /opt/mockhub/mockhub.jar

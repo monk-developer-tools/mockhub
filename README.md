@@ -626,3 +626,8 @@ multi-arch (amd64 and arm64). The pipeline needs two repository secrets: `DOCKER
   replicas would drift apart. One task handles thousands of requests per second, which is plenty for test environments.
 - Scenario states and rate-limit counters live in memory and reset on restart. Request and callout history is kept on disk for `MOCKHUB_HISTORY_DAYS` days and is not part of backups.
 - A webhook is sent once. Failed callouts are logged but not retried.
+
+## Licence
+
+MockHub is open source under the [Apache License 2.0](LICENSE). It is built on [WireMock](https://wiremock.org), which
+uses the same licence, and is not affiliated with WireMock Inc.

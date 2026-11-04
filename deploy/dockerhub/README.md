@@ -177,5 +177,5 @@ HTTPS load balancer: see [Deploying to AWS ECS](https://github.com/monk-develope
 
 ---
 
-MockHub is built on [WireMock](https://wiremock.org) and is not affiliated with WireMock Inc.
+MockHub is open source under the Apache License 2.0. It is built on [WireMock](https://wiremock.org) and is not affiliated with WireMock Inc.
 Source, issues and docs: [github.com/monk-developer-tools/mockhub](https://github.com/monk-developer-tools/mockhub).

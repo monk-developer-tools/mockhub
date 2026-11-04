@@ -1,4 +1,5 @@
 import { DEMO, MENUS, PAGES } from './pages.mjs';
+import { GITHUB } from '../docs-src/layout.mjs';
 
 export const SITE = 'https://mockhub.devops-monk.com';
 const LIVE = 'mockhub.devops-monk.com';
@@ -91,14 +92,14 @@ function hero(page, icon) {
   return `<section class="hero fp-hero">
       <div class="wrap hero-grid${visual ? '' : ' fp-solo'}">
         <div class="hero-copy">
-          <p class="eyebrow">${icon(page.icon, 16)}${esc(menu.title)}</p>
+          <p class="eyebrow">${icon(page.icon, 16)}${esc(page.eyebrow ?? menu.title)}</p>
           <h1>${esc(page.h1)}</h1>
           <p class="lede">${esc(page.lede)}</p>
           <div class="ctas">
             <a class="btn primary" href="${DEMO}">Try it in the live demo</a>
             <a class="btn secondary" href="${page.docs}">Read the docs</a>
           </div>
-          <p class="fine">Free and open source · self-hosted · built on WireMock${tutorial ? ` · ${tutorial}` : ''}</p>
+          <p class="fine">Free and open source (Apache-2.0) · self-hosted · built on WireMock${tutorial ? ` · ${tutorial}` : ''}</p>
         </div>
         ${visual}
       </div>
@@ -203,6 +204,51 @@ const related = (page, icon) => `<section aria-labelledby="related">
             <p>${esc(p.nav[1])}</p>
             <span class="fp-more" aria-hidden="true">Open</span>
           </a>`).join('\n          ')}
+        </div>
+      </div>
+    </section>`;
+
+const MARKS = { yes: ['✓', 'Yes'], part: ['◐', 'Partly'], no: ['✕', 'No'] };
+
+const cell = (column, [state, text]) => `<td data-col="${esc(column)}">${state ? `<span class="cmp-mark ${state}" aria-hidden="true">${MARKS[state][0]}</span><span class="sr-only">${MARKS[state][1]}. </span>` : ''}${esc(text ?? '')}</td>`;
+
+const compare = (page) => {
+  const { title, checked, columns, groups, note, sources } = page.compare;
+  return `<section aria-labelledby="compare">
+      <div class="wrap fp-wide">
+        <div class="section-head reveal">
+          <p class="eyebrow">Side by side</p>
+          <h2 id="compare">${esc(title)}</h2>
+          <p class="cmp-checked">Checked on ${esc(checked)} against the public docs linked below.</p>
+        </div>
+        <table class="cmp reveal">
+          <thead><tr><th scope="col">Feature</th>${columns.map((c) => `<th scope="col">${esc(c)}</th>`).join('')}</tr></thead>
+          ${groups.map(([group, rows]) => `<tbody>
+            <tr class="cmp-group"><th colspan="${columns.length + 1}" scope="colgroup">${esc(group)}</th></tr>
+            ${rows.map(([label, ...cells]) => `<tr><th scope="row">${esc(label)}</th>${cells.map((c, i) => cell(columns[i], c)).join('')}</tr>`).join('\n            ')}
+          </tbody>`).join('\n          ')}
+        </table>
+        <div class="cmp-notes">
+          <p>${esc(note)}</p>
+          <p>Sources: ${sources.map(([label, href]) => `<a href="${href}" rel="noopener">${esc(label)}</a>`).join(', ')}. Spot something out of date? <a href="${GITHUB}/issues">Tell us</a> and we will fix it.</p>
+        </div>
+      </div>
+    </section>`;
+};
+
+const choose = (page, icon) => `<section class="alt" aria-labelledby="choose">
+      <div class="wrap">
+        <div class="section-head reveal">
+          <p class="eyebrow">Which one</p>
+          <h2 id="choose">Pick the one that fits</h2>
+        </div>
+        <div class="cmp-choose">
+          ${page.choose.map(([who, items]) => `<article class="cmp-pick reveal">
+            <h3>${icon('CheckCircle', 22)}Choose ${esc(who)} if</h3>
+            <ul>
+              ${items.map((item) => `<li>${esc(item)}</li>`).join('\n              ')}
+            </ul>
+          </article>`).join('\n          ')}
         </div>
       </div>
     </section>`;
@@ -360,6 +406,7 @@ const LAYOUTS = {
   examples: (page, ctx) => [hero(page, ctx.icon), examplesGrid(ctx.examples, ctx.icon), related(page, ctx.icon), closing(page)],
   'tools-index': (page, ctx) => [toolHero(page, ctx.icon), toolsIndex(page, ctx.icon), related(page, ctx.icon), closing(page)],
   tool: (page, ctx) => [toolHero(page, ctx.icon), toolBody(page, ctx), toolSteps(page), faq(page), related(page, ctx.icon), closing(page)],
+  compare: (page, ctx) => [hero(page, ctx.icon), compare(page), choose(page, ctx.icon), faq(page), related(page, ctx.icon), closing(page)],
   feature: (page, ctx) => [hero(page, ctx.icon), steps(page), problem(page, ctx.icon), benefits(page, ctx.icon), example(page), faq(page), related(page, ctx.icon), closing(page)],
 };
 
