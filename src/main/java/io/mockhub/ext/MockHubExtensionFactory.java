@@ -84,6 +84,11 @@ import io.mockhub.publictools.BinTool;
 import io.mockhub.publictools.Bins;
 import io.mockhub.publictools.EchoTool;
 import io.mockhub.publictools.FakeTool;
+import io.mockhub.publictools.InstantMockFilter;
+import io.mockhub.publictools.InstantMockTool;
+import io.mockhub.publictools.InstantMocks;
+import io.mockhub.publictools.SandboxTemplateTransformer;
+import io.mockhub.org.Organization;
 import io.mockhub.publictools.PublicLimits;
 import io.mockhub.publictools.PublicToolsFilter;
 import io.mockhub.publictools.RenderTool;
@@ -239,7 +244,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
         List.of(new AzureEntraProvider(http, new JwtVerifier(http, clock), config.ssoAuthority)),
         ssoSettings, users, new RoleMapper(orgs::exists, id -> teams.find(id).map(Team::orgId)), clock);
     AuthService auth = new AuthService(users, TokenService.fromDataDir(dataDir, clock), ssoSettings::active, accessTokens::principal);
-    AccessPolicy policy = new AccessPolicy(id -> projects.find(id).map(p -> new ProjectScope(p.orgId(), p.teamId())));
+    AccessPolicy policy = new AccessPolicy(id -> projects.find(id).map(p -> new ProjectScope(p.orgId(), p.teamId())), config.publicTools);
 
     BaseUrls urls = new BaseUrls(config.publicUrl);
     ExporterRegistry exporters = new ExporterRegistry(List.of(new PostmanExporter(), new BrunoExporter(), new WireMockMappingsExporter()));
@@ -311,16 +316,23 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
 
     PublicLimits publicLimits = new PublicLimits(rateLimiter);
     Bins bins = new Bins(clock);
+    TemplatePlayground templatePlayground = new TemplatePlayground(List.of(fakeHelpers, valueHelpers, validationHelpers, jwtHelpers), renderWorkers(), 2000);
+    if (config.publicTools) orgs.ensureInstant();
+    InstantMocks instantMocks = new InstantMocks(dataDir, projects, stubs, () -> teams.ensureDefault(Organization.INSTANT_ID).id(), clock);
     PublicToolsFilter publicTools = new PublicToolsFilter(config.publicTools, publicLimits, List.of(
         new EchoTool(),
         new BinTool(bins, publicLimits),
         new FakeTool(new DataGenerator(fakeData), publicLimits),
-        new RenderTool(new TemplatePlayground(List.of(fakeHelpers, valueHelpers, validationHelpers, jwtHelpers), renderWorkers(), 2000), publicLimits)));
+        new RenderTool(templatePlayground, publicLimits),
+        new InstantMockTool(instantMocks, history, publicLimits)));
     maintenance.scheduleWithFixedDelay(() -> safely(bins::prune), 10, 10, TimeUnit.MINUTES);
+    maintenance.scheduleWithFixedDelay(() -> safely(instantMocks::prune), 5, 60, TimeUnit.MINUTES);
     maintenance.scheduleWithFixedDelay(() -> safely(rateLimiter::prune), 10, 10, TimeUnit.MINUTES);
 
     List<Extension> extensions = new ArrayList<>(List.of(
         publicTools,
+        new InstantMockFilter(projects::findForPath, instantMocks),
+        new SandboxTemplateTransformer(templatePlayground),
         new PersistenceListener(),
         new CrudTransformer(crud),
         new ErrorRateTransformer(() -> ThreadLocalRandom.current().nextDouble()),

@@ -206,4 +206,39 @@ class AccessPolicyTest {
     // Then
     assertThat(List.of(list.allowed(), create.allowed(), revoke.allowed())).containsOnly(true);
   }
+
+  @Test
+  void keepsServerViewersOutOfPrivateOrganisations() {
+    // Given
+    AccessPolicy withInstant = new AccessPolicy(id -> Optional.ofNullable(Map.of(
+        "pi", new ProjectScope(io.mockhub.org.Organization.INSTANT_ID, "ti")).get(id)));
+    Principal serverViewer = user(Role.VIEWER);
+
+    // When
+    AccessPolicy.Decision viewer = withInstant.decide(serverViewer, RequestMethod.GET, "/mockhub/api/projects/pi/stubs");
+    AccessPolicy.Decision admin = withInstant.decide(PEOPLE.get("admin"), RequestMethod.GET, "/mockhub/api/projects/pi/stubs");
+
+    // Then
+    assertThat(viewer.allowed()).isFalse();
+    assertThat(admin.allowed()).isTrue();
+    assertThat(serverViewer.belongsTo(io.mockhub.org.Organization.INSTANT_ID)).isFalse();
+    assertThat(serverViewer.belongsTo("orgA")).isTrue();
+  }
+
+  @Test
+  void keepsTheWireMockAdminApiForAdminsWhenAsked() {
+    // Given
+    AccessPolicy strict = new AccessPolicy(id -> Optional.empty(), true);
+
+    // When
+    AccessPolicy.Decision viewer = strict.decide(user(Role.VIEWER), RequestMethod.GET, "/mappings");
+    AccessPolicy.Decision admin = strict.decide(PEOPLE.get("admin"), RequestMethod.GET, "/mappings");
+    AccessPolicy.Decision usual = policy.decide(user(Role.VIEWER), RequestMethod.GET, "/mappings");
+
+    // Then
+    assertThat(viewer.allowed()).isFalse();
+    assertThat(viewer.reason()).contains("admins only");
+    assertThat(admin.allowed()).isTrue();
+    assertThat(usual.allowed()).isTrue();
+  }
 }

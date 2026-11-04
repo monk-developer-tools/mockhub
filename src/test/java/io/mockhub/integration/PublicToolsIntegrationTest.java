@@ -126,4 +126,105 @@ class PublicToolsIntegrationTest {
     assertThat(result.status()).isEqualTo(204);
     assertThat(result.header("Access-Control-Allow-Methods")).contains("POST");
   }
+
+  @Test
+  void makesAnInstantMockWithoutAnAccountThatAnswersRightAway() {
+    // Given
+    server = MockHubServer.start(data, ON);
+    ApiClient api = server.api();
+    JsonNode created = api.post("/__public/mocks", "").json();
+    String base = created.get("baseUrl").asText();
+    Map<String, String> key = Map.of("X-Mock-Token", created.get("token").asText());
+
+    // When
+    ApiClient.Result hello = api.get(base + "/hello");
+    ApiClient.Result user = api.get(base + "/users/7");
+    ApiClient.Result added = api.send("POST", "/__public/mocks/" + created.get("slug").asText() + "/stubs",
+        "{\"name\":\"Pay\",\"request\":{\"method\":\"POST\",\"urlPath\":\"/payments\"},\"response\":{\"status\":201,\"jsonBody\":{\"id\":\"p1\"}}}",
+        "application/json", key);
+    ApiClient.Result paid = api.post(base + "/payments", "{}");
+    JsonNode mock = api.send("GET", "/__public/mocks/" + created.get("slug").asText(), null, null, key).json();
+    JsonNode requests = api.send("GET", "/__public/mocks/" + created.get("slug").asText() + "/requests", null, null, key).json();
+
+    // Then
+    assertThat(base).matches("/m-[a-z0-9]{10}");
+    assertThat(hello.json().get("message").asText()).isEqualTo("Hello from your instant mock");
+    assertThat(user.json().get("id").asText()).isEqualTo("7");
+    assertThat(user.json().get("email").asText()).contains("@");
+    assertThat(added.status()).isEqualTo(201);
+    assertThat(paid.status()).isEqualTo(201);
+    assertThat(mock.get("stubs")).hasSize(3);
+    assertThat(mock.get("stubs").findValuesAsText("name")).containsExactlyInAnyOrder("Say hello", "Get a user", "Pay");
+    assertThat(mock.toString()).contains("\"response-template\"").doesNotContain("mockhub-public-template");
+    assertThat(requests.get("requests").size()).isGreaterThanOrEqualTo(1);
+  }
+
+  @Test
+  void managesAnInstantMockOnlyWithItsKey() {
+    // Given
+    server = MockHubServer.start(data, ON);
+    ApiClient api = server.api();
+    JsonNode created = api.post("/__public/mocks", "").json();
+    String path = "/__public/mocks/" + created.get("slug").asText();
+
+    // When
+    ApiClient.Result noKey = api.get(path);
+    ApiClient.Result wrongKey = api.send("DELETE", path, null, null, Map.of("X-Mock-Token", "guess"));
+    ApiClient.Result proxy = api.send("POST", path + "/stubs",
+        "{\"request\":{\"url\":\"/x\"},\"response\":{\"proxyBaseUrl\":\"http://169.254.169.254\"}}", "application/json",
+        Map.of("X-Mock-Token", created.get("token").asText()));
+
+    // Then
+    assertThat(noKey.status()).isEqualTo(404);
+    assertThat(wrongKey.status()).isEqualTo(404);
+    assertThat(proxy.status()).isEqualTo(400);
+    assertThat(proxy.json().get("error").asText()).contains("proxyBaseUrl");
+  }
+
+  @Test
+  void rendersInstantMockTemplatesInsideTheSandbox() {
+    // Given
+    server = MockHubServer.start(data, ON);
+    ApiClient api = server.api();
+    JsonNode created = api.post("/__public/mocks", "{\"stubs\":[{\"request\":{\"urlPath\":\"/bomb\"},\"response\":{\"status\":200,"
+        + "\"body\":\"{{#each (range 1 100)}}{{#each (range 1 100)}}x{{/each}}{{/each}}{{systemValue key='user.home'}}\","
+        + "\"transformers\":[\"response-template\"]}}]}").json();
+
+    // When
+    ApiClient.Result bomb = api.get(created.get("baseUrl").asText() + "/bomb");
+
+    // Then
+    assertThat(bomb.status()).isEqualTo(500);
+    assertThat(bomb.json().get("error").asText()).contains("Loops in the public playground run up to");
+    awaitHistory(api, created);
+  }
+
+  private static void awaitHistory(ApiClient api, JsonNode created) {
+    Map<String, String> key = Map.of("X-Mock-Token", created.get("token").asText());
+    String path = "/__public/mocks/" + created.get("slug").asText() + "/requests";
+    long deadline = System.currentTimeMillis() + 5_000;
+    while (api.send("GET", path, null, null, key).json().get("requests").isEmpty() && System.currentTimeMillis() < deadline) {
+      Thread.onSpinWait();
+    }
+  }
+
+  @Test
+  void hidesInstantMocksFromServerViewersAndTheWireMockAdminApi() {
+    // Given
+    server = MockHubServer.start(data, Map.of("MOCKHUB_PUBLIC_TOOLS", "true", "MOCKHUB_USERS", "admin:pw:admin,demo:demo:viewer"));
+    ApiClient api = server.api();
+    JsonNode created = api.post("/__public/mocks", "").json();
+    ApiClient viewer = server.api().as("demo", "demo");
+    ApiClient admin = server.api().as("admin", "pw");
+
+    // When
+    JsonNode seenByViewer = viewer.get("/__admin/mockhub/api/projects").json();
+    JsonNode seenByAdmin = admin.get("/__admin/mockhub/api/projects").json();
+    ApiClient.Result nativeApi = viewer.get("/__admin/mappings");
+
+    // Then
+    assertThat(seenByViewer.findValuesAsText("slug")).doesNotContain(created.get("slug").asText());
+    assertThat(seenByAdmin.findValuesAsText("slug")).contains(created.get("slug").asText());
+    assertThat(nativeApi.status()).isEqualTo(403);
+  }
 }

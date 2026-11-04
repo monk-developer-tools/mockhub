@@ -42,6 +42,16 @@ public final class OrganizationService {
     return org;
   }
 
+  public Organization ensureInstant() {
+    return repository.findById(Organization.INSTANT_ID).orElseGet(() -> {
+      String now = now();
+      Organization org = new Organization(Organization.INSTANT_ID, "Instant mocks", availableSlug("instant-mocks"),
+          "Temporary mocks made on the public tools pages, without an account", now, now);
+      repository.save(org);
+      return org;
+    });
+  }
+
   public Organization create(JsonNode body) {
     String name = requiredName(body);
     String requested = body.path("slug").asText("");

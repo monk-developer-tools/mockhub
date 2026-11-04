@@ -1,6 +1,7 @@
 package io.mockhub.user;
 
 import io.mockhub.auth.Role;
+import io.mockhub.org.Organization;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -38,7 +39,8 @@ public record User(
   }
 
   public Role roleIn(String orgId) {
-    Role role = effectiveServerRole();
+    Role server = effectiveServerRole();
+    Role role = Organization.isPrivate(orgId) && server != Role.ADMIN ? Role.NONE : server;
     for (Membership m : memberships) if (m.orgId().equals(orgId)) role = Role.max(role, m.role());
     for (Membership m : groupMemberships) if (m.orgId().equals(orgId)) role = Role.max(role, m.role());
     return role;

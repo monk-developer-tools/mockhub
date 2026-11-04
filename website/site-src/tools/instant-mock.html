@@ -1,0 +1,120 @@
+<div class="tool-card tool-start" data-mock-start>
+  <h3>A mock API in one click</h3>
+  <p>You get your own URL on the demo with two example stubs. Change them, add your own, and call it from your app or tests.</p>
+  <div class="tool-actions-row">
+    <button type="button" class="btn primary" data-mock-create>Create a mock</button>
+  </div>
+  <p class="tool-error" data-mock-create-error hidden></p>
+</div>
+
+<div data-mock-live hidden>
+  <div class="tool-card">
+    <div class="tool-head">
+      <h3>Your mock</h3>
+      <span class="tool-actions">
+        <button type="button" class="btn secondary small" data-copy="[data-mock-base]">Copy URL</button>
+        <button type="button" class="btn secondary small" data-mock-export>Export</button>
+        <button type="button" class="btn ghost small" data-mock-delete>Delete</button>
+      </span>
+    </div>
+    <pre class="tool-out tool-url" data-mock-base></pre>
+    <p class="tool-hint" data-mock-meta></p>
+    <div class="tool-head"><h4 class="tool-sub">Private link to edit it</h4><span class="tool-actions"><button type="button" class="btn secondary small" data-copy="[data-mock-manage]">Copy link</button></span></div>
+    <pre class="tool-out tool-url" data-mock-manage></pre>
+    <p class="tool-hint">Anyone with this link can change or delete the mock, so keep it to yourself. Anyone with the mock's URL can call it.</p>
+  </div>
+
+  <div class="tool-grid tool-bin">
+    <div class="tool-card">
+      <div class="tool-head">
+        <h3>Stubs <span class="tool-badge" data-mock-count>0</span></h3>
+        <span class="tool-actions"><button type="button" class="btn secondary small" data-mock-add>Add a stub</button></span>
+      </div>
+      <ul class="tool-requests" data-mock-stubs aria-label="Stubs"></ul>
+      <p class="tool-error" data-mock-error hidden></p>
+    </div>
+    <form class="tool-card" data-mock-editor>
+      <div class="tool-head">
+        <h3 data-mock-editor-title>Add a stub</h3>
+        <span class="tool-actions"><button type="button" class="btn ghost small" data-mock-mode>Edit as JSON</button></span>
+      </div>
+      <div data-mock-form>
+        <label class="tool-label" for="mock-name">Name</label>
+        <input id="mock-name" class="tool-input" type="text" autocomplete="off" placeholder="Get an order" data-field="name">
+        <div class="tool-row">
+          <div>
+            <label class="tool-label" for="mock-method">Method</label>
+            <select id="mock-method" class="tool-input" data-field="method">
+              <option>GET</option><option>POST</option><option>PUT</option><option>PATCH</option><option>DELETE</option><option value="ANY">Any</option>
+            </select>
+          </div>
+          <div class="tool-grow">
+            <label class="tool-label" for="mock-path">Path</label>
+            <input id="mock-path" class="tool-input" type="text" spellcheck="false" autocomplete="off" value="/orders/{id}" data-field="path">
+          </div>
+        </div>
+        <div class="tool-row">
+          <div>
+            <label class="tool-label" for="mock-status">Status</label>
+            <input id="mock-status" class="tool-input" type="number" min="100" max="599" value="200" data-field="status">
+          </div>
+          <div class="tool-grow">
+            <label class="tool-label" for="mock-type">Content type</label>
+            <input id="mock-type" class="tool-input" type="text" spellcheck="false" value="application/json" data-field="contentType">
+          </div>
+          <div>
+            <label class="tool-label" for="mock-delay">Delay (ms)</label>
+            <input id="mock-delay" class="tool-input" type="number" min="0" max="10000" value="0" data-field="delay">
+          </div>
+        </div>
+        <label class="tool-label" for="mock-body">Body</label>
+        <textarea id="mock-body" class="tool-input tool-code" rows="8" spellcheck="false" autocomplete="off" data-field="body">{"id": "{{request.path.id}}", "status": "PAID"}</textarea>
+        <label class="tool-check"><input type="checkbox" checked data-field="templating"> Fill in values from the request (templating). <a href="/tools/template-playground/">Try templates</a></label>
+      </div>
+      <div data-mock-json hidden>
+        <label class="tool-label" for="mock-json">Stub JSON</label>
+        <textarea id="mock-json" class="tool-input tool-code" rows="16" spellcheck="false" autocomplete="off" data-mock-json-input></textarea>
+        <p class="tool-hint">Any WireMock stub works, except proxying, files, webhooks, and regex, XPath or schema matching. Paste one from <a href="/tools/curl-to-stub/">cURL to stub</a>.</p>
+      </div>
+      <div class="tool-actions-row">
+        <button type="submit" class="btn primary" data-mock-save>Save stub</button>
+        <button type="button" class="btn ghost small" data-mock-cancel hidden>Cancel</button>
+        <span class="tool-hint" data-mock-saved aria-live="polite"></span>
+      </div>
+      <p class="tool-error" data-mock-save-error hidden></p>
+    </form>
+  </div>
+
+  <div class="tool-grid tool-bin">
+    <div class="tool-card">
+      <div class="tool-head">
+        <h3>Try it</h3>
+        <span class="tool-actions"><span class="tool-hint" data-mock-try-meta aria-live="polite"></span></span>
+      </div>
+      <div class="tool-row">
+        <div>
+          <label class="tool-label" for="mock-try-method">Method</label>
+          <select id="mock-try-method" class="tool-input" data-mock-try-method>
+            <option>GET</option><option>POST</option><option>PUT</option><option>PATCH</option><option>DELETE</option>
+          </select>
+        </div>
+        <div class="tool-grow">
+          <label class="tool-label" for="mock-try-path">Path</label>
+          <input id="mock-try-path" class="tool-input" type="text" spellcheck="false" autocomplete="off" value="/hello" data-mock-try-path>
+        </div>
+      </div>
+      <label class="tool-label" for="mock-try-body">Body</label>
+      <textarea id="mock-try-body" class="tool-input" rows="3" spellcheck="false" data-mock-try-body></textarea>
+      <div class="tool-actions-row"><button type="button" class="btn secondary" data-mock-try>Send</button></div>
+      <pre class="tool-out" data-mock-try-out></pre>
+    </div>
+    <div class="tool-card">
+      <div class="tool-head">
+        <h3>Recent requests</h3>
+        <span class="tool-actions"><span class="tool-live" data-mock-polling aria-live="polite"></span></span>
+      </div>
+      <ul class="tool-requests" data-mock-requests aria-label="Recent requests"></ul>
+      <p class="tool-hint" data-mock-requests-empty>Requests to your mock show up here, matched or not.</p>
+    </div>
+  </div>
+</div>

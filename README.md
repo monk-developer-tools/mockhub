@@ -194,8 +194,8 @@ screenshots, and the [live demo](https://mockhub.devops-monk.com/__admin/mockhub
 - **Users and single sign-on.** Create users in the UI, or let people sign in with **Microsoft Entra ID** (Azure AD).
   Entra groups and app roles can map to organisation roles. Mock endpoints always stay open.
 - **Free tools, no login.** At [mockhub.devops-monk.com/tools](https://mockhub.devops-monk.com/tools/): a webhook
-  catcher, an HTTP echo, a response template playground and a fake data generator run on the demo server
-  (`MOCKHUB_PUBLIC_TOOLS`). A JWT encoder and decoder, cURL to stub and a stub JSON checker run in your browser.
+  catcher, an HTTP echo, a response template playground, a fake data generator and an instant mock server (a
+  mock URL with your own stubs, kept for 7 days) run on the demo server (`MOCKHUB_PUBLIC_TOOLS`). A JWT encoder and decoder, cURL to stub and a stub JSON checker run in your browser.
 
 ## Quick start
 
@@ -233,7 +233,7 @@ All configuration is through environment variables.
 | `MOCKHUB_FAKE_LOCALE` | `en` | Default language for `{{fake ...}}` data, e.g. `de`, `fr`, `en-GB` |
 | `MOCKHUB_PLAYGROUND_ALLOW_PRIVATE` | `false` | Let the Playground call private and local addresses (blocked by default so the server can't reach your internal network) |
 | `MOCKHUB_CALLOUT_ALLOW_PRIVATE` | `false` | Let webhooks and *wait for callout* stubs call private and local addresses. Calls to MockHub's own mock URLs always work. Set it to `true` for callbacks to services on your own network, e.g. `host.docker.internal` |
-| `MOCKHUB_PUBLIC_TOOLS` | `false` | Turn on the no-login tools under `/__public/` (HTTP echo, webhook bins, template render, fake data) with per-address limits. Meant for a public demo; see [Public tools](https://mockhub.devops-monk.com/docs/config/#public-tools) |
+| `MOCKHUB_PUBLIC_TOOLS` | `false` | Turn on the no-login tools under `/__public/` (HTTP echo, webhook bins, template render, fake data, instant mocks) with per-address limits. Meant for a public demo; see [Public tools](https://mockhub.devops-monk.com/docs/config/#public-tools) |
 | `WIREMOCK_OPTIONS` | empty | Any extra [WireMock CLI option](https://wiremock.org/docs/standalone/java-jar/), e.g. `--async-response-enabled true --verbose` |
 
 ## Webhooks and callouts

@@ -257,6 +257,7 @@ const SCRIPTS = {
   'webhook-bin': 'bin-page.js',
   'template-playground': 'playground-page.js',
   'fake-data': 'fake-page.js',
+  'instant-mock': 'instant-page.js',
 };
 
 const BROWSER_NOTE = 'Runs in your browser. Nothing you paste is sent anywhere.';

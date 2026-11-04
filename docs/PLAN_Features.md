@@ -527,20 +527,20 @@ Safety for the demo-server tools. Each tool:
   - [x] `MOCKHUB_PUBLIC_TOOLS` flag
   - [x] Echo, status and delay
   - [x] Webhook bins (polling instead of SSE)
-  - [ ] Anonymous projects with capability links, limits and a cleanup job
+  - [x] Anonymous projects with capability links, limits and a cleanup job
   - [x] Template render endpoint
   - [x] Fake data endpoint
   - [x] Rate limiting and safety rules above (for the tools built so far)
   - [x] Unit, integration and system tests for the tools built so far
-  - [ ] SSRF refusal test, with anonymous projects
+  - [x] SSRF refusal test, with anonymous projects
 - W5 Demo-server tools, UI:
-  - [ ] Trimmed instant-mock editor reusing the stub form and picker
+  - [x] Trimmed instant-mock editor (a website form, see notes)
   - [x] Bin viewer
   - [x] Playground
   - [x] Fake data page
   - [x] HTTP echo page
   - [ ] Spec, CSV and example starters
-  - [ ] "Keep it" export and claim
+  - [x] "Keep it" export (claim dropped, see notes)
 - W6 Compare and polish:
   - [ ] vs WireMock, vs Mockoon and vs Postman mock servers pages, factual and dated
   - [ ] Homepage hero CTA becomes "Try it free, no login"
@@ -576,6 +576,20 @@ parsing, cURL, error wording) and `fakeformat.js` (CSV and SQL), both tested wit
 list and the fake data types are embedded at build time from the UI's `dynamicValues.json` and `generator.ts`, so they
 match the product. The bin page keeps the bin's token in `localStorage` and polls every 2 seconds while the tab is
 visible. The tools index splits the server tools from the browser tools, and each server tool says what it stores.
+
+Notes (instant mock): an instant mock is a normal project in a private organisation with the fixed id
+`instant-mocks`, so it is served, matched and journalled like any other project. `POST /__public/mocks` returns a slug
+(`m-` and 10 letters or digits) and a 32-character token stored as a SHA-256 hash in `instant-mocks.json`; the website
+keeps both in `localStorage` and in the URL hash, which works as the private edit link. Limits: 200 mocks, 20 stubs
+each, 1,000 requests a day, 64 KB per stub and per request body, deleted 7 days after the last change by an hourly
+job. `InstantStubRules` allows a fixed list of stub fields and refuses proxying, callouts, webhooks, `bodyFileName`,
+other transformers and the matchers that run user regexes, XPath or JSON schema, since a slow pattern in one mock
+would slow down every project. `response-template` is swapped for a sandboxed transformer with the playground's
+budget and a 1-second limit. With the flag on, server roles below admin don't apply to private organisations, so the
+public demo login can't see instant mocks, and the native WireMock admin API is admin-only. Two changes from the
+plan: the editor is a small website form (method, path, status, type, delay, body, templating) with a JSON mode,
+rather than the React stub form, which needs the whole app; and "Keep it" exports WireMock mappings only, because the
+demo has no sign-up to claim into.
 
 Notes (W3): the tools are plain ES modules in `website/assets/js/tools/`: pure logic (`jwt.js`, `curl.js`,
 `stubcheck.js`) plus one page script each, with markup in `website/site-src/tools/`. They are tested with Node's

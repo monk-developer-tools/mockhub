@@ -26,9 +26,15 @@ public final class AccessPolicy {
       Set.of("/shutdown", "/reset", "/settings", "/mappings/reset", "/mappings/save");
 
   private final Function<String, Optional<ProjectScope>> scopeOfProject;
+  private final boolean nativeForAdminsOnly;
 
   public AccessPolicy(Function<String, Optional<ProjectScope>> scopeOfProject) {
+    this(scopeOfProject, false);
+  }
+
+  public AccessPolicy(Function<String, Optional<ProjectScope>> scopeOfProject, boolean nativeForAdminsOnly) {
     this.scopeOfProject = scopeOfProject;
+    this.nativeForAdminsOnly = nativeForAdminsOnly;
   }
 
   public record Decision(boolean allowed, String reason) {
@@ -56,6 +62,9 @@ public final class AccessPolicy {
     }
     if (principal.isAdmin()) return Decision.allow();
     if (adminPath.startsWith(API)) return decideApi(principal, method, adminPath.substring(API.length()));
+    if (nativeForAdminsOnly) {
+      return Decision.deny("On this server the WireMock admin API is for admins only, because it shows every project");
+    }
     return decideNative(principal.highestRole(), method, adminPath);
   }
 

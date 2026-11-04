@@ -4614,3 +4614,26 @@ select.tool-select-small {
   padding: 3px 8px;
   margin-right: 4px;
 }
+
+.tool-card[hidden] {
+  display: none;
+}
+
+.tool-row > div {
+  min-width: 0;
+}
+
+@media (max-width: 560px) {
+  .tool-row {
+    flex-wrap: wrap;
+  }
+
+  .tool-row > div {
+    width: auto;
+    flex: 1 1 calc(50% - 6px);
+  }
+
+  .tool-row > div.tool-grow {
+    flex-basis: 100%;
+  }
+}

@@ -3,6 +3,7 @@ package io.mockhub.publictools;
 import com.github.tomakehurst.wiremock.extension.TemplateHelperProviderExtension;
 import com.github.tomakehurst.wiremock.extension.responsetemplating.TemplateEngine;
 import com.github.tomakehurst.wiremock.http.ImmutableRequest;
+import com.github.tomakehurst.wiremock.http.Request;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import io.mockhub.template.ValidationFailure;
 import java.io.IOException;
@@ -86,8 +87,16 @@ public final class TemplatePlayground {
     return Optional.empty();
   }
 
+  public Result renderFor(String template, Request request, long budgetMillis) {
+    return RenderBudget.within(budgetMillis, () -> apply(template, request));
+  }
+
   private Result apply(String template, Sample sample) {
-    Map<String, Object> model = new HashMap<>(models.buildModelForRequest(SampleRequest.withCookies(request(sample))));
+    return apply(template, SampleRequest.withCookies(request(sample)));
+  }
+
+  private Result apply(String template, Request request) {
+    Map<String, Object> model = new HashMap<>(models.buildModelForRequest(request));
     Capped out = new Capped();
     try {
       sandbox.render(template, model, out);
