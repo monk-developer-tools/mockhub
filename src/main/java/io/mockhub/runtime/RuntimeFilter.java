@@ -1,5 +1,6 @@
 package io.mockhub.runtime;
 
+import io.mockhub.common.ClientAddress;
 import com.github.tomakehurst.wiremock.common.Urls;
 import com.github.tomakehurst.wiremock.extension.requestfilter.RequestFilterAction;
 import com.github.tomakehurst.wiremock.extension.requestfilter.StubRequestFilterV2;
@@ -41,8 +42,8 @@ public final class RuntimeFilter implements StubRequestFilterV2 {
     if (project.isEmpty()) return RequestFilterAction.continueWith(request);
     load.record(project.get().id());
     Map<String, String> corsHeaders = cors.forResponse(rules, origin);
-    if (!settings.ipRules().allows(request.getClientIp())) {
-      return RequestFilterAction.stopWith(RuntimeResponses.forbiddenIp(request.getClientIp(), corsHeaders));
+    if (!settings.ipRules().allows(ClientAddress.of(request))) {
+      return RequestFilterAction.stopWith(RuntimeResponses.forbiddenIp(ClientAddress.of(request), corsHeaders));
     }
     if (settings.rateLimit() != null) {
       RateLimiter.Decision decision = limiter.take(project.get().id(), settings.rateLimit());

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.mockhub.api.Jsons;
+import io.mockhub.data.CrudService;
 import io.mockhub.org.Organization;
 import io.mockhub.project.Project;
 import io.mockhub.project.ProjectService;
@@ -39,16 +40,18 @@ public final class InstantMocks {
   private final JsonFile<List<Entry>> file;
   private final ProjectService projects;
   private final StubService stubs;
+  private final CrudService crud;
   private final Supplier<String> teamId;
   private final Clock clock;
   private final SecureRandom random = new SecureRandom();
   private final Map<String, Entry> bySlug = new LinkedHashMap<>();
   private final Map<String, Count> counts = new ConcurrentHashMap<>();
 
-  public InstantMocks(Path dataDir, ProjectService projects, StubService stubs, Supplier<String> teamId, Clock clock) {
+  public InstantMocks(Path dataDir, ProjectService projects, StubService stubs, CrudService crud, Supplier<String> teamId, Clock clock) {
     this.file = new JsonFile<>(JsonFile.inDataDir(dataDir, "instant-mocks.json"), new TypeReference<>() {});
     this.projects = projects;
     this.stubs = stubs;
+    this.crud = crud;
     this.teamId = teamId;
     this.clock = clock;
     file.read(ArrayList::new).forEach(e -> bySlug.put(e.slug(), e));
@@ -60,7 +63,7 @@ public final class InstantMocks {
     }
   }
 
-  public record Created(String slug, String token, String projectId) {}
+  public record Created(String slug, String token, String projectId, List<String> skipped) {}
 
   public static final class Full extends RuntimeException {
     Full(String message) {
@@ -70,23 +73,54 @@ public final class InstantMocks {
 
   private record Count(LocalDate day, int count) {}
 
-  public synchronized Created create(List<JsonNode> starters) {
+  public synchronized Created create(InstantSource source) {
     prune();
     if (bySlug.size() >= MAX_MOCKS) throw new Full("The demo holds as many instant mocks as it can right now. Try again later.");
-    if (starters.size() > MAX_STUBS) throw new InstantStubRules.Refused("An instant mock holds up to " + MAX_STUBS + " stubs");
-    List<ObjectNode> checked = starters.stream().map(InstantStubRules::check).toList();
     String slug = freeSlug();
     String token = randomText(32);
     ObjectNode body = Jsons.object().put("name", "Instant mock " + slug).put("slug", slug)
         .put("description", "Made without an account on the public tools page")
         .put("orgId", Organization.INSTANT_ID).put("teamId", teamId.get());
     Project project = projects.create(body);
-    checked.forEach(stub -> stubs.create(project.id(), stub));
+    List<String> skipped = new ArrayList<>();
+    try {
+      InstantSeed seed = source.build(project);
+      List<ObjectNode> accepted = accept(seed, skipped);
+      seed.records().forEach(r -> crud.seed(project.id(), r.resource(), r.records()));
+      accepted.forEach(stub -> stubs.create(project.id(), stub));
+    } catch (RuntimeException e) {
+      projects.delete(project.id());
+      throw e;
+    }
     Instant now = clock.instant();
-    Entry entry = new Entry(project.id(), slug, hash(token), now.toString(), now.toString());
-    bySlug.put(slug, entry);
+    bySlug.put(slug, new Entry(project.id(), slug, hash(token), now.toString(), now.toString()));
     save();
-    return new Created(slug, token, project.id());
+    return new Created(slug, token, project.id(), skipped);
+  }
+
+  private static List<ObjectNode> accept(InstantSeed seed, List<String> skipped) {
+    if (seed.strict()) {
+      if (seed.stubs().size() > MAX_STUBS) throw new InstantStubRules.Refused("An instant mock holds up to " + MAX_STUBS + " stubs");
+      return seed.stubs().stream().map(InstantStubRules::check).toList();
+    }
+    List<ObjectNode> accepted = new ArrayList<>();
+    for (JsonNode stub : seed.stubs()) {
+      String name = stub.path("name").asText("A stub");
+      if (accepted.size() >= MAX_STUBS) {
+        skipped.add(name + ": an instant mock holds up to " + MAX_STUBS + " stubs");
+        continue;
+      }
+      try {
+        accepted.add(InstantStubRules.checkImported(stub));
+      } catch (InstantStubRules.Refused e) {
+        skipped.add(name + ": " + e.getMessage());
+      }
+    }
+    if (seed.leftOut() > 0) skipped.add(seed.leftOut() + " more operations: an instant mock holds up to " + MAX_STUBS + " stubs");
+    if (accepted.isEmpty()) {
+      throw new InstantStubRules.Refused(skipped.isEmpty() ? "There were no stubs to start from" : "None of the stubs can run in an instant mock. " + skipped.get(0));
+    }
+    return accepted;
   }
 
   public synchronized Optional<Entry> owned(String slug, String token) {

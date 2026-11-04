@@ -5,5 +5,5 @@ Content-Type: application/json
 
 {"error":"Calls from 198.51.100.4 aren't allowed for this mock"}</pre></div>
 <h3 id="ip-allow-list-proxy">Behind a proxy or load balancer</h3>
-<p>MockHub checks the address the connection comes from. Behind a reverse proxy or a load balancer, that's the proxy's address. Add the proxy's range, or limit access at the proxy instead.</p>
+<p>When a request has an <code>X-Forwarded-For</code> header, MockHub checks its last entry, the address your nearest proxy added. Otherwise it checks the address the connection comes from. Behind a reverse proxy, make it add the header (nginx: <code>proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;</code>). If MockHub is reachable without the proxy, a caller can send that header themselves, so limit access at the proxy or firewall instead.</p>
 <p>The allow list protects a mock from casual use. It isn't a replacement for an <a href="#api-keys">API key</a> or a firewall.</p>

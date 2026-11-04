@@ -5,6 +5,7 @@ import static io.mockhub.support.Fixtures.resource;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -99,5 +100,49 @@ class OpenApiImporterTest {
   void rejectsDocumentsThatAreNotOpenApi() {
     assertThatThrownBy(() -> importer.parse(new StubImporter.Request(project("pay"), "{\"hello\":1}", Map.of())))
         .hasMessageContaining("Not an OpenAPI");
+  }
+
+  @Test
+  void buildsOnlyAsManyStubsAsTheLimitButListsEveryOperation() {
+    // When
+    StubImporter.Result result = importer.parse(new StubImporter.Request(project("pay"), resource("petstore.yaml"), Map.of("limit", "2")));
+
+    // Then
+    assertThat(result.stubs()).hasSize(2);
+    assertThat(result.details().get("operations")).hasSize(3);
+  }
+
+  @Test
+  void keepsSampleBodiesSmallWhenSchemasFanOut() {
+    // Given
+    StringBuilder spec = new StringBuilder("""
+        {"openapi": "3.0.0", "info": {"title": "Wide", "version": "1"},
+         "paths": {"/a": {"get": {"responses": {"200": {"content": {"application/json":
+           {"schema": {"$ref": "#/components/schemas/S0"}}}}}}}},
+         "components": {"schemas": {""");
+    for (int level = 0; level < 8; level++) {
+      if (level > 0) spec.append(',');
+      spec.append("\"S").append(level).append("\": {\"type\": \"object\", \"properties\": {");
+      for (int p = 0; p < 30; p++) {
+        if (p > 0) spec.append(',');
+        spec.append("\"p").append(p).append("\": {\"$ref\": \"#/components/schemas/S").append(level + 1).append("\"}");
+      }
+      spec.append("}}");
+    }
+    spec.append(",\"S8\": {\"type\": \"string\"}}}}");
+
+    // When
+    long started = System.nanoTime();
+    StubImporter.Result result = importer.parse(new StubImporter.Request(project("pay"), spec.toString(), Map.of()));
+
+    // Then
+    assertThat(nodes(result.stubs().get(0).at("/response/jsonBody"))).isLessThanOrEqualTo(OpenApiImporter.MAX_NODES);
+    assertThat(System.nanoTime() - started).isLessThan(5_000_000_000L);
+  }
+
+  private static int nodes(JsonNode node) {
+    int count = 1;
+    for (JsonNode child : node) count += nodes(child);
+    return count;
   }
 }

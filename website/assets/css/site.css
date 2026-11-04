@@ -4637,3 +4637,30 @@ select.tool-select-small {
     flex-basis: 100%;
   }
 }
+
+.tool-skipped {
+  margin-top: 12px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.tool-skipped summary {
+  cursor: pointer;
+  color: var(--ink);
+}
+
+.tool-skipped ul {
+  margin: 8px 0 0;
+  padding-left: 20px;
+}
+
+.tool-start .tabs {
+  margin: 16px 0;
+}
+
+@media (max-width: 560px) {
+  .tool-start .tabs {
+    flex-wrap: wrap;
+    border-radius: 18px;
+  }
+}

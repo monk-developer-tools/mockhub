@@ -7,6 +7,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.mockhub.support.InMemoryDataStore;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 class CrudServiceTest {
@@ -80,5 +81,24 @@ class CrudServiceTest {
     assertThat(new CrudResource(" /Customers/ ", null, null).name()).isEqualTo("customers");
     assertThatThrownBy(() -> new CrudResource("bad name", "id", null)).hasMessageContaining("lowercase");
     assertThatThrownBy(() -> new CrudResource("ok", "not valid", null)).hasMessageContaining("plain field name");
+  }
+
+  @Test
+  void asksThePolicyBeforeStoringARecord() {
+    // Given
+    RecordPolicy upToTwoSmallRecords = (projectId, records, bytes) ->
+        records > 2 ? Optional.of("Two records at most") : bytes > 40 ? Optional.of("Too big") : Optional.empty();
+    CrudService limited = new CrudService(new InMemoryDataStore(), upToTwoSmallRecords);
+    limited.create("p", numbered, json("{'name':'Ada'}"));
+    limited.create("p", numbered, json("{'name':'Alan'}"));
+
+    // When
+    CrudService.Result third = limited.create("p", numbered, json("{'name':'Grace'}"));
+    CrudService.Result bigger = limited.patch("p", numbered, "1", json("{'bio':'A very long biography that will not fit'}"));
+
+    // Then
+    assertThat(third).isEqualTo(new CrudService.Invalid("Two records at most"));
+    assertThat(bigger).isEqualTo(new CrudService.Invalid("Too big"));
+    assertThat(limited.get("p", numbered, "1").orElseThrow().has("bio")).isFalse();
   }
 }

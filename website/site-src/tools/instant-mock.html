@@ -1,8 +1,51 @@
 <div class="tool-card tool-start" data-mock-start>
   <h3>A mock API in one click</h3>
-  <p>You get your own URL on the demo with two example stubs. Change them, add your own, and call it from your app or tests.</p>
-  <div class="tool-actions-row">
-    <button type="button" class="btn primary" data-mock-create>Create a mock</button>
+  <p>You get your own URL on the demo. Start with two sample stubs, your API spec, your own records or one of the examples, then change it and call it from your app or tests.</p>
+  <div class="tabs tabs-small" role="tablist" aria-label="Start from">
+    <button type="button" role="tab" id="start-tab-sample" aria-controls="start-sample" aria-selected="true">Sample stubs</button>
+    <button type="button" role="tab" id="start-tab-spec" aria-controls="start-spec" aria-selected="false" tabindex="-1">OpenAPI or WSDL</button>
+    <button type="button" role="tab" id="start-tab-records" aria-controls="start-records" aria-selected="false" tabindex="-1">CSV or JSON records</button>
+    <button type="button" role="tab" id="start-tab-example" aria-controls="start-example" aria-selected="false" tabindex="-1">Example</button>
+  </div>
+
+  <div class="tab-panel" id="start-sample" role="tabpanel" aria-labelledby="start-tab-sample">
+    <p class="tool-hint">Two stubs to try: <code>GET /hello</code> and <code>GET /users/{id}</code> with a fake name and e-mail.</p>
+    <div class="tool-actions-row">
+      <button type="button" class="btn primary" data-mock-create="sample">Create a mock</button>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="start-spec" role="tabpanel" aria-labelledby="start-tab-spec" hidden>
+    <label class="tool-label" for="start-spec-file">OpenAPI 3, Swagger 2 or WSDL file</label>
+    <input id="start-spec-file" class="tool-input" type="file" accept=".yaml,.yml,.json,.wsdl,.xml" data-start-file="spec">
+    <label class="tool-label" for="start-spec-text">Or paste it</label>
+    <textarea id="start-spec-text" class="tool-input tool-code" rows="8" spellcheck="false" autocomplete="off" placeholder="openapi: 3.0.0" data-start-text="spec"></textarea>
+    <p class="tool-hint">One stub per operation, with responses from your examples or from the schemas. Up to 500 KB and 20 operations; the first 20 are used.</p>
+    <div class="tool-actions-row">
+      <button type="button" class="btn primary" data-mock-create="spec">Create from the spec</button>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="start-records" role="tabpanel" aria-labelledby="start-tab-records" hidden>
+    <label class="tool-label" for="start-records-file">CSV or JSON file</label>
+    <input id="start-records-file" class="tool-input" type="file" accept=".csv,.json,.txt" data-start-file="records">
+    <label class="tool-label" for="start-records-text">Or paste records</label>
+    <textarea id="start-records-text" class="tool-input tool-code" rows="6" spellcheck="false" autocomplete="off" data-start-text="records">id,name,email&#10;1,Ada Lovelace,ada@example.com&#10;2,Alan Turing,alan@example.com</textarea>
+    <label class="tool-label" for="start-records-name">Resource name</label>
+    <input id="start-records-name" class="tool-input" type="text" spellcheck="false" autocomplete="off" value="users" data-start-resource>
+    <p class="tool-hint">You get a full REST resource: <code>GET</code>, <code>POST</code>, <code>PUT</code>, <code>PATCH</code> and <code>DELETE</code> that keep what you send. Up to 50 records to start; the mock keeps up to 200.</p>
+    <div class="tool-actions-row">
+      <button type="button" class="btn primary" data-mock-create="records">Create from the records</button>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="start-example" role="tabpanel" aria-labelledby="start-tab-example" hidden>
+    <label class="tool-label" for="start-example-id">Example</label>
+    <select id="start-example-id" class="tool-input" data-start-example><option value="">Loading the examples…</option></select>
+    <p class="tool-hint" data-start-example-about></p>
+    <div class="tool-actions-row">
+      <button type="button" class="btn primary" data-mock-create="example">Create from the example</button>
+    </div>
   </div>
   <p class="tool-error" data-mock-create-error hidden></p>
 </div>
@@ -19,6 +62,10 @@
     </div>
     <pre class="tool-out tool-url" data-mock-base></pre>
     <p class="tool-hint" data-mock-meta></p>
+    <details class="tool-skipped" data-mock-skipped hidden>
+      <summary data-mock-skipped-title></summary>
+      <ul data-mock-skipped-list></ul>
+    </details>
     <div class="tool-head"><h4 class="tool-sub">Private link to edit it</h4><span class="tool-actions"><button type="button" class="btn secondary small" data-copy="[data-mock-manage]">Copy link</button></span></div>
     <pre class="tool-out tool-url" data-mock-manage></pre>
     <p class="tool-hint">Anyone with this link can change or delete the mock, so keep it to yourself. Anyone with the mock's URL can call it.</p>

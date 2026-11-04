@@ -539,7 +539,7 @@ Safety for the demo-server tools. Each tool:
   - [x] Playground
   - [x] Fake data page
   - [x] HTTP echo page
-  - [ ] Spec, CSV and example starters
+  - [x] Spec, CSV and example starters, and "Host as API" on the fake data page
   - [x] "Keep it" export (claim dropped, see notes)
 - W6 Compare and polish:
   - [ ] vs WireMock, vs Mockoon and vs Postman mock servers pages, factual and dated
@@ -590,6 +590,19 @@ public demo login can't see instant mocks, and the native WireMock admin API is 
 plan: the editor is a small website form (method, path, status, type, delay, body, templating) with a JSON mode,
 rather than the React stub form, which needs the whole app; and "Keep it" exports WireMock mappings only, because the
 demo has no sign-up to claim into.
+
+Notes (instant-mock starters): `POST /__public/mocks` takes `from: openapi | wsdl | records | example`. A starter
+builds its stubs once the project exists (the WSDL importer needs the base path), and the project is deleted again if
+anything fails. Stubs from a spec or an example go through the same rules; ones that can't run are left out and
+listed in `skipped`, and only the first 20 OpenAPI operations become stubs (the importer takes a `limit` and still
+counts every operation). The rules accept three fixed shapes that MockHub writes itself: the CRUD stub, rebuilt from
+its parameters so its pattern is always ours; the SOAP body XPath the WSDL importer writes; and `matches ".*"`. Records
+become a CRUD resource; a `RecordPolicy` in `CrudService` caps instant mocks at 200 records of 4 KB. Three of the ten
+examples qualify (fake data, orders CRUD, shopping cart); the rest use regexes, proxying, webhooks or files. CSV is
+parsed in the browser (`parseCsv`). The fake data page's "Host as API" sends up to 50 records as a records starter.
+Two fixes on the way: the OpenAPI sample builder now stops at 5,000 nodes per body, because schemas whose properties
+all `$ref` the next schema could expand without limit; and the client address for public limits and IP allow-lists
+is now the last `X-Forwarded-For` entry, since nginx appends the real address to whatever the client sent.
 
 Notes (W3): the tools are plain ES modules in `website/assets/js/tools/`: pure logic (`jwt.js`, `curl.js`,
 `stubcheck.js`) plus one page script each, with markup in `website/site-src/tools/`. They are tested with Node's

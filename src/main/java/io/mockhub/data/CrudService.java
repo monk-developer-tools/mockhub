@@ -3,6 +3,7 @@ package io.mockhub.data;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.mockhub.api.Jsons;
+import java.nio.charset.StandardCharsets;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -14,9 +15,15 @@ public final class CrudService {
   private static final Set<String> CONTROL = Set.of("_sort", "_order", "_limit", "_offset");
 
   private final DataStore store;
+  private final RecordPolicy policy;
 
   public CrudService(DataStore store) {
+    this(store, RecordPolicy.NONE);
+  }
+
+  public CrudService(DataStore store, RecordPolicy policy) {
     this.store = store;
+    this.policy = policy;
   }
 
   public record Page(List<ObjectNode> items, int total) {}
@@ -67,6 +74,8 @@ public final class CrudService {
     if (store.get(projectId, resource.name(), id).isPresent()) {
       return new Conflict(resource.name() + " " + id + " already exists");
     }
+    Optional<String> refused = refuse(projectId, 1, record);
+    if (refused.isPresent()) return new Invalid(refused.get());
     reorder(record, resource.idField());
     store.put(projectId, resource.name(), id, record);
     return new Ok(record);
@@ -78,6 +87,8 @@ public final class CrudService {
     if (existing.isEmpty()) return new NotFound(resource.name() + " " + id + " not found");
     ObjectNode record = ((ObjectNode) body).deepCopy();
     record.set(resource.idField(), existing.get().get(resource.idField()));
+    Optional<String> refused = refuse(projectId, 0, record);
+    if (refused.isPresent()) return new Invalid(refused.get());
     reorder(record, resource.idField());
     store.put(projectId, resource.name(), id, record);
     return new Ok(record);
@@ -87,10 +98,12 @@ public final class CrudService {
     if (body == null || !body.isObject()) return new Invalid("Send a JSON object");
     Optional<ObjectNode> existing = store.get(projectId, resource.name(), id);
     if (existing.isEmpty()) return new NotFound(resource.name() + " " + id + " not found");
-    ObjectNode record = existing.get();
+    ObjectNode record = existing.get().deepCopy();
     JsonNode originalId = record.get(resource.idField());
     merge(record, (ObjectNode) body);
     record.set(resource.idField(), originalId);
+    Optional<String> refused = refuse(projectId, 0, record);
+    if (refused.isPresent()) return new Invalid(refused.get());
     store.put(projectId, resource.name(), id, record);
     return new Ok(record);
   }
@@ -106,6 +119,11 @@ public final class CrudService {
       if (create(projectId, resource, r) instanceof Ok) count++;
     }
     return count;
+  }
+
+  private Optional<String> refuse(String projectId, int adding, ObjectNode record) {
+    int records = store.resources(projectId).values().stream().mapToInt(Integer::intValue).sum() + adding;
+    return policy.refuse(projectId, records, Jsons.write(record).getBytes(StandardCharsets.UTF_8).length);
   }
 
   private String nextId(String projectId, CrudResource resource) {

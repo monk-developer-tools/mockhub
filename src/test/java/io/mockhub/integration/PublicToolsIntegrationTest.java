@@ -3,7 +3,10 @@ package io.mockhub.integration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import io.mockhub.api.Jsons;
+import io.mockhub.support.Fixtures;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -226,5 +229,74 @@ class PublicToolsIntegrationTest {
     assertThat(seenByViewer.findValuesAsText("slug")).doesNotContain(created.get("slug").asText());
     assertThat(seenByAdmin.findValuesAsText("slug")).contains(created.get("slug").asText());
     assertThat(nativeApi.status()).isEqualTo(403);
+  }
+
+  @Test
+  void startsInstantMocksFromASpecAWsdlRecordsOrAnExample() {
+    // Given
+    server = MockHubServer.start(data, ON);
+    ApiClient api = server.api();
+
+    // When
+    JsonNode fromSpec = api.post("/__public/mocks", Jsons.object().put("from", "openapi").put("text", Fixtures.resource("petstore.yaml")).toString()).json();
+    JsonNode fromWsdl = api.post("/__public/mocks", Jsons.object().put("from", "wsdl").put("text", Fixtures.resource("calculator.wsdl")).toString()).json();
+    JsonNode fromRecords = api.post("/__public/mocks",
+        "{\"from\":\"records\",\"resource\":\"users\",\"records\":[{\"id\":1,\"name\":\"Ada\"},{\"id\":2,\"name\":\"Linus\"}]}").json();
+    JsonNode examples = api.get("/__public/mocks/examples").json().get("examples");
+
+    // Then
+    assertThat(api.get(fromSpec.get("baseUrl").asText() + "/pets").status()).isEqualTo(200);
+    String wsdlPath = stubPaths(api, fromWsdl).stream().findFirst().orElseThrow();
+    ApiClient.Result wsdl = api.get(fromWsdl.get("baseUrl").asText() + wsdlPath + "?wsdl");
+    assertThat(wsdl.status()).isEqualTo(200);
+    assertThat(wsdl.body()).contains("definitions");
+    String users = fromRecords.get("baseUrl").asText() + "/users";
+    assertThat(api.get(users).json()).hasSize(2);
+    assertThat(api.post(users, "{\"name\":\"Grace\"}").json().get("id").asInt()).isEqualTo(3);
+    assertThat(examples.size()).isPositive();
+    int client = 0;
+    for (JsonNode example : examples) {
+      ApiClient.Result created = api.send("POST", "/__public/mocks", "{\"from\":\"example\",\"id\":\"" + example.get("id").asText() + "\"}",
+          "application/json", Map.of("X-Forwarded-For", "198.51.100." + ++client));
+      assertThat(created.status()).as(example.get("id").asText()).isEqualTo(201);
+      assertThat(created.json().get("skipped")).as(example.get("id").asText()).isEmpty();
+    }
+  }
+
+  @Test
+  void refusesStartersThatCantRunAndCapsStoredRecords() {
+    // Given
+    server = MockHubServer.start(data, ON);
+    ApiClient api = server.api();
+    StringBuilder records = new StringBuilder("[");
+    for (int i = 0; i < 50; i++) records.append(i == 0 ? "" : ",").append("{\"n\":").append(i).append('}');
+    JsonNode created = api.post("/__public/mocks", "{\"from\":\"records\",\"resource\":\"items\",\"records\":" + records + "]}").json();
+    String items = created.get("baseUrl").asText() + "/items";
+
+    // When
+    int stored = 50;
+    ApiClient.Result last = null;
+    while (stored <= 200) {
+      last = api.post(items, "{\"n\":" + stored + "}");
+      if (last.status() != 201) break;
+      stored++;
+    }
+    ApiClient.Result bigRecord = api.post(items, "{\"text\":\"" + "x".repeat(5000) + "\"}");
+    ApiClient.Result badName = api.post("/__public/mocks", "{\"from\":\"records\",\"resource\":\"Bad Name!\",\"records\":[{}]}");
+    ApiClient.Result badSpec = api.post("/__public/mocks", "{\"from\":\"openapi\",\"text\":\"hello\"}");
+
+    // Then
+    assertThat(stored).isEqualTo(200);
+    assertThat(last.status()).isEqualTo(400);
+    assertThat(last.body()).contains("up to 200 records");
+    assertThat(bigRecord.body()).contains("4 KB");
+    assertThat(badName.status()).isEqualTo(400);
+    assertThat(badSpec.status()).isEqualTo(400);
+  }
+
+  private static List<String> stubPaths(ApiClient api, JsonNode created) {
+    JsonNode mock = api.send("GET", "/__public/mocks/" + created.get("slug").asText(), null, null,
+        Map.of("X-Mock-Token", created.get("token").asText())).json();
+    return mock.get("stubs").findValuesAsText("urlPath");
   }
 }

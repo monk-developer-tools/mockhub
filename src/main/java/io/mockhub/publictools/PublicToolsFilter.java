@@ -1,5 +1,6 @@
 package io.mockhub.publictools;
 
+import io.mockhub.common.ClientAddress;
 import com.github.tomakehurst.wiremock.common.Urls;
 import com.github.tomakehurst.wiremock.extension.requestfilter.RequestFilterAction;
 import com.github.tomakehurst.wiremock.extension.requestfilter.StubRequestFilterV2;
@@ -32,7 +33,7 @@ public final class PublicToolsFilter implements StubRequestFilterV2 {
     if (request.getMethod().equals(RequestMethod.OPTIONS) && request.getHeader("Access-Control-Request-Method") != null) {
       return RequestFilterAction.stopWith(PublicResponses.preflight());
     }
-    Optional<Long> wait = limits.take(request.getClientIp(), PublicLimits.Kind.ANY);
+    Optional<Long> wait = limits.take(ClientAddress.of(request), PublicLimits.Kind.ANY);
     if (wait.isPresent()) return RequestFilterAction.stopWith(PublicResponses.tooMany(wait.get(), "requests"));
     PublicRequest publicRequest = PublicRequest.from(request);
     for (PublicTool tool : tools) {

@@ -9,6 +9,7 @@ import io.mockhub.api.Jsons;
 import io.mockhub.history.HistoryEntry;
 import io.mockhub.history.HistoryQuery;
 import io.mockhub.history.HistoryStore;
+import io.mockhub.importer.ImporterRegistry;
 import io.mockhub.playground.Header;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,20 +20,28 @@ import java.util.regex.Pattern;
 public final class InstantMockTool implements PublicTool {
   public static final int MAX_REQUEST = 256 * 1024;
   public static final int RECENT = 50;
+  public static final int MAX_CREATE = 600 * 1024;
   private static final Pattern MOCK = Pattern.compile("/mocks/(m-[a-z0-9]{10})(/stubs(?:/([A-Za-z0-9-]{1,64}))?|/requests)?");
 
   private final InstantMocks mocks;
   private final HistoryStore history;
   private final PublicLimits limits;
+  private final ImporterRegistry importers;
+  private final InstantExamples examples;
 
-  public InstantMockTool(InstantMocks mocks, HistoryStore history, PublicLimits limits) {
+  public InstantMockTool(InstantMocks mocks, HistoryStore history, PublicLimits limits, ImporterRegistry importers, InstantExamples examples) {
     this.mocks = mocks;
     this.history = history;
     this.limits = limits;
+    this.importers = importers;
+    this.examples = examples;
   }
 
   @Override
   public Optional<ResponseDefinition> handle(PublicRequest request) {
+    if (request.path().equals("/mocks/examples")) {
+      return Optional.of(request.method().equals("GET") ? exampleList() : PublicResponses.error(405, "Send a GET to list the examples"));
+    }
     if (request.path().equals("/mocks")) {
       return Optional.of(request.method().equals("POST") ? create(request) : PublicResponses.error(405, "Send a POST to create an instant mock"));
     }
@@ -58,25 +67,50 @@ public final class InstantMockTool implements PublicTool {
   private ResponseDefinition create(PublicRequest request) {
     Optional<Long> wait = limits.take(request.clientIp(), PublicLimits.Kind.CREATE);
     if (wait.isPresent()) return PublicResponses.tooMany(wait.get(), "new mocks");
-    if (request.bodySize() > MAX_REQUEST) return PublicResponses.error(413, "Keep requests under 256 KB");
-    JsonNode body = PublicJson.parse(request.body());
-    List<JsonNode> starters = new ArrayList<>();
-    if (body != null && body.path("stubs").isArray()) body.get("stubs").forEach(starters::add);
-    else starters.addAll(InstantStarter.stubs());
+    if (request.bodySize() > MAX_CREATE) return PublicResponses.error(413, "Keep requests under 600 KB");
     try {
-      InstantMocks.Created created = mocks.create(starters);
-      return PublicResponses.json(201, Jsons.object()
+      InstantMocks.Created created = mocks.create(source(PublicJson.parse(request.body())));
+      ObjectNode out = Jsons.object()
           .put("slug", created.slug())
           .put("token", created.token())
-          .put("baseUrl", "/" + created.slug())
-          .set("limits", limitsNode()));
+          .put("baseUrl", "/" + created.slug());
+      out.set("limits", limitsNode());
+      ArrayNode skipped = out.putArray("skipped");
+      created.skipped().forEach(skipped::add);
+      return PublicResponses.json(201, out);
     } catch (InstantStubRules.Refused e) {
       return PublicResponses.error(400, e.getMessage());
     } catch (InstantMocks.Full e) {
       return PublicResponses.error(503, e.getMessage());
+    } catch (ApiException e) {
+      return PublicResponses.error(e.status, e.getMessage());
     } catch (RuntimeException e) {
       return PublicResponses.error(400, "A starter stub isn't valid: " + e.getMessage());
     }
+  }
+
+  private InstantSource source(JsonNode body) {
+    if (body == null || !body.isObject()) return InstantSources.stubs(InstantStarter.stubs());
+    if (body.path("stubs").isArray()) {
+      List<JsonNode> stubs = new ArrayList<>();
+      body.get("stubs").forEach(stubs::add);
+      return InstantSources.stubs(stubs);
+    }
+    String from = body.path("from").asText("");
+    return switch (from) {
+      case "" -> InstantSources.stubs(InstantStarter.stubs());
+      case "openapi", "wsdl" -> InstantSources.imported(importers.get(from), body.path("text").asText(null));
+      case "example" -> examples.source(body.path("id").asText(""));
+      case "records" -> InstantSources.records(body.path("resource").asText(null), body.get("records"));
+      default -> throw new InstantStubRules.Refused("Start from openapi, wsdl, example or records");
+    };
+  }
+
+  private ResponseDefinition exampleList() {
+    ObjectNode out = Jsons.object();
+    ArrayNode list = out.putArray("examples");
+    examples.list().forEach(e -> list.addObject().put("id", e.id()).put("name", e.name()).put("description", e.description()).put("stubs", e.stubs()));
+    return PublicResponses.json(200, out);
   }
 
   private ResponseDefinition route(InstantMocks.Entry entry, String part, String stubId, PublicRequest request) {

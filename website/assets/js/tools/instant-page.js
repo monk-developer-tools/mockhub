@@ -1,6 +1,6 @@
 import { $, download, show, wireCopyButtons } from './common.js';
 import { call } from './http.js';
-import { displayPath, exportMappings, fitsForm, formToStub, keyHash, parseKey, samplePath, stubToForm } from './instant.js';
+import { displayPath, exportMappings, fitsForm, formToStub, keyHash, MAX_RECORDS, parseKey, parseRecords, resourceName, samplePath, specFormat, stubToForm } from './instant.js';
 
 const KEY = 'mockhub-instant-mock';
 const POLL_MS = 3000;
@@ -214,19 +214,95 @@ function forget(message) {
   history.replaceState(null, '', location.pathname);
   $('[data-mock-live]').hidden = true;
   $('[data-mock-start]').hidden = false;
+  $('[data-mock-skipped]').hidden = true;
   show($('[data-mock-create-error]'), message ?? '');
 }
 
-$('[data-mock-create]').addEventListener('click', async (e) => {
-  e.target.disabled = true;
-  const result = await call('/__public/mocks', { method: 'POST' });
-  e.target.disabled = false;
+function starterBody(kind) {
+  if (kind === 'spec') {
+    const text = $('[data-start-text="spec"]').value;
+    if (!text.trim()) throw new Error('Upload or paste an OpenAPI or WSDL file first.');
+    return { from: specFormat(text), text };
+  }
+  if (kind === 'records') {
+    const records = parseRecords($('[data-start-text="records"]').value);
+    if (records.length > MAX_RECORDS) throw new Error(`Start with up to ${MAX_RECORDS} records. This file has ${records.length}.`);
+    return { from: 'records', resource: $('[data-start-resource]').value.trim(), records };
+  }
+  if (kind === 'example') {
+    const id = $('[data-start-example]').value;
+    if (!id) throw new Error('Pick an example first.');
+    return { from: 'example', id };
+  }
+  return null;
+}
+
+function showSkipped(skipped) {
+  const box = $('[data-mock-skipped]');
+  const list = $('[data-mock-skipped-list]');
+  list.replaceChildren(...(skipped ?? []).map((reason) => el('li', {}, reason)));
+  $('[data-mock-skipped-title]').textContent = 'Some of what you started from was left out';
+  box.hidden = !skipped?.length;
+}
+
+async function create(e) {
+  const button = e.currentTarget;
+  show($('[data-mock-create-error]'), '');
+  let body;
+  try {
+    body = starterBody(button.dataset.mockCreate);
+  } catch (err) {
+    show($('[data-mock-create-error]'), err.message);
+    return;
+  }
+  button.disabled = true;
+  const result = await call('/__public/mocks', body
+    ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
+    : { method: 'POST' });
+  button.disabled = false;
   if (result.error || !result.json?.slug) {
     show($('[data-mock-create-error]'), result.error ?? 'The mock could not be created.');
     return;
   }
-  open({ slug: result.json.slug, token: result.json.token });
-});
+  await open({ slug: result.json.slug, token: result.json.token });
+  showSkipped(result.json.skipped);
+}
+
+function readFile(input, kind) {
+  const file = input.files?.[0];
+  if (!file) return;
+  if (file.size > 500 * 1024) {
+    show($('[data-mock-create-error]'), 'Keep the file under 500 KB.');
+    input.value = '';
+    return;
+  }
+  file.text().then((text) => {
+    $(`[data-start-text="${kind}"]`).value = text;
+    if (kind === 'records') $('[data-start-resource]').value = resourceName(file.name);
+    show($('[data-mock-create-error]'), '');
+  });
+}
+
+async function loadExamples() {
+  const select = $('[data-start-example]');
+  const result = await call('/__public/mocks/examples');
+  const examples = result.json?.examples ?? [];
+  if (result.error || !examples.length) {
+    select.replaceChildren(el('option', { value: '' }, 'The examples are not available right now'));
+    return;
+  }
+  select.replaceChildren(...examples.map((ex) => el('option', { value: ex.id }, `${ex.name} (${ex.stubs} stubs)`)));
+  const about = () => {
+    const chosen = examples.find((ex) => ex.id === select.value);
+    $('[data-start-example-about]').textContent = chosen?.description ?? '';
+  };
+  select.addEventListener('change', about);
+  about();
+}
+
+document.querySelectorAll('[data-mock-create]').forEach((button) => button.addEventListener('click', create));
+document.querySelectorAll('[data-start-file]').forEach((input) => input.addEventListener('change', () => readFile(input, input.dataset.startFile)));
+loadExamples();
 $('[data-mock-editor]').addEventListener('submit', save);
 $('[data-mock-add]').addEventListener('click', () => openEditor(null));
 $('[data-mock-cancel]').addEventListener('click', () => openEditor(null));

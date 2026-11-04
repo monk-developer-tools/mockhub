@@ -1,5 +1,6 @@
 package io.mockhub.publictools;
 
+import io.mockhub.common.ClientAddress;
 import com.github.tomakehurst.wiremock.common.Urls;
 import com.github.tomakehurst.wiremock.http.HttpHeader;
 import com.github.tomakehurst.wiremock.http.Request;
@@ -25,7 +26,7 @@ public record PublicRequest(String method, String path, String rawQuery, Map<Str
     for (HttpHeader h : request.getHeaders().all()) headers.put(h.key(), String.join(", ", h.values()));
     byte[] body = request.getBody();
     return new PublicRequest(request.getMethod().getName().toUpperCase(Locale.ROOT), path.substring(PREFIX.length()), rawQuery,
-        parseQuery(rawQuery), headers, request.getBodyAsString(), body == null ? 0 : body.length, request.getClientIp());
+        parseQuery(rawQuery), headers, request.getBodyAsString(), body == null ? 0 : body.length, ClientAddress.of(request));
   }
 
   static Map<String, List<String>> parseQuery(String raw) {

@@ -20,6 +20,7 @@ public final class OpenApiImporter implements StubImporter {
   private static final ObjectMapper YAML = new ObjectMapper(new YAMLFactory());
   private static final Set<String> METHODS = Set.of("get", "put", "post", "delete", "patch", "head", "options");
   private static final int MAX_DEPTH = 8;
+  static final int MAX_NODES = 5_000;
 
   @Override
   public String format() {
@@ -34,6 +35,7 @@ public final class OpenApiImporter implements StubImporter {
       throw ApiException.badRequest("Not an OpenAPI 3 or Swagger 2 document (missing 'openapi'/'swagger')");
     }
     String serverPrefix = request.option("stripPrefix") != null ? request.option("stripPrefix") : "";
+    int limit = limit(request.option("limit"));
 
     List<ObjectNode> stubs = new ArrayList<>();
     ArrayNode operations = Jsons.MAPPER.createArrayNode();
@@ -45,7 +47,7 @@ public final class OpenApiImporter implements StubImporter {
         var opEntry = ops.next();
         if (!METHODS.contains(opEntry.getKey())) continue;
         JsonNode op = opEntry.getValue();
-        stubs.add(stub(spec, swagger2, opEntry.getKey().toUpperCase(), path, op));
+        if (stubs.size() < limit) stubs.add(stub(spec, swagger2, opEntry.getKey().toUpperCase(), path, op));
         operations.addObject().put("method", opEntry.getKey().toUpperCase()).put("path", path)
             .put("operationId", op.path("operationId").asText(""));
       }
@@ -55,6 +57,15 @@ public final class OpenApiImporter implements StubImporter {
     details.put("version", spec.path("info").path("version").asText(""));
     details.set("operations", operations);
     return new Result(stubs, details);
+  }
+
+  private static int limit(String value) {
+    if (value == null) return Integer.MAX_VALUE;
+    try {
+      return Math.max(0, Integer.parseInt(value));
+    } catch (NumberFormatException e) {
+      throw ApiException.badRequest("limit must be a number");
+    }
   }
 
   private ObjectNode stub(JsonNode spec, boolean swagger2, String method, String path, JsonNode op) {
@@ -119,17 +130,25 @@ public final class OpenApiImporter implements StubImporter {
   }
 
   JsonNode sample(JsonNode spec, JsonNode schema, int depth, Deque<String> refs) {
-    return sample(spec, schema, depth, refs, "", new SampleValues(SEED + (schema == null ? 0 : schema.toString().hashCode())));
+    return sample(spec, schema, depth, refs, "", new SampleValues(SEED + (schema == null ? 0 : schema.toString().hashCode())), new Budget());
   }
 
-  private JsonNode sample(JsonNode spec, JsonNode schema, int depth, Deque<String> refs, String name, SampleValues values) {
-    if (schema == null || depth > MAX_DEPTH) return Jsons.MAPPER.nullNode();
+  private static final class Budget {
+    private int left = MAX_NODES;
+
+    boolean take() {
+      return left-- > 0;
+    }
+  }
+
+  private JsonNode sample(JsonNode spec, JsonNode schema, int depth, Deque<String> refs, String name, SampleValues values, Budget budget) {
+    if (schema == null || depth > MAX_DEPTH || !budget.take()) return Jsons.MAPPER.nullNode();
     if (schema.has("$ref")) {
       String ref = schema.get("$ref").asText();
       if (refs.contains(ref)) return Jsons.MAPPER.nullNode();
       refs.push(ref);
       try {
-        return sample(spec, resolveRef(spec, ref), depth + 1, refs, name, values);
+        return sample(spec, resolveRef(spec, ref), depth + 1, refs, name, values, budget);
       } finally {
         refs.pop();
       }
@@ -142,12 +161,12 @@ public final class OpenApiImporter implements StubImporter {
         if (combiner.equals("allOf")) {
           ObjectNode merged = Jsons.object();
           for (JsonNode part : schema.get(combiner)) {
-            JsonNode s = sample(spec, part, depth + 1, refs, name, values);
+            JsonNode s = sample(spec, part, depth + 1, refs, name, values, budget);
             if (s.isObject()) merged.setAll((ObjectNode) s);
           }
           return merged;
         }
-        return sample(spec, schema.get(combiner).get(0), depth + 1, refs, name, values);
+        return sample(spec, schema.get(combiner).get(0), depth + 1, refs, name, values, budget);
       }
     }
     String type = schema.path("type").asText(schema.has("properties") ? "object" : schema.has("items") ? "array" : "string");
@@ -156,14 +175,14 @@ public final class OpenApiImporter implements StubImporter {
         ObjectNode obj = Jsons.object();
         for (Iterator<Map.Entry<String, JsonNode>> it = schema.path("properties").fields(); it.hasNext(); ) {
           var p = it.next();
-          obj.set(p.getKey(), sample(spec, p.getValue(), depth + 1, refs, p.getKey(), values));
+          obj.set(p.getKey(), sample(spec, p.getValue(), depth + 1, refs, p.getKey(), values, budget));
         }
         return obj;
       }
       case "array": {
         ArrayNode arr = Jsons.MAPPER.createArrayNode();
         int items = depth == 0 ? SampleValues.ARRAY_ITEMS : 1;
-        for (int i = 0; i < items; i++) arr.add(sample(spec, schema.path("items"), depth + 1, refs, singular(name), values));
+        for (int i = 0; i < items; i++) arr.add(sample(spec, schema.path("items"), depth + 1, refs, singular(name), values, budget));
         return arr;
       }
       case "integer":

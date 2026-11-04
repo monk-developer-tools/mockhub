@@ -38,6 +38,7 @@
       <span class="tool-actions">
         <button type="button" class="btn secondary small" data-copy="[data-fake-output]">Copy</button>
         <button type="button" class="btn secondary small" data-fake-download>Download</button>
+        <button type="button" class="btn primary small" data-fake-host>Host as API</button>
       </span>
     </div>
     <div data-fake-table-box hidden>
@@ -45,7 +46,8 @@
       <input id="fake-table" class="tool-input" type="text" spellcheck="false" value="people" data-fake-table>
     </div>
     <pre class="tool-out tool-tall" data-fake-output>Press Generate.</pre>
-    <p class="tool-hint">To serve these records as an API, use the same generator in MockHub's stub editor: <strong>Generate data</strong> fills a response body, or a CRUD resource.</p>
+    <p class="tool-error" data-fake-host-error hidden></p>
+    <p class="tool-hint"><strong>Host as API</strong> turns up to 50 of these records into an <a href="/tools/instant-mock/">instant mock</a> with <code>GET</code>, <code>POST</code>, <code>PUT</code>, <code>PATCH</code> and <code>DELETE</code>, named after the table name. In MockHub itself, <strong>Generate data</strong> in the stub editor does the same for a response body or a CRUD resource.</p>
   </div>
 </div>
 <!-- catalogue -->

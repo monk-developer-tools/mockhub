@@ -4,6 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.mockhub.data.CrudResource;
+import io.mockhub.data.CrudService;
+import io.mockhub.data.FileDataStore;
 import io.mockhub.org.Organization;
 import io.mockhub.project.ProjectService;
 import io.mockhub.stub.StubService;
@@ -16,6 +20,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,6 +33,7 @@ class InstantMocksTest {
   private final MutableClock clock = new MutableClock(Instant.parse("2026-11-04T10:00:00Z"));
   private ProjectService projects;
   private StubService stubs;
+  private CrudService crud;
   private InstantMocks mocks;
 
   @BeforeEach
@@ -36,7 +42,8 @@ class InstantMocksTest {
     stubs = new StubService(new FakeStubGateway(), ref::get);
     projects = new ProjectService(new InMemoryProjectRepository(), List.of(stubs), clock);
     ref.set(projects);
-    mocks = new InstantMocks(data, projects, stubs, () -> "team-instant", clock);
+    crud = new CrudService(new FileDataStore(data));
+    mocks = new InstantMocks(data, projects, stubs, crud, () -> "team-instant", clock);
   }
 
   private static JsonNode stub(String path) {
@@ -46,7 +53,7 @@ class InstantMocksTest {
   @Test
   void createsAPrivateProjectThatOnlyTheKeyOpens() {
     // When
-    InstantMocks.Created created = mocks.create(List.of(stub("/a")));
+    InstantMocks.Created created = mocks.create(InstantSources.stubs(List.of(stub("/a"))));
 
     // Then
     assertThat(created.slug()).matches("m-[a-z0-9]{10}");
@@ -59,10 +66,10 @@ class InstantMocksTest {
   @Test
   void remembersMocksAcrossRestarts() {
     // Given
-    InstantMocks.Created created = mocks.create(List.of());
+    InstantMocks.Created created = mocks.create(InstantSources.stubs(List.of()));
 
     // When
-    InstantMocks reloaded = new InstantMocks(data, projects, stubs, () -> "team-instant", clock);
+    InstantMocks reloaded = new InstantMocks(data, projects, stubs, crud, () -> "team-instant", clock);
 
     // Then
     assertThat(reloaded.owned(created.slug(), created.token())).isPresent();
@@ -73,7 +80,7 @@ class InstantMocksTest {
     // Given
     List<JsonNode> twenty = new ArrayList<>();
     for (int i = 0; i < InstantMocks.MAX_STUBS; i++) twenty.add(stub("/s" + i));
-    InstantMocks.Created created = mocks.create(twenty);
+    InstantMocks.Created created = mocks.create(InstantSources.stubs(twenty));
     InstantMocks.Entry entry = mocks.owned(created.slug(), created.token()).orElseThrow();
 
     // Then
@@ -83,7 +90,7 @@ class InstantMocksTest {
   @Test
   void countsRequestsPerDay() {
     // Given
-    InstantMocks.Created created = mocks.create(List.of());
+    InstantMocks.Created created = mocks.create(InstantSources.stubs(List.of()));
     for (int i = 0; i < InstantMocks.DAILY_REQUESTS; i++) mocks.takeRequest(created.projectId());
 
     // When
@@ -99,9 +106,9 @@ class InstantMocksTest {
   @Test
   void deletesMocksAWeekAfterTheirLastChange() {
     // Given
-    InstantMocks.Created old = mocks.create(List.of());
+    InstantMocks.Created old = mocks.create(InstantSources.stubs(List.of()));
     clock.advance(Duration.ofDays(5));
-    InstantMocks.Created recent = mocks.create(List.of());
+    InstantMocks.Created recent = mocks.create(InstantSources.stubs(List.of()));
     InstantMocks.Entry recentEntry = mocks.owned(recent.slug(), recent.token()).orElseThrow();
     mocks.addStub(recentEntry, stub("/kept"));
     clock.advance(Duration.ofDays(3));
@@ -114,5 +121,50 @@ class InstantMocksTest {
     assertThat(projects.find(old.projectId())).isEmpty();
     assertThat(mocks.owned(old.slug(), old.token())).isEmpty();
     assertThat(mocks.owned(recent.slug(), recent.token())).isPresent();
+  }
+
+  @Test
+  void skipsImportedStubsThatCantRunAndSaysWhy() {
+    // Given
+    JsonNode proxy = Fixtures.tree("{'name':'Proxy','request':{'urlPath':'/p'},'response':{'proxyBaseUrl':'http://169.254.169.254'}}");
+    InstantSeed seed = new InstantSeed(List.of(stub("/ok"), proxy), List.of(), false, 3);
+
+    // When
+    InstantMocks.Created created = mocks.create(project -> seed);
+
+    // Then
+    assertThat(mocks.stubsOf(mocks.owned(created.slug(), created.token()).orElseThrow())).hasSize(1);
+    assertThat(created.skipped()).hasSize(2);
+    assertThat(created.skipped().get(0)).startsWith("Proxy: response.proxyBaseUrl");
+    assertThat(created.skipped().get(1)).startsWith("3 more operations");
+  }
+
+  @Test
+  void refusesASeedWithNothingThatRunsAndLeavesNoProjectBehind() {
+    // Given
+    JsonNode proxy = Fixtures.tree("{'name':'Proxy','request':{'urlPath':'/p'},'response':{'proxyBaseUrl':'http://example.com'}}");
+    int before = projects.findAll().size();
+
+    // When / Then
+    assertThatThrownBy(() -> mocks.create(project -> new InstantSeed(List.of(proxy), List.of(), false, 0)))
+        .hasMessageStartingWith("None of the stubs can run in an instant mock.");
+    assertThat(projects.findAll()).hasSize(before);
+    assertThat(mocks.size()).isZero();
+  }
+
+  @Test
+  void startsFromRecordsBehindACrudStub() {
+    // Given
+    JsonNode records = Fixtures.tree("[{'id':1,'name':'Ada'},{'id':2,'name':'Linus'}]");
+
+    // When
+    InstantMocks.Created created = mocks.create(InstantSources.records("users", records));
+
+    // Then
+    List<ObjectNode> shown = mocks.stubsOf(mocks.owned(created.slug(), created.token()).orElseThrow());
+    assertThat(shown).hasSize(1);
+    assertThat(shown.get(0).path("response").path("transformers").get(0).asText()).isEqualTo("mockhub-crud");
+    CrudResource users = new CrudResource("users", "id", CrudResource.IdType.NUMBER);
+    assertThat(crud.list(created.projectId(), users, Map.of()).total()).isEqualTo(2);
   }
 }

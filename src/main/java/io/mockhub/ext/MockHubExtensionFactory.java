@@ -73,6 +73,7 @@ import io.mockhub.data.CrudTransformer;
 import io.mockhub.data.DataStore;
 import io.mockhub.data.FileDataStore;
 import io.mockhub.data.ProjectDataCleaner;
+import io.mockhub.data.RecordPolicy;
 import io.mockhub.fake.DataGenerator;
 import io.mockhub.fake.FakeData;
 import io.mockhub.controller.PlaygroundController;
@@ -86,7 +87,9 @@ import io.mockhub.publictools.EchoTool;
 import io.mockhub.publictools.FakeTool;
 import io.mockhub.publictools.InstantMockFilter;
 import io.mockhub.publictools.InstantMockTool;
+import io.mockhub.publictools.InstantExamples;
 import io.mockhub.publictools.InstantMocks;
+import io.mockhub.publictools.InstantRecordPolicy;
 import io.mockhub.publictools.SandboxTemplateTransformer;
 import io.mockhub.org.Organization;
 import io.mockhub.publictools.PublicLimits;
@@ -196,7 +199,9 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     StubService stubs = new StubService(gateway, projectsRef::get);
     DataStore dataStore = new FileDataStore(dataDir);
     BodyFiles bodyFiles = new BodyFiles(dataDir);
-    CrudService crud = new CrudService(dataStore);
+    CrudService crud = new CrudService(dataStore, config.publicTools
+        ? new InstantRecordPolicy(id -> projectsRef.get().find(id).map(p -> Organization.INSTANT_ID.equals(p.orgId())).orElse(false))
+        : RecordPolicy.NONE);
     Path historyDir = dataDir.resolve("mockhub").resolve("history");
     HistoryStore history = new HistoryStore(historyDir, clock, Duration.ofDays(config.historyDays), config.historyMaxMb * 1024L * 1024L);
     TrafficCounters traffic = new TrafficCounters(historyDir, clock);
@@ -253,6 +258,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     UserViews userViews = new UserViews(orgs, teams);
     TeamChoice teamChoice = new TeamChoice(orgs, teams);
     ExampleCatalog examples = ExampleCatalog.fromClasspath();
+    ExampleInstaller exampleInstaller = new ExampleInstaller(examples, projects, stubs, importers, crud, bodyFiles);
     AiSettingsStore aiSettings = new AiSettingsStore(dataDir, config.aiApiKey);
     AiProviders aiProviders = AiProviders.defaults();
     ChatCompletions chat = new ChatCompletions(new JdkLlmTransport(), aiProviders, config.publicUrl);
@@ -291,7 +297,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
         new SsoController(ssoSettings, sso, orgs, teams, urls),
         new ProjectController(projects, views, teamChoice),
         new RuntimeController(runtimeService),
-        new ExampleController(examples, new ExampleInstaller(examples, projects, stubs, importers, crud, bodyFiles), views, teamChoice),
+        new ExampleController(examples, exampleInstaller, views, teamChoice),
         new StubController(stubs, projects),
         new RequestLogController(requestLog, history),
         new HistoryController(projects, history, traffic, Main.VERSION),
@@ -318,13 +324,13 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     Bins bins = new Bins(clock);
     TemplatePlayground templatePlayground = new TemplatePlayground(List.of(fakeHelpers, valueHelpers, validationHelpers, jwtHelpers), renderWorkers(), 2000);
     if (config.publicTools) orgs.ensureInstant();
-    InstantMocks instantMocks = new InstantMocks(dataDir, projects, stubs, () -> teams.ensureDefault(Organization.INSTANT_ID).id(), clock);
+    InstantMocks instantMocks = new InstantMocks(dataDir, projects, stubs, crud, () -> teams.ensureDefault(Organization.INSTANT_ID).id(), clock);
     PublicToolsFilter publicTools = new PublicToolsFilter(config.publicTools, publicLimits, List.of(
         new EchoTool(),
         new BinTool(bins, publicLimits),
         new FakeTool(new DataGenerator(fakeData), publicLimits),
         new RenderTool(templatePlayground, publicLimits),
-        new InstantMockTool(instantMocks, history, publicLimits)));
+        new InstantMockTool(instantMocks, history, publicLimits, importers, new InstantExamples(examples, exampleInstaller))));
     maintenance.scheduleWithFixedDelay(() -> safely(bins::prune), 10, 10, TimeUnit.MINUTES);
     maintenance.scheduleWithFixedDelay(() -> safely(instantMocks::prune), 5, 60, TimeUnit.MINUTES);
     maintenance.scheduleWithFixedDelay(() -> safely(rateLimiter::prune), 10, 10, TimeUnit.MINUTES);

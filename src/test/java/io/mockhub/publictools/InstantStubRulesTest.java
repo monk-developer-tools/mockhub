@@ -45,7 +45,10 @@ class InstantStubRulesTest {
       "{\"request\":{\"url\":\"/a\",\"bodyPatterns\":[{\"matchesJsonPath\":\"$[?(@.a =~ /x/)]\"}]},\"response\":{}} | =~",
       "{\"request\":{\"url\":\"/a\"},\"response\":{\"fixedDelayMilliseconds\":60000}} | 10,000 ms",
       "{\"request\":{\"url\":\"/a\"},\"response\":{\"delayDistribution\":{\"type\":\"lognormal\",\"median\":10}}} | uniform",
-      "{\"request\":{\"url\":\"/a\"},\"response\":{\"transformers\":[\"mockhub-crud\"]}} | mockhub-crud",
+      "{\"request\":{\"url\":\"/a\"},\"response\":{\"transformers\":[\"mockhub-crud\"]}} | CRUD resource isn't valid",
+      "{\"request\":{\"url\":\"/a\"},\"response\":{\"transformers\":[\"mockhub-crud\",\"response-template\"],\"transformerParameters\":{\"resource\":\"users\"}}} | other transformers",
+      "{\"request\":{\"url\":\"/a\",\"bodyPatterns\":[{\"matchesXPath\":\"//*[local-name()=\\u0027Body\\u0027]/*[local-name()=\\u0027a\\u0027]/..\"}]},\"response\":{}} | matchesXPath",
+      "{\"request\":{\"url\":\"/a\",\"queryParameters\":{\"q\":{\"matches\":\".*.*.*\"}}},\"response\":{}} | matches",
       "{\"request\":{\"url\":\"/a\"}} | needs a response",
   })
   void refusesWhatCouldReachOutReadFilesOrBurnCpu(String json, String message) {
@@ -63,5 +66,57 @@ class InstantStubRulesTest {
 
     // Then
     assertThatThrownBy(() -> InstantStubRules.check(stub)).hasMessageContaining("64 KB");
+  }
+
+  @Test
+  void rebuildsCrudStubsFromTheirParametersSoTheirPatternIsAlwaysOurs() {
+    // Given
+    ObjectNode stub = Fixtures.json("""
+        {"name": "People", "request": {"method": "ANY", "urlPathPattern": "/(a+)+$"},
+         "response": {"status": 200, "transformers": ["mockhub-crud"],
+                      "transformerParameters": {"resource": "users", "idField": "id", "idType": "number"}}}""");
+
+    // When
+    ObjectNode checked = InstantStubRules.check(stub);
+
+    // Then
+    assertThat(checked.path("name").asText()).isEqualTo("People");
+    assertThat(checked.at("/request/urlPathPattern").asText()).isEqualTo("/users(/[^/]+)?/?");
+    assertThat(checked.at("/response/transformerParameters/resource").asText()).isEqualTo("users");
+  }
+
+  @Test
+  void acceptsTheSoapBodyMatchAndAnyValueMatchThatTheWsdlImporterWrites() {
+    // Given
+    ObjectNode operation = Fixtures.json("""
+        {"request": {"method": "POST", "urlPath": "/calc",
+         "bodyPatterns": [{"matchesXPath": "//*[local-name()=\\u0027Body\\u0027]/*[local-name()=\\u0027Add\\u0027]"}]},
+         "response": {"status": 200, "body": "<ok/>"}}""");
+    ObjectNode wsdl = Fixtures.json("""
+        {"request": {"method": "GET", "urlPath": "/calc", "queryParameters": {"wsdl": {"matches": ".*"}}},
+         "response": {"status": 200, "body": "<definitions/>"}}""");
+
+    // When
+    ObjectNode checkedOperation = InstantStubRules.check(operation);
+    ObjectNode checkedWsdl = InstantStubRules.check(wsdl);
+
+    // Then
+    assertThat(checkedOperation.at("/request/bodyPatterns/0/matchesXPath").asText()).contains("'Add'");
+    assertThat(checkedWsdl.at("/request/queryParameters/wsdl/matches").asText()).isEqualTo(".*");
+  }
+
+  @Test
+  void dropsImporterMetadataBeforeChecking() {
+    // Given
+    ObjectNode stub = Fixtures.json("""
+        {"request": {"method": "GET", "urlPath": "/a"}, "response": {"status": 200},
+         "metadata": {"mockhub": {"folder": "Pets"}}}""");
+
+    // When
+    ObjectNode checked = InstantStubRules.checkImported(stub);
+
+    // Then
+    assertThat(checked.has("metadata")).isFalse();
+    assertThatThrownBy(() -> InstantStubRules.check(stub)).hasMessageContaining("metadata");
   }
 }

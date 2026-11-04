@@ -195,7 +195,8 @@ screenshots, and the [live demo](https://mockhub.devops-monk.com/__admin/mockhub
   Entra groups and app roles can map to organisation roles. Mock endpoints always stay open.
 - **Free tools, no login.** At [mockhub.devops-monk.com/tools](https://mockhub.devops-monk.com/tools/): a webhook
   catcher, an HTTP echo, a response template playground, a fake data generator and an instant mock server (a
-  mock URL with your own stubs, kept for 7 days) run on the demo server (`MOCKHUB_PUBLIC_TOOLS`). A JWT encoder and decoder, cURL to stub and a stub JSON checker run in your browser.
+  mock URL kept for 7 days, started from sample stubs, an OpenAPI or WSDL file, CSV or JSON records or an example)
+  run on the demo server (`MOCKHUB_PUBLIC_TOOLS`). A JWT encoder and decoder, cURL to stub and a stub JSON checker run in your browser.
 
 ## Quick start
 

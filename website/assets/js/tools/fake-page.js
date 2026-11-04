@@ -1,6 +1,7 @@
 import { $, download, show, wireCopyButtons } from './common.js';
 import { call } from './http.js';
 import { toCsv, toSql } from './fakeformat.js';
+import { keyHash, MAX_RECORDS, resourceName } from './instant.js';
 
 const MAX_FIELDS = 20;
 const STARTER = [
@@ -83,6 +84,23 @@ $('[data-fake-add]').addEventListener('click', () => addField());
 $('[data-fake-download]').addEventListener('click', () => {
   if (!records) return;
   download(`records.${format}`, $('[data-fake-output]').textContent);
+});
+
+$('[data-fake-host]').addEventListener('click', async (e) => {
+  const button = e.currentTarget;
+  if (!records) {
+    show($('[data-fake-host-error]'), 'Press Generate first.');
+    return;
+  }
+  button.disabled = true;
+  const result = await call('/__public/mocks', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ from: 'records', resource: resourceName($('[data-fake-table]').value), records: records.slice(0, MAX_RECORDS) }),
+  });
+  button.disabled = false;
+  show($('[data-fake-host-error]'), result.error);
+  if (!result.error && result.json?.slug) location.assign(`/tools/instant-mock/${keyHash(result.json)}`);
 });
 
 fillExpressions();

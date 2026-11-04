@@ -4,12 +4,15 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.mockhub.api.Jsons;
+import io.mockhub.data.CrudResource;
+import io.mockhub.data.CrudStubs;
 import io.mockhub.template.WeightedTransformer;
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 public final class InstantStubRules {
   public static final int MAX_STUB_BYTES = 64 * 1024;
@@ -25,6 +28,7 @@ public final class InstantStubRules {
   private static final Set<String> FORBIDDEN_MATCHERS = Set.of("matches", "doesNotMatch", "matchesXPath", "equalToXml",
       "matchesJsonSchema", "urlPattern", "urlPathPattern", "customMatcher", "multipartPatterns");
   private static final Set<String> TRANSFORMERS = Set.of(TEMPLATE, WeightedTransformer.NAME);
+  private static final Pattern SOAP_BODY = Pattern.compile("//\\*\\[local-name\\(\\)='Body'\\]/\\*\\[local-name\\(\\)='[A-Za-z_][A-Za-z0-9_.-]{0,100}'\\]");
 
   private InstantStubRules() {}
 
@@ -42,6 +46,7 @@ public final class InstantStubRules {
     stub.remove("id");
     stub.remove("uuid");
     stub.remove("persistent");
+    if (isCrud(stub)) return crud(stub);
     if (!stub.path("request").isObject()) throw new Refused("The stub needs a request");
     if (!stub.path("response").isObject()) throw new Refused("The stub needs a response");
     ObjectNode request = (ObjectNode) stub.get("request");
@@ -52,6 +57,13 @@ public final class InstantStubRules {
     delays(response);
     transformers(response);
     return stub;
+  }
+
+  public static ObjectNode checkImported(JsonNode input) {
+    if (input == null || !input.isObject() || !input.has("metadata")) return check(input);
+    ObjectNode copy = input.deepCopy();
+    copy.remove("metadata");
+    return check(copy);
   }
 
   public static ObjectNode forDisplay(JsonNode stored) {
@@ -78,7 +90,7 @@ public final class InstantStubRules {
     if (node.isObject()) {
       for (Map.Entry<String, JsonNode> field : node.properties()) {
         String name = field.getKey();
-        if (FORBIDDEN_MATCHERS.contains(name)) {
+        if (FORBIDDEN_MATCHERS.contains(name) && !safe(name, field.getValue())) {
           throw new Refused(name + " (at " + path + ") isn't available in instant mocks: regex, XPath and schema matching are turned off on the public demo");
         }
         if (name.equals("matchesJsonPath") && field.getValue().toString().contains("=~")) {
@@ -89,6 +101,38 @@ public final class InstantStubRules {
     } else if (node.isArray()) {
       for (JsonNode item : node) matchers(item, path);
     }
+  }
+
+  private static boolean safe(String matcher, JsonNode value) {
+    if (!value.isTextual()) return false;
+    if (matcher.equals("matches")) return value.asText().equals(".*");
+    return matcher.equals("matchesXPath") && SOAP_BODY.matcher(value.asText()).matches();
+  }
+
+  private static boolean isCrud(ObjectNode stub) {
+    JsonNode list = stub.path("response").path("transformers");
+    if (!list.isArray()) return false;
+    for (JsonNode t : list) {
+      if (t.asText().equals(CrudStubs.TRANSFORMER)) return true;
+    }
+    return false;
+  }
+
+  private static ObjectNode crud(ObjectNode stub) {
+    JsonNode response = stub.get("response");
+    if (response.get("transformers").size() != 1) throw new Refused("A CRUD stub can't use other transformers");
+    JsonNode parameters = response.path("transformerParameters");
+    CrudResource resource;
+    try {
+      resource = new CrudResource(parameters.path("resource").asText(), parameters.path("idField").asText("id"),
+          CrudResource.IdType.parse(parameters.path("idType").asText("number")));
+    } catch (RuntimeException e) {
+      throw new Refused("That CRUD resource isn't valid: " + e.getMessage());
+    }
+    ObjectNode canonical = CrudStubs.stub(resource);
+    if (stub.hasNonNull("name")) canonical.put("name", stub.get("name").asText());
+    if (stub.hasNonNull("priority")) canonical.set("priority", stub.get("priority"));
+    return canonical;
   }
 
   private static void delays(ObjectNode response) {

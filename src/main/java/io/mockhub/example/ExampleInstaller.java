@@ -40,9 +40,12 @@ public final class ExampleInstaller {
     this.files = files;
   }
 
+  public record Plan(List<ObjectNode> stubs, List<Seed> seeds, boolean usesFiles) {}
+
+  public record Seed(CrudResource resource, JsonNode records) {}
+
   public Project install(String exampleId, String orgId, String teamId) {
     Example example = catalog.get(exampleId);
-    JsonNode content = catalog.content(example);
     ObjectNode request = Jsons.object()
         .put("name", example.name())
         .put("slug", projects.availableSlug(example.slug()))
@@ -50,19 +53,33 @@ public final class ExampleInstaller {
         .put("orgId", orgId)
         .put("teamId", teamId);
     Project project = projects.create(request);
+    Plan plan = plan(exampleId, project);
+    Set<String> fileNames = saveFiles(project, catalog.content(example).path("files"));
+    plan.seeds().forEach(seed -> crud.seed(project.id(), seed.resource(), seed.records()));
+    plan.stubs().forEach(s -> stubs.create(project.id(), withFiles(s, project, fileNames)));
+    return project;
+  }
 
-    List<ObjectNode> toCreate = new ArrayList<>();
+  public Plan plan(String exampleId, Project project) {
+    JsonNode content = catalog.content(catalog.get(exampleId));
+    List<ObjectNode> planned = new ArrayList<>();
     for (JsonNode imp : content.path("imports")) {
       StubImporter importer = importers.get(imp.get("format").asText());
       Map<String, String> options = new LinkedHashMap<>();
       imp.path("options").fields().forEachRemaining(e -> options.put(e.getKey(), e.getValue().asText()));
-      toCreate.addAll(importer.parse(new StubImporter.Request(project, catalog.file(imp.get("file").asText()), options)).stubs());
+      planned.addAll(importer.parse(new StubImporter.Request(project, catalog.file(imp.get("file").asText()), options)).stubs());
     }
-    Set<String> fileNames = saveFiles(project, content.path("files"));
-    for (JsonNode resource : content.path("crud")) toCreate.add(crudStub(project, resource));
-    content.path("stubs").forEach(s -> toCreate.add(withFiles(s.deepCopy(), project, fileNames)));
-    toCreate.forEach(s -> stubs.create(project.id(), s));
-    return project;
+    List<Seed> seeds = new ArrayList<>();
+    for (JsonNode declared : content.path("crud")) {
+      CrudResource resource = new CrudResource(declared.path("resource").asText(), declared.path("idField").asText("id"),
+          CrudResource.IdType.parse(declared.path("idType").asText("uuid")));
+      seeds.add(new Seed(resource, declared.get("seed")));
+      ObjectNode stub = CrudStubs.stub(resource);
+      if (declared.hasNonNull("description")) StubMetadata.node(stub).put("description", declared.get("description").asText());
+      planned.add(stub);
+    }
+    content.path("stubs").forEach(s -> planned.add(s.deepCopy()));
+    return new Plan(planned, seeds, !content.path("files").isEmpty());
   }
 
   private Set<String> saveFiles(Project project, JsonNode declared) {
@@ -73,15 +90,6 @@ public final class ExampleInstaller {
       names.add(name);
     }
     return names;
-  }
-
-  private ObjectNode crudStub(Project project, JsonNode declared) {
-    CrudResource resource = new CrudResource(declared.path("resource").asText(), declared.path("idField").asText("id"),
-        CrudResource.IdType.parse(declared.path("idType").asText("uuid")));
-    crud.seed(project.id(), resource, declared.get("seed"));
-    ObjectNode stub = CrudStubs.stub(resource);
-    if (declared.hasNonNull("description")) StubMetadata.node(stub).put("description", declared.get("description").asText());
-    return stub;
   }
 
   private static ObjectNode withFiles(ObjectNode stub, Project project, Set<String> fileNames) {

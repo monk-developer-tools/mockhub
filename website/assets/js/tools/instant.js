@@ -62,15 +62,109 @@ export function formToStub(form) {
   return stub;
 }
 
+const crudResource = (stub) => (stub.response?.transformers ?? []).includes('mockhub-crud') ? stub.response?.transformerParameters?.resource : null;
+
 export function displayPath(stub) {
+  const resource = crudResource(stub);
+  if (resource) return `/${resource}[/{id}]`;
   const r = stub.request ?? {};
   return r.urlPathTemplate ?? r.urlPath ?? r.url ?? '(any path)';
 }
 
 export function samplePath(stub) {
+  const resource = crudResource(stub);
+  if (resource) return `/${resource}`;
   const path = displayPath(stub);
   if (path === '(any path)') return '/';
   return path.replace(/\{[^}]+\}/g, '42');
+}
+
+export const MAX_RECORDS = 50;
+
+export function resourceName(fileName) {
+  const base = String(fileName ?? '').replace(/\.[^.]*$/, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  return /^[a-z0-9]/.test(base) ? base.slice(0, 60) : 'items';
+}
+
+export function specFormat(text) {
+  const start = String(text ?? '').trimStart();
+  return start.startsWith('<') ? 'wsdl' : 'openapi';
+}
+
+function csvRows(text) {
+  const rows = [];
+  let row = [];
+  let field = '';
+  let quoted = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (quoted) {
+      if (c === '"' && text[i + 1] === '"') {
+        field += '"';
+        i++;
+      } else if (c === '"') {
+        quoted = false;
+      } else {
+        field += c;
+      }
+    } else if (c === '"') {
+      quoted = true;
+    } else if (c === ',') {
+      row.push(field);
+      field = '';
+    } else if (c === '\n' || c === '\r') {
+      if (c === '\r' && text[i + 1] === '\n') i++;
+      row.push(field);
+      rows.push(row);
+      row = [];
+      field = '';
+    } else {
+      field += c;
+    }
+  }
+  if (field !== '' || row.length) {
+    row.push(field);
+    rows.push(row);
+  }
+  return rows.filter((r) => r.some((v) => v.trim() !== ''));
+}
+
+function csvValue(raw) {
+  const v = raw.trim();
+  if (/^-?(0|[1-9]\d{0,14})(\.\d+)?$/.test(v)) return Number(v);
+  if (v === 'true' || v === 'false') return v === 'true';
+  return v;
+}
+
+export function parseCsv(text) {
+  const rows = csvRows(String(text ?? ''));
+  if (rows.length < 2) throw new Error('The CSV needs a header row and at least one record.');
+  const headers = rows[0].map((h) => h.trim());
+  if (headers.some((h) => !h)) throw new Error('Every column in the header row needs a name.');
+  return rows.slice(1).map((r) => Object.fromEntries(headers.map((h, i) => [h, csvValue(r[i] ?? '')])));
+}
+
+export function parseRecords(text) {
+  const trimmed = String(text ?? '').trim();
+  if (!trimmed) throw new Error('Paste or upload some records first.');
+  let records;
+  if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+    let parsed;
+    try {
+      parsed = JSON.parse(trimmed);
+    } catch (e) {
+      throw new Error('That JSON is not valid.');
+    }
+    const lists = !Array.isArray(parsed) && parsed && typeof parsed === 'object' ? Object.values(parsed).filter(Array.isArray) : [];
+    records = Array.isArray(parsed) ? parsed : lists.length === 1 ? lists[0] : null;
+    if (!records) throw new Error('Use a JSON list of objects, like [{"id": 1, "name": "Ada"}].');
+  } else {
+    records = parseCsv(trimmed);
+  }
+  if (!records.length || !records.every((r) => r && typeof r === 'object' && !Array.isArray(r))) {
+    throw new Error('Each record must be an object with named fields.');
+  }
+  return records;
 }
 
 export function exportMappings(stubs) {
