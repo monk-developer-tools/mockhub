@@ -152,6 +152,10 @@ screenshots, and the [live demo](https://mockhub.devops-monk.com/__admin/mockhub
 - **CRUD resources with a data store.** One click gives you `/customers` with list (filter, sort, page), read,
   create, replace, patch and delete, backed by real stored records. A **Data** tab shows and edits the records, and
   they survive restarts and travel in backups.
+- **Datasets.** Upload CSV, JSON or NDJSON test data once per organisation, with identity fields, indexes and
+  replace, update-and-add or add-only uploads. Any stub answers from it with `{{dataset-one 'customers' id=request.path.id}}`
+  or `{{dataset 'products' category='books'}}`. A Datasets page browses records and previews lookups, and the stub
+  editor turns a JSON list body into a table you can edit or move into a dataset.
 - **Recorded state.** Stubs remember data with the WireMock state extension's `recordState` and read it back with
   `{{state}}`, e.g. the items in a cart. State is kept per project on disk, travels in backups, and the **Data** tab
   shows each context to edit, delete or clear.
@@ -515,6 +519,10 @@ MockHub is a WireMock extension running inside a regular WireMock server:
 | POST | `/__admin/mockhub/api/projects/{id}/crud` | `{resource, idField, idType: number\|uuid\|short, seed}` → create a CRUD resource |
 | GET/DELETE | `/__admin/mockhub/api/projects/{id}/data` | resources with record counts / delete all records |
 | GET/POST/PUT/DELETE | `/__admin/mockhub/api/projects/{id}/data/records?resource=&id=` | list, add, replace, delete one, or clear a resource |
+| GET/POST | `/__admin/mockhub/api/orgs/{id}/datasets` | datasets and limits / create `{key, name, identity, indexes}` (organisation editor) |
+| GET/PUT/DELETE | `/__admin/mockhub/api/orgs/{id}/datasets/{key}` | one dataset / change settings / delete |
+| POST | `/__admin/mockhub/api/orgs/{id}/datasets/{key}/upload?format=csv\|json\|ndjson&mode=replace\|upsert\|add` | upload the file as the body |
+| GET | `/__admin/mockhub/api/orgs/{id}/datasets/{key}/records?field=value&q=&offset=&limit=` | records, filtered or searched |
 | GET/DELETE | `/__admin/mockhub/api/projects/{id}/state` | recorded state contexts / delete all of them |
 | PUT/DELETE | `/__admin/mockhub/api/projects/{id}/state/context?name=` | `{properties, list}` → set a context / delete one |
 | GET/POST/DELETE | `/__admin/mockhub/api/projects/{id}/files?name=` | list / upload (raw body) / delete response files |

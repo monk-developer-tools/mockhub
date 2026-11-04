@@ -1,4 +1,4 @@
-import { Copy, Database, FloppyDisk, FolderSimplePlus, LockSimple, Plus, Sparkle, Table, Trash, Warning } from '@phosphor-icons/react';
+import { Copy, Database, FloppyDisk, FolderSimplePlus, LockSimple, Plus, Rows, Sparkle, Table, Trash, Warning } from '@phosphor-icons/react';
 import { Link, useNavigate } from 'react-router-dom';
 import { crudOf } from '../../model/crud';
 import { DynamicValueMenu } from '../../components/DynamicValueMenu';
@@ -13,6 +13,8 @@ import { api } from '../../api/client';
 import type { Project, Stub, StubUsage } from '../../api/types';
 import { timeAgo } from '../../model/time';
 import { AiBodyDialog, type BodyFormat } from './AiBodyDialog';
+import { TableBodyDialog } from './TableBodyDialog';
+import { pathParam, tableOf } from '../../model/tableBody';
 import { CodeEditor, insertAtCursor } from '../../components/CodeEditor';
 import { Confirm, Modal } from '../../components/Modal';
 import { StubRoute } from '../../components/StubRoute';
@@ -103,6 +105,7 @@ export function StubEditor({ project, moveTargets, stub, isNew, canEdit, onSaved
   const [generating, setGenerating] = useState(false);
   const [toggling, setToggling] = useState(false);
   const [generatingData, setGeneratingData] = useState(false);
+  const [editingTable, setEditingTable] = useState(false);
   const disabled = isDisabled(stub);
   const { files, reload: reloadFiles } = useProjectFiles(project.id);
   const toast = useToast();
@@ -248,6 +251,7 @@ export function StubEditor({ project, moveTargets, stub, isNew, canEdit, onSaved
   const readOnly = !canEdit;
   const soap = form.kind === 'soap';
   const bodyLanguage = form.bodyType === 'json' ? 'json' : form.bodyType === 'xml' ? 'xml' : 'text';
+  const bodyTable = useMemo(() => (form.bodyType === 'json' ? tableOf(form.responseBody) : null), [form.bodyType, form.responseBody]);
 
   return (
     <div className="panel editor">
@@ -573,6 +577,11 @@ export function StubEditor({ project, moveTargets, stub, isNew, canEdit, onSaved
                     <button type="button" className="btn small" onClick={() => setGeneratingData(true)}>
                       <Table size={14} /> Generate data
                     </button>
+                    {form.bodyType === 'json' && bodyTable && (
+                      <button type="button" className="btn small" onClick={() => setEditingTable(true)}>
+                        <Rows size={14} /> Edit as table
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -836,6 +845,24 @@ export function StubEditor({ project, moveTargets, stub, isNew, canEdit, onSaved
           onUse={(json) => {
             update({ responseBody: json, bodyType: 'json' });
             setGeneratingData(false);
+          }}
+        />
+      )}
+      {editingTable && bodyTable && (
+        <TableBodyDialog
+          orgId={project.orgId}
+          text={form.responseBody}
+          table={bodyTable}
+          url={form.urlMatch === 'any' ? '' : form.url}
+          param={pathParam(form.urlMatch, form.url)}
+          onClose={() => setEditingTable(false)}
+          onUse={(responseBody) => {
+            update({ responseBody });
+            setEditingTable(false);
+          }}
+          onBind={(responseBody) => {
+            update({ responseBody, templating: true });
+            setEditingTable(false);
           }}
         />
       )}

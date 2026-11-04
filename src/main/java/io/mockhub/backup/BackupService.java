@@ -9,6 +9,8 @@ import io.mockhub.Main;
 import io.mockhub.api.ApiException;
 import io.mockhub.api.Jsons;
 import io.mockhub.data.DataStore;
+import io.mockhub.dataset.DatasetService;
+import io.mockhub.dataset.StoredDataset;
 import io.mockhub.files.BodyFiles;
 import io.mockhub.org.Organization;
 import io.mockhub.org.OrganizationService;
@@ -34,6 +36,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -47,22 +50,24 @@ public final class BackupService {
   private final StubGateway gateway;
   private final DataStore data;
   private final BodyFiles files;
+  private final DatasetService datasets;
   private final Clock clock;
 
   public BackupService(OrganizationService orgs, TeamService teams, ProjectService projects, StubGateway gateway, DataStore data,
-      BodyFiles files, Clock clock) {
+      BodyFiles files, DatasetService datasets, Clock clock) {
     this.orgs = orgs;
     this.teams = teams;
     this.projects = projects;
     this.gateway = gateway;
     this.data = data;
     this.files = files;
+    this.datasets = datasets;
     this.clock = clock;
   }
 
   public record Renamed(String project, String from, String to) {}
 
-  public record Result(int organizations, int projects, int stubs, List<Renamed> renamed) {}
+  public record Result(int organizations, int projects, int stubs, int datasets, List<Renamed> renamed) {}
 
   private record Contents(List<Organization> organizations, List<Team> teams, List<Project> projects, List<ObjectNode> mappings) {
     Optional<Team> team(String id) {
@@ -95,6 +100,11 @@ public final class BackupService {
         .put("createdAt", Instant.now(clock).toString()).put("scope", selection.everything() ? "full" : "selection");
     out.set("organizations", Jsons.MAPPER.valueToTree(orgList));
     out.set("teams", Jsons.MAPPER.valueToTree(teamList));
+    ObjectNode sets = out.putObject("datasets");
+    for (Organization o : orgList) {
+      List<StoredDataset> orgSets = datasets.snapshot(o.id());
+      if (!orgSets.isEmpty()) sets.set(o.id(), Jsons.MAPPER.valueToTree(orgSets));
+    }
     ObjectNode records = out.putObject("data");
     ObjectNode bodyFiles = out.putObject("files");
     for (Project p : chosen) {
@@ -142,6 +152,7 @@ public final class BackupService {
     ArrayNode orgNodes = out.putArray("organizations");
     for (Organization o : inFile.values()) {
       ObjectNode node = orgNodes.addObject().put("id", o.id()).put("name", o.name()).put("slug", o.slug()).put("exists", known.containsKey(o.id()));
+      node.put("datasetCount", file.path("datasets").path(o.id()).size());
       ArrayNode list = node.putArray("projects");
       List<Project> inOrg = c.projects().stream().filter(p -> Objects.equals(p.orgId(), o.id()))
           .sorted(Comparator.comparing((Project p) -> p.name().toLowerCase())).toList();
@@ -173,13 +184,19 @@ public final class BackupService {
 
     List<Project> chosen = selection.pick(c.projects());
     int orgCount = 0;
+    int datasetCount = 0;
     if (target == null) {
       Set<String> needed = chosen.stream().map(Project::orgId).collect(Collectors.toSet());
       for (Organization o : c.organizations()) {
         if (selection.everything() || selection.organizationIds().contains(o.id()) || needed.contains(o.id())) {
           orgs.restore(o);
           orgCount++;
+          datasetCount += datasets.restore(o.id(), datasetsIn(file, o.id()), true);
         }
+      }
+    } else {
+      for (String sourceOrg : chosen.stream().map(Project::orgId).filter(Objects::nonNull).collect(Collectors.toCollection(TreeSet::new))) {
+        datasetCount += datasets.restore(target, datasetsIn(file, sourceOrg), false);
       }
     }
     String fallbackOrg = target != null ? target : orgs.ensureDefault().id();
@@ -231,7 +248,7 @@ public final class BackupService {
     }
     projects.assignOrphans(orgs.ensureDefault().id());
     projects.assignTeams(org -> teams.ensureDefault(org).id());
-    return new Result(orgCount, chosen.size(), stubCount, renamed);
+    return new Result(orgCount, chosen.size(), stubCount, datasetCount, renamed);
   }
 
   private Contents read(JsonNode file) {
@@ -249,6 +266,12 @@ public final class BackupService {
       if (m.isObject()) mappings.add((ObjectNode) m);
     });
     return new Contents(orgList, teamList, projectList.stream().filter(p -> p != null && p.id() != null && p.slug() != null).toList(), mappings);
+  }
+
+  private static List<StoredDataset> datasetsIn(JsonNode file, String orgId) {
+    JsonNode sets = file.path("datasets").path(orgId);
+    if (!sets.isArray()) return List.of();
+    return Jsons.MAPPER.convertValue(sets, new TypeReference<List<StoredDataset>>() {});
   }
 
   private Optional<Project> projectWithSlug(String slug) {

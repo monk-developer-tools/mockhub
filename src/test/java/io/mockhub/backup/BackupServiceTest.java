@@ -27,6 +27,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
+import io.mockhub.dataset.DatasetFormat;
+import io.mockhub.dataset.DatasetService;
+import io.mockhub.dataset.FileDatasetRepository;
+import io.mockhub.dataset.UploadMode;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class BackupServiceTest {
@@ -51,6 +57,7 @@ class BackupServiceTest {
     final ProjectService projects;
     final StubService stubs;
     final BackupService backups;
+    final DatasetService datasets;
 
     Server(MutableClock clock) {
       AtomicReference<ProjectService> ref = new AtomicReference<>();
@@ -58,8 +65,9 @@ class BackupServiceTest {
       projects = new ProjectService(new InMemoryProjectRepository(), List.of(stubs), clock);
       ref.set(projects);
       teams = new TeamService(new InMemoryTeamRepository(), List.of(), clock);
-      orgs = new OrganizationService(new InMemoryOrganizationRepository(), List.of(projects, teams), clock);
-      backups = new BackupService(orgs, teams, projects, gateway, new InMemoryDataStore(), new BodyFiles(tempDir()), clock);
+      datasets = new DatasetService(new FileDatasetRepository(tempDir()), DatasetService.Limits.DEFAULT, clock);
+      orgs = new OrganizationService(new InMemoryOrganizationRepository(), List.of(projects, teams, datasets), clock);
+      backups = new BackupService(orgs, teams, projects, gateway, new InMemoryDataStore(), new BodyFiles(tempDir()), datasets, clock);
     }
 
     Organization org(String name) {
@@ -71,6 +79,15 @@ class BackupServiceTest {
       Project p = projects.create(tree("{'orgId':'" + org.id() + "','teamId':'" + team.id() + "','name':'" + slug + "','slug':'" + slug + "'}"));
       for (String path : paths) stubs.create(p.id(), json("{'request':{'method':'GET','urlPath':'" + path + "'},'response':{'status':200}}"));
       return p;
+    }
+
+    void dataset(Organization org, String key, String csv) {
+      datasets.create(org.id(), tree("{'key':'" + key + "','identity':['id']}"));
+      datasets.upload(org.id(), key, DatasetFormat.CSV, UploadMode.REPLACE, csv.getBytes(StandardCharsets.UTF_8));
+    }
+
+    List<String> names(Organization org, String key) {
+      return datasets.records(org.id(), key, null, Map.of(), 0, 100).records().stream().map(r -> r.get("name").asText()).toList();
     }
 
     List<String> urls(String projectId) {
@@ -229,6 +246,44 @@ class BackupServiceTest {
     assertThat(target.backups.preview(file).at("/organizations/0/projects/0/teamName").asText()).isEqualTo("Checkout");
     assertThat(third.projects.get(pos.id()).teamId()).isEqualTo(inbox.id());
     assertThat(landing.orgId()).isEqualTo(other.id());
+  }
+
+  @Test
+  void carriesTheDatasetsOfTheOrganisationsInTheBackup() {
+    // Given
+    source.dataset(payments, "banks", "id,name\n1,Monzo\n2,Starling\n");
+    source.dataset(retail, "products", "id,name\n1,Dune\n");
+    JsonNode file = source.backups.export(BackupSelection.of(Set.of(), Set.of(payByBank.id())));
+    Server fresh = new Server(clock);
+
+    // When
+    JsonNode preview = fresh.backups.preview(file);
+    BackupService.Result result = fresh.backups.restore(file, RestoreOptions.everything());
+
+    // Then
+    assertThat(file.get("datasets").has(payments.id())).isTrue();
+    assertThat(file.get("datasets").has(retail.id())).isFalse();
+    assertThat(preview.at("/organizations/0/datasetCount").asInt()).isEqualTo(1);
+    assertThat(result.datasets()).isEqualTo(1);
+    assertThat(fresh.names(payments, "banks")).containsExactly("Monzo", "Starling");
+    assertThat(fresh.datasets.get(payments.id(), "banks").identity()).containsExactly("id");
+  }
+
+  @Test
+  void aCopyInAnotherOrganisationBringsDatasetsItLacksAndKeepsItsOwn() {
+    // Given
+    source.dataset(payments, "banks", "id,name\n1,Monzo\n");
+    source.dataset(payments, "currencies", "id,name\n1,Pound\n");
+    source.dataset(retail, "banks", "id,name\n9,Retail bank\n");
+    JsonNode file = source.backups.export(BackupSelection.of(Set.of(), Set.of(payByBank.id())));
+
+    // When
+    BackupService.Result result = source.backups.restore(file, new RestoreOptions(BackupSelection.all(), retail.id(), true));
+
+    // Then
+    assertThat(result.datasets()).isEqualTo(1);
+    assertThat(source.names(retail, "banks")).containsExactly("Retail bank");
+    assertThat(source.names(retail, "currencies")).containsExactly("Pound");
   }
 
   @Test

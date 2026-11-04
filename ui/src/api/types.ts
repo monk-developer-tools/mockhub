@@ -384,6 +384,7 @@ export interface RestoreResult {
   organizations: number;
   projects: number;
   stubs: number;
+  datasets?: number;
   renamed: { project: string; from: string; to: string }[];
 }
 

@@ -2636,6 +2636,24 @@ kbd {
   align-items: start;
 }
 
+.table-editor {
+  max-height: 420px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+}
+
+.table-editor td {
+  padding: 2px 4px;
+}
+
+.table-editor td input {
+  width: 100%;
+  min-width: 90px;
+  font-family: var(--font-code);
+  font-size: 12.5px;
+}
+
 .dataset-columns {
   display: flex;
   flex-wrap: wrap;

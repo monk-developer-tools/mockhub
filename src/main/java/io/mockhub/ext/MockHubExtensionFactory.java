@@ -317,7 +317,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
         new CalloutController(calloutLog),
         new ImportExportController(projects, stubs, exporters, importers, urls, new WireMockArchiveImporter(bodyFiles)),
         new AiController(aiSettings, aiProviders, chat, assistant, assistantJobs, projects, urls, new BodyGenerator(aiSettings, chat)),
-        new BackupController(new BackupService(orgs, teams, projects, gateway, dataStore, bodyFiles, clock)),
+        new BackupController(new BackupService(orgs, teams, projects, gateway, dataStore, bodyFiles, datasets, clock)),
         new DataController(projects, stubs, dataStore, crud),
         new StateController(projects, stateRepository, clock),
         new DatasetController(orgs, datasets),

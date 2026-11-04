@@ -162,6 +162,24 @@ public final class DatasetService implements OrganizationListener {
     return copies(index(stored(orgId, key)).find(filters, 0, limit));
   }
 
+  public List<StoredDataset> snapshot(String orgId) {
+    return repository.findAll(orgId);
+  }
+
+  public synchronized int restore(String orgId, List<StoredDataset> sets, boolean replaceExisting) {
+    int restored = 0;
+    for (StoredDataset set : sets) {
+      Dataset d = set.dataset();
+      if (d == null || d.key() == null || !KEY.matcher(d.key()).matches()) continue;
+      if (!replaceExisting && repository.find(orgId, d.key()).isPresent()) continue;
+      Dataset moved = new Dataset(orgId, d.key(), d.name(), d.description(), d.identity(), d.indexes(), d.columns(),
+          set.records().size(), d.bytes(), d.createdAt(), d.updatedAt());
+      save(new StoredDataset(moved, set.records()));
+      restored++;
+    }
+    return restored;
+  }
+
   @Override
   public void onOrganizationDeleted(Organization organization) {
     indexes.keySet().removeIf(k -> k.startsWith(organization.id() + "/"));

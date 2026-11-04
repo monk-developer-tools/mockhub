@@ -1,0 +1,68 @@
+<p>A <strong>dataset</strong> is a table of test data, such as customers, products or bank accounts, that every project in an organisation can read. Upload it once as CSV or JSON, then answer from it in any stub: <code>GET /customers/42</code> returns customer 42 from the dataset instead of a hand-written body.</p>
+
+<h3 id="datasets-create">Create and upload</h3>
+<p>Open <strong>Datasets</strong> in the sidebar and choose <strong>New dataset</strong>. Give it:</p>
+<table>
+  <thead><tr><th>Setting</th><th>What it does</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Key</strong></td><td>The name stubs use, e.g. <code>customers</code>. Lowercase letters, digits, dashes and underscores; it can't change later.</td></tr>
+    <tr><td><strong>Identity fields</strong></td><td>Up to 3 fields that tell records apart, usually <code>id</code>. Uploads use them to update or skip records, and two records can't share the same values.</td></tr>
+    <tr><td><strong>Indexed fields</strong></td><td>Up to 5 fields you look records up by, such as <code>email</code>. Lookups on them stay fast in big datasets; other fields work too, just slower.</td></tr>
+  </tbody>
+</table>
+<p>Then <strong>Upload</strong> a file. MockHub reads:</p>
+<ul>
+  <li><strong>CSV</strong>: the first line names the columns. Numbers and <code>true</code>/<code>false</code> are recognised by themselves; values with a leading zero such as <code>01234</code> stay text. Force a type with a suffix: <code>zip:string</code>, <code>price:number</code>, <code>active:boolean</code> or <code>tags:json</code>. Quoted values can hold commas, quotes and line breaks.</li>
+  <li><strong>JSON</strong>: an array of objects, <code>[{"id": 1, "name": "Ada"}]</code>.</li>
+  <li><strong>NDJSON</strong>: one object per line.</li>
+</ul>
+<p>When the dataset already has records, choose what happens:</p>
+<table>
+  <thead><tr><th>Mode</th><th>Records with the same identity</th><th>New records</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Replace all</strong></td><td colspan="2">The file becomes the whole dataset.</td></tr>
+    <tr><td><strong>Update and add</strong></td><td>replaced by the file's</td><td>added</td></tr>
+    <tr><td><strong>Add only</strong></td><td>kept; the file's are skipped</td><td>added</td></tr>
+  </tbody>
+</table>
+<p>A mistake is reported with its line, e.g. <em>Line 7 has 5 values but the header has 4 columns</em>, and nothing is changed.</p>
+
+<h3 id="datasets-helpers">Answer from a dataset</h3>
+<p>Turn on templating in the stub and use the dataset helpers. Each takes the dataset key and up to three <code>field=value</code> filters; a record matches when every filter matches.</p>
+<pre><code>{{{dataset-one 'customers' id=request.path.id}}}</code></pre>
+<p>gives one record as JSON. Read single fields with <code>#with</code>, which also handles "not found":</p>
+<pre><code>{{#with (dataset-one 'customers' id=request.path.id)}}
+  {"name": "{{name}}", "city": "{{address.city}}"}
+{{else}}
+  {"error": "No customer {{request.path.id}}"}
+{{/with}}</code></pre>
+<p><code>dataset</code> gives a list, up to 100 records unless you set <code>limit</code> (at most 1,000):</p>
+<pre><code>{{{dataset 'products' category=request.query.category limit=20}}}
+{{#each (dataset 'orders' status='open')}}{{id}} {{/each}}
+{{len (dataset 'orders' status='open')}}</code></pre>
+<p>Matching follows the values, not their spelling: <code>id=7</code> finds the number 7 and <code>7.0</code>, and <code>active=TRUE</code> finds <code>true</code>. Text matches exactly, so <code>007</code> doesn't find the number 7. Filters on a list field match any item, and <code>address.city</code> reaches into nested objects. The <a href="#helpers">helper reference</a> and the <strong>Insert dynamic value</strong> picker have these ready to copy.</p>
+<p>The helpers read the datasets of the organisation the stub's project belongs to. They work in response bodies and headers, not in webhooks.</p>
+
+<h3 id="datasets-browse">Browse and try lookups</h3>
+<p>The Datasets page shows each dataset's columns and types, and lets you search and page through records. <strong>Use it in a stub</strong> lists helpers for that dataset to copy, and <strong>Try a lookup</strong> shows exactly what <code>dataset-one</code> or <code>dataset</code> returns for the filters you enter.</p>
+
+<h3 id="datasets-table">Turn a stub's body into a dataset</h3>
+<p>When a stub answers with a JSON list, such as one made by an <a href="#import">OpenAPI import</a>, choose <strong>Edit as table</strong> under the body. Edit cells, add or remove rows and columns; values keep their column's type. Then either use the result as the body, or choose <strong>Move the rows to a dataset</strong>: MockHub creates the dataset from the rows and replaces the body with a helper. A path like <code>/pets/{petId}</code> gets <code>dataset-one</code> by <code>petId</code>; other paths get the whole list. A body that wraps the list, like <code>{"data": [...], "total": 2}</code>, keeps its wrapper.</p>
+
+<h3 id="datasets-limits">Who can change them, and limits</h3>
+<p>Everyone in the organisation can browse its datasets. Changing them needs the editor role on the organisation itself, not just on a team. An upload can be up to 20 MB; a dataset holds up to 100,000 records of up to 64 KB each, and an organisation up to 100 datasets.</p>
+<p>Datasets are saved on disk in <code>/data/mockhub/datasets</code>, go into <a href="#persistence">backups</a> with their organisation, and are deleted with it.</p>
+
+<h3 id="datasets-api">From a script or test</h3>
+<table>
+  <thead><tr><th>Request</th><th>Does</th></tr></thead>
+  <tbody>
+    <tr><td><code>GET /__admin/mockhub/api/orgs/{id}/datasets</code></td><td>datasets and limits</td></tr>
+    <tr><td><code>POST …/datasets</code></td><td>create from <code>{"key", "name", "identity", "indexes"}</code></td></tr>
+    <tr><td><code>PUT</code> / <code>DELETE …/datasets/{key}</code></td><td>change settings / delete</td></tr>
+    <tr><td><code>POST …/datasets/{key}/upload?format=csv&amp;mode=upsert</code></td><td>upload the file as the request body; <code>format</code> is <code>csv</code>, <code>json</code> or <code>ndjson</code>, <code>mode</code> is <code>replace</code>, <code>upsert</code> or <code>add</code></td></tr>
+    <tr><td><code>GET …/datasets/{key}/records?city=London&amp;q=&amp;offset=0&amp;limit=50</code></td><td>records, filtered by fields or searched by text</td></tr>
+  </tbody>
+</table>
+<pre><code>curl -X POST -H "Authorization: Bearer $TOKEN" --data-binary @customers.csv \
+  "https://mocks.example.com/__admin/mockhub/api/orgs/$ORG/datasets/customers/upload?format=csv&amp;mode=upsert"</code></pre>

@@ -48,7 +48,7 @@ Legend: ✅ have it · 🟡 partial · ❌ missing
 | Request history: search, facets, 10-day retention | On-disk history, search, facets, HAR, configurable retention (default 7 days) | ✅ | — |
 | Snapshots: create, restore, pull to another endpoint | Snapshots with diff, restore, pull between projects, file download and upload | ✅ | — |
 | Stateful data management UI | Data tab for CRUD records and recorded state contexts | ✅ | — |
-| Datasets (CSV/JSON shared across projects) | Missing | ❌ | F8 |
+| Datasets (CSV/JSON shared across projects) | Organisation datasets, helpers, browser, table editor | ✅ | — |
 | Sharing and teams | Organisations, teams, roles, SSO | ✅ | — |
 | API connections (stored OAuth for outbound calls) | Missing | ❌ | F9 |
 | Mock server security (required header) | Project API key header (401) and IP allow list (403) | ✅ | — |
@@ -641,8 +641,8 @@ Goal: upload test data once and use it from any project in the organisation.
 Checklist:
 - [x] Dataset store, upload and indexes (`io.mockhub.dataset`: CSV with typed or inferred columns, JSON, NDJSON; replace, upsert and add modes by up to 3 identity fields; up to 5 indexes; 20 MB, 100,000 records, 64 KB per record, 100 datasets per organisation; `/orgs/{id}/datasets` API, editor role in the organisation to change)
 - [x] Template helpers (`dataset-one` and `dataset` with up to 3 equality filters and `limit`; organisation found from the request's project; Datasets group in the picker)
-- [ ] Browser and test data editor
-- [ ] Backup, tests, docs
+- [x] Browser and test data editor (Datasets page with search, paging, upload, settings and a lookup preview; stub editor "Edit as table" for JSON bodies that are lists, with "Move the rows to a dataset" binding the body to a dataset helper)
+- [x] Backup, tests, docs (datasets travel with their organisation in backups; a copy into another organisation adds missing ones; Datasets docs page, README)
 
 ### Phase F9 — API connections and reliable callouts
 

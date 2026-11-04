@@ -320,7 +320,8 @@ function RestoreSummary({ result }: { result: RestoreResult }) {
   return (
     <div className="callout" role="status">
       Restored {plural(result.projects, 'project')} and {plural(result.stubs, 'stub')}
-      {result.organizations > 0 && <> into {plural(result.organizations, 'organisation')}</>}.
+      {result.organizations > 0 && <> into {plural(result.organizations, 'organisation')}</>}
+      {(result.datasets ?? 0) > 0 && <>, with {plural(result.datasets ?? 0, 'dataset')}</>}.
       {result.renamed.length > 0 && (
         <ul className="renamed">
           {result.renamed.map((r) => (
