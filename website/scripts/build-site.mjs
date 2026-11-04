@@ -5,7 +5,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { GROUPS } from '../docs-src/docs.mjs';
 import { featureCards, footer as siteFooter, groupAnchor, header as siteHeader, useCases } from '../docs-src/layout.mjs';
 import { PAGES as FEATURES } from '../site-src/pages.mjs';
-import { SITE, renderFeature } from '../site-src/render.mjs';
+import { SITE, ogMeta, renderFeature } from '../site-src/render.mjs';
 
 const website = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repo = resolve(website, '..');
@@ -89,13 +89,20 @@ const footer = `  ${siteFooter(icon)}
   <script src="/assets/js/site.js" defer></script>
   <script src="/assets/js/docs.js" defer></script>`;
 
-const head = (title, description, extra = '') => `<!doctype html>
+const head = (title, description, path, extra = '') => `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${escape(title)}</title>
   <meta name="description" content="${escape(description)}">
+  <link rel="canonical" href="${SITE}${path}">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="MockHub">
+  <meta property="og:title" content="${escape(title)}">
+  <meta property="og:description" content="${escape(description)}">
+  <meta property="og:url" content="${SITE}${path}">
+${ogMeta(path, title)}
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -157,7 +164,7 @@ function renderPage(page, index) {
     inPre = (inPre || line.includes('<pre')) && !line.includes('</pre>');
     return indented;
   }).join('\n');
-  return `${head(`${page.title} — MockHub docs`, page.description)}
+  return `${head(`${page.title} — MockHub docs`, page.description, `/docs/${page.slug}/`)}
 <body>
 ${header()}
 
@@ -215,7 +222,7 @@ function renderLanding() {
         </div>
       </section>`;
   }).join('\n\n      ');
-  return `${head('Docs — MockHub', 'How to run MockHub, mock REST and SOAP services, send webhooks, share mocks with your team, automate it from CI and deploy it.', redirect)}
+  return `${head('Docs — MockHub', 'How to run MockHub, mock REST and SOAP services, send webhooks, share mocks with your team, automate it from CI and deploy it.', '/docs/', redirect)}
 <body>
 ${header()}
 

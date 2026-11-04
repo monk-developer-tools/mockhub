@@ -511,7 +511,7 @@ Safety for the demo-server tools. Each tool:
   - [x] New header with the mega menus and a phone accordion
   - [x] Five-column footer
   - [x] Sitemap, robots, structured data
-  - [ ] OG image per page, generated from the page title
+  - [x] OG image per page, generated from the page title (`website/scripts/build-og.mjs`, images committed)
   - [x] Link and alt-text checks in the build
 - W2 Feature pages:
   - [x] Six service-virtualization pages

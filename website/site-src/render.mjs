@@ -1,5 +1,6 @@
 import { DEMO, MENUS, PAGES } from './pages.mjs';
 import { GITHUB } from '../docs-src/layout.mjs';
+import { OG_HEIGHT, OG_WIDTH, ogImage } from './og.mjs';
 
 export const SITE = 'https://mockhub.devops-monk.com';
 const LIVE = 'mockhub.devops-monk.com';
@@ -10,6 +11,13 @@ const bySlug = new Map(PAGES.map((p) => [p.slug, p]));
 const menuOf = (id) => MENUS.find((m) => m.id === id);
 
 const json = (value) => JSON.stringify(value).replace(/</g, '\\u003c');
+
+export const ogMeta = (path, alt) => `  <meta property="og:image" content="${SITE}${ogImage(path)}">
+  <meta property="og:image:width" content="${OG_WIDTH}">
+  <meta property="og:image:height" content="${OG_HEIGHT}">
+  <meta property="og:image:alt" content="${esc(alt)}">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="${SITE}${ogImage(path)}">`;
 
 export function head({ title, description, path, extra = '' }) {
   return `<!doctype html>
@@ -27,8 +35,7 @@ export function head({ title, description, path, extra = '' }) {
   <meta property="og:title" content="${esc(title)}">
   <meta property="og:description" content="${esc(description)}">
   <meta property="og:url" content="${SITE}${path}">
-  <meta property="og:image" content="${SITE}/assets/img/og.jpg">
-  <meta name="twitter:card" content="summary_large_image">
+${ogMeta(path, title)}
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/assets/css/site.css">
 ${extra}</head>`;

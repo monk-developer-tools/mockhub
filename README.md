@@ -569,7 +569,15 @@ a missing image or an image without alt text:
 
 ```bash
 node --disable-warning=ExperimentalWarning website/scripts/build-site.mjs
-node --test website/tests/*.test.mjs                  # the free tools' logic (JWT, cURL, stub checker, CSV/SQL, HTTP)
+node --test website/tests/*.test.mjs                  # the free tools' logic, comparison data and preview cards
+```
+
+Every page has its own social preview card (1200×630) in `website/assets/img/og/`, drawn from its title. After adding a
+page or changing a title, regenerate them with Chrome installed (set `CHROME_PATH` if it is not in the default macOS
+place) and commit the images. The tests fail if a page has no card:
+
+```bash
+node --disable-warning=ExperimentalWarning website/scripts/build-og.mjs
 ```
 
 ### Code layout
@@ -602,6 +610,7 @@ website
   site-src/                      feature and tool pages as data, page renderer, tool markup
   assets/js/tools/               the free tools: pure logic modules plus one page script each
   scripts/build-site.mjs         builds docs, feature pages, sitemap and checks every link
+  scripts/build-og.mjs           draws each page's social preview card with headless Chrome
 ```
 
 ### Releasing
