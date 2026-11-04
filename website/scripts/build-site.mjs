@@ -68,9 +68,11 @@ for (const page of pages) {
 }
 
 const problems = [];
+const outline = (html) => (html.includes('<h2') ? html : html.replace(/<h3 id=/g, '<h2 class="docs-section" id=').replace(/<\/h3>/g, '</h2>'));
+
 function rewrite(page) {
   const own = new Set(page.headings.map((h) => h.id));
-  return page.source.replace(/href="(\/docs\/)?#([^"]+)"/g, (match, prefix, id) => {
+  return outline(page.source).replace(/href="(\/docs\/)?#([^"]+)"/g, (match, prefix, id) => {
     if (!prefix && own.has(id)) return match;
     const target = anchors.get(id);
     if (!target) {
@@ -125,6 +127,7 @@ function sidebar(current) {
         <a class="docs-home" href="/docs/">${icon('House', 16)}Overview</a>
         ${groups}
       </details>
+      <script>if (matchMedia('(max-width: 900px)').matches) document.currentScript.previousElementSibling.open = false;</script>
     </aside>`;
 }
 

@@ -544,8 +544,8 @@ Safety for the demo-server tools. Each tool:
 - W6 Compare and polish:
   - [x] vs WireMock, vs Mockoon and vs Postman mock servers pages, factual and dated (checked 4 November 2026; Apache-2.0 LICENSE added)
   - [x] Homepage hero CTA becomes "Try it free, no login"
-  - [ ] Lighthouse 95+ on every page
-  - [ ] Phone, dark-mode and keyboard pass
+  - [x] Lighthouse 95+ on every page (all 71 pages, mobile: performance 95–100, accessibility, best practices and SEO 100)
+  - [x] Phone, dark-mode and keyboard pass
 - [x] Docs, a tutorial ("Try MockHub without an account"), README, deploy (demo env flag, nginx limits)
 
 Notes (W1, W2): pages live in `website/site-src/pages.mjs` and render through `website/site-src/render.mjs`. The build

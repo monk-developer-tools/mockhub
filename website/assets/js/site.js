@@ -104,6 +104,7 @@
       const b = document.createElement('button');
       b.type = 'button';
       b.setAttribute('aria-label', `Show highlight ${i + 1}`);
+      b.tabIndex = -1;
       b.addEventListener('click', () => go(i));
       dots.appendChild(b);
       return b;

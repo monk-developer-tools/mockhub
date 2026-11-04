@@ -321,8 +321,9 @@ function toolHero(page, icon) {
 
 const catalogueScript = (data) => `<script type="application/json" id="tool-catalogue">${JSON.stringify(data).replace(/</g, '\\u003c')}</script>`;
 
-const toolBody = (page, ctx) => `<section class="tool-section" aria-label="${esc(page.nav[0])}">
+const toolBody = (page, ctx) => `<section class="tool-section" aria-labelledby="tool-title">
       <div class="wrap fp-wide">
+        <h2 class="sr-only" id="tool-title">${esc(page.nav[0])}</h2>
         ${ctx.tools[page.tool].replace('<!-- catalogue -->', () => catalogueScript(ctx.catalogues[page.tool] ?? [])).trim().split('\n').join('\n        ')}
       </div>
     </section>`;

@@ -9,6 +9,9 @@
   --hair: rgba(0, 0, 0, 0.08);
   --accent: #0071e3;
   --accent-hover: #0077ed;
+  --fill: #0071e3;
+  --fill-hover: #0062c4;
+  --jack-ink: #ffffff;
   --link: #0066cc;
   --code-bg: #1d1d1f;
   --code-ink: #f5f5f7;
@@ -42,6 +45,7 @@
     --hair: rgba(255, 255, 255, 0.1);
     --accent: #0a84ff;
     --accent-hover: #2b95ff;
+    --jack-ink: #0b0b0c;
     --link: #2997ff;
     --code-bg: #161617;
     --m-get: #3fcfae;
@@ -92,6 +96,17 @@ a {
 
 a:hover {
   text-decoration: underline;
+}
+
+:where(p, li, td, dd) > a:not([class]) {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+  text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
+}
+
+:where(p, li, td, dd) > a:not([class]):hover {
+  text-decoration-color: currentColor;
 }
 
 h1,
@@ -230,7 +245,7 @@ section.dark {
 .nav-links .pill {
   color: #fff;
   opacity: 1;
-  background: var(--accent);
+  background: var(--fill);
   padding: 4px 12px;
   border-radius: 980px;
   font-weight: 500;
@@ -238,7 +253,7 @@ section.dark {
 
 .nav-links .pill:hover {
   color: #fff;
-  background: var(--accent-hover);
+  background: var(--fill-hover);
 }
 
 .nav-toggle {
@@ -346,12 +361,12 @@ h3 {
 }
 
 .btn.primary {
-  background: var(--accent);
+  background: var(--fill);
   color: #fff;
 }
 
 .btn.primary:hover {
-  background: var(--accent-hover);
+  background: var(--fill-hover);
 }
 
 .link-chevron {
@@ -729,7 +744,7 @@ section.alt .tile {
   letter-spacing: 0.04em;
   padding: 4px 0;
   border-radius: 6px;
-  color: #fff;
+  color: var(--jack-ink);
   background: var(--m-get);
 }
 
@@ -1359,7 +1374,8 @@ footer a {
   border-left-color: var(--accent);
 }
 
-.docs-page h3 {
+.docs-page h3,
+.docs-page h2.docs-section {
   scroll-margin-top: calc(var(--nav-h) + 20px);
 }
 
@@ -1878,6 +1894,14 @@ footer a {
 .prose h3 {
   font-size: 21px;
   margin: 36px 0 10px;
+}
+
+.prose h2.docs-section {
+  font-size: 21px;
+  letter-spacing: normal;
+  margin: 36px 0 10px;
+  padding-top: 0;
+  border-top: 0;
 }
 
 .prose p,
@@ -2693,7 +2717,7 @@ footer a {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4.5 8.2l2.3 2.3 4.7-4.9' fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 16px no-repeat;
+  background: var(--fill) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4.5 8.2l2.3 2.3 4.7-4.9' fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 16px no-repeat;
 }
 
 .tut-code {
@@ -2996,7 +3020,7 @@ footer a {
 }
 
 .hero-badge span {
-  background: var(--accent);
+  background: var(--fill);
   color: #fff;
   font-weight: 600;
   font-size: 12px;
@@ -3105,7 +3129,7 @@ footer a {
 .try-send {
   flex: none;
   border: 0;
-  background: var(--accent);
+  background: var(--fill);
   color: #fff;
   font: inherit;
   font-size: 13.5px;
@@ -3116,7 +3140,7 @@ footer a {
 }
 
 .try-send:hover {
-  background: var(--accent-hover);
+  background: var(--fill-hover);
 }
 
 .try-send:disabled {
@@ -3422,8 +3446,10 @@ footer a {
   border-color: var(--ink-2);
 }
 
-.site-footer h4 {
+.site-footer h2 {
   font-size: 13px;
+  letter-spacing: normal;
+  line-height: 1.4;
   font-weight: 600;
   color: var(--ink);
   margin-bottom: 12px;
@@ -4361,7 +4387,7 @@ input.tool-input {
 }
 
 .tool-level.info {
-  color: var(--accent);
+  color: var(--link);
   background: color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
@@ -4816,4 +4842,11 @@ select.tool-select-small {
     font-weight: 600;
     color: var(--muted);
   }
+}
+
+.prose td ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 8px;
 }

@@ -97,9 +97,6 @@
     visible.querySelector('input').focus();
   });
 
-  const menu = document.querySelector('.docs-menu');
-  if (menu && window.matchMedia('(max-width: 900px)').matches) menu.open = false;
-
   const nav = document.querySelector('.docs-nav');
   const current = nav?.querySelector('a.active');
   if (current && nav.scrollHeight > nav.clientHeight) nav.scrollTop = current.offsetTop - nav.clientHeight / 2;

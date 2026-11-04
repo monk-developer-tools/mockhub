@@ -77,7 +77,7 @@ const FOOTER = [
 
 export function footer(icon) {
   const cols = FOOTER.map(([title, links]) => `<div>
-          <h4>${title}</h4>
+          <h2>${title}</h2>
           ${links.map(([label, href]) => `<a href="${href}">${esc(label)}</a>`).join('\n          ')}
         </div>`).join('\n        ');
   return `<footer class="site-footer">
