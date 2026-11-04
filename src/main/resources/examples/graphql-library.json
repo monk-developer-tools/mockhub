@@ -1,0 +1,56 @@
+{
+  "imports": [
+    {
+      "format": "graphql",
+      "file": "library.graphql",
+      "options": {
+        "path": "/graphql",
+        "name": "Library"
+      }
+    }
+  ],
+  "stubs": [
+    {
+      "name": "Book (id 404) · not found",
+      "priority": 1,
+      "request": {
+        "method": "POST",
+        "urlPath": "/graphql",
+        "bodyPatterns": [
+          { "matchesJsonPath": "$[?(@.operationName == 'Book')]" },
+          { "matchesJsonPath": { "expression": "$.variables", "equalToJson": "{\"id\":\"404\"}", "ignoreExtraElements": true, "ignoreArrayOrder": true } }
+        ]
+      },
+      "response": {
+        "status": 200,
+        "headers": { "Content-Type": "application/json" },
+        "jsonBody": {
+          "data": { "book": null },
+          "errors": [ { "message": "No book has id 404", "path": [ "book" ], "extensions": { "code": "NOT_FOUND" } } ]
+        }
+      },
+      "metadata": { "mockhub": { "type": "graphql", "folder": "GraphQL", "description": "A fixed answer for one operation and its variables wins over the schema endpoint." } }
+    },
+    {
+      "name": "Borrow · book already on loan",
+      "priority": 1,
+      "request": {
+        "method": "POST",
+        "urlPath": "/graphql",
+        "bodyPatterns": [
+          { "matchesJsonPath": "$[?(@.operationName == 'Borrow')]" },
+          { "matchesJsonPath": { "expression": "$.variables", "equalToJson": "{\"input\":{\"bookId\":\"7\"}}", "ignoreExtraElements": true, "ignoreArrayOrder": true } }
+        ]
+      },
+      "response": {
+        "status": 200,
+        "headers": { "Content-Type": "application/json" },
+        "jsonBody": {
+          "data": null,
+          "errors": [ { "message": "Book 7 is already on loan", "extensions": { "code": "CONFLICT" } } ]
+        }
+      },
+      "metadata": { "mockhub": { "type": "graphql", "folder": "GraphQL" } }
+    }
+  ]
+}

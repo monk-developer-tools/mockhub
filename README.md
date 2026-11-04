@@ -6,7 +6,7 @@
 
 <p align="center">
   <strong>Every dependency. Mocked in minutes.</strong><br>
-  A team mock server for REST and SOAP, built on WireMock, with a web UI, an AI assistant and one Docker image.
+  A team mock server for REST, SOAP and GraphQL, built on WireMock, with a web UI, an AI assistant and one Docker image.
 </p>
 
 <p align="center">
@@ -131,7 +131,10 @@ screenshots, and the [live demo](https://mockhub.devops-monk.com/__admin/mockhub
 - **SOAP support.** A SOAP mode in the editor (operation matching, SOAP 1.1/1.2, envelope and fault helpers), plus
   **WSDL import**. Import creates one stub per operation with sample envelopes generated from the schema, serves
   `?wsdl` pointing at the mock, and adds a fault stub for operations that aren't mocked.
-- **Import** OpenAPI 3 / Swagger 2 (JSON or YAML), WSDL, or WireMock mappings.
+- **GraphQL from a schema.** Import SDL or an introspection result and one endpoint answers every query and mutation
+  with realistic data in exactly the requested shape, echoing arguments such as ids and inputs. Fixed answers match an
+  operation name and variables, and a GraphQL console runs example operations and saves answers as stubs.
+- **Import** OpenAPI 3 / Swagger 2 (JSON or YAML), WSDL, GraphQL schemas, or WireMock mappings.
 - **Move a whole WireMock repository.** Start MockHub on a copy of the folder, or import it as one zip (up to 20,000
   files): files with many stubs, `./` body file paths, folders and templated file names all keep working, and the stub
   that wins a tie stays the same after edits and restarts. See
@@ -507,7 +510,8 @@ MockHub is a WireMock extension running inside a regular WireMock server:
 | GET | `/__admin/mockhub/api/projects/{id}/traffic/daily` | requests and unmatched requests per day for the last 30 days |
 | GET/DELETE | `/__admin/mockhub/api/projects/{id}/callouts?limit=` | callout log: webhooks and *wait for callout* calls with what was sent, the answer, timing and errors |
 | GET | `/__admin/mockhub/api/projects/{id}/export/{postman,bruno,wiremock}` | download an export |
-| POST | `/__admin/mockhub/api/projects/{id}/import/{openapi,wsdl,wiremock}` | import a document (request body) |
+| POST | `/__admin/mockhub/api/projects/{id}/import/{openapi,wsdl,graphql,wiremock}` | import a document (request body); GraphQL takes `?path=&name=` |
+| POST | `/__admin/mockhub/api/projects/{id}/graphql/operations` | example operations for `{schema}` (viewers too) |
 | GET/POST | `/__admin/mockhub/api/examples`, `/examples/{id}/install` | built-in examples |
 | GET | `/__admin/mockhub/api/stubs/unassigned` | stubs not in any project |
 | POST | `/__admin/mockhub/api/projects/{id}/adopt/{stubId}?prefix=` | put such a stub into a project |

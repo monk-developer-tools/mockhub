@@ -59,7 +59,7 @@ final class MockHubProcess implements AutoCloseable {
   }
 
   private void awaitHealthy() throws InterruptedException {
-    HttpClient http = HttpClient.newHttpClient();
+    HttpClient http = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).connectTimeout(java.time.Duration.ofSeconds(10)).build();
     Instant deadline = Instant.now().plus(STARTUP_TIMEOUT);
     while (Instant.now().isBefore(deadline)) {
       if (!process.isAlive()) throw new IllegalStateException("MockHub exited with code " + process.exitValue());

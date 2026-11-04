@@ -37,7 +37,25 @@ class ExamplesIntegrationTest {
 
   @Test
   void listsExamples() {
-    assertThat(api.get(API + "/examples").json()).hasSize(10);
+    assertThat(api.get(API + "/examples").json()).hasSize(11);
+  }
+
+  @Test
+  void graphqlExampleAnswersFromTheSchemaAndFixedOperations() {
+    // When
+    ApiClient.Result installed = api.post(API + "/examples/graphql-library/install", "");
+    ApiClient.Result books = api.post("/example-graphql/graphql", "{\"query\":\"{ books(first: 2) { title genre author { name } } }\"}");
+    ApiClient.Result missing = api.post("/example-graphql/graphql",
+        "{\"operationName\":\"Book\",\"query\":\"query Book($id: ID!) { book(id: $id) { title } }\",\"variables\":{\"id\":\"404\"}}");
+    ApiClient.Result loan = api.post("/example-graphql/graphql",
+        "{\"operationName\":\"Borrow\",\"query\":\"mutation Borrow($input: LoanInput!) { borrow(input: $input) { borrower dueAt } }\",\"variables\":{\"input\":{\"bookId\":\"1\",\"borrower\":\"Ada\"}}}");
+
+    // Then
+    assertThat(installed.status()).as(installed.body()).isEqualTo(201);
+    assertThat(books.json().at("/data/books")).hasSize(2);
+    assertThat(books.json().at("/data/books/0/genre").asText()).isIn("FICTION", "SCIENCE", "HISTORY", "CHILDREN");
+    assertThat(missing.json().at("/errors/0/extensions/code").asText()).isEqualTo("NOT_FOUND");
+    assertThat(loan.json().at("/data/borrow/borrower").asText()).isEqualTo("Ada");
   }
 
   @Test

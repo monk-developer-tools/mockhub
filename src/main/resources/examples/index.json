@@ -120,5 +120,17 @@
       "XPath"
     ],
     "file": "soap-calculator.json"
+  },
+  {
+    "id": "graphql-library",
+    "name": "Library — GraphQL from a schema",
+    "slug": "example-graphql",
+    "description": "Imported from SDL: one endpoint answers every query and mutation with data that follows the schema, plus fixed answers for a missing book and a conflicting loan. Try it in the GraphQL console.",
+    "tags": [
+      "GraphQL",
+      "Schema",
+      "Fake data"
+    ],
+    "file": "graphql-library.json"
   }
 ]

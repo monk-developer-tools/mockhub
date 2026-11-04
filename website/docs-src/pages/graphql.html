@@ -1,0 +1,39 @@
+<p>MockHub mocks a GraphQL API from its schema. One endpoint answers every query and mutation with data that follows the schema, and you add fixed answers for the operations a test cares about.</p>
+
+<h3 id="graphql-import">Import a schema</h3>
+<p>In a project's <strong>Import / export</strong> tab choose <strong>GraphQL</strong>, then drop a <code>.graphql</code> file or paste the schema. MockHub reads:</p>
+<ul>
+  <li><strong>SDL</strong>, the schema language: <code>type Query { book(id: ID!): Book }</code>.</li>
+  <li><strong>An introspection result</strong>, the JSON a GraphQL server returns for the introspection query, with or without the outer <code>data</code>.</li>
+</ul>
+<p>The import creates one stub, <em>GraphQL: &lt;name&gt;</em>, at <code>/graphql</code> (change it under <strong>Endpoint path</strong>) with priority 10, so fixed answers win. Directives the schema uses but doesn't declare, such as federation's <code>@key</code>, are ignored.</p>
+
+<h3 id="graphql-answers">How answers are made</h3>
+<p>The endpoint runs each query against the schema, so a client gets exactly the fields it asked for, in the shape it expects. Validation errors come back as GraphQL <code>errors</code>, the way a real server sends them.</p>
+<table>
+  <thead><tr><th>In the schema</th><th>The answer</th></tr></thead>
+  <tbody>
+    <tr><td><code>String</code>, <code>Int</code>, <code>Float</code>, <code>ID</code></td><td>Realistic values chosen by field name: <code>email</code> gets an e-mail address, <code>name</code> a person's name, <code>city</code> a city, <code>price</code> an amount.</td></tr>
+    <tr><td>Custom scalars</td><td>By scalar name: <code>DateTime</code>, <code>Date</code>, <code>UUID</code>, <code>URL</code>, <code>Email</code>, <code>JSON</code>; others get text.</td></tr>
+    <tr><td>Enums, interfaces and unions</td><td>One of their values or types.</td></tr>
+    <tr><td>Lists</td><td>3 items, or as many as a <code>first</code>, <code>last</code>, <code>limit</code>, <code>take</code>, <code>size</code> or <code>count</code> argument asks for, up to 20.</td></tr>
+    <tr><td>Arguments and inputs</td><td>Copied into fields with the same name: <code>book(id: "42")</code> answers with id 42, and <code>borrow(input: {borrower: "Ada"})</code> answers with borrower Ada.</td></tr>
+  </tbody>
+</table>
+<p>The same query with the same arguments always gets the same answer, so tests stay stable; another id gets other data. Requests can be <code>POST</code> with JSON (<code>query</code>, <code>operationName</code>, <code>variables</code>), a batch array of up to 20 operations, <code>POST</code> with <code>Content-Type: application/graphql</code>, or <code>GET</code> with <code>?query=</code>. Introspection works, so GraphiQL, Apollo tools and code generators can read the mock's schema.</p>
+
+<h3 id="graphql-operations">Fixed answers for an operation</h3>
+<p>A GraphQL stub can match an <strong>operation name</strong> and, optionally, some <strong>variables</strong>. Choose <strong>GraphQL stub</strong> in the Stubs tab, or <strong>GraphQL</strong> as the service type in the editor:</p>
+<pre><code>"request": {
+  "method": "POST",
+  "urlPath": "/graphql",
+  "bodyPatterns": [
+    { "matchesJsonPath": "$[?(@.operationName == 'Book')]" },
+    { "matchesJsonPath": { "expression": "$.variables", "equalToJson": "{\"id\": \"404\"}", "ignoreExtraElements": true } }
+  ]
+}</code></pre>
+<p>Only the variables you list must match, so <code>{"id": "404"}</code> also matches a request that sends more. The operation name comes from the request's <code>operationName</code>, which Apollo, urql, Relay and most other clients send for named operations. Answer with any JSON, for example <code>{"data": {"book": null}, "errors": [...]}</code>.</p>
+
+<h3 id="graphql-console">GraphQL console</h3>
+<p>A GraphQL stub's editor has a console instead of <strong>Try it</strong>. Choose an <strong>example operation</strong>, written from the schema with its required variables, change the query and variables, and run it against the mock. <strong>Save answer as a stub</strong> turns the answer into a fixed stub for that operation name and those variables, ready to edit.</p>
+<p>The <em>Library — GraphQL from a schema</em> example (<strong>Examples</strong> in the sidebar, see the <a href="#quick-start">quick start</a>) has a schema endpoint and two fixed answers to start from.</p>

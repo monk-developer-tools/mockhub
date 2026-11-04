@@ -13,8 +13,8 @@ export type BodyOperator =
   | 'doesNotMatch';
 export type BodyType = 'json' | 'text' | 'xml' | 'file' | 'base64' | 'none';
 export type DelayType = 'none' | 'fixed' | 'uniform' | 'lognormal' | 'chunked';
-export type ResponseMode = 'direct' | 'proxy' | 'fault' | 'callout';
-export type StubKind = 'rest' | 'soap';
+export type ResponseMode = 'direct' | 'proxy' | 'fault' | 'callout' | 'graphql';
+export type StubKind = 'rest' | 'soap' | 'graphql';
 export type Fault = 'CONNECTION_RESET_BY_PEER' | 'EMPTY_RESPONSE' | 'MALFORMED_RESPONSE_CHUNK' | 'RANDOM_DATA_THEN_CLOSE';
 
 export interface ValueMatcher {
@@ -62,6 +62,12 @@ export const CALLOUT_LISTENER = 'mockhub-callout';
 export const SYNC_CALLOUT_TRANSFORMER = 'mockhub-sync-callout';
 export const WEIGHTED_TRANSFORMER = 'mockhub-weighted';
 export const CONNECTION_TRANSFORMER = 'mockhub-connection';
+export const GRAPHQL_TRANSFORMER = 'mockhub-graphql';
+const GRAPHQL_OPERATION = /^\$\[\?\(@\.operationName == '([A-Za-z_][A-Za-z0-9_]*)'\)\]$/;
+
+export function graphqlOperationPattern(operation: string): string {
+  return `$[?(@.operationName == '${operation}')]`;
+}
 export const MAX_RETRIES = 5;
 const CALLOUT_LISTENERS = new Set(['webhook', CALLOUT_LISTENER]);
 
@@ -119,6 +125,9 @@ export interface StubForm {
   proxyBaseUrl: string;
   proxyRemovePrefix: string;
   proxyConnection: string;
+  graphqlSchema: string;
+  graphqlOperation: string;
+  graphqlVariables: string;
   soapVersion: '1.1' | '1.2';
   soapAction: string;
   soapOperation: string;
@@ -172,15 +181,16 @@ export function soapOperationXPath(operation: string) {
 
 export function emptyForm(kind: StubKind = 'rest'): StubForm {
   const soap = kind === 'soap';
+  const graphql = kind === 'graphql';
   return {
     kind,
     name: '',
     description: '',
     folder: '',
     priority: '',
-    method: soap ? 'POST' : 'GET',
+    method: soap || graphql ? 'POST' : 'GET',
     urlMatch: soap ? 'urlPath' : 'urlPath',
-    url: soap ? '/ws/service' : '/',
+    url: soap ? '/ws/service' : graphql ? '/graphql' : '/',
     query: [],
     headers: [],
     cookies: [],
@@ -193,7 +203,7 @@ export function emptyForm(kind: StubKind = 'rest'): StubForm {
     statusMessage: '',
     responseHeaders: [{ key: 'Content-Type', value: soap ? soapContentType('1.1') : 'application/json' }],
     bodyType: soap ? 'xml' : 'json',
-    responseBody: soap ? soapEnvelope('1.1', '<ns:OperationResponse xmlns:ns="http://example.com/">\n      <ns:result>ok</ns:result>\n    </ns:OperationResponse>') : '{\n  "message": "Hello from MockHub"\n}',
+    responseBody: soap ? soapEnvelope('1.1', '<ns:OperationResponse xmlns:ns="http://example.com/">\n      <ns:result>ok</ns:result>\n    </ns:OperationResponse>') : graphql ? '{\n  "data": {\n    "thing": null\n  }\n}' : '{\n  "message": "Hello from MockHub"\n}',
     templating: false,
     delayType: 'none',
     fixedDelay: '500',
@@ -207,6 +217,9 @@ export function emptyForm(kind: StubKind = 'rest'): StubForm {
     proxyBaseUrl: '',
     proxyRemovePrefix: '',
     proxyConnection: '',
+    graphqlSchema: '',
+    graphqlOperation: graphql ? 'GetThing' : '',
+    graphqlVariables: '',
     soapVersion: '1.1',
     soapAction: '',
     soapOperation: soap ? 'Operation' : '',
@@ -317,7 +330,7 @@ export function fromStub(stub: Stub): Conversion {
   const request = obj(stub.request);
   const response = obj(stub.response);
   const meta = obj(obj(stub.metadata).mockhub);
-  const kind: StubKind = meta.type === 'soap' ? 'soap' : 'rest';
+  const kind: StubKind = meta.type === 'soap' ? 'soap' : meta.type === 'graphql' ? 'graphql' : 'rest';
   const form = emptyForm(kind);
 
   form.name = str(stub.name);
@@ -331,7 +344,7 @@ export function fromStub(stub: Stub): Conversion {
   form.query = readValueMatchers(request.queryParameters, unsupported, 'Query parameter');
   form.headers = readValueMatchers(request.headers, unsupported, 'Header');
   form.cookies = readValueMatchers(request.cookies, unsupported, 'Cookie');
-  form.body = readBodyMatchers(request.bodyPatterns, unsupported);
+  form.body = readBodyMatchers(kind === 'graphql' ? readGraphqlMatch(form, request.bodyPatterns) : request.bodyPatterns, unsupported);
   for (const key of ['basicAuthCredentials', 'formParameters', 'multipartPatterns', 'customMatcher', 'host', 'port', 'scheme', 'pathParameters']) {
     if (request[key] !== undefined) unsupported.push(`Request ${key}`);
   }
@@ -367,11 +380,17 @@ export function fromStub(stub: Stub): Conversion {
   const transformers = Array.isArray(response.transformers) ? response.transformers.map(String) : [];
   form.templating = transformers.includes(TEMPLATE_TRANSFORMER);
   const waitsForCallout = transformers.includes(SYNC_CALLOUT_TRANSFORMER) && !response.fault && !response.proxyBaseUrl;
-  const known = new Set([TEMPLATE_TRANSFORMER, SYNC_CALLOUT_TRANSFORMER, WEIGHTED_TRANSFORMER, CONNECTION_TRANSFORMER]);
+  const known = new Set([TEMPLATE_TRANSFORMER, SYNC_CALLOUT_TRANSFORMER, WEIGHTED_TRANSFORMER, CONNECTION_TRANSFORMER, GRAPHQL_TRANSFORMER]);
   if (transformers.some((t) => !known.has(t))) unsupported.push(`Transformers ${transformers.join(', ')}`);
   const transformerParameters = obj(response.transformerParameters);
   const weighted = transformers.includes(WEIGHTED_TRANSFORMER) && form.responseMode === 'direct';
   if (weighted) readAlternatives(form, transformerParameters.responses);
+  const fromSchema = transformers.includes(GRAPHQL_TRANSFORMER) && !response.fault && !response.proxyBaseUrl;
+  if (fromSchema) {
+    form.responseMode = 'graphql';
+    form.templating = false;
+    form.graphqlSchema = str(transformerParameters.schema);
+  }
   if (waitsForCallout) {
     form.responseMode = 'callout';
     form.templating = false;
@@ -408,7 +427,7 @@ export function fromStub(stub: Stub): Conversion {
   for (const key of ['additionalProxyRequestHeaders', 'removeProxyRequestHeaders']) {
     if (response[key] !== undefined) unsupported.push(`Response ${key}`);
   }
-  const otherParameters = Object.keys(transformerParameters).filter((k) => !(waitsForCallout && k === 'callout') && !(weighted && k === 'responses') && !(signsProxy && k === 'connection'));
+  const otherParameters = Object.keys(transformerParameters).filter((k) => !(waitsForCallout && k === 'callout') && !(weighted && k === 'responses') && !(signsProxy && k === 'connection') && !(fromSchema && k === 'schema'));
   if (otherParameters.length) unsupported.push(`Response transformerParameters ${otherParameters.join(', ')}`);
   form.webhooks = [];
   for (const listener of Array.isArray(stub.serveEventListeners) ? stub.serveEventListeners : []) {
@@ -457,7 +476,7 @@ export function toStub(form: StubForm, original: Stub = {}): Stub {
   setIfDefined(request, 'queryParameters', writeValueMatchers(form.query));
   setIfDefined(request, 'headers', writeValueMatchers(form.headers));
   setIfDefined(request, 'cookies', writeValueMatchers(form.cookies));
-  setIfDefined(request, 'bodyPatterns', writeBodyMatchers(form.body));
+  setIfDefined(request, 'bodyPatterns', form.kind === 'graphql' ? withGraphqlMatch(form, writeBodyMatchers(form.body)) : writeBodyMatchers(form.body));
   stub.request = request;
 
   setOrDelete(stub, 'name', form.name.trim());
@@ -475,6 +494,8 @@ export function toStub(form: StubForm, original: Stub = {}): Stub {
   delete parameters.callout;
   delete parameters.responses;
   delete parameters.connection;
+  delete parameters.schema;
+  if (form.responseMode === 'graphql') parameters.schema = form.graphqlSchema;
   const signsProxy = form.responseMode === 'proxy' && Boolean(form.proxyConnection.trim());
   if (signsProxy) parameters.connection = form.proxyConnection.trim();
   if (form.responseMode === 'callout') parameters.callout = writeCallout(form.syncCallout, false);
@@ -483,6 +504,12 @@ export function toStub(form: StubForm, original: Stub = {}): Stub {
   if (form.responseMode === 'callout') {
     response.status = 200;
     response.transformers = [SYNC_CALLOUT_TRANSFORMER];
+  } else if (form.responseMode === 'graphql') {
+    response.status = 200;
+    const headers: JsonObject = {};
+    for (const h of form.responseHeaders) if (h.key.trim()) headers[h.key.trim()] = h.value;
+    if (Object.keys(headers).length) response.headers = headers;
+    response.transformers = [GRAPHQL_TRANSFORMER];
   } else if (form.responseMode === 'fault') {
     response.fault = form.fault;
   } else if (form.responseMode === 'proxy') {
@@ -497,7 +524,7 @@ export function toStub(form: StubForm, original: Stub = {}): Stub {
     writeResponseBody(response, form);
   }
   if (form.responseMode !== 'fault') writeDelay(response, form);
-  if (form.templating && form.responseMode !== 'fault' && form.responseMode !== 'callout') response.transformers = [TEMPLATE_TRANSFORMER];
+  if (form.templating && form.responseMode !== 'fault' && form.responseMode !== 'callout' && form.responseMode !== 'graphql') response.transformers = [TEMPLATE_TRANSFORMER];
   if (signsProxy) response.transformers = [...(Array.isArray(response.transformers) ? response.transformers : []), CONNECTION_TRANSFORMER];
   if (form.responseMode === 'direct' && form.alternatives.length) writeAlternatives(response, form);
   stub.response = response;
@@ -587,6 +614,35 @@ function readCallout(p: JsonObject): Webhook {
     ...(p.connection ? { connection: str(p.connection) } : {}),
     ...readRetry(p.retry),
   };
+}
+
+function readGraphqlMatch(form: StubForm, source: Json | undefined): Json | undefined {
+  form.graphqlOperation = '';
+  if (!Array.isArray(source)) return source;
+  return source.filter((raw) => {
+    const m = obj(raw);
+    const op = typeof m.matchesJsonPath === 'string' ? GRAPHQL_OPERATION.exec(m.matchesJsonPath) : null;
+    if (op && Object.keys(m).length === 1) {
+      form.graphqlOperation = op[1];
+      return false;
+    }
+    const inner = obj(m.matchesJsonPath);
+    if (inner.expression === '$.variables' && typeof inner.equalToJson === 'string' && Object.keys(m).length === 1) {
+      form.graphqlVariables = inner.equalToJson;
+      return false;
+    }
+    return true;
+  });
+}
+
+function withGraphqlMatch(form: StubForm, rest: Json[] | undefined): Json[] | undefined {
+  const out: Json[] = [];
+  if (form.graphqlOperation.trim()) out.push({ matchesJsonPath: graphqlOperationPattern(form.graphqlOperation.trim()) });
+  if (form.graphqlVariables.trim()) {
+    out.push({ matchesJsonPath: { expression: '$.variables', equalToJson: form.graphqlVariables.trim(), ignoreExtraElements: true, ignoreArrayOrder: true } });
+  }
+  const all = [...out, ...(rest ?? [])];
+  return all.length ? all : undefined;
 }
 
 function readRetry(raw: JsonObject[string]): Partial<Webhook> {
@@ -696,6 +752,14 @@ export function validate(form: StubForm): string[] {
   }
   if (form.responseMode === 'proxy' && !/^https?:\/\//.test(form.proxyBaseUrl)) errors.push('Proxy target must start with http:// or https://');
   if (form.responseMode === 'callout' && !form.syncCallout.url.trim()) errors.push('Enter the URL to call, e.g. https://partner.example.com/authorize');
+  if (form.responseMode === 'graphql' && !form.graphqlSchema.trim()) errors.push('Paste the GraphQL schema the answers come from.');
+  if (form.kind === 'graphql' && form.graphqlOperation.trim() && !/^[A-Za-z_][A-Za-z0-9_]*$/.test(form.graphqlOperation.trim())) {
+    errors.push('The operation name can only hold letters, digits and underscores, e.g. GetUser.');
+  }
+  if (form.kind === 'graphql' && form.graphqlVariables.trim()) {
+    const parsed = tryParseJson(form.graphqlVariables);
+    if (!parsed.ok || parsed.value === null || typeof parsed.value !== 'object' || Array.isArray(parsed.value)) errors.push('Variables must be a JSON object, e.g. {"id": "42"}.');
+  }
   for (const w of form.webhooks) {
     if (w.delay.trim() && !(Number(w.delay) >= 0)) errors.push('A webhook delay must be a number of milliseconds.');
   }

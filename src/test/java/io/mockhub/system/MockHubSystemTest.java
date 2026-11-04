@@ -27,7 +27,7 @@ class MockHubSystemTest {
   private static final Map<String, String> AUTH_ENV = Map.of("MOCKHUB_USERS", "lead:s3cret:admin");
   private static final String AUTH = "Basic " + Base64.getEncoder().encodeToString("lead:s3cret".getBytes(StandardCharsets.UTF_8));
 
-  private final HttpClient http = HttpClient.newHttpClient();
+  private final HttpClient http = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).connectTimeout(java.time.Duration.ofSeconds(10)).build();
 
   @TempDir
   Path data;

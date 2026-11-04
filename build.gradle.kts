@@ -28,6 +28,7 @@ dependencies {
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml")
     implementation("org.wiremock.extensions:wiremock-state-extension:0.10.1")
     implementation("net.datafaker:datafaker:2.7.0")
+    implementation("com.graphql-java:graphql-java:26.1")
     constraints {
         implementation("org.apache.httpcomponents.client5:httpclient5:5.6.5")
         implementation("org.apache.httpcomponents.core5:httpcore5:5.4.4")

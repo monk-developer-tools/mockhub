@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.http.HttpClient;
+import java.time.Duration;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
@@ -15,7 +16,8 @@ import java.util.Map;
 final class ApiClient {
 
   private static final ObjectMapper JSON = new ObjectMapper();
-  private final HttpClient http = HttpClient.newHttpClient();
+  private static final Duration TIMEOUT = Duration.ofSeconds(60);
+  private final HttpClient http = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).connectTimeout(Duration.ofSeconds(10)).build();
   private final String baseUrl;
   private String authorization;
 
@@ -73,7 +75,7 @@ final class ApiClient {
   }
 
   private Result send(String method, String path, HttpRequest.BodyPublisher body, String contentType, Map<String, String> headers) {
-    HttpRequest.Builder b = HttpRequest.newBuilder(URI.create(baseUrl + path)).method(method, body);
+    HttpRequest.Builder b = HttpRequest.newBuilder(URI.create(baseUrl + path)).timeout(TIMEOUT).method(method, body);
     if (contentType != null) b.header("Content-Type", contentType);
     headers.forEach(b::header);
     if (authorization != null && path.startsWith("/__admin")) b.header("Authorization", authorization);

@@ -40,6 +40,7 @@ import {
 } from '../../model/stubForm';
 import { BodyMatcherRows, KeyValueRows, ValueMatcherRows } from './MatcherRows';
 import { TryIt } from './TryIt';
+import { GraphQlConsole } from './GraphQlConsole';
 import { WeightedResponses } from './WeightedResponses';
 import { CodeSnippets } from '../../components/CodeSnippets';
 import { sampleRequest } from '../../model/sampleRequest';
@@ -67,6 +68,7 @@ const RESPONSE_MODE_LABELS: Record<ResponseMode, string> = {
   callout: 'Wait for callout',
   proxy: 'Proxy',
   fault: 'Fault',
+  graphql: 'From schema',
 };
 
 function describeUrlOf(form: StubForm) {
@@ -205,6 +207,16 @@ export function StubEditor({ project, moveTargets, stub, isNew, canEdit, onSaved
       await api.deleteStub(project.id, String(stub.id));
       toast.notify('Stub deleted');
       onDeleted();
+    } catch (e) {
+      toast.fail(e);
+    }
+  };
+
+  const createOperationStub = async (operation: Stub) => {
+    try {
+      const created = await api.createStub(project.id, operation);
+      toast.notify(`Stub for ${operation.name} created`);
+      onSaved(created);
     } catch (e) {
       toast.fail(e);
     }
@@ -376,13 +388,17 @@ export function StubEditor({ project, moveTargets, stub, isNew, canEdit, onSaved
               <div className="field">
                 <span>Service type</span>
                 <div className="segmented" role="group" aria-label="Service type">
-                  <button type="button" aria-pressed={!soap} onClick={() => update({ kind: 'rest' })}>REST / HTTP</button>
+                  <button type="button" aria-pressed={form.kind === 'rest'} onClick={() => update({ kind: 'rest', responseMode: form.responseMode === 'graphql' ? 'direct' : form.responseMode })}>REST / HTTP</button>
                   <button
                     type="button"
                     aria-pressed={soap}
                     onClick={() => update(applySoapDefaults({ ...form, kind: 'soap', soapOperation: form.soapOperation || 'Operation' }))}
                   >
                     SOAP
+                  </button>
+                  <button type="button" aria-pressed={form.kind === 'graphql'}
+                    onClick={() => update({ kind: 'graphql', method: form.method === 'GET' ? 'POST' : form.method })}>
+                    GraphQL
                   </button>
                 </div>
               </div>
@@ -461,6 +477,25 @@ export function StubEditor({ project, moveTargets, stub, isNew, canEdit, onSaved
             </div>
           )}
 
+          {form.kind === 'graphql' && (
+            <div className="section">
+              <h3>GraphQL operation <span className="muted small">leave both empty to answer every operation</span></h3>
+              <div className="grid two">
+                <label className="field">
+                  <span>Operation name</span>
+                  <input type="text" className="mono" value={form.graphqlOperation} placeholder="GetUser" disabled={readOnly}
+                    onChange={(e) => update({ graphqlOperation: e.target.value })} />
+                  <span className="hint">Matches the request's operationName, as in query GetUser {'{ … }'}</span>
+                </label>
+                <div className="field">
+                  <span>Variables <span className="hint">optional, the listed ones must match</span></span>
+                  <CodeEditor label="GraphQL variables to match" value={form.graphqlVariables} language="json" minHeight="60px" maxHeight="160px"
+                    readOnly={readOnly} onChange={(graphqlVariables) => update({ graphqlVariables })} />
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="section">
             <h3>Query parameters <span className="muted small">all must match</span></h3>
             <ValueMatcherRows label="Parameter" keyPlaceholder="status" rows={form.query} onChange={(query) => update({ query })} disabled={readOnly} />
@@ -484,7 +519,7 @@ export function StubEditor({ project, moveTargets, stub, isNew, canEdit, onSaved
             <h3>
               Response
               <div className="segmented" role="group" aria-label="Response type">
-                {(['direct', 'callout', 'proxy', 'fault'] as ResponseMode[]).map((m) => (
+                {(['direct', 'callout', 'proxy', 'fault', ...(form.kind === 'graphql' || form.responseMode === 'graphql' ? ['graphql'] : [])] as ResponseMode[]).map((m) => (
                   <button type="button" key={m} aria-pressed={form.responseMode === m} onClick={() => update({ responseMode: m })}>
                     {RESPONSE_MODE_LABELS[m]}
                   </button>
@@ -620,6 +655,18 @@ export function StubEditor({ project, moveTargets, stub, isNew, canEdit, onSaved
                 </label>
                 <ConnectionSelect label="Sign with" value={form.proxyConnection} keys={connectionKeys} disabled={readOnly}
                   onChange={(proxyConnection) => update({ proxyConnection })} />
+              </div>
+            )}
+
+            {form.responseMode === 'graphql' && (
+              <div className="field">
+                <span>Schema <span className="hint">SDL; every query and mutation gets generated data that follows it</span></span>
+                <CodeEditor label="GraphQL schema" value={form.graphqlSchema} language="text" minHeight="160px" maxHeight="480px"
+                  readOnly={readOnly} onChange={(graphqlSchema) => update({ graphqlSchema })} />
+                <span className="hint">
+                  Arguments and inputs are echoed into fields with the same name, so user(id: "42") answers with id 42. Lists hold 3 items,
+                  or as many as a first, last or limit argument asks for (up to 20). Stubs for one operation name win when their priority is higher.
+                </span>
               </div>
             )}
 
@@ -837,7 +884,10 @@ export function StubEditor({ project, moveTargets, stub, isNew, canEdit, onSaved
         </fieldset>
       )}
 
-      {!isNew && <TryIt project={project} form={mode === 'form' ? form : fromStub(preview).form} />}
+      {!isNew && form.kind === 'graphql' && mode === 'form' && (
+        <GraphQlConsole project={project} form={form} canEdit={canEdit} onCreate={createOperationStub} />
+      )}
+      {!isNew && !(form.kind === 'graphql' && mode === 'form') && <TryIt project={project} form={mode === 'form' ? form : fromStub(preview).form} />}
       {!isNew && (
         <div className="section">
           <h3>Call it from your code</h3>

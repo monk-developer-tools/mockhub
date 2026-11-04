@@ -21,6 +21,7 @@ export const GROUPS = [
       { slug: 'crud', title: 'CRUD resources', icon: 'Database', description: 'A full REST resource from one dialog: list, get, create, update and delete, with stored data.' },
       { slug: 'files', title: 'Response files', icon: 'FileArrowUp', description: 'Serve images, PDFs, CSV and other large or binary bodies with the right content type.' },
       { slug: 'soap', title: 'SOAP & WSDL', icon: 'Envelope', description: 'Generate SOAP stubs from a WSDL, match operations and answer with faults.' },
+      { slug: 'graphql', title: 'GraphQL', icon: 'Graph', description: 'Mock a GraphQL API from its schema with generated data, fixed answers per operation and a console.' },
       { slug: 'proxy', title: 'Proxy & record', icon: 'ArrowsLeftRight', description: 'Pass calls through to a real service and record the answers as stubs.' },
       { slug: 'stub-controls', title: 'On, off & usage', icon: 'ToggleRight', description: 'Turn stubs off without deleting them and see how often each one is called.' },
     ],

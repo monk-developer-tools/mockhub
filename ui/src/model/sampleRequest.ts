@@ -41,7 +41,24 @@ export function sampleRequest(form: StubForm, apiKey?: ApiKeyRule | null): Sampl
     headers.push(['Content-Type', 'application/json']);
   }
   if (apiKey && !headers.some(([k]) => k.toLowerCase() === apiKey.header.toLowerCase())) headers.push([apiKey.header, apiKey.value ?? API_KEY_PLACEHOLDER]);
+  if (form.kind === 'graphql') {
+    if (!headers.some(([k]) => k.toLowerCase() === 'content-type')) headers.push(['Content-Type', 'application/json']);
+    const op = form.graphqlOperation.trim();
+    const variables = parseObject(form.graphqlVariables);
+    const query = op ? `query ${op} {\n  __typename\n}` : '{\n  __typename\n}';
+    const body = JSON.stringify({ query, ...(op ? { operationName: op } : {}), variables }, null, 2);
+    return { method: 'POST', path: samplePath(form), headers, body: form.sampleBody || body };
+  }
   const exact = form.body.find((b) => b.operator === 'equalToJson' || b.operator === 'equalToXml' || b.operator === 'equalTo');
   const method = form.method === 'ANY' ? (form.kind === 'soap' ? 'POST' : 'GET') : form.method;
   return { method, path: samplePath(form), headers, body: form.sampleBody || exact?.value || '' };
+}
+
+function parseObject(text: string): Record<string, unknown> {
+  try {
+    const value = JSON.parse(text);
+    return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+  } catch {
+    return {};
+  }
 }

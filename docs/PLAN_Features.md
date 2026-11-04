@@ -34,7 +34,7 @@ Legend: ✅ have it · 🟡 partial · ❌ missing
 | Fake data and locales | `fake` helper, server locale, data generator | ✅ | — |
 | SOAP from WSDL | WSDL import, SOAP faults | ✅ | F10 adds SOAPAction auto-detect |
 | REST from OpenAPI with generated data | OpenAPI import with realistic data | ✅ | — |
-| GraphQL from SDL | Missing | ❌ | F10 |
+| GraphQL from SDL | Schema import, generated answers, operation stubs, console | ✅ | — |
 | gRPC from proto | Missing | ❌ | F10 |
 | Mutual TLS | Only through raw `WIREMOCK_OPTIONS` | 🟡 | F10 |
 | Default response | Project setting, templated, hidden managed stub | ✅ | — |
@@ -673,7 +673,7 @@ Goal: mock GraphQL, gRPC and SOAP services from their schemas, and serve mutual 
   client certificate".
 
 Checklist:
-- [ ] GraphQL
+- [x] GraphQL (graphql-java 26.1; `graphql` import of SDL or introspection JSON into one `mockhub-graphql` endpoint stub that executes queries against the schema with generated data: field-name aware values, custom scalars by name, list sizes from first/limit up to 20, arguments and inputs echoed into same-named fields, stable per arguments, undeclared directives ignored, POST/GET/batch/application/graphql, 50,000-value and depth-15 limits; operation stubs match operationName and variables; GraphQL service type, schema response mode and console with example operations and "save answer as a stub"; Library example)
 - [ ] gRPC
 - [ ] SOAP auto-detect
 - [ ] Mutual TLS

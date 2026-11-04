@@ -1,3 +1,4 @@
+import type { GraphqlOperation } from '../model/graphql';
 import type {
   AccessToken,
   NewAccessToken,
@@ -208,6 +209,8 @@ export const api = {
     request<void>(`${API}/projects/${projectId}/data/records?resource=${encodeURIComponent(resource)}&id=${encodeURIComponent(id)}`, { method: 'DELETE' }),
   clearResource: (projectId: string, resource: string) =>
     request<void>(`${API}/projects/${projectId}/data/records?resource=${encodeURIComponent(resource)}`, { method: 'DELETE' }),
+  graphqlOperations: (projectId: string, schema: string) =>
+    request<{ schema: string; operations: GraphqlOperation[] }>(`${API}/projects/${projectId}/graphql/operations`, { method: 'POST', body: json({ schema }) }),
   connections: (orgId: string) => request<Connection[]>(`${API}/orgs/${orgId}/connections`),
   createConnection: (orgId: string, body: ConnectionInput) =>
     request<Connection>(`${API}/orgs/${orgId}/connections`, { method: 'POST', body: json(body) }),

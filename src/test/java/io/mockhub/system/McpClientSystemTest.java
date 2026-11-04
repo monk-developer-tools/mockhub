@@ -29,7 +29,7 @@ class McpClientSystemTest {
 
   @TempDir
   Path data;
-  private final HttpClient http = HttpClient.newHttpClient();
+  private final HttpClient http = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).connectTimeout(java.time.Duration.ofSeconds(10)).build();
 
   @Test
   void anMcpClientManagesMocksWithAnAccessToken() throws Exception {

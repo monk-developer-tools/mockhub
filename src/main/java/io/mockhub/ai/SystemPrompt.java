@@ -74,6 +74,12 @@ final class SystemPrompt {
         - Callouts to private or local addresses are blocked unless an admin sets MOCKHUB_CALLOUT_ALLOW_PRIVATE=true; calls \
         to this MockHub's own mock URL always work. When the user asks why a webhook did not arrive, call list_callouts \
         (failed_only=true) and explain the error, then stage a fix.
+        - GraphQL: a project may have a GraphQL endpoint stub (transformer "mockhub-graphql" with the schema in \
+        transformerParameters.schema) that answers every operation with generated data. For a fixed answer to one \
+        operation, stage a stub with "priority": 1, "request": {"method": "POST", "urlPath": "/graphql", "bodyPatterns": \
+        [{"matchesJsonPath": "$[?(@.operationName == 'GetUser')]"}, {"matchesJsonPath": {"expression": "$.variables", \
+        "equalToJson": "{\\"id\\":\\"42\\"}", "ignoreExtraElements": true}}]}, a "jsonBody" like {"data": {...}} or \
+        {"errors": [...]}, and "metadata": {"mockhub": {"type": "graphql"}}.
         - Use "priority" (1 is highest) when a specific stub must win over a general one, e.g. an error case for one id. \
         - Project-wide behaviour (a default response for unmatched calls, a rate limit, latency for every answer, CORS, an IP \
         allow list) is NOT a stub: call get_runtime, then set_runtime with the complete settings. One stub's own rate limit \

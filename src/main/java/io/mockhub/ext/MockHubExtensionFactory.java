@@ -35,6 +35,12 @@ import io.mockhub.controller.DatasetController;
 import io.mockhub.controller.HistoryController;
 import io.mockhub.Main;
 import io.mockhub.callout.SyncCalloutTransformer;
+import io.mockhub.controller.GraphQlController;
+import io.mockhub.graphql.ExampleOperations;
+import io.mockhub.graphql.GraphQlEngine;
+import io.mockhub.graphql.GraphQlTransformer;
+import io.mockhub.graphql.MockSchemas;
+import io.mockhub.importer.GraphQlStubImporter;
 import io.mockhub.connection.ConnectionAuth;
 import io.mockhub.connection.ConnectionProxyTransformer;
 import io.mockhub.controller.CalloutController;
@@ -278,7 +284,10 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
 
     BaseUrls urls = new BaseUrls(config.publicUrl);
     ExporterRegistry exporters = new ExporterRegistry(List.of(new PostmanExporter(), new BrunoExporter(), new WireMockMappingsExporter()));
-    ImporterRegistry importers = new ImporterRegistry(List.of(new WireMockJsonImporter(), new WsdlStubImporter(), new OpenApiImporter()));
+    MockSchemas graphQlSchemas = new MockSchemas();
+    ExampleOperations graphQlExamples = new ExampleOperations(graphQlSchemas);
+    ImporterRegistry importers = new ImporterRegistry(List.of(new WireMockJsonImporter(), new WsdlStubImporter(), new OpenApiImporter(),
+        new GraphQlStubImporter(graphQlExamples)));
     ProjectViews views = new ProjectViews(stubs, requestLog, urls, clock);
     UserViews userViews = new UserViews(orgs, teams);
     TeamChoice teamChoice = new TeamChoice(orgs, teams);
@@ -328,6 +337,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
         new RequestLogController(requestLog, history),
         new HistoryController(projects, history, traffic, Main.VERSION),
         new CalloutController(calloutLog),
+        new GraphQlController(projects, graphQlExamples),
         new ImportExportController(projects, stubs, exporters, importers, urls, new WireMockArchiveImporter(bodyFiles)),
         new AiController(aiSettings, aiProviders, chat, assistant, assistantJobs, projects, urls, new BodyGenerator(aiSettings, chat)),
         new BackupController(new BackupService(orgs, teams, projects, gateway, dataStore, bodyFiles, datasets, connections, clock)),
@@ -376,6 +386,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
         new HistoryRecorder(projects::findForPath, history, traffic),
         new StateScopeListener(projects::findForPath, stateScope),
         new SyncCalloutTransformer(callouts),
+        new GraphQlTransformer(new GraphQlEngine(graphQlSchemas)),
         new ConnectionProxyTransformer(connectionAuth),
         new RuntimeFilter(projects::findForPath, corsHeaders, rateLimiter, loadMeter),
         new ApiKeyFilter(projects::findForPath, corsForRequest::headers),

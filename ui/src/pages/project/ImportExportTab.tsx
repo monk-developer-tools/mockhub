@@ -16,6 +16,7 @@ const EXPORTS = [
 const IMPORTS = [
   { format: 'openapi', name: 'OpenAPI / Swagger', accept: '.json,.yaml,.yml', detail: 'One stub per operation, using examples from the spec or generated sample data.' },
   { format: 'wsdl', name: 'WSDL (SOAP)', accept: '.wsdl,.xml', detail: 'One stub per operation with sample envelopes, plus ?wsdl and a fault for unknown operations.' },
+  { format: 'graphql', name: 'GraphQL', accept: '.graphql,.graphqls,.gql,.json', detail: 'A schema (SDL) or an introspection result. One endpoint answers every query and mutation with generated data that follows the schema.' },
   { format: 'wiremock', name: 'WireMock mappings', accept: '.json', detail: 'A mappings file, an array of stubs or a single stub.' },
   {
     format: 'wiremock-zip',
@@ -32,13 +33,15 @@ export function ImportExportTab() {
   const [format, setFormat] = useState(IMPORTS[0].format);
   const [path, setPath] = useState('');
   const [stripPrefix, setStripPrefix] = useState('');
+  const [pasted, setPasted] = useState('');
   const [result, setResult] = useState<string>('');
   const [filesVersion, setFilesVersion] = useState(0);
   const current = IMPORTS.find((i) => i.format === format)!;
 
   const runImport = async (text: string, fileName: string) => {
     const options: Record<string, string> = {};
-    if (format === 'wsdl' && path) options.path = path;
+    if ((format === 'wsdl' || format === 'graphql') && path) options.path = path;
+    if (format === 'graphql' && fileName !== 'the pasted schema') options.name = fileName.replace(/\.[^.]+$/, '');
     if (format === 'openapi' && stripPrefix) options.stripPrefix = stripPrefix;
     try {
       const r = await api.importInto(project.id, format, text, options);
@@ -121,6 +124,12 @@ export function ImportExportTab() {
                   <input type="text" className="mono" placeholder="/ws/customers" value={path} onChange={(e) => setPath(e.target.value)} />
                 </label>
               )}
+              {format === 'graphql' && (
+                <label className="field">
+                  <span>Endpoint path <span className="hint">optional, defaults to /graphql</span></span>
+                  <input type="text" className="mono" placeholder="/graphql" value={path} onChange={(e) => setPath(e.target.value)} />
+                </label>
+              )}
               {format === 'openapi' && (
                 <label className="field">
                   <span>Strip path prefix <span className="hint">optional, e.g. /api/v1</span></span>
@@ -139,6 +148,16 @@ export function ImportExportTab() {
                 <FilePicker accept=".zip" label="Drop a .zip of your WireMock folder here or click to choose" onFile={runZipImport} />
               ) : (
                 <FilePicker accept={current.accept} label={`Drop a ${current.name} file here or click to choose`} onText={runImport} />
+              )}
+              {format === 'graphql' && (
+                <div className="field">
+                  <span>Or paste the schema</span>
+                  <textarea className="mono" rows={6} aria-label="GraphQL schema" placeholder={'type Query {\n  user(id: ID!): User\n}'} value={pasted}
+                    onChange={(e) => setPasted(e.target.value)} />
+                  <div className="btn-row">
+                    <button className="btn small" disabled={!pasted.trim()} onClick={() => runImport(pasted, 'the pasted schema')}>Import schema</button>
+                  </div>
+                </div>
               )}
               {result && <div className="callout">{result}</div>}
             </div>

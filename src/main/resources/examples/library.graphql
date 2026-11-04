@@ -1,0 +1,45 @@
+"""A small library: books, their authors and loans."""
+scalar DateTime
+
+enum Genre { FICTION SCIENCE HISTORY CHILDREN }
+
+type Author {
+  id: ID!
+  name: String!
+  country: String
+  books(first: Int): [Book!]!
+}
+
+type Book {
+  id: ID!
+  title: String!
+  genre: Genre!
+  year: Int
+  price: Float
+  author: Author!
+}
+
+type Loan {
+  id: ID!
+  book: Book!
+  borrower: String!
+  dueAt: DateTime!
+}
+
+input LoanInput {
+  bookId: ID!
+  borrower: String!
+}
+
+type Query {
+  "One book by id."
+  book(id: ID!): Book
+  "Books, 3 unless you ask for more with first."
+  books(first: Int, genre: Genre): [Book!]!
+  author(id: ID!): Author
+}
+
+type Mutation {
+  "Lend a book to someone."
+  borrow(input: LoanInput!): Loan!
+}

@@ -301,6 +301,16 @@
   border-color: transparent;
 }
 
+.tag.graphql {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: transparent;
+}
+
+.graphql-console .cm-editor {
+  font-size: 12.5px;
+}
+
 .tag.scenario {
   background: var(--accent-soft);
   color: var(--accent);

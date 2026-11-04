@@ -8,18 +8,23 @@ import java.util.Random;
 import java.util.UUID;
 import net.datafaker.Faker;
 
-final class SampleValues {
+public final class SampleValues {
   static final int ARRAY_ITEMS = 3;
 
   private final Faker faker;
   private final Random random;
 
-  SampleValues(long seed) {
+  public SampleValues(long seed) {
     this.random = new Random(seed);
     this.faker = new Faker(Locale.ENGLISH, random);
   }
 
-  String text(String name, String format) {
+  public SampleValues reseed(long seed) {
+    random.setSeed(seed);
+    return this;
+  }
+
+  public String text(String name, String format) {
     String key = normalise(name);
     switch (format) {
       case "date":
@@ -71,7 +76,7 @@ final class SampleValues {
     return faker.lorem().word();
   }
 
-  long integer(String name) {
+  public long integer(String name) {
     String key = normalise(name);
     if (key.equals("id") || key.endsWith("id")) return 1 + random.nextInt(9999);
     if (key.contains("age")) return 18 + random.nextInt(60);
@@ -81,7 +86,7 @@ final class SampleValues {
     return 1 + random.nextInt(100);
   }
 
-  double number(String name) {
+  public double number(String name) {
     String key = normalise(name);
     if (key.contains("lat")) return Math.round((random.nextDouble() * 180 - 90) * 1e5) / 1e5;
     if (key.contains("lon") || key.contains("lng")) return Math.round((random.nextDouble() * 360 - 180) * 1e5) / 1e5;
@@ -89,7 +94,7 @@ final class SampleValues {
     return Math.round((5 + random.nextDouble() * 495) * 100) / 100.0;
   }
 
-  boolean bool() {
+  public boolean bool() {
     return random.nextInt(4) != 0;
   }
 
