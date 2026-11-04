@@ -16,6 +16,8 @@ public interface DataStore {
 
   boolean delete(String projectId, String resource, String id);
 
+  int keepNewest(String projectId, String resource, int max);
+
   void clear(String projectId, String resource);
 
   void clearProject(String projectId);

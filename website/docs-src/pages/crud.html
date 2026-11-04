@@ -4,7 +4,7 @@
   <tbody>
     <tr><td><code>GET /customers</code></td><td>list; filter, sort and page it (see <a href="#crud-query">below</a>); the total is in <code>X-Total-Count</code></td></tr>
     <tr><td><code>GET /customers/{id}</code></td><td>one record, or 404</td></tr>
-    <tr><td><code>POST /customers</code></td><td>create; the id is generated (1, 2, 3 or a UUID) unless you send one; 201 with a <code>Location</code> header</td></tr>
+    <tr><td><code>POST /customers</code></td><td>create; the id is generated (1, 2, 3, a UUID, or 10 random letters and digits such as <code>k3x9q0zb7m</code>) unless you send one; 201 with a <code>Location</code> header</td></tr>
     <tr><td><code>PUT /customers/{id}</code></td><td>replace</td></tr>
     <tr><td><code>PATCH /customers/{id}</code></td><td>merge fields; <code>null</code> removes one</td></tr>
     <tr><td><code>DELETE /customers/{id}</code></td><td>delete; 204</td></tr>
@@ -28,4 +28,8 @@
 </table>
 <p>Filters combine with AND. An unknown operator such as <code>price[between]=1</code> or a bad number such as <code>page=0</code> gets a 400 with a message. The json-server style <code>_sort=name&amp;_order=desc</code>, <code>_limit</code> and <code>_offset</code> still work. Because <code>sort</code>, <code>page</code>, <code>size</code>, <code>limit</code> and <code>offset</code> control the list, you can't filter on fields with those names.</p>
 
-<p>Records are kept per project in <code>/data/mockhub/data</code>, survive restarts and are included in backups. The <strong>Data</strong> tab lists them and lets you add, edit, delete or clear them. For custom stateful flows, the <a href="https://github.com/wiremock/wiremock-state-extension">WireMock state extension</a> is included too (its state lives in memory).</p>
+<h3 id="crud-limits">Limits and errors</h3>
+<p>A resource keeps up to 10,000 records. When a new one would go past that, the oldest record is removed, so a long test run never fills the disk. Change the number with <a href="#config"><code>MOCKHUB_MAX_RECORDS</code></a>, or set <code>0</code> for no limit.</p>
+<p>Errors are JSON with a message and a stable <code>code</code>, such as <code>invalid_json_body</code> for a body that doesn't parse or <code>not_found</code> for an unknown id. The <a href="#crud-errors">error reference</a> lists them all.</p>
+
+<p>Records are kept per project in <code>/data/mockhub/data</code>, survive restarts and are included in backups. The <strong>Data</strong> tab lists them and lets you add, edit, delete or clear them. For custom stateful flows, stubs can also <a href="#state">record state</a>, which is stored the same way.</p>

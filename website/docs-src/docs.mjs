@@ -38,6 +38,7 @@ export const GROUPS = [
       { slug: 'jwt', title: 'JWT & OAuth', icon: 'Key', description: 'Sign tokens your clients accept, publish a JWKS and read claims from bearer tokens.' },
       { slug: 'validation', title: 'Validate requests', icon: 'CheckCircle', description: 'Answer 400 with a message when a field is missing, not an e-mail or not a UUID.' },
       { slug: 'scenarios', title: 'Scenarios', icon: 'FlowArrow', description: 'Stateful flows where the same call answers differently as state changes.' },
+      { slug: 'state', title: 'Recorded state', icon: 'Stack', description: 'Stubs that remember data, such as cart items, and a Data tab view to see and edit it.' },
     ],
   },
   {

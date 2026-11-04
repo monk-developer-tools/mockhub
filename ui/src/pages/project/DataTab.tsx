@@ -1,8 +1,8 @@
-import { ArrowClockwise, Database, MagnifyingGlass, PencilSimple, Plus, Trash } from '@phosphor-icons/react';
+import { ArrowClockwise, Database, MagnifyingGlass, PencilSimple, Plus, Stack, Trash } from '@phosphor-icons/react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../../api/client';
-import type { DataResource } from '../../api/types';
+import type { DataResource, StateContext } from '../../api/types';
 import { CodeEditor } from '../../components/CodeEditor';
 import { EmptyArt } from '../../components/Illustrations';
 import { Modal } from '../../components/Modal';
@@ -11,6 +11,7 @@ import { crudEndpoints } from '../../model/crud';
 import { useApp } from '../../state/AppContext';
 import { CrudDialog } from './CrudDialog';
 import { useProject } from './ProjectPage';
+import { StatePanel } from './StatePanel';
 
 type Row = Record<string, unknown>;
 
@@ -33,13 +34,23 @@ export function DataTab() {
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<{ row: Row | null } | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
+  const [contexts, setContexts] = useState<StateContext[] | null>(null);
 
-  const selected = params.get('resource') ?? resources?.[0]?.name ?? '';
+  const showingState = params.get('view') === 'state' || (resources?.length === 0 && (contexts?.length ?? 0) > 0);
+  const selected = showingState ? '' : params.get('resource') ?? resources?.[0]?.name ?? '';
   const current = resources?.find((r) => r.name === selected);
 
   const loadResources = useCallback(async () => {
     try {
       setResources((await api.dataResources(project.id)).resources);
+    } catch (e) {
+      toast.fail(e);
+    }
+  }, [project.id, toast.fail]);
+
+  const loadContexts = useCallback(async () => {
+    try {
+      setContexts((await api.stateContexts(project.id)).contexts);
     } catch (e) {
       toast.fail(e);
     }
@@ -65,8 +76,12 @@ export function DataTab() {
     loadRows();
   }, [loadRows]);
 
+  useEffect(() => {
+    loadContexts();
+  }, [loadContexts]);
+
   const refresh = async () => {
-    await Promise.all([loadResources(), loadRows()]);
+    await Promise.all([loadResources(), loadRows(), loadContexts()]);
   };
 
   const columns = useMemo(() => {
@@ -104,14 +119,14 @@ export function DataTab() {
     }
   };
 
-  if (resources !== null && resources.length === 0) {
+  if (resources !== null && resources.length === 0 && contexts !== null && contexts.length === 0) {
     return (
       <div className="panel empty">
         <EmptyArt kind="projects" />
         <h2>No data yet</h2>
         <p>
           A CRUD resource gives you a REST API that really stores data: POST a customer, then GET it back, change it or delete it.
-          Records show up here, and you can edit them by hand.
+          Records show up here, and you can edit them by hand. State that stubs record shows up here too.
         </p>
         {canEdit && (
           <button className="btn primary" onClick={() => setCreating(true)}><Database size={15} /> New CRUD resource</button>
@@ -145,73 +160,88 @@ export function DataTab() {
             </li>
           ))}
         </ul>
+        <div className="panel-head"><h2><Stack size={16} weight="duotone" /> State</h2></div>
+        <ul>
+          <li>
+            <button className={`data-resource${showingState ? ' active' : ''}`} onClick={() => setParams({ view: 'state' })}>
+              <span>Contexts</span>
+              <span className="count">{contexts?.length ?? 0}</span>
+            </button>
+          </li>
+        </ul>
       </div>
 
-      <div className="stack" style={{ minWidth: 0 }}>
-        <div className="panel">
-          <div className="panel-head">
-            <div className="search-field">
-              <MagnifyingGlass size={14} />
-              <input type="search" aria-label="Search records" placeholder={`Search ${selected}`} value={query} onChange={(e) => setQuery(e.target.value)} />
+      {showingState ? (
+        <div className="stack" style={{ minWidth: 0 }}>
+          <StatePanel projectId={project.id} contexts={contexts} canEdit={canEdit} onChanged={loadContexts} />
+        </div>
+      ) : (
+        <div className="stack" style={{ minWidth: 0 }}>
+          <div className="panel">
+            <div className="panel-head">
+              <div className="search-field">
+                <MagnifyingGlass size={14} />
+                <input type="search" aria-label="Search records" placeholder={`Search ${selected}`} value={query} onChange={(e) => setQuery(e.target.value)} />
+              </div>
+              <span className="btn-row">
+                <button className="btn ghost icon small" aria-label="Refresh" title="Refresh" onClick={refresh}><ArrowClockwise size={14} /></button>
+                {canEdit && (
+                  <>
+                    <button className="btn small" disabled={!rows?.length} onClick={() => setConfirmClear(true)}>Clear</button>
+                    <button className="btn small primary" onClick={() => setEditing({ row: null })}><Plus size={13} /> Add record</button>
+                  </>
+                )}
+              </span>
             </div>
-            <span className="btn-row">
-              <button className="btn ghost icon small" aria-label="Refresh" title="Refresh" onClick={refresh}><ArrowClockwise size={14} /></button>
-              {canEdit && (
-                <>
-                  <button className="btn small" disabled={!rows?.length} onClick={() => setConfirmClear(true)}>Clear</button>
-                  <button className="btn small primary" onClick={() => setEditing({ row: null })}><Plus size={13} /> Add record</button>
-                </>
-              )}
-            </span>
-          </div>
-          {rows === null ? (
-            <div className="panel-body muted small">Loading…</div>
-          ) : filtered.length === 0 ? (
-            <div className="panel-body muted small">
-              {rows.length === 0 ? `No ${selected} yet. POST one to ${project.mockUrl}/${selected}, or add it here.` : 'Nothing matches your search.'}
-            </div>
-          ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <table className="data-table records">
-                <thead>
-                  <tr>
-                    {columns.map((c) => <th key={c}>{c}</th>)}
-                    {canEdit && <th><span className="sr-only">Actions</span></th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((r) => (
-                    <tr key={idOf(r)}>
-                      {columns.map((c) => <td key={c} className={c === (current?.idField ?? 'id') ? 'mono' : ''} title={cell(r[c])}>{cell(r[c])}</td>)}
-                      {canEdit && (
-                        <td className="actions">
-                          <button className="btn ghost icon small" aria-label={`Edit ${idOf(r)}`} onClick={() => setEditing({ row: r })}><PencilSimple size={14} /></button>
-                          <button className="btn ghost icon small" aria-label={`Delete ${idOf(r)}`} onClick={() => remove(r)}><Trash size={14} /></button>
-                        </td>
-                      )}
+            {rows === null ? (
+              <div className="panel-body muted small">Loading…</div>
+            ) : filtered.length === 0 ? (
+              <div className="panel-body muted small">
+                {rows.length === 0 ? `No ${selected} yet. POST one to ${project.mockUrl}/${selected}, or add it here.` : 'Nothing matches your search.'}
+              </div>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table className="data-table records">
+                  <thead>
+                    <tr>
+                      {columns.map((c) => <th key={c}>{c}</th>)}
+                      {canEdit && <th><span className="sr-only">Actions</span></th>}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {filtered.map((r) => (
+                      <tr key={idOf(r)}>
+                        {columns.map((c) => <td key={c} className={c === (current?.idField ?? 'id') ? 'mono' : ''} title={cell(r[c])}>{cell(r[c])}</td>)}
+                        {canEdit && (
+                          <td className="actions">
+                            <button className="btn ghost icon small" aria-label={`Edit ${idOf(r)}`} onClick={() => setEditing({ row: r })}><PencilSimple size={14} /></button>
+                            <button className="btn ghost icon small" aria-label={`Delete ${idOf(r)}`} onClick={() => remove(r)}><Trash size={14} /></button>
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {current && (
+            <div className="panel">
+              <div className="panel-head"><h2>Call it</h2></div>
+              <div className="crud-preview flush">
+                {crudEndpoints(current.name, current.idField).map((e) => (
+                  <div key={e.method + e.path} className="crud-endpoint">
+                    <span className={`jack ${e.method}`}>{e.method}</span>
+                    <code>{project.basePath}{e.path}</code>
+                    <span className="muted small">{e.does}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
-
-        {current && (
-          <div className="panel">
-            <div className="panel-head"><h2>Call it</h2></div>
-            <div className="crud-preview flush">
-              {crudEndpoints(current.name, current.idField).map((e) => (
-                <div key={e.method + e.path} className="crud-endpoint">
-                  <span className={`jack ${e.method}`}>{e.method}</span>
-                  <code>{project.basePath}{e.path}</code>
-                  <span className="muted small">{e.does}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
+      )}
 
       {creating && (
         <CrudDialog projectId={project.id} onClose={() => setCreating(false)}

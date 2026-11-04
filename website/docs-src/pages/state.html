@@ -1,0 +1,45 @@
+<p><a href="#scenarios">Scenarios</a> move one flow between named states. When a mock needs to remember <em>data</em>, such as the items in a cart or the status of an order, use <strong>recorded state</strong>. A stub saves values under a context name, and any later stub reads them back in its response.</p>
+<p>MockHub includes the <a href="https://github.com/wiremock/wiremock-state-extension">WireMock state extension</a> and keeps its state per project: it survives restarts, travels in backups and is deleted with the project.</p>
+
+<h3 id="state-record">Record state</h3>
+<p>Add a <code>recordState</code> listener to the stub that changes state. This one adds an item to cart 7 when you <code>POST /shop/carts/7/items</code>:</p>
+<pre><code>{
+  "request": { "method": "POST", "urlPathTemplate": "/carts/{id}/items" },
+  "response": { "status": 201 },
+  "serveEventListeners": [{
+    "name": "recordState",
+    "parameters": {
+      "context": "cart-{{request.path.id}}",
+      "state": { "status": "open" },
+      "list": { "addLast": { "sku": "{{jsonPath request.body '$.sku'}}" } }
+    }
+  }]
+}</code></pre>
+<p><code>state</code> sets named properties. <code>list</code> keeps an ordered list of objects: <code>addLast</code> or <code>addFirst</code> adds one. A <code>deleteState</code> listener with the same <code>context</code> removes the whole context, or with <code>list</code> removes an item: <code>deleteFirst</code>, <code>deleteLast</code>, <code>deleteIndex</code> or <code>deleteWhere</code>.</p>
+
+<h3 id="state-read">Read it back</h3>
+<p>Turn on templating and use the <code>state</code> helper:</p>
+<pre><code>{{state context=(join 'cart-' request.path.id '') property='status' default='none'}}
+{{state context=(join 'cart-' request.path.id '') property='listSize' default='0'}}</code></pre>
+<p>After two items, <code>GET /shop/carts/7</code> answers <code>open 2</code>. With no state yet it answers the defaults. See the <a href="https://github.com/wiremock/wiremock-state-extension#readme">extension's README</a> for list access, matching on state and the full set of options.</p>
+
+<h3 id="state-view">See and change it</h3>
+<p>Open the project's <strong>Data</strong> tab and choose <strong>State → Contexts</strong>. Each context shows its properties, list size, how often it changed and when. Editors can:</p>
+<ul>
+  <li><strong>Edit</strong> a context as JSON, e.g. set <code>status</code> to <code>paid</code> to test the next step of a flow.</li>
+  <li><strong>Add context</strong> to prepare state before a test runs.</li>
+  <li><strong>Delete</strong> one context, or <strong>Clear</strong> them all, to start a test from scratch.</li>
+</ul>
+<p>Stubs see your changes straight away. Values are stored as text, as the extension does. A project keeps up to 10,000 contexts (<a href="#config"><code>MOCKHUB_MAX_RECORDS</code></a>); past that, the one changed longest ago is removed.</p>
+
+<h3 id="state-api">From a script or test</h3>
+<table>
+  <thead><tr><th>Request</th><th>Does</th></tr></thead>
+  <tbody>
+    <tr><td><code>GET /__admin/mockhub/api/projects/{id}/state</code></td><td>every context of the project</td></tr>
+    <tr><td><code>PUT …/state/context?name=cart-7</code></td><td>set a context from <code>{"properties": {...}, "list": [...]}</code></td></tr>
+    <tr><td><code>DELETE …/state/context?name=cart-7</code></td><td>delete one context; 404 if there is none</td></tr>
+    <tr><td><code>DELETE …/state</code></td><td>delete all of the project's state</td></tr>
+  </tbody>
+</table>
+<p>Reading needs the viewer role on the project; changing needs editor. Context names are shared across projects, so give them a project prefix if two projects might use the same one. State is written by calls to a project's own base path; the public instant mocks can't record state.</p>

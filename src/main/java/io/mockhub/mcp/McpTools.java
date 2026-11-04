@@ -166,7 +166,7 @@ public final class McpTools {
     add("create_crud_resource", "Create a CRUD resource",
         "Create a REST resource that stores records: GET list and one, POST, PUT, PATCH and DELETE under /<resource>. Optionally seed it with records.",
         schema(project(), req("resource", "string", "Plural name used in the URL, such as customers"),
-            prop("id_field", "string", "Field holding the id, default id"), prop("id_type", "string", "number or uuid, default uuid"),
+            prop("id_field", "string", "Field holding the id, default id"), prop("id_type", "string", "number (1, 2, 3), uuid or short (10 random letters and digits), default uuid"),
             prop("seed", "array", "Records to start with")),
         false, false, call -> {
           ObjectNode body = Jsons.object().put("resource", call.text("resource"))

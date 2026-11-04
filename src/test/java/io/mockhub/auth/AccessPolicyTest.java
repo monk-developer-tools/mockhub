@@ -120,7 +120,16 @@ class AccessPolicyTest {
       "viewerA, POST, /mockhub/api/projects/pa/ai/jobs/j1, false",
       "nobody, GET, /mockhub/api/ai/status, true",
       "managerA, GET, /mockhub/api/ai/settings, false",
-      "managerA, POST, /mockhub/api/ai/test, false"
+      "managerA, POST, /mockhub/api/ai/test, false",
+      "viewerA, GET, /mockhub/api/orgs/orgA/datasets/customers/records, true",
+      "viewerA, POST, /mockhub/api/orgs/orgA/datasets, false",
+      "editorA, POST, /mockhub/api/orgs/orgA/datasets, true",
+      "editorA, POST, /mockhub/api/orgs/orgA/datasets/customers/upload, true",
+      "editorA, DELETE, /mockhub/api/orgs/orgA/datasets/customers, true",
+      "editorA, POST, /mockhub/api/orgs/orgB/datasets, false",
+      "teamEditor, GET, /mockhub/api/orgs/orgA/datasets, true",
+      "teamEditor, POST, /mockhub/api/orgs/orgA/datasets, false",
+      "nobody, GET, /mockhub/api/orgs/orgA/datasets, false"
   })
   void decides(String who, String method, String path, boolean allowed) {
     // When

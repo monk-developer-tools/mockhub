@@ -4,26 +4,34 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.mockhub.api.Jsons;
 import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 public final class CrudService {
   private final DataStore store;
+  public static final int NO_LIMIT = 0;
+  public static final int SHORT_LENGTH = 10;
+  private static final String SHORT_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
+  private static final SecureRandom RANDOM = new SecureRandom();
+
   private final RecordPolicy policy;
+  private final int maxRecords;
 
   public CrudService(DataStore store) {
-    this(store, RecordPolicy.NONE);
+    this(store, RecordPolicy.NONE, NO_LIMIT);
   }
 
-  public CrudService(DataStore store, RecordPolicy policy) {
+  public CrudService(DataStore store, RecordPolicy policy, int maxRecords) {
     this.store = store;
     this.policy = policy;
+    this.maxRecords = Math.max(NO_LIMIT, maxRecords);
   }
 
   public record Page(List<ObjectNode> items, int total) {}
 
-  public sealed interface Result permits Ok, NotFound, Invalid, Conflict {}
+  public sealed interface Result permits Ok, NotFound, Invalid, Conflict, Refused {}
 
   public record Ok(ObjectNode record) implements Result {}
 
@@ -32,6 +40,8 @@ public final class CrudService {
   public record Invalid(String message) implements Result {}
 
   public record Conflict(String message) implements Result {}
+
+  public record Refused(String message) implements Result {}
 
   public Page list(String projectId, CrudResource resource, CrudQuery query) {
     List<ObjectNode> all = query.apply(store.list(projectId, resource.name()));
@@ -59,9 +69,10 @@ public final class CrudService {
       return new Conflict(resource.name() + " " + id + " already exists");
     }
     Optional<String> refused = refuse(projectId, 1, record);
-    if (refused.isPresent()) return new Invalid(refused.get());
+    if (refused.isPresent()) return new Refused(refused.get());
     reorder(record, resource.idField());
     store.put(projectId, resource.name(), id, record);
+    if (maxRecords != NO_LIMIT) store.keepNewest(projectId, resource.name(), maxRecords);
     return new Ok(record);
   }
 
@@ -72,7 +83,7 @@ public final class CrudService {
     ObjectNode record = ((ObjectNode) body).deepCopy();
     record.set(resource.idField(), existing.get().get(resource.idField()));
     Optional<String> refused = refuse(projectId, 0, record);
-    if (refused.isPresent()) return new Invalid(refused.get());
+    if (refused.isPresent()) return new Refused(refused.get());
     reorder(record, resource.idField());
     store.put(projectId, resource.name(), id, record);
     return new Ok(record);
@@ -87,7 +98,7 @@ public final class CrudService {
     merge(record, (ObjectNode) body);
     record.set(resource.idField(), originalId);
     Optional<String> refused = refuse(projectId, 0, record);
-    if (refused.isPresent()) return new Invalid(refused.get());
+    if (refused.isPresent()) return new Refused(refused.get());
     store.put(projectId, resource.name(), id, record);
     return new Ok(record);
   }
@@ -112,12 +123,23 @@ public final class CrudService {
 
   private String nextId(String projectId, CrudResource resource) {
     if (resource.idType() == CrudResource.IdType.UUID) return UUID.randomUUID().toString();
+    if (resource.idType() == CrudResource.IdType.SHORT) return shortId(projectId, resource);
     long max = store.list(projectId, resource.name()).stream()
         .map(r -> r.path(resource.idField()))
         .filter(JsonNode::canConvertToLong)
         .mapToLong(JsonNode::asLong)
         .max().orElse(0);
     return String.valueOf(max + 1);
+  }
+
+  private String shortId(String projectId, CrudResource resource) {
+    String id;
+    do {
+      StringBuilder b = new StringBuilder(SHORT_LENGTH);
+      for (int i = 0; i < SHORT_LENGTH; i++) b.append(SHORT_CHARS.charAt(RANDOM.nextInt(SHORT_CHARS.length())));
+      id = b.toString();
+    } while (store.get(projectId, resource.name(), id).isPresent());
+    return id;
   }
 
   private static void merge(ObjectNode target, ObjectNode patch) {
@@ -137,7 +159,7 @@ public final class CrudService {
     record.setAll(copy);
   }
 
-  public static ObjectNode error(String message) {
-    return Jsons.object().put("error", message);
+  public static ObjectNode error(String code, String message) {
+    return Jsons.object().put("error", message).put("code", code);
   }
 }

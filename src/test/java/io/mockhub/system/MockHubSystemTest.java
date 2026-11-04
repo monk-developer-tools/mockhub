@@ -236,6 +236,34 @@ class MockHubSystemTest {
   }
 
   @Test
+  void stateRecordedByStubsIsSavedAndStillAnswersAfterARestart() throws Exception {
+    String id;
+    try (MockHubProcess hub = MockHubProcess.start(data, AUTH_ENV)) {
+      // Given
+      id = json(send(hub, "POST", API + "/projects", "{\"name\":\"Game\",\"slug\":\"game\"}")).get("id").asText();
+      send(hub, "POST", API + "/projects/" + id + "/stubs", """
+          {"request":{"method":"POST","urlPath":"/score"},"response":{"status":200,"body":"saved"},
+           "serveEventListeners":[{"name":"recordState","parameters":{"context":"player","state":{"score":"{{jsonPath request.body '$.score'}}"}}}]}""");
+      send(hub, "POST", API + "/projects/" + id + "/stubs", """
+          {"request":{"method":"GET","urlPath":"/score"},
+           "response":{"status":200,"body":"{{state context='player' property='score' default='0'}}","transformers":["response-template"]}}""");
+
+      // When
+      send(hub, "POST", "/game/score", "{\"score\":\"42\"}");
+
+      // Then
+      assertThat(send(hub, "GET", "/game/score", null).body()).isEqualTo("42");
+    }
+
+    // When
+    try (MockHubProcess restarted = MockHubProcess.start(data, AUTH_ENV)) {
+      // Then
+      assertThat(send(restarted, "GET", "/game/score", null).body()).isEqualTo("42");
+      assertThat(json(send(restarted, "GET", API + "/projects/" + id + "/state", null)).at("/contexts/0/properties/score").asText()).isEqualTo("42");
+    }
+  }
+
+  @Test
   void stubsWithVeryLongUrlsAreSavedAndSurviveARestart() throws Exception {
     String path = "/customers/search/" + "where-custom-fields-email-equals-someone-at-example-com-and-".repeat(5);
     try (MockHubProcess hub = MockHubProcess.start(data, AUTH_ENV)) {

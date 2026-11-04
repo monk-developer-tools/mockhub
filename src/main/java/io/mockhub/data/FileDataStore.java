@@ -59,6 +59,16 @@ public final class FileDataStore implements DataStore {
   }
 
   @Override
+  public synchronized int keepNewest(String projectId, String resource, int max) {
+    LinkedHashMap<String, ObjectNode> records = project(projectId).get(resource);
+    if (records == null || records.size() <= max) return 0;
+    int removed = records.size() - max;
+    records.keySet().stream().limit(removed).toList().forEach(records::remove);
+    save(projectId);
+    return removed;
+  }
+
+  @Override
   public synchronized void clear(String projectId, String resource) {
     if (project(projectId).remove(resource) != null) save(projectId);
   }

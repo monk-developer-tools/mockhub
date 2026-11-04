@@ -46,6 +46,15 @@ public final class InMemoryDataStore implements DataStore {
   }
 
   @Override
+  public int keepNewest(String projectId, String resource, int max) {
+    Map<String, ObjectNode> records = project(projectId).get(resource);
+    if (records == null || records.size() <= max) return 0;
+    int removed = records.size() - max;
+    records.keySet().stream().limit(removed).toList().forEach(records::remove);
+    return removed;
+  }
+
+  @Override
   public void clear(String projectId, String resource) {
     project(projectId).remove(resource);
   }

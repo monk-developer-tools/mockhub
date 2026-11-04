@@ -67,4 +67,21 @@ class FileDataStoreTest {
     assertThat(store.get("p1", "customers", "1").orElseThrow().get("name").asText()).isEqualTo("Ada");
     assertThatThrownBy(() -> store.list("../etc", "x")).isInstanceOf(IllegalArgumentException.class);
   }
+
+  @Test
+  void keepsOnlyTheNewestRecordsOfAResource() {
+    // Given
+    FileDataStore store = new FileDataStore(dir);
+    for (int i = 1; i <= 5; i++) store.put("p1", "logs", String.valueOf(i), json("{'id':" + i + "}"));
+    store.put("p1", "logs", "1", json("{'id':1,'edited':true}"));
+
+    // When
+    int removed = store.keepNewest("p1", "logs", 3);
+
+    // Then
+    assertThat(removed).isEqualTo(2);
+    assertThat(new FileDataStore(dir).list("p1", "logs")).extracting(r -> r.get("id").asInt()).containsExactly(3, 4, 5);
+    assertThat(store.keepNewest("p1", "logs", 3)).isZero();
+    assertThat(store.keepNewest("p1", "missing", 3)).isZero();
+  }
 }

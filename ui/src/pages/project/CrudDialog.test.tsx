@@ -28,4 +28,17 @@ describe('CrudDialog', () => {
     expect(createCrud).toHaveBeenCalledWith('p1', expect.objectContaining({ resource: 'customers', idField: 'id', idType: 'uuid' }));
     expect((createCrud.mock.calls[0][1] as { seed: unknown[] }).seed).toHaveLength(2);
   });
+
+  it('can give new records short random ids', async () => {
+    // Given
+    renderWithShell(<CrudDialog projectId="p1" onClose={vi.fn()} onCreated={vi.fn()} />);
+
+    // When
+    await userEvent.type(screen.getByLabelText(/^Resource/), 'tickets');
+    await userEvent.click(screen.getByRole('button', { name: 'Short' }));
+    await userEvent.click(screen.getByRole('button', { name: /Create resource/ }));
+
+    // Then
+    await waitFor(() => expect(createCrud).toHaveBeenCalledWith('p1', expect.objectContaining({ resource: 'tickets', idType: 'short' })));
+  });
 });

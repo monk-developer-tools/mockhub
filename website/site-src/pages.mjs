@@ -699,7 +699,7 @@ curl https://mocks.example.com/shop/orders/4
         ['Eye', 'Current state', 'See and set each scenario\'s state in the UI.', '/docs/scenarios/'],
         ['ArrowCounterClockwise', 'Reset', 'Back to the start before each test.', '/docs/scenarios/'],
         ['Database', 'CRUD resources', 'When you need data, not just states.', '/docs/crud/'],
-        ['BracketsCurly', 'State helpers', 'Read and write values across calls in templates.', '/docs/helpers/'],
+        ['Stack', 'Recorded state', 'Stubs remember values like cart items, saved and editable in the Data tab.', '/docs/state/'],
         ['TerminalWindow', 'Reset from CI', 'WireMock\'s scenario API works with a MockHub token.', '/docs/migrate/'],
       ],
     },

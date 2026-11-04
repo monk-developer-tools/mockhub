@@ -21,6 +21,7 @@ import type {
   BodyFile,
   CrudRequest,
   DataResource,
+  StateContext,
   RestorePreview,
   RestoreRequest,
   RestoreResult,
@@ -199,6 +200,12 @@ export const api = {
     request<void>(`${API}/projects/${projectId}/data/records?resource=${encodeURIComponent(resource)}&id=${encodeURIComponent(id)}`, { method: 'DELETE' }),
   clearResource: (projectId: string, resource: string) =>
     request<void>(`${API}/projects/${projectId}/data/records?resource=${encodeURIComponent(resource)}`, { method: 'DELETE' }),
+  stateContexts: (projectId: string) => request<{ contexts: StateContext[] }>(`${API}/projects/${projectId}/state`),
+  saveStateContext: (projectId: string, name: string, body: { properties: Record<string, string>; list: Record<string, string>[] }) =>
+    request<StateContext>(`${API}/projects/${projectId}/state/context?name=${encodeURIComponent(name)}`, { method: 'PUT', body: json(body) }),
+  deleteStateContext: (projectId: string, name: string) =>
+    request<void>(`${API}/projects/${projectId}/state/context?name=${encodeURIComponent(name)}`, { method: 'DELETE' }),
+  clearState: (projectId: string) => request<void>(`${API}/projects/${projectId}/state`, { method: 'DELETE' }),
   files: (projectId: string) => request<BodyFile[]>(`${API}/projects/${projectId}/files`),
   uploadFile: (projectId: string, name: string, file: Blob) =>
     request<BodyFile>(`${API}/projects/${projectId}/files?name=${encodeURIComponent(name)}`, {

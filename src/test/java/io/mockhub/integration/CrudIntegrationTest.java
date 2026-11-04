@@ -112,11 +112,23 @@ class CrudIntegrationTest {
     customers();
 
     // Then
-    assertThat(api.post("/shop/customers", "not json").status()).isEqualTo(400);
-    assertThat(api.post("/shop/customers", "[1,2]").status()).isEqualTo(400);
-    assertThat(api.post("/shop/customers", "{\"id\":1,\"name\":\"Dupe\"}").status()).isEqualTo(409);
-    assertThat(api.delete("/shop/customers").status()).isEqualTo(405);
-    assertThat(api.put("/shop/customers/99", "{}").status()).isEqualTo(404);
+    ApiClient.Result notJson = api.post("/shop/customers", "{\"name\": Ada}");
+    assertThat(notJson.status()).isEqualTo(400);
+    assertThat(notJson.json().get("code").asText()).isEqualTo("invalid_json_body");
+    assertThat(notJson.json().get("error").asText()).isEqualTo("The body isn't valid JSON (line 1, column 10)");
+    assertThat(api.post("/shop/customers", "[1,2]").json().get("code").asText()).isEqualTo("invalid_body");
+    ApiClient.Result dupe = api.post("/shop/customers", "{\"id\":1,\"name\":\"Dupe\"}");
+    assertThat(dupe.status()).isEqualTo(409);
+    assertThat(dupe.json().get("code").asText()).isEqualTo("already_exists");
+    assertThat(api.delete("/shop/customers").json().get("code").asText()).isEqualTo("method_not_allowed");
+    assertThat(api.get("/shop/customers?page=0").json().get("code").asText()).isEqualTo("invalid_query");
+    for (ApiClient.Result missing : new ApiClient.Result[] {api.put("/shop/customers/99", "{}"), api.get("/shop/customers/99"), api.delete("/shop/customers/99")}) {
+      assertThat(missing.status()).isEqualTo(404);
+      assertThat(missing.json().get("code").asText()).isEqualTo("not_found");
+      assertThat(missing.json().get("error").asText()).isEqualTo("No customers record has id 99");
+      assertThat(missing.json().get("resource").asText()).isEqualTo("customers");
+      assertThat(missing.json().get("id").asText()).isEqualTo("99");
+    }
     assertThat(api.post(API + "/projects/" + projectId + "/crud", "{\"resource\":\"customers\"}").status()).isEqualTo(409);
     assertThat(api.post(API + "/projects/" + projectId + "/crud", "{\"resource\":\"Bad Name\"}").status()).isEqualTo(400);
   }
@@ -192,5 +204,21 @@ class CrudIntegrationTest {
 
     // Then
     assertThat(api.get("/shop/visits/last").body()).isEqualTo("/checkout");
+  }
+
+  @Test
+  void aResourceKeepsItsNewestRecordsUpToTheConfiguredLimit() {
+    // Given
+    server.close();
+    server = MockHubServer.start(data, Map.of("MOCKHUB_MAX_RECORDS", "3"));
+    api = server.api();
+    customers();
+
+    // When
+    for (String name : new String[] {"Grace", "Edsger", "Barbara"}) api.post("/shop/customers", "{\"name\":\"" + name + "\"}");
+
+    // Then
+    JsonNode left = api.get("/shop/customers").json();
+    assertThat(left.findValuesAsText("name")).containsExactly("Grace", "Edsger", "Barbara");
   }
 }

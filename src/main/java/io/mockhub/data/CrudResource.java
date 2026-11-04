@@ -10,14 +10,20 @@ public record CrudResource(String name, String idField, IdType idType) {
 
   public enum IdType {
     UUID,
-    NUMBER;
+    NUMBER,
+    SHORT;
 
     public String id() {
       return name().toLowerCase(Locale.ROOT);
     }
 
     public static IdType parse(String value) {
-      return value != null && value.equalsIgnoreCase("number") ? NUMBER : UUID;
+      if (value == null) return UUID;
+      return switch (value.toLowerCase(Locale.ROOT)) {
+        case "number" -> NUMBER;
+        case "short" -> SHORT;
+        default -> UUID;
+      };
     }
   }
 

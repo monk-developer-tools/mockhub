@@ -152,6 +152,9 @@ screenshots, and the [live demo](https://mockhub.devops-monk.com/__admin/mockhub
 - **CRUD resources with a data store.** One click gives you `/customers` with list (filter, sort, page), read,
   create, replace, patch and delete, backed by real stored records. A **Data** tab shows and edits the records, and
   they survive restarts and travel in backups.
+- **Recorded state.** Stubs remember data with the WireMock state extension's `recordState` and read it back with
+  `{{state}}`, e.g. the items in a cart. State is kept per project on disk, travels in backups, and the **Data** tab
+  shows each context to edit, delete or clear.
 - **Realistic fake data.** `{{fake 'Name.fullName'}}`, `{{fake 'Internet.emailAddress'}}`, `{{fake 'Address.city'}}`
   and hundreds more in any templated response, in many languages. OpenAPI imports fill fields by name and format.
 - **Webhooks and callouts.** A stub can call other services after it answers, like a payment callback. It can send a
@@ -234,6 +237,7 @@ All configuration is through environment variables.
 | `MOCKHUB_FAKE_LOCALE` | `en` | Default language for `{{fake ...}}` data, e.g. `de`, `fr`, `en-GB` |
 | `MOCKHUB_PLAYGROUND_ALLOW_PRIVATE` | `false` | Let the Playground call private and local addresses (blocked by default so the server can't reach your internal network) |
 | `MOCKHUB_CALLOUT_ALLOW_PRIVATE` | `false` | Let webhooks and *wait for callout* stubs call private and local addresses. Calls to MockHub's own mock URLs always work. Set it to `true` for callbacks to services on your own network, e.g. `host.docker.internal` |
+| `MOCKHUB_MAX_RECORDS` | `10000` | Most records one CRUD resource keeps, and most state contexts one project keeps; the oldest go first. `0` keeps everything |
 | `MOCKHUB_PUBLIC_TOOLS` | `false` | Turn on the no-login tools under `/__public/` (HTTP echo, webhook bins, template render, fake data, instant mocks) with per-address limits. Meant for a public demo; see [Public tools](https://mockhub.devops-monk.com/docs/config/#public-tools) |
 | `WIREMOCK_OPTIONS` | empty | Any extra [WireMock CLI option](https://wiremock.org/docs/standalone/java-jar/), e.g. `--async-response-enabled true --verbose` |
 
@@ -508,9 +512,11 @@ MockHub is a WireMock extension running inside a regular WireMock server:
 | GET/DELETE | `/__admin/mockhub/api/playground/history`, `…/history/{entryId}` | your Playground history / clear it / delete one entry |
 | POST | `/__admin/mockhub/api/fake/generate` | `{count, fields: [{name, expression}], locale}` → generated records |
 | POST | `/__admin/mockhub/api/projects/{id}/ai/body` | `{description, format, method, path, status, current}` → a generated body (editor) |
-| POST | `/__admin/mockhub/api/projects/{id}/crud` | `{resource, idField, idType: number\|uuid, seed}` → create a CRUD resource |
+| POST | `/__admin/mockhub/api/projects/{id}/crud` | `{resource, idField, idType: number\|uuid\|short, seed}` → create a CRUD resource |
 | GET/DELETE | `/__admin/mockhub/api/projects/{id}/data` | resources with record counts / delete all records |
 | GET/POST/PUT/DELETE | `/__admin/mockhub/api/projects/{id}/data/records?resource=&id=` | list, add, replace, delete one, or clear a resource |
+| GET/DELETE | `/__admin/mockhub/api/projects/{id}/state` | recorded state contexts / delete all of them |
+| PUT/DELETE | `/__admin/mockhub/api/projects/{id}/state/context?name=` | `{properties, list}` → set a context / delete one |
 | GET/POST/DELETE | `/__admin/mockhub/api/projects/{id}/files?name=` | list / upload (raw body) / delete response files |
 | GET | `/__admin/mockhub/api/projects/{id}/files/content?name=` | download a response file |
 | GET/PUT | `/__admin/mockhub/api/ai/settings` | AI provider settings (admin); `POST /ai/test` lists models |
@@ -633,7 +639,7 @@ multi-arch (amd64 and arm64). The pipeline needs two repository secrets: `DOCKER
 
 - Run **one** task per data directory. WireMock keeps stubs in memory and only reads the files at startup, so two
   replicas would drift apart. One task handles thousands of requests per second, which is plenty for test environments.
-- Scenario states and rate-limit counters live in memory and reset on restart. Request and callout history is kept on disk for `MOCKHUB_HISTORY_DAYS` days and is not part of backups.
+- Scenario states and rate-limit counters live in memory and reset on restart. Recorded state is saved on disk. A CRUD resource keeps up to `MOCKHUB_MAX_RECORDS` (10,000) records and drops the oldest past that. Request and callout history is kept on disk for `MOCKHUB_HISTORY_DAYS` days and is not part of backups.
 - A webhook is sent once. Failed callouts are logged but not retried.
 
 ## Licence

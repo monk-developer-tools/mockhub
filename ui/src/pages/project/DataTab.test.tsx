@@ -4,11 +4,13 @@ import { vi } from 'vitest';
 import { renderWithShell } from '../../test/render';
 
 let resources = [{ name: 'customers', count: 2, idField: 'id', idType: 'number', crud: true }];
+let contexts: unknown[] = [];
 const deleteRecord = vi.fn((..._a: unknown[]) => Promise.resolve());
 const addRecord = vi.fn((..._a: unknown[]) => Promise.resolve({}));
 vi.mock('../../api/client', () => ({
   api: {
     dataResources: () => Promise.resolve({ resources }),
+    stateContexts: () => Promise.resolve({ contexts }),
     dataRecords: () => Promise.resolve([{ id: 1, name: 'Ada', city: 'London' }, { id: 2, name: 'Alan', city: 'Wilmslow' }]),
     deleteRecord: (...a: unknown[]) => deleteRecord(...a),
     addRecord: (...a: unknown[]) => addRecord(...a),
@@ -24,6 +26,7 @@ const { DataTab } = await import('./DataTab');
 describe('DataTab', () => {
   beforeEach(() => {
     resources = [{ name: 'customers', count: 2, idField: 'id', idType: 'number', crud: true }];
+    contexts = [];
     deleteRecord.mockClear();
   });
 
@@ -74,5 +77,32 @@ describe('DataTab', () => {
     // Then
     expect(await screen.findByRole('heading', { name: 'No data yet' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /New CRUD resource/ })).toBeInTheDocument();
+  });
+
+  it('shows recorded state from the sidebar', async () => {
+    // Given
+    contexts = [{ name: 'cart-1', properties: { status: 'open' }, list: [], updateCount: 1, updatedAt: '2026-11-04T10:00:00Z' }];
+    renderWithShell(<DataTab />);
+    await screen.findByText('Ada');
+
+    // When
+    await userEvent.click(screen.getByRole('button', { name: /Contexts/ }));
+
+    // Then
+    expect(await screen.findByText('cart-1')).toBeInTheDocument();
+    expect(screen.queryByText('Ada')).not.toBeInTheDocument();
+  });
+
+  it('opens on state when there are no resources but stubs recorded state', async () => {
+    // Given
+    resources = [];
+    contexts = [{ name: 'cart-1', properties: {}, list: [], updateCount: 1, updatedAt: '2026-11-04T10:00:00Z' }];
+
+    // When
+    renderWithShell(<DataTab />);
+
+    // Then
+    expect(await screen.findByText('cart-1')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'No data yet' })).not.toBeInTheDocument();
   });
 });

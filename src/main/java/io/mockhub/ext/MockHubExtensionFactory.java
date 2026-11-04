@@ -30,6 +30,7 @@ import io.mockhub.history.HistoryCalloutLog;
 import io.mockhub.history.HistoryRecorder;
 import io.mockhub.history.HistoryStore;
 import io.mockhub.history.TrafficCounters;
+import io.mockhub.controller.DatasetController;
 import io.mockhub.controller.HistoryController;
 import io.mockhub.Main;
 import io.mockhub.callout.SyncCalloutTransformer;
@@ -74,6 +75,8 @@ import io.mockhub.data.DataStore;
 import io.mockhub.data.FileDataStore;
 import io.mockhub.data.ProjectDataCleaner;
 import io.mockhub.data.RecordPolicy;
+import io.mockhub.dataset.DatasetService;
+import io.mockhub.dataset.FileDatasetRepository;
 import io.mockhub.fake.DataGenerator;
 import io.mockhub.fake.FakeData;
 import io.mockhub.controller.PlaygroundController;
@@ -142,6 +145,7 @@ import io.mockhub.journal.RequestLogService;
 import io.mockhub.org.FileOrganizationRepository;
 import io.mockhub.org.OrganizationService;
 import io.mockhub.project.FileProjectRepository;
+import io.mockhub.project.Project;
 import io.mockhub.project.ProjectService;
 import io.mockhub.sso.AzureEntraProvider;
 import io.mockhub.sso.JdkHttpTransport;
@@ -167,7 +171,11 @@ import java.nio.file.Path;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
-import org.wiremock.extensions.state.CaffeineStore;
+import io.mockhub.controller.StateController;
+import io.mockhub.state.ProjectStateStore;
+import io.mockhub.state.StateRepository;
+import io.mockhub.state.StateScope;
+import io.mockhub.state.StateScopeListener;
 import org.wiremock.extensions.state.StateExtension;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
@@ -201,7 +209,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     BodyFiles bodyFiles = new BodyFiles(dataDir);
     CrudService crud = new CrudService(dataStore, config.publicTools
         ? new InstantRecordPolicy(id -> projectsRef.get().find(id).map(p -> Organization.INSTANT_ID.equals(p.orgId())).orElse(false))
-        : RecordPolicy.NONE);
+        : RecordPolicy.NONE, config.maxRecords);
     Path historyDir = dataDir.resolve("mockhub").resolve("history");
     HistoryStore history = new HistoryStore(historyDir, clock, Duration.ofDays(config.historyDays), config.historyMaxMb * 1024L * 1024L);
     TrafficCounters traffic = new TrafficCounters(historyDir, clock);
@@ -214,11 +222,14 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
         List.of(stubs, new ProjectDataCleaner(dataStore, bodyFiles), history, traffic, staged, accessTokens, new SnapshotCleanup(snapshotStore)), clock);
     projectsRef.set(projects);
     TeamService teams = new TeamService(new FileTeamRepository(dataDir), List.of(users), clock);
-    OrganizationService orgs = new OrganizationService(new FileOrganizationRepository(dataDir), List.of(projects, teams, users), clock);
+    DatasetService datasets = new DatasetService(new FileDatasetRepository(dataDir), DatasetService.Limits.DEFAULT, clock);
+    OrganizationService orgs = new OrganizationService(new FileOrganizationRepository(dataDir), List.of(projects, teams, users, datasets), clock);
     projects.assignOrphans(orgs.ensureDefault().id());
     orgs.findAll().forEach(o -> teams.ensureDefault(o.id()));
     projects.assignTeams(orgId -> teams.ensureDefault(orgId).id());
     RequestLogService requestLog = new RequestLogService(gateway, projects);
+    StateScope stateScope = new StateScope();
+    StateRepository stateRepository = new StateRepository(dataStore, () -> projects.findAll().stream().map(Project::id).toList(), config.maxRecords);
     CalloutLog calloutLog = new HistoryCalloutLog(history);
     CalloutService callouts = new CalloutService(
         new CalloutRenderer(services::getTemplateEngine),
@@ -306,6 +317,8 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
         new AiController(aiSettings, aiProviders, chat, assistant, assistantJobs, projects, urls, new BodyGenerator(aiSettings, chat)),
         new BackupController(new BackupService(orgs, teams, projects, gateway, dataStore, bodyFiles, clock)),
         new DataController(projects, stubs, dataStore, crud),
+        new StateController(projects, stateRepository, clock),
+        new DatasetController(orgs, datasets),
         new FilesController(projects, stubs, bodyFiles),
         new PlaygroundController(
             new PlaygroundService(new JdkHttpSender(), new TargetGuard(config.playgroundAllowPrivate, InetAddress::getAllByName),
@@ -345,6 +358,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
         new DisabledStubMatcher(),
         new CalloutListener(callouts, calloutScheduler),
         new HistoryRecorder(projects::findForPath, history, traffic),
+        new StateScopeListener(projects::findForPath, stateScope),
         new SyncCalloutTransformer(callouts),
         new RuntimeFilter(projects::findForPath, corsHeaders, rateLimiter, loadMeter),
         new ApiKeyFilter(projects::findForPath, corsForRequest::headers),
@@ -359,7 +373,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
         jwtHelpers,
         new AuthFilter(auth, policy),
         new MockHubAdminExtension(api, new McpTask(mcpServer, principals))));
-    extensions.addAll(new StateExtension(new CaffeineStore()).create(services));
+    extensions.addAll(new StateExtension(new ProjectStateStore(stateRepository, stateScope, clock)).create(services));
     return extensions;
   }
 

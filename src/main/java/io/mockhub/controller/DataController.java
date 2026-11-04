@@ -14,8 +14,10 @@ import io.mockhub.data.CrudStubs;
 import io.mockhub.data.DataStore;
 import io.mockhub.project.Project;
 import io.mockhub.project.ProjectService;
+import io.mockhub.state.StateRepository;
 import io.mockhub.stub.StubService;
 import java.util.Map;
+import java.util.TreeMap;
 
 public final class DataController implements ApiController {
   private final ProjectService projects;
@@ -50,7 +52,8 @@ public final class DataController implements ApiController {
     r.get("/projects/{id}/data", ctx -> {
       Project project = projects.get(ctx.path("id"));
       Map<String, CrudResource> declared = CrudStubs.resources(stubs.stubsOf(project.id()));
-      Map<String, Integer> stored = store.resources(project.id());
+      Map<String, Integer> stored = new TreeMap<>(store.resources(project.id()));
+      stored.remove(StateRepository.RESOURCE);
       ArrayNode list = Jsons.MAPPER.createArrayNode();
       declared.values().forEach(res -> list.addObject().put("name", res.name()).put("count", stored.getOrDefault(res.name(), 0))
           .put("idField", res.idField()).put("idType", res.idType().id()).put("crud", true));

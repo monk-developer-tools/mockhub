@@ -32,6 +32,21 @@ class CrudServiceTest {
   }
 
   @Test
+  void generatesShortRandomIds() {
+    // Given
+    CrudResource tickets = new CrudResource("tickets", "id", CrudResource.IdType.parse("short"));
+
+    // When
+    String first = ((CrudService.Ok) crud.create("p", tickets, json("{'title':'a'}"))).record().get("id").asText();
+    String second = ((CrudService.Ok) crud.create("p", tickets, json("{'title':'b'}"))).record().get("id").asText();
+
+    // Then
+    assertThat(first).matches("[a-z0-9]{10}");
+    assertThat(second).matches("[a-z0-9]{10}").isNotEqualTo(first);
+    assertThat(CrudResource.IdType.SHORT.id()).isEqualTo("short");
+  }
+
+  @Test
   void usesGivenIdsAndRefusesDuplicates() {
     // When
     crud.create("p", numbered, json("{'id':7,'name':'Ada'}"));
@@ -90,7 +105,7 @@ class CrudServiceTest {
     // Given
     RecordPolicy upToTwoSmallRecords = (projectId, records, bytes) ->
         records > 2 ? Optional.of("Two records at most") : bytes > 40 ? Optional.of("Too big") : Optional.empty();
-    CrudService limited = new CrudService(new InMemoryDataStore(), upToTwoSmallRecords);
+    CrudService limited = new CrudService(new InMemoryDataStore(), upToTwoSmallRecords, CrudService.NO_LIMIT);
     limited.create("p", numbered, json("{'name':'Ada'}"));
     limited.create("p", numbered, json("{'name':'Alan'}"));
 
@@ -99,9 +114,25 @@ class CrudServiceTest {
     CrudService.Result bigger = limited.patch("p", numbered, "1", json("{'bio':'A very long biography that will not fit'}"));
 
     // Then
-    assertThat(third).isEqualTo(new CrudService.Invalid("Two records at most"));
-    assertThat(bigger).isEqualTo(new CrudService.Invalid("Too big"));
+    assertThat(third).isEqualTo(new CrudService.Refused("Two records at most"));
+    assertThat(bigger).isEqualTo(new CrudService.Refused("Too big"));
     assertThat(limited.get("p", numbered, "1").orElseThrow().has("bio")).isFalse();
+  }
+
+  @Test
+  void dropsTheOldestRecordsPastTheLimit() {
+    // Given
+    CrudService capped = new CrudService(new InMemoryDataStore(), RecordPolicy.NONE, 2);
+    capped.create("p", numbered, json("{'name':'Ada'}"));
+    capped.create("p", numbered, json("{'name':'Alan'}"));
+
+    // When
+    CrudService.Result third = capped.create("p", numbered, json("{'name':'Grace'}"));
+
+    // Then
+    assertThat(third).isInstanceOf(CrudService.Ok.class);
+    assertThat(capped.list("p", numbered, CrudQuery.ALL).items()).extracting(r -> r.get("name").asText()).containsExactly("Alan", "Grace");
+    assertThat(capped.get("p", numbered, "1")).isEmpty();
   }
 
   private static CrudQuery query(Map<String, String> params) {

@@ -20,7 +20,7 @@ export function CrudDialog({ projectId, onClose, onCreated }: {
   const toast = useToast();
   const [name, setName] = useState('');
   const [idField, setIdField] = useState('id');
-  const [idType, setIdType] = useState<'uuid' | 'number'>('number');
+  const [idType, setIdType] = useState<'uuid' | 'number' | 'short'>('number');
   const [seed, setSeed] = useState('');
   const [generating, setGenerating] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -75,6 +75,7 @@ export function CrudDialog({ projectId, onClose, onCreated }: {
               <div className="segmented" role="group" aria-labelledby="crud-id-type">
                 <button type="button" aria-pressed={idType === 'number'} onClick={() => setIdType('number')}>1, 2, 3</button>
                 <button type="button" aria-pressed={idType === 'uuid'} onClick={() => setIdType('uuid')}>UUID</button>
+                <button type="button" aria-pressed={idType === 'short'} onClick={() => setIdType('short')}>Short</button>
               </div>
             </div>
           </div>

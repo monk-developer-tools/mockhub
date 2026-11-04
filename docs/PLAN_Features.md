@@ -29,7 +29,7 @@ Legend: ✅ have it · 🟡 partial · ❌ missing
 | HTTP callout rule | Webhooks, forward, wait for callout, callout log | ✅ | F9 adds retries and OAuth |
 | Large and binary responses | Response files with content type | ✅ | — |
 | Template engine: request data, control flow, arrays, strings, maths, dates | Handlebars helpers and the Insert dynamic value picker | ✅ | — |
-| Template engine: state (counters, stores, lists) | State extension in memory | 🟡 | F7 |
+| Template engine: state (counters, stores, lists) | State extension, saved per project | ✅ | — |
 | Template engine: JWT, `len`, `object`, `json`, validation helpers | JWT sign/decode/JWKS, value and validation helpers, weighted responses | ✅ | — |
 | Fake data and locales | `fake` helper, server locale, data generator | ✅ | — |
 | SOAP from WSDL | WSDL import, SOAP faults | ✅ | F10 adds SOAPAction auto-detect |
@@ -47,7 +47,7 @@ Legend: ✅ have it · 🟡 partial · ❌ missing
 | White-labelled domains | Missing | ❌ | F11 |
 | Request history: search, facets, 10-day retention | On-disk history, search, facets, HAR, configurable retention (default 7 days) | ✅ | — |
 | Snapshots: create, restore, pull to another endpoint | Snapshots with diff, restore, pull between projects, file download and upload | ✅ | — |
-| Stateful data management UI | Data tab for CRUD records; counters and stores not visible | 🟡 | F7 |
+| Stateful data management UI | Data tab for CRUD records and recorded state contexts | ✅ | — |
 | Datasets (CSV/JSON shared across projects) | Missing | ❌ | F8 |
 | Sharing and teams | Organisations, teams, roles, SSO | ✅ | — |
 | API connections (stored OAuth for outbound calls) | Missing | ❌ | F9 |
@@ -623,10 +623,10 @@ Goal: the Data tab manages all state, and CRUD resources accept Beeceptor's quer
 - Record limit per resource with oldest-first purge, configurable.
 
 Checklist:
-- [ ] State viewer and persistence
+- [x] State viewer and persistence (`ProjectStateStore` saves contexts under the reserved `_state` resource of the request's project; Data tab State view; `/projects/{id}/state` API)
 - [x] CRUD query syntax and pagination (`CrudQuery`: eq/ne/gt/gte/lt/lte, OR on repeats, dotted fields, `sort=-a,b`, `page/size`, old `_sort` style kept)
-- [ ] Limits and errors
-- [ ] Tests, docs
+- [x] Limits and errors (`MOCKHUB_MAX_RECORDS`, default 10,000 per resource and per project's state, oldest first; every CRUD error has a stable `code` such as `invalid_json_body` and `not_found`, and 404s name the resource and id)
+- [x] Tests, docs (unit, integration and system tests per item; Recorded state docs page, CRUD limits and error codes, config, limits and README)
 
 ### Phase F8 — Datasets
 
@@ -639,7 +639,7 @@ Goal: upload test data once and use it from any project in the organisation.
 - Test data editor for OpenAPI mocks: open a generated stub's body as a table and edit rows, or bind it to a dataset.
 
 Checklist:
-- [ ] Dataset store, upload and indexes
+- [x] Dataset store, upload and indexes (`io.mockhub.dataset`: CSV with typed or inferred columns, JSON, NDJSON; replace, upsert and add modes by up to 3 identity fields; up to 5 indexes; 20 MB, 100,000 records, 64 KB per record, 100 datasets per organisation; `/orgs/{id}/datasets` API, editor role in the organisation to change)
 - [ ] Template helpers
 - [ ] Browser and test data editor
 - [ ] Backup, tests, docs
@@ -658,7 +658,7 @@ Checklist:
 - [ ] Connections with encrypted secrets
 - [ ] Token injection in callouts and proxies
 - [ ] Retries
-- [ ] Tests, docs
+- [x] Tests, docs (unit, integration and system tests per item; Recorded state docs page, CRUD limits and error codes, config, limits and README)
 
 ### Phase F10 — More protocols
 
@@ -697,7 +697,7 @@ Checklist:
 - [ ] Custom domains
 - [ ] Mock these APIs button
 - [ ] Forward proxy with interception
-- [ ] Tests, docs
+- [x] Tests, docs (unit, integration and system tests per item; Recorded state docs page, CRUD limits and error codes, config, limits and README)
 
 ### Phase F12 — Local tunnel
 
@@ -714,7 +714,7 @@ Checklist:
 - [ ] Tunnel protocol and server side
 - [ ] CLI
 - [ ] Proxy and callout targets
-- [ ] Tests, docs
+- [x] Tests, docs (unit, integration and system tests per item; Recorded state docs page, CRUD limits and error codes, config, limits and README)
 
 ### Phase F13 — Contract drift detection
 
@@ -732,7 +732,7 @@ Checklist:
 - [ ] Drift detection job and findings API
 - [ ] Drift page and AI patch
 - [ ] Notifications
-- [ ] Tests, docs
+- [x] Tests, docs (unit, integration and system tests per item; Recorded state docs page, CRUD limits and error codes, config, limits and README)
 
 ## 3. Order and size
 

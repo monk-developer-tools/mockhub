@@ -391,14 +391,22 @@ export interface DataResource {
   name: string;
   count: number;
   idField: string;
-  idType: 'uuid' | 'number';
+  idType: 'uuid' | 'number' | 'short';
   crud: boolean;
+}
+
+export interface StateContext {
+  name: string;
+  properties: Record<string, string>;
+  list: Record<string, string>[];
+  updateCount: number;
+  updatedAt: string;
 }
 
 export interface CrudRequest {
   resource: string;
   idField: string;
-  idType: 'uuid' | 'number';
+  idType: 'uuid' | 'number' | 'short';
   seed?: unknown[];
 }
 

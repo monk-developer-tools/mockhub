@@ -14,6 +14,7 @@ public final class AccessPolicy {
   private static final Pattern PROJECT = Pattern.compile("/projects/([^/]+)(/.*)?");
   private static final Pattern ORG = Pattern.compile("/orgs/([^/]+)(/.*)?");
   private static final Pattern TEAM = Pattern.compile("/orgs/([^/]+)/teams/([^/]+)(/.*)?");
+  private static final Pattern DATASETS = Pattern.compile("/orgs/([^/]+)/datasets(/.*)?");
 
   private static final Set<String> PUBLIC_API =
       Set.of("/auth/info", "/auth/login", "/auth/sso/exchange");
@@ -115,6 +116,13 @@ public final class AccessPolicy {
       boolean manageTeam = RequestMethod.PUT.equals(method) || String.valueOf(team.group(3)).startsWith("/members");
       Role role = manageTeam ? p.roleInTeam(orgId, team.group(2)) : p.roleIn(orgId);
       return need(role, Role.MANAGER, manageTeam ? "manage this team" : "delete teams");
+    }
+
+    Matcher datasets = DATASETS.matcher(path);
+    if (datasets.matches()) {
+      String orgId = datasets.group(1);
+      if (read) return p.belongsTo(orgId) ? Decision.allow() : Decision.deny("You need to belong to this organisation to see its datasets");
+      return need(p.roleIn(orgId), Role.EDITOR, "change this organisation's datasets");
     }
 
     Matcher org = ORG.matcher(path);

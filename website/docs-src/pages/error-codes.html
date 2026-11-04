@@ -16,13 +16,19 @@
 </table>
 
 <h3 id="crud-errors">From a CRUD resource</h3>
+<p>Each body has an <code>error</code> message for people and a <code>code</code> that stays the same, for tests and clients to check:</p>
+<pre><code>{ "error": "No customers record has id 99", "code": "not_found", "resource": "customers", "id": "99" }</code></pre>
 <table>
-  <thead><tr><th>Status</th><th>Body</th><th>Cause</th></tr></thead>
+  <thead><tr><th>Status</th><th><code>code</code></th><th>Cause</th></tr></thead>
   <tbody>
-    <tr><td><code>400</code></td><td><code>The body isn't valid JSON</code></td><td>The create or update body didn't parse.</td></tr>
-    <tr><td><code>404</code></td><td><code>&lt;resource&gt; &lt;id&gt; not found</code></td><td>No record with that id. Records live in the project's <a href="#crud">Data tab</a>.</td></tr>
-    <tr><td><code>405</code></td><td><code>&lt;METHOD&gt; isn't allowed on …</code></td><td>For example <code>DELETE</code> on the collection instead of one record.</td></tr>
-    <tr><td><code>409</code></td><td><code>&lt;resource&gt; &lt;id&gt; already exists</code></td><td>The body carried an id that's taken.</td></tr>
+    <tr><td><code>400</code></td><td><code>invalid_json_body</code></td><td>The create or update body didn't parse. The message says where, e.g. <code>(line 1, column 10)</code>.</td></tr>
+    <tr><td><code>400</code></td><td><code>invalid_body</code></td><td>The body is JSON but not an object, e.g. an array.</td></tr>
+    <tr><td><code>400</code></td><td><code>invalid_query</code></td><td>A list filter, sort or page value is wrong, e.g. <code>price[between]=1</code> or <code>page=0</code>. See <a href="#crud-query">filter, sort and page</a>.</td></tr>
+    <tr><td><code>400</code></td><td><code>limit_reached</code></td><td>Only on the public demo's instant mocks: too many records, or one record is too big.</td></tr>
+    <tr><td><code>404</code></td><td><code>not_found</code></td><td>No record with that id. The body names the resource and id. Records live in the project's <a href="#crud">Data tab</a>.</td></tr>
+    <tr><td><code>405</code></td><td><code>method_not_allowed</code></td><td>For example <code>DELETE</code> on the collection instead of one record.</td></tr>
+    <tr><td><code>409</code></td><td><code>already_exists</code></td><td>The body carried an id that's taken.</td></tr>
+    <tr><td><code>500</code></td><td><code>crud_misconfigured</code></td><td>The CRUD stub was edited by hand and its resource settings no longer make sense. Recreate it from <strong>CRUD resource</strong>.</td></tr>
   </tbody>
 </table>
 
