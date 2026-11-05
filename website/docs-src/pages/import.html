@@ -3,6 +3,7 @@
   <tbody>
     <tr><td>OpenAPI 3 / Swagger 2 (JSON or YAML)</td><td>One stub per operation. The response uses the spec's example, or sample data generated from the schema. Optionally strip a prefix such as <code>/api/v1</code>.</td></tr>
     <tr><td>WSDL 1.1</td><td>See <a href="#soap">SOAP &amp; WSDL</a>.</td></tr>
+    <tr><td>SOAP requests (no WSDL)</td><td>One stub per operation found, plus an endpoint for any other operation. See <a href="#soap">SOAP &amp; WSDL</a>.</td></tr>
     <tr><td>GraphQL SDL or introspection JSON</td><td>One endpoint that answers from the schema. See <a href="#graphql">GraphQL</a>.</td></tr>
     <tr><td>WireMock mappings</td><td>A <code>{"mappings": [...]}</code> file, an array, or one stub. Exports from another project are re-rooted automatically.</td></tr>
     <tr><td>WireMock folder (.zip)</td><td>A zip of a folder with <code>mappings</code> and <code>__files</code>, at any depth. Every mapping file is imported, body files are copied into the project (sub-folders included) and <code>bodyFileName</code> is updated. Folders are kept, and <code>./</code> paths and file names built with templates keep working. Files a mapping needs but the zip lacks are listed. Limits: 20,000 entries, 10 MB per file, 200 MB in total.</td></tr>

@@ -41,6 +41,8 @@ import io.mockhub.graphql.GraphQlEngine;
 import io.mockhub.graphql.GraphQlTransformer;
 import io.mockhub.graphql.MockSchemas;
 import io.mockhub.importer.GraphQlStubImporter;
+import io.mockhub.importer.SoapSampleImporter;
+import io.mockhub.soap.SoapEndpointTransformer;
 import io.mockhub.connection.ConnectionAuth;
 import io.mockhub.connection.ConnectionProxyTransformer;
 import io.mockhub.controller.CalloutController;
@@ -287,7 +289,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     MockSchemas graphQlSchemas = new MockSchemas();
     ExampleOperations graphQlExamples = new ExampleOperations(graphQlSchemas);
     ImporterRegistry importers = new ImporterRegistry(List.of(new WireMockJsonImporter(), new WsdlStubImporter(), new OpenApiImporter(),
-        new GraphQlStubImporter(graphQlExamples)));
+        new GraphQlStubImporter(graphQlExamples), new SoapSampleImporter()));
     ProjectViews views = new ProjectViews(stubs, requestLog, urls, clock);
     UserViews userViews = new UserViews(orgs, teams);
     TeamChoice teamChoice = new TeamChoice(orgs, teams);
@@ -387,6 +389,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
         new StateScopeListener(projects::findForPath, stateScope),
         new SyncCalloutTransformer(callouts),
         new GraphQlTransformer(new GraphQlEngine(graphQlSchemas)),
+        new SoapEndpointTransformer(),
         new ConnectionProxyTransformer(connectionAuth),
         new RuntimeFilter(projects::findForPath, corsHeaders, rateLimiter, loadMeter),
         new ApiKeyFilter(projects::findForPath, corsForRequest::headers),

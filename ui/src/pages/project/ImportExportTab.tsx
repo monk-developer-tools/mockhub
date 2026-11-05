@@ -16,6 +16,7 @@ const EXPORTS = [
 const IMPORTS = [
   { format: 'openapi', name: 'OpenAPI / Swagger', accept: '.json,.yaml,.yml', detail: 'One stub per operation, using examples from the spec or generated sample data.' },
   { format: 'wsdl', name: 'WSDL (SOAP)', accept: '.wsdl,.xml', detail: 'One stub per operation with sample envelopes, plus ?wsdl and a fault for unknown operations.' },
+  { format: 'soap', name: 'SOAP samples', accept: '.xml,.txt', detail: 'No WSDL? Paste one or more SOAP requests. Each operation found gets a stub, and an endpoint answers any other operation with an <Operation>Response envelope.' },
   { format: 'graphql', name: 'GraphQL', accept: '.graphql,.graphqls,.gql,.json', detail: 'A schema (SDL) or an introspection result. One endpoint answers every query and mutation with generated data that follows the schema.' },
   { format: 'wiremock', name: 'WireMock mappings', accept: '.json', detail: 'A mappings file, an array of stubs or a single stub.' },
   {
@@ -25,6 +26,8 @@ const IMPORTS = [
     detail: 'Moving from WireMock? Zip the folder that holds mappings and __files (for example src/test/resources/wiremock). Every mapping is imported and every body file is copied into this project.',
   },
 ];
+
+const PASTED = 'the pasted text';
 
 export function ImportExportTab() {
   const { project, reloadProject } = useProject();
@@ -40,8 +43,8 @@ export function ImportExportTab() {
 
   const runImport = async (text: string, fileName: string) => {
     const options: Record<string, string> = {};
-    if ((format === 'wsdl' || format === 'graphql') && path) options.path = path;
-    if (format === 'graphql' && fileName !== 'the pasted schema') options.name = fileName.replace(/\.[^.]+$/, '');
+    if ((format === 'wsdl' || format === 'graphql' || format === 'soap') && path) options.path = path;
+    if ((format === 'graphql' || format === 'soap') && fileName !== PASTED) options.name = fileName.replace(/\.[^.]+$/, '');
     if (format === 'openapi' && stripPrefix) options.stripPrefix = stripPrefix;
     try {
       const r = await api.importInto(project.id, format, text, options);
@@ -124,10 +127,10 @@ export function ImportExportTab() {
                   <input type="text" className="mono" placeholder="/ws/customers" value={path} onChange={(e) => setPath(e.target.value)} />
                 </label>
               )}
-              {format === 'graphql' && (
+              {(format === 'graphql' || format === 'soap') && (
                 <label className="field">
-                  <span>Endpoint path <span className="hint">optional, defaults to /graphql</span></span>
-                  <input type="text" className="mono" placeholder="/graphql" value={path} onChange={(e) => setPath(e.target.value)} />
+                  <span>Endpoint path <span className="hint">optional, defaults to {format === 'soap' ? '/ws' : '/graphql'}</span></span>
+                  <input type="text" className="mono" placeholder={format === 'soap' ? '/ws/customers' : '/graphql'} value={path} onChange={(e) => setPath(e.target.value)} />
                 </label>
               )}
               {format === 'openapi' && (
@@ -149,13 +152,16 @@ export function ImportExportTab() {
               ) : (
                 <FilePicker accept={current.accept} label={`Drop a ${current.name} file here or click to choose`} onText={runImport} />
               )}
-              {format === 'graphql' && (
+              {(format === 'graphql' || format === 'soap') && (
                 <div className="field">
-                  <span>Or paste the schema</span>
-                  <textarea className="mono" rows={6} aria-label="GraphQL schema" placeholder={'type Query {\n  user(id: ID!): User\n}'} value={pasted}
-                    onChange={(e) => setPasted(e.target.value)} />
+                  <span>{format === 'soap' ? 'Or paste SOAP requests' : 'Or paste the schema'}</span>
+                  <textarea className="mono" rows={6} aria-label={format === 'soap' ? 'SOAP requests' : 'GraphQL schema'}
+                    placeholder={format === 'soap'
+                      ? '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">\n  <soap:Body><GetCustomer xmlns="urn:crm"><id>7</id></GetCustomer></soap:Body>\n</soap:Envelope>'
+                      : 'type Query {\n  user(id: ID!): User\n}'}
+                    value={pasted} onChange={(e) => setPasted(e.target.value)} />
                   <div className="btn-row">
-                    <button className="btn small" disabled={!pasted.trim()} onClick={() => runImport(pasted, 'the pasted schema')}>Import schema</button>
+                    <button className="btn small" disabled={!pasted.trim()} onClick={() => runImport(pasted, PASTED)}>{format === 'soap' ? 'Import requests' : 'Import schema'}</button>
                   </div>
                 </div>
               )}

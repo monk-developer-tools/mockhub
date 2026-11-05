@@ -92,7 +92,31 @@ describe('stubFromRequest', () => {
 
     // Then
     expect((stub.request as Record<string, unknown>).bodyPatterns).toEqual([{ matchesXPath: "//*[local-name()='Body']/*[local-name()='GetQuote']" }]);
-    expect(stub.metadata).toEqual({ mockhub: { type: 'soap', operation: 'GetQuote', sampleRequest: { body: envelope } } });
+    expect(stub.metadata).toEqual({ mockhub: { type: 'soap', operation: 'GetQuote', soapVersion: '1.1', sampleRequest: { body: envelope } } });
+    expect((stub.response as Record<string, unknown>).body).toContain('<ns:GetQuoteResponse xmlns:ns="y">');
+  });
+
+  it('keeps the SOAP version and action of the logged request', () => {
+    // Given
+    const envelope = '<e:Envelope xmlns:e="http://www.w3.org/2003/05/soap-envelope"><e:Body><GetCustomer xmlns="urn:crm"/></e:Body></e:Envelope>';
+    const headers = [{ name: 'Content-Type', value: 'application/soap+xml; action="urn:crm/GetCustomer"' }];
+
+    // When
+    const stub = stubFromRequest({ ...request('POST', '/pay/ws', envelope), headers }, '/pay');
+
+    // Then
+    expect(stub.name).toBe('POST /ws · GetCustomer');
+    expect(stub.metadata).toMatchObject({ mockhub: { soapVersion: '1.2', soapAction: 'urn:crm/GetCustomer' } });
+    expect((stub.response as Record<string, unknown>).headers).toEqual({ 'Content-Type': 'application/soap+xml; charset=utf-8' });
+    expect((stub.response as Record<string, unknown>).body).toContain('http://www.w3.org/2003/05/soap-envelope');
+  });
+
+  it('leaves plain XML that is not an envelope as a normal stub', () => {
+    // When
+    const stub = stubFromRequest(request('POST', '/pay/orders', '<order><id>1</id></order>'), '/pay');
+
+    // Then
+    expect(stub.metadata).toBeUndefined();
   });
 });
 

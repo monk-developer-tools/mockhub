@@ -64,7 +64,7 @@ export function RequestDrawer({ project, summary, canEdit, onClose }: Props) {
   }, [onClose]);
 
   const shown = entry ?? summary;
-  const createStub = () => navigate(`/projects/${project.id}/stubs`, { state: { draft: stubFromRequest({ method: shown.method, url: shown.url, body: entry?.requestBody ?? '' }, project.basePath) } });
+  const createStub = () => navigate(`/projects/${project.id}/stubs`, { state: { draft: stubFromRequest({ method: shown.method, url: shown.url, body: entry?.requestBody ?? '', headers: entry?.requestHeaders ?? [] }, project.basePath) } });
   const replay = () => entry && navigate('/playground', { state: { request: replayOf(loggedRequestOf(entry)) } });
 
   return (

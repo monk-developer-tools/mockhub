@@ -41,6 +41,7 @@ import {
 import { BodyMatcherRows, KeyValueRows, ValueMatcherRows } from './MatcherRows';
 import { TryIt } from './TryIt';
 import { GraphQlConsole } from './GraphQlConsole';
+import { detectSoap } from '../../model/soap';
 import { WeightedResponses } from './WeightedResponses';
 import { CodeSnippets } from '../../components/CodeSnippets';
 import { sampleRequest } from '../../model/sampleRequest';
@@ -210,6 +211,13 @@ export function StubEditor({ project, moveTargets, stub, isNew, canEdit, onSaved
     } catch (e) {
       toast.fail(e);
     }
+  };
+
+  const fillFromSample = () => {
+    const found = detectSoap(form.sampleBody);
+    if (!found) return;
+    update(applySoapDefaults({ ...form, soapOperation: found.operation, soapVersion: found.version, soapAction: found.action || form.soapAction }));
+    toast.notify(`Operation ${found.operation} (SOAP ${found.version})`);
   };
 
   const createOperationStub = async (operation: Stub) => {
@@ -878,7 +886,15 @@ export function StubEditor({ project, moveTargets, stub, isNew, canEdit, onSaved
           </div>
 
           <div className="section">
-            <h3>Example request body <span className="muted small">used by Try it and the Postman / Bruno exports</span></h3>
+            <h3>
+              Example request body <span className="muted small">used by Try it and the Postman / Bruno exports</span>
+              {soap && !readOnly && (
+                <button type="button" className="btn small" disabled={!detectSoap(form.sampleBody)} onClick={fillFromSample}
+                  title="Take the operation and SOAP version from the example request">
+                  Fill operation from example
+                </button>
+              )}
+            </h3>
             <CodeEditor label="Example request body" value={form.sampleBody} language={soap ? 'xml' : 'json'} readOnly={readOnly} minHeight="70px" onChange={(sampleBody) => update({ sampleBody })} />
           </div>
         </fieldset>

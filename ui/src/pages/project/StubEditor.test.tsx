@@ -201,4 +201,22 @@ describe('StubEditor', () => {
     // Then
     expect(screen.getByTestId('prompt')).toHaveTextContent('For the stub "List" (id s1): POST the id to https://hooks.test');
   });
+
+  it('fills the SOAP operation and version from the example request', () => {
+    // Given
+    const sample = '<e:Envelope xmlns:e="http://www.w3.org/2003/05/soap-envelope"><e:Body><GetCustomer xmlns="urn:crm"/></e:Body></e:Envelope>';
+    const soapStub: Stub = {
+      id: 's2', request: { method: 'POST', urlPath: '/ws' }, response: { status: 200, body: '<x/>' },
+      metadata: { mockhub: { type: 'soap', operation: 'Operation', sampleRequest: { body: sample } } },
+    };
+    renderWithShell(<StubEditor project={project} moveTargets={[]} stub={soapStub} isNew={false} canEdit onSaved={() => undefined}
+      onDeleted={() => undefined} onDirtyChange={() => undefined} />);
+
+    // When
+    fireEvent.click(screen.getByRole('button', { name: 'Fill operation from example' }));
+
+    // Then
+    expect(screen.getByDisplayValue('GetCustomer')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '1.2' })).toHaveAttribute('aria-pressed', 'true');
+  });
 });

@@ -1,3 +1,4 @@
+import { detectSoap, soapAnswer, soapResponseType } from './soap';
 import type { HeaderPair, HistoryEntry, LoggedRequest, Stub } from '../api/types';
 import type { SampleRequest } from './sampleRequest';
 
@@ -78,7 +79,7 @@ function relativePath(url: string, basePath: string): string {
   return url === basePath ? '/' : url.startsWith(basePath + '/') || url.startsWith(basePath + '?') ? url.slice(basePath.length) : url;
 }
 
-export function stubFromRequest(request: { method: string; url: string; body: string }, basePath: string): Stub {
+export function stubFromRequest(request: { method: string; url: string; body: string; headers?: HeaderPair[] }, basePath: string): Stub {
   const [rawPath, rawQuery] = request.url.split('?');
   const path = relativePath(rawPath, basePath);
   const stub: Stub = { name: `${request.method} ${path}`, request: { method: request.method, urlPath: path }, response: { status: 200 } };
@@ -96,12 +97,16 @@ export function stubFromRequest(request: { method: string; url: string; body: st
       (stub.response as Record<string, unknown>).headers = { 'Content-Type': 'application/json' };
       (stub.response as Record<string, unknown>).jsonBody = {};
     } catch {
-      if (body.startsWith('<')) {
-        const op = /<(?:\w+:)?Body[^>]*>\s*<(?:\w+:)?([\w-]+)/.exec(body)?.[1];
-        if (op) {
-          req.bodyPatterns = [{ matchesXPath: `//*[local-name()='Body']/*[local-name()='${op}']` }];
-          stub.metadata = { mockhub: { type: 'soap', operation: op, sampleRequest: { body } } };
-        }
+      const soap = detectSoap(body, request.headers);
+      if (soap) {
+        stub.name = `${request.method} ${path} · ${soap.operation}`;
+        req.bodyPatterns = [{ matchesXPath: `//*[local-name()='Body']/*[local-name()='${soap.operation}']` }];
+        const response = stub.response as Record<string, unknown>;
+        response.headers = { 'Content-Type': soapResponseType(soap) };
+        response.body = soapAnswer(soap);
+        stub.metadata = {
+          mockhub: { type: 'soap', operation: soap.operation, soapVersion: soap.version, ...(soap.action ? { soapAction: soap.action } : {}), sampleRequest: { body } },
+        };
       }
     }
   }

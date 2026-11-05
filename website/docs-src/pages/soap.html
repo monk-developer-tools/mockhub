@@ -6,3 +6,13 @@
   <li><code>GET &lt;endpoint&gt;?wsdl</code>, serving the WSDL with <code>soap:address</code> rewritten to the mock</li>
   <li>a low-priority SOAP fault for operations without a mock</li>
 </ul>
+
+<h3 id="soap-samples">Without a WSDL</h3>
+<p>When you only have example requests, from a log, a partner's documentation or SoapUI, choose <strong>Import → SOAP samples</strong> and paste one or more envelopes. MockHub reads each one and finds:</p>
+<ul>
+  <li>the SOAP version, from the envelope namespace (1.1 or 1.2)</li>
+  <li>the operation, the first element inside <code>soap:Body</code>, and its namespace</li>
+  <li>the SOAPAction, from a <code>SOAPAction</code> header or the <code>action</code> parameter of a SOAP 1.2 content type, when the request came from the log</li>
+</ul>
+<p>Each operation gets a stub that matches it and answers with an <code>&lt;Operation&gt;Response</code> envelope in the same namespace, ready to edit; the pasted request becomes its example. A last stub at priority 10 answers <em>any other</em> operation the same way and sends <code>X-MockHub-Soap-Operation</code> with the operation it found. A body that isn't a SOAP envelope gets a <code>400</code> SOAP fault. To answer unknown operations with a fault instead, set <code>"transformerParameters": {"unknown": "fault"}</code> on that stub.</p>
+<p>The same detection works elsewhere: <strong>Create stub</strong> on a SOAP request in the Requests tab makes a SOAP stub with the right operation, version, SOAPAction and response envelope, and <strong>Fill operation from example</strong> in the editor reads them from the example request body.</p>
