@@ -701,3 +701,11 @@ export interface SnapshotRestoreResult {
   stubs: number;
   files: number;
 }
+
+export interface FetchedSpec {
+  url: string;
+  title: string;
+  version: string;
+  operations: number;
+  content: string;
+}

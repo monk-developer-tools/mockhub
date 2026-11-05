@@ -144,6 +144,8 @@ import io.mockhub.controller.DataController;
 import io.mockhub.controller.FilesController;
 import io.mockhub.controller.BaseUrls;
 import io.mockhub.controller.ExampleController;
+import io.mockhub.controller.OpenApiLinkController;
+import io.mockhub.importer.SpecFetcher;
 import io.mockhub.controller.ImportExportController;
 import io.mockhub.controller.OrganizationController;
 import io.mockhub.controller.ProjectController;
@@ -359,6 +361,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
         new GrpcController(projects, grpc),
         new TlsController(tls),
         new ImportExportController(projects, stubs, exporters, importers, urls, new WireMockArchiveImporter(bodyFiles)),
+        new OpenApiLinkController(new SpecFetcher(new JdkHttpSender(), new TargetGuard(config.playgroundAllowPrivate, InetAddress::getAllByName)), importers),
         new AiController(aiSettings, aiProviders, chat, assistant, assistantJobs, projects, urls, new BodyGenerator(aiSettings, chat)),
         new BackupController(new BackupService(orgs, teams, projects, gateway, dataStore, bodyFiles, datasets, connections, grpc, clock)),
         new DataController(projects, stubs, dataStore, crud),

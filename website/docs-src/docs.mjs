@@ -88,7 +88,7 @@ export const GROUPS = [
     icon: 'ArrowsDownUp',
     description: 'Bring stubs in from contracts and WireMock, take them to API clients, and save snapshots to roll back or copy dev into qa.',
     pages: [
-      { slug: 'import', title: 'Import', icon: 'FileArrowDown', description: 'OpenAPI, Swagger, WSDL, WireMock mappings and folders.' },
+      { slug: 'import', title: 'Import', icon: 'FileArrowDown', description: 'OpenAPI, Swagger, WSDL, WireMock mappings and folders, and a Mock these APIs button for your docs.' },
       { slug: 'migrate', title: 'Moving from WireMock', icon: 'ArrowSquareIn', description: 'Move a folder or a whole repository of mappings and keep every URL working.' },
       { slug: 'export', title: 'Postman & Bruno', icon: 'Export', description: 'Export a project as a collection with examples, keys and descriptions.' },
       { slug: 'snapshots', title: 'Snapshots', icon: 'Camera', description: 'Save the mocks of a project, compare with now, roll back, and pull dev into qa.' },

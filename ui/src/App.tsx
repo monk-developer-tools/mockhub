@@ -27,6 +27,7 @@ import { AssistantTab } from './pages/project/AssistantTab';
 import { DataTab } from './pages/project/DataTab';
 import { ServerPage } from './pages/ServerPage';
 import { PlaygroundPage } from './pages/PlaygroundPage';
+import { MockTheseApisPage } from './pages/MockTheseApisPage';
 import { SsoPage } from './pages/SsoPage';
 import { UsersPage } from './pages/UsersPage';
 import { AppProvider, useApp } from './state/AppContext';
@@ -39,6 +40,7 @@ const router = createBrowserRouter(
       children: [
         { index: true, element: <DashboardPage /> },
         { path: 'examples', element: <ExamplesPage /> },
+        { path: 'mock-these-apis', element: <MockTheseApisPage /> },
         { path: 'playground', element: <PlaygroundPage /> },
         { path: 'server', element: <ServerPage /> },
         { path: 'org', element: <OrgPage /> },

@@ -3,6 +3,7 @@ import type { GrpcCatalog } from '../model/grpc';
 import type { TlsView } from '../model/tls';
 import type {
   AccessToken,
+  FetchedSpec,
   NewAccessToken,
   StagedChange,
   SnapshotSummary,
@@ -365,6 +366,7 @@ export const api = {
       headers: { 'Content-Type': 'text/plain' },
     });
   },
+  fetchOpenApi: (url: string) => request<FetchedSpec>(`${API}/openapi/fetch`, { method: 'POST', body: json({ url }) }),
   importZip: (projectId: string, zip: Blob) =>
     request<ImportResult & { files: number; missingFiles: string[] }>(`${API}/projects/${projectId}/import/wiremock-zip`, {
       method: 'POST',

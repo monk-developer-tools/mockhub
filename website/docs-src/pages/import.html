@@ -10,3 +10,18 @@
     <tr><td>WireMock folder (.zip)</td><td>A zip of a folder with <code>mappings</code> and <code>__files</code>, at any depth. Every mapping file is imported, body files are copied into the project (sub-folders included) and <code>bodyFileName</code> is updated. Folders are kept, and <code>./</code> paths and file names built with templates keep working. Files a mapping needs but the zip lacks are listed. Limits: 20,000 entries, 10 MB per file, 200 MB in total.</td></tr>
   </tbody>
 </table>
+
+<h3 id="mock-these-apis">Mock an OpenAPI file from a URL</h3>
+<p>Open <strong>Mock an OpenAPI URL</strong> in the sidebar and paste the address of an OpenAPI 3 or Swagger 2 file. MockHub downloads it, shows its title, version and number of operations, and creates a new project with one stub per operation. You need the editor role in a team.</p>
+<table>
+  <thead><tr><th>Rule</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr><td>http and https only, up to 5 MB</td><td>Up to 3 redirects are followed, and the download stops after 20 seconds.</td></tr>
+    <tr><td>No private or local addresses</td><td>So the server can't be used to read internal services. An admin can allow them with <code>MOCKHUB_PLAYGROUND_ALLOW_PRIVATE=true</code>, the same setting the playground uses. Every redirect is checked too.</td></tr>
+  </tbody>
+</table>
+
+<h4>A "Mock these APIs" button for your API docs</h4>
+<p>The same page builds a link and a badge for the file you entered. Put it in a README or on your API portal; readers who click it land on that page on your MockHub with the file filled in, sign in, and get their own mock project.</p>
+<pre><code>[![Mock these APIs](https://mocks.example.com/__admin/mockhub/ui/mock-these-apis.svg)](https://mocks.example.com/__admin/mockhub/ui/mock-these-apis?openapi=https%3A%2F%2Fapi.example.com%2Fopenapi.yaml)</code></pre>
+<p>The badge image needs no sign-in, so it shows on GitHub and in other docs. The link works on any MockHub server: change the host to your own.</p>

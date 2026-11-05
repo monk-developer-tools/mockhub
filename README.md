@@ -143,6 +143,8 @@ screenshots, and the [live demo](https://mockhub.devops-monk.com/__admin/mockhub
   next to its base path. Docs include nginx and Caddy setups.
 - **Echo the request.** An "Echo request" response type, or the Echo server example at `/echo`, answers any call with
   JSON describing it: method, path, query, headers, body and parsed JSON or form fields.
+- **Mock these APIs.** Paste the URL of an OpenAPI file to get a mock project, and put a "Mock these APIs" badge in
+  your API docs that opens that page with the file filled in.
 - **Import** OpenAPI 3 / Swagger 2 (JSON or YAML), WSDL, SOAP sample requests, GraphQL schemas, or WireMock mappings.
 - **Move a whole WireMock repository.** Start MockHub on a copy of the folder, or import it as one zip (up to 20,000
   files): files with many stubs, `./` body file paths, folders and templated file names all keep working, and the stub

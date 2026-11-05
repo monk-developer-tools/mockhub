@@ -377,6 +377,21 @@ class MockHubSystemTest {
   }
 
   @Test
+  void servesTheMockTheseApisBadgeWithoutSignIn() throws Exception {
+    try (MockHubProcess hub = MockHubProcess.start(data, AUTH_ENV)) {
+      // When
+      HttpResponse<String> badge = sendAnonymously(hub, "/__admin/mockhub/ui/mock-these-apis.svg");
+      HttpResponse<String> page = sendAnonymously(hub, "/__admin/mockhub/ui/mock-these-apis?openapi=https%3A%2F%2Fapi.example.com%2Fopenapi.yaml");
+
+      // Then
+      assertThat(badge.statusCode()).isEqualTo(200);
+      assertThat(badge.headers().firstValue("Content-Type").orElse("")).startsWith("image/svg+xml");
+      assertThat(badge.body()).contains("Mock these APIs");
+      assertThat(page.statusCode()).isEqualTo(200);
+    }
+  }
+
+  @Test
   void publicToolsWorkWithoutLoginWhenTurnedOn() throws Exception {
     try (MockHubProcess hub = MockHubProcess.start(data, Map.of("MOCKHUB_PUBLIC_TOOLS", "true"))) {
       // When
