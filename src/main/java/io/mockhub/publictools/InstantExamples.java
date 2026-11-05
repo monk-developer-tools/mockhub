@@ -41,7 +41,7 @@ public final class InstantExamples {
     for (Example example : catalog.all()) {
       try {
         ExampleInstaller.Plan plan = installer.plan(example.id(), PREVIEW);
-        if (plan.usesFiles() || plan.stubs().isEmpty() || plan.stubs().size() > InstantMocks.MAX_STUBS) continue;
+        if (plan.usesFiles() || plan.usesDescriptors() || plan.stubs().isEmpty() || plan.stubs().size() > InstantMocks.MAX_STUBS) continue;
         if (plan.stubs().stream().allMatch(InstantExamples::runs)) {
           out.add(new Available(example.id(), example.name(), example.description(), plan.stubs().size()));
         }

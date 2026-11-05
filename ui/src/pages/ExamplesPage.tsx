@@ -41,7 +41,7 @@ export function ExampleGrid({ compact }: { compact?: boolean }) {
           <h3>{ex.name}</h3>
           <div className="btn-row">
             {ex.tags.map((t) => (
-              <span key={t} className={`tag${t === 'SOAP' ? ' soap' : ''}`}>{t}</span>
+              <span key={t} className={tagClass(t)}>{t}</span>
             ))}
           </div>
           <p>{ex.description}</p>
@@ -56,6 +56,13 @@ export function ExampleGrid({ compact }: { compact?: boolean }) {
       ))}
     </div>
   );
+}
+
+const PROTOCOL_TAGS: Record<string, string> = { SOAP: 'soap', GraphQL: 'graphql', gRPC: 'grpc' };
+
+export function tagClass(tag: string): string {
+  const protocol = PROTOCOL_TAGS[tag];
+  return protocol ? `tag ${protocol}` : 'tag';
 }
 
 export function ExamplesPage() {

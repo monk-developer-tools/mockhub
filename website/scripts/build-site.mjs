@@ -295,13 +295,15 @@ inject(join('tutorials', 'index.html'), 'tutorials');
 function exampleProjects() {
   const dir = join(repo, 'src', 'main', 'resources', 'examples');
   return JSON.parse(readFileSync(join(dir, 'index.json'), 'utf8')).map((e) => {
-    const stubs = (JSON.parse(readFileSync(join(dir, e.file), 'utf8')).stubs ?? []).map((stub) => ({
+    const content = JSON.parse(readFileSync(join(dir, e.file), 'utf8'));
+    const grpc = Boolean(content.descriptors?.length);
+    const stubs = (content.stubs ?? []).map((stub) => ({
       method: stub.request?.method ?? 'ANY',
       path: stub.request?.urlPath ?? stub.request?.url ?? stub.request?.urlPathTemplate ?? stub.request?.urlPathPattern ?? stub.request?.urlPattern ?? '/',
       plain: Boolean(stub.request?.urlPath ?? stub.request?.url) && stub.response?.status !== undefined,
     })).filter((stub, i, all) => stub.path !== '/.*' && all.findIndex((o) => o.method === stub.method && o.path === stub.path) === i);
     const call = stubs.find((stub) => stub.method === 'GET' && stub.plain && !stub.path.includes('{'));
-    return { ...e, stubs, call: call?.path };
+    return { ...e, grpc, stubs, call: call?.path };
   });
 }
 

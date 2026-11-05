@@ -132,5 +132,17 @@
       "Fake data"
     ],
     "file": "graphql-library.json"
+  },
+  {
+    "id": "grpc-inventory",
+    "name": "Inventory — gRPC from a descriptor set",
+    "slug": "example-grpc",
+    "description": "A StockService with unary, server-streaming and client-streaming methods. Matches on the request message and on metadata, answers with templated messages or gRPC statuses, and works with grpcurl through server reflection.",
+    "tags": [
+      "gRPC",
+      "Protobuf",
+      "Streaming"
+    ],
+    "file": "grpc-inventory.json"
   }
 ]

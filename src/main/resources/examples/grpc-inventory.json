@@ -1,0 +1,89 @@
+{
+  "descriptors": [
+    { "name": "inventory.dsc", "file": "inventory.dsc.b64" }
+  ],
+  "stubs": [
+    {
+      "name": "GetItem · sku-404 not found",
+      "priority": 1,
+      "request": {
+        "method": "POST",
+        "urlPath": "/inventory.v1.StockService/GetItem",
+        "bodyPatterns": [ { "equalToJson": { "sku": "sku-404" }, "ignoreExtraElements": true } ]
+      },
+      "response": {
+        "status": 200,
+        "headers": { "grpc-status-name": "NOT_FOUND", "grpc-status-reason": "No item has sku sku-404" }
+      },
+      "metadata": { "mockhub": { "type": "grpc", "folder": "inventory.v1.StockService", "description": "Answers with a gRPC status instead of a message." } }
+    },
+    {
+      "name": "GetItem · blocked tenant",
+      "priority": 1,
+      "request": {
+        "method": "POST",
+        "urlPath": "/inventory.v1.StockService/GetItem",
+        "headers": { "x-tenant": { "equalTo": "blocked" } }
+      },
+      "response": {
+        "status": 200,
+        "headers": { "grpc-status-name": "PERMISSION_DENIED", "grpc-status-reason": "Tenant blocked has no access to inventory" }
+      },
+      "metadata": { "mockhub": { "type": "grpc", "folder": "inventory.v1.StockService", "description": "gRPC metadata is matched like HTTP headers." } }
+    },
+    {
+      "name": "GetItem · any sku",
+      "priority": 5,
+      "request": {
+        "method": "POST",
+        "urlPath": "/inventory.v1.StockService/GetItem"
+      },
+      "response": {
+        "status": 200,
+        "body": "{\"sku\":\"{{jsonPath request.body '$.sku'}}\",\"name\":\"Item {{jsonPath request.body '$.sku'}}\",\"quantity\":{{randomInt lower=1 upper=200}},\"availability\":\"IN_STOCK\",\"updatedAt\":\"{{now}}\"}",
+        "transformers": ["response-template"]
+      },
+      "metadata": { "mockhub": { "type": "grpc", "folder": "inventory.v1.StockService", "description": "Builds the reply from the request message with templating." } }
+    },
+    {
+      "name": "WatchStock · one update",
+      "request": {
+        "method": "POST",
+        "urlPath": "/inventory.v1.StockService/WatchStock"
+      },
+      "response": {
+        "status": 200,
+        "jsonBody": { "sku": "sku-1", "name": "Blue mug", "quantity": 3, "availability": "LOW_STOCK", "updatedAt": "2026-01-15T09:30:00Z" }
+      },
+      "metadata": { "mockhub": { "type": "grpc", "folder": "inventory.v1.StockService", "description": "A server-streaming method answers with one message." } }
+    },
+    {
+      "name": "Reserve · zero quantity",
+      "priority": 1,
+      "request": {
+        "method": "POST",
+        "urlPath": "/inventory.v1.StockService/Reserve",
+        "bodyPatterns": [ { "matchesJsonPath": { "expression": "$.quantity", "absent": true } } ]
+      },
+      "response": {
+        "status": 200,
+        "headers": { "grpc-status-name": "INVALID_ARGUMENT", "grpc-status-reason": "quantity must be at least 1" }
+      },
+      "metadata": { "mockhub": { "type": "grpc", "folder": "inventory.v1.StockService", "description": "A client-streaming method answers the first message that matches." } }
+    },
+    {
+      "name": "Reserve · accepted",
+      "priority": 5,
+      "request": {
+        "method": "POST",
+        "urlPath": "/inventory.v1.StockService/Reserve"
+      },
+      "response": {
+        "status": 200,
+        "body": "{\"reservationId\":\"{{randomValue type='UUID'}}\",\"reserved\":{{jsonPath request.body '$.quantity'}} }",
+        "transformers": ["response-template"]
+      },
+      "metadata": { "mockhub": { "type": "grpc", "folder": "inventory.v1.StockService" } }
+    }
+  ]
+}

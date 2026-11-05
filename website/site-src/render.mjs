@@ -274,7 +274,9 @@ const closing = (page) => `<section class="dark cta-band">
 function examplesGrid(examples, icon) {
   const cards = examples.map((e) => {
     const url = `${LIVE}/${e.slug}`;
-    const routes = e.stubs.slice(0, 4).map((s) => `<li><span class="jack ${s.method.toLowerCase()}">${esc(s.method)}</span><code>${esc(s.path)}</code></li>`).join('');
+    const routes = e.stubs.slice(0, 4).map((s) => e.grpc
+      ? `<li><span class="jack post">RPC</span><code>${esc(s.path.slice(1))}</code></li>`
+      : `<li><span class="jack ${s.method.toLowerCase()}">${esc(s.method)}</span><code>${esc(s.path)}</code></li>`).join('');
     const call = e.call ? `<a class="btn primary small" href="https://${url}${esc(e.call)}">Call ${esc(e.call)}</a>` : '';
     return `<article class="fp-example-card reveal" id="${esc(e.id)}">
             <header>
@@ -282,7 +284,7 @@ function examplesGrid(examples, icon) {
               <ul class="fp-tags">${e.tags.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>
             </header>
             <p>${esc(e.description)}</p>
-            <code class="fp-base">https://${esc(url)}</code>
+            <code class="fp-base">${e.grpc ? 'grpcurl -plaintext localhost:8080 list' : `https://${esc(url)}`}</code>
             <ul class="fp-routes">${routes}</ul>
             <div class="fp-card-actions">${call}<a class="link-chevron" href="${DEMO}">Open in the demo</a></div>
           </article>`;

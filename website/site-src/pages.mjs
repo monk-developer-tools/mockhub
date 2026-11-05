@@ -24,7 +24,7 @@ export const MENUS = [
         ['ArrowSquareIn', 'Moving from WireMock', '/docs/migrate/'],
         ['Export', 'Postman and Bruno export', '/docs/export/'],
       ],
-      feature: ['Ready-made examples', 'Ten example projects, live on the demo.', '/examples/'],
+      feature: ['Ready-made examples', 'Twelve example projects to call or install.', '/examples/'],
     },
   },
   {
@@ -835,11 +835,11 @@ PAGES.push({
   menu: 'mock-servers',
   kind: 'examples',
   icon: 'Books',
-  nav: ['Ready-made examples', 'Ten projects, live on the demo.'],
+  nav: ['Ready-made examples', 'Twelve projects to call or install.'],
   title: 'Mock API examples you can call right now — MockHub',
-  description: 'Ten ready-made MockHub projects running on the public demo: REST, SOAP, fake data, CRUD, scenarios, webhooks, chaos and real-world matching patterns.',
+  description: 'Twelve ready-made MockHub projects: REST, SOAP, GraphQL, gRPC, fake data, CRUD, scenarios, webhooks, chaos and real-world matching patterns.',
   h1: 'Mock API examples you can call right now',
-  lede: 'Every example runs on the public demo. Call it from this page or a terminal, then open it in the demo to see how it is built. Install any of them on your own server in one click.',
+  lede: 'The HTTP examples run on the public demo: call them from this page or a terminal, then open them in the demo to see how they are built. Install any of them on your own server in one click; the gRPC example answers there, on the MockHub port, with grpcurl.',
   docs: '/docs/quick-start/',
   tutorial: '/tutorials/#tour',
   related: ['mock-api', 'service-virtualization', 'stateful-mocks'],
@@ -1140,7 +1140,7 @@ PAGES.push(
         ['Protocols and imports', [
           ['SOAP', ['yes', 'A SOAP stub type and WSDL 1.1 import'], ['part', 'XPath matching and a soapXPath helper; no WSDL import']],
           ['OpenAPI import', ['yes', 'OpenAPI 3 and Swagger 2'], ['no', 'Only in WireMock Cloud']],
-          ['GraphQL and gRPC', ['no', 'Not supported'], ['part', 'Through extensions']],
+          ['GraphQL and gRPC', ['yes', 'GraphQL from a schema, gRPC from descriptor sets, with UI'], ['part', 'Through extensions']],
         ]],
         ['Running it for a team', [
           ['Web UI for editing stubs', ['yes', 'A form editor and a JSON view'], ['no', 'A recorder page only']],
@@ -1171,7 +1171,6 @@ PAGES.push(
     choose: [
       ['WireMock', [
         'You want a mock inside your JUnit tests, started and stopped with them.',
-        'You need gRPC or GraphQL mocks.',
         'One developer keeps the stubs as files in the repository.',
       ]],
       ['MockHub', [

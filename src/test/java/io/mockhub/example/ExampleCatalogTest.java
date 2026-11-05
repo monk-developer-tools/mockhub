@@ -16,7 +16,7 @@ class ExampleCatalogTest {
   @Test
   void listsTheBundledExamples() {
     assertThat(catalog.all()).extracting(Example::id)
-        .containsExactly("rest-basics", "fake-data", "templating", "patterns", "crud", "stateful-cart", "webhooks", "chaos", "bookshop", "soap-calculator", "graphql-library");
+        .containsExactly("rest-basics", "fake-data", "templating", "patterns", "crud", "stateful-cart", "webhooks", "chaos", "bookshop", "soap-calculator", "graphql-library", "grpc-inventory");
   }
 
   @Test

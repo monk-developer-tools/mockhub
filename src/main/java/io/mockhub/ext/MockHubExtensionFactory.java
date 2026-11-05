@@ -307,7 +307,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     UserViews userViews = new UserViews(orgs, teams);
     TeamChoice teamChoice = new TeamChoice(orgs, teams);
     ExampleCatalog examples = ExampleCatalog.fromClasspath();
-    ExampleInstaller exampleInstaller = new ExampleInstaller(examples, projects, stubs, importers, crud, bodyFiles);
+    ExampleInstaller exampleInstaller = new ExampleInstaller(examples, projects, stubs, importers, crud, bodyFiles, grpc);
     AiSettingsStore aiSettings = new AiSettingsStore(dataDir, config.aiApiKey);
     AiProviders aiProviders = AiProviders.defaults();
     ChatCompletions chat = new ChatCompletions(new JdkLlmTransport(), aiProviders, config.publicUrl);

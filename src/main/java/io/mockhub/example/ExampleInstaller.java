@@ -6,7 +6,10 @@ import io.mockhub.api.Jsons;
 import io.mockhub.data.CrudResource;
 import io.mockhub.data.CrudService;
 import io.mockhub.data.CrudStubs;
+import io.mockhub.api.ApiException;
 import io.mockhub.files.BodyFiles;
+import io.mockhub.grpc.GrpcCatalog;
+import io.mockhub.grpc.GrpcException;
 import io.mockhub.importer.ImporterRegistry;
 import io.mockhub.importer.StubImporter;
 import io.mockhub.project.Project;
@@ -15,6 +18,7 @@ import io.mockhub.stub.StubMetadata;
 import io.mockhub.stub.StubService;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,18 +33,20 @@ public final class ExampleInstaller {
   private final ImporterRegistry importers;
   private final CrudService crud;
   private final BodyFiles files;
+  private final GrpcCatalog grpc;
 
   public ExampleInstaller(ExampleCatalog catalog, ProjectService projects, StubService stubs, ImporterRegistry importers,
-      CrudService crud, BodyFiles files) {
+      CrudService crud, BodyFiles files, GrpcCatalog grpc) {
     this.catalog = catalog;
     this.projects = projects;
     this.stubs = stubs;
     this.importers = importers;
     this.crud = crud;
     this.files = files;
+    this.grpc = grpc;
   }
 
-  public record Plan(List<ObjectNode> stubs, List<Seed> seeds, boolean usesFiles) {}
+  public record Plan(List<ObjectNode> stubs, List<Seed> seeds, boolean usesFiles, boolean usesDescriptors) {}
 
   public record Seed(CrudResource resource, JsonNode records) {}
 
@@ -53,6 +59,7 @@ public final class ExampleInstaller {
         .put("orgId", orgId)
         .put("teamId", teamId);
     Project project = projects.create(request);
+    addDescriptors(project, catalog.content(example).path("descriptors"));
     Plan plan = plan(exampleId, project);
     Set<String> fileNames = saveFiles(project, catalog.content(example).path("files"));
     plan.seeds().forEach(seed -> crud.seed(project.id(), seed.resource(), seed.records()));
@@ -79,7 +86,18 @@ public final class ExampleInstaller {
       planned.add(stub);
     }
     content.path("stubs").forEach(s -> planned.add(s.deepCopy()));
-    return new Plan(planned, seeds, !content.path("files").isEmpty());
+    return new Plan(planned, seeds, !content.path("files").isEmpty(), !content.path("descriptors").isEmpty());
+  }
+
+  private void addDescriptors(Project project, JsonNode declared) {
+    try {
+      for (JsonNode d : declared) {
+        grpc.add(project.id(), d.get("name").asText(), Base64.getMimeDecoder().decode(catalog.file(d.get("file").asText())));
+      }
+    } catch (GrpcException e) {
+      projects.delete(project.id());
+      throw new ApiException(409, "This example can't be installed: " + e.getMessage());
+    }
   }
 
   private Set<String> saveFiles(Project project, JsonNode declared) {

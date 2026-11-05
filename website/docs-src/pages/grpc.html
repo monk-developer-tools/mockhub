@@ -1,4 +1,5 @@
 <p>MockHub answers gRPC calls from stubs. Upload a protobuf descriptor set for your services and write each answer as JSON. MockHub converts it to the protobuf message the client expects.</p>
+<p>To see it working first, install the <em>Inventory — gRPC from a descriptor set</em> example (<strong>Examples</strong> in the sidebar). It serves <code>inventory.v1.StockService</code> with a unary, a server-streaming and a client-streaming method, a templated answer, gRPC statuses and a stub that matches metadata. Try it with <code>grpcurl -plaintext -d '{"sku":"sku-7"}' localhost:8080 inventory.v1.StockService/GetItem</code>. Because a service belongs to one project, the example can be installed once per server.</p>
 
 <h3 id="grpc-descriptors">Upload a descriptor set</h3>
 <p>gRPC messages are binary, so MockHub needs your service definitions. Build a descriptor set from your <code>.proto</code> files with <code>protoc</code>:</p>

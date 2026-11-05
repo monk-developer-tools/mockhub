@@ -7,6 +7,10 @@ import io.mockhub.data.CrudQuery;
 import io.mockhub.data.CrudResource;
 import io.mockhub.data.CrudService;
 import io.mockhub.files.BodyFiles;
+import io.mockhub.grpc.FileDescriptorStore;
+import io.mockhub.grpc.GrpcCatalog;
+import io.mockhub.api.ApiException;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.mockhub.importer.ImporterRegistry;
 import io.mockhub.importer.OpenApiImporter;
 import io.mockhub.support.InMemoryDataStore;
@@ -32,6 +36,7 @@ class ExampleInstallerTest {
   private ExampleInstaller installer;
   private CrudService crud;
   private BodyFiles files;
+  private GrpcCatalog grpc;
 
   @TempDir
   Path dataDir;
@@ -44,7 +49,8 @@ class ExampleInstallerTest {
     ref.set(projects);
     crud = new CrudService(new InMemoryDataStore());
     files = new BodyFiles(dataDir);
-    installer = new ExampleInstaller(ExampleCatalog.fromClasspath(), projects, stubs, new ImporterRegistry(List.of(new WsdlStubImporter(), new OpenApiImporter())), crud, files);
+    grpc = new GrpcCatalog(new FileDescriptorStore(dataDir), id -> id);
+    installer = new ExampleInstaller(ExampleCatalog.fromClasspath(), projects, stubs, new ImporterRegistry(List.of(new WsdlStubImporter(), new OpenApiImporter())), crud, files, grpc);
   }
 
   @Test
@@ -98,5 +104,28 @@ class ExampleInstallerTest {
     assertThat(files.list(project.id())).extracting(BodyFiles.Info::name).containsExactly("cover.svg", "price-list.csv");
     assertThat(gateway.findAll()).filteredOn(s -> "Price list as a CSV file".equals(s.getName())).singleElement()
         .satisfies(s -> assertThat(s.getResponse().getBodyFileName()).isEqualTo("projects/" + project.id() + "/price-list.csv"));
+  }
+
+  @Test
+  void installsTheDescriptorSetsOfAGrpcExample() {
+    // When
+    Project project = installer.install("grpc-inventory", "org1", "team1");
+
+    // Then
+    assertThat(grpc.setsOf(project.id())).singleElement().satisfies(set -> assertThat(set.name()).isEqualTo("inventory.dsc"));
+    assertThat(grpc.ownerOf("inventory.v1.StockService")).contains(project.id());
+    assertThat(gateway.findAll()).hasSize(6).allSatisfy(s -> assertThat(s.getRequest().getUrlPath()).startsWith("/inventory.v1.StockService/"));
+  }
+
+  @Test
+  void aSecondGrpcExampleIsRefusedWithoutLeavingAProjectBehind() {
+    // Given
+    installer.install("grpc-inventory", "org1", "team1");
+
+    // When / Then
+    assertThatThrownBy(() -> installer.install("grpc-inventory", "org1", "team1"))
+        .isInstanceOf(ApiException.class)
+        .hasMessageContaining("already served by");
+    assertThat(projects.findAll()).hasSize(1);
   }
 }

@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package inventory.v1;
+
+import "google/protobuf/timestamp.proto";
+
+enum Availability {
+  AVAILABILITY_UNSPECIFIED = 0;
+  IN_STOCK = 1;
+  LOW_STOCK = 2;
+  OUT_OF_STOCK = 3;
+}
+
+message Item {
+  string sku = 1;
+  string name = 2;
+  int32 quantity = 3;
+  Availability availability = 4;
+  google.protobuf.Timestamp updated_at = 5;
+}
+
+message GetItemRequest {
+  string sku = 1;
+}
+
+message WatchStockRequest {
+  string warehouse = 1;
+}
+
+message ReserveRequest {
+  string sku = 1;
+  int32 quantity = 2;
+}
+
+message ReserveReply {
+  string reservation_id = 1;
+  int32 reserved = 2;
+}
+
+service StockService {
+  rpc GetItem(GetItemRequest) returns (Item);
+  rpc WatchStock(WatchStockRequest) returns (stream Item);
+  rpc Reserve(stream ReserveRequest) returns (ReserveReply);
+}

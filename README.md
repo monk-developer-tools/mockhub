@@ -190,7 +190,7 @@ screenshots, and the [live demo](https://mockhub.devops-monk.com/__admin/mockhub
   message when the request is wrong. A stub can answer with one of several responses by weight. Also `len`, `object`,
   `json`, `toNumber` and `default`. Every entry in the helper picker is rendered against a real server in CI.
 - **Response files.** Upload PDFs, images or large JSON (up to 10 MB) and serve them as response bodies.
-- **Built-in examples:** ten ready-made projects that cover every feature: REST matching, fake data, templating, real-world matching patterns, CRUD with saved data, stateful scenarios, webhooks, faults and failure rates, an OpenAPI import with response files, and a SOAP calculator from WSDL. The [tour of the examples](https://mockhub.devops-monk.com/tutorials/#tour) has commands to try with each.
+- **Built-in examples:** twelve ready-made projects that cover every feature: REST matching, fake data, templating, real-world matching patterns, CRUD with saved data, stateful scenarios, webhooks, faults and failure rates, an OpenAPI import with response files, a SOAP calculator from WSDL, a GraphQL library from a schema and a gRPC inventory service from a descriptor set. The [tour of the examples](https://mockhub.devops-monk.com/tutorials/#tour) has commands to try with each.
   Install one with a click and copy what you need. The editor also has a template gallery.
 - **Persistence.** Every stub, including ones created through the native `/__admin` API, is written to `/data`.
   Admins can back up everything, whole organisations or single projects to one file, and later restore all of it

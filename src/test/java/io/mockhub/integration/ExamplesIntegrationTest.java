@@ -3,6 +3,11 @@ package io.mockhub.integration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import io.mockhub.support.GrpcTestClient;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.util.Base64;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
@@ -37,7 +42,7 @@ class ExamplesIntegrationTest {
 
   @Test
   void listsExamples() {
-    assertThat(api.get(API + "/examples").json()).hasSize(11);
+    assertThat(api.get(API + "/examples").json()).hasSize(12);
   }
 
   @Test
@@ -297,5 +302,56 @@ class ExamplesIntegrationTest {
     assertThat(api.postXml("/example-soap/ws/calculator", add.formatted("2")).body()).contains("<ns1:result>5</ns1:result>");
     assertThat(api.postXml("/example-soap/ws/calculator", add.formatted("-1")).body()).contains("Negative numbers");
     assertThat(api.postXml("/example-soap/ws/calculator", add.formatted("9")).body()).contains("<ns1:result>1</ns1:result>");
+  }
+
+  @Test
+  void grpcExampleAnswersOverGrpcFromItsDescriptorSet() {
+    // Given
+    ApiClient.Result installed = api.post(API + "/examples/grpc-inventory/install", "");
+    String service = "inventory.v1.StockService";
+
+    // When
+    try (GrpcTestClient client = new GrpcTestClient(server.port(), exampleDescriptor())) {
+      GrpcTestClient.Reply item = client.unary(service, "GetItem", "{\"sku\":\"sku-7\"}");
+      GrpcTestClient.Reply missing = client.unary(service, "GetItem", "{\"sku\":\"sku-404\"}");
+      GrpcTestClient.Reply blocked = client.unary(service, "GetItem", "{\"sku\":\"sku-7\"}", Map.of("x-tenant", "blocked"));
+      List<String> updates = client.serverStream(service, "WatchStock", "{\"warehouse\":\"north\"}");
+      GrpcTestClient.Reply reserved = client.clientStream(service, "Reserve", List.of("{\"sku\":\"sku-1\",\"quantity\":2}"));
+      GrpcTestClient.Reply empty = client.clientStream(service, "Reserve", List.of("{\"sku\":\"sku-1\"}"));
+
+      // Then
+      assertThat(installed.status()).as(installed.body()).isEqualTo(201);
+      assertThat(item.status()).as(item.description()).isEqualTo("OK");
+      assertThat(item.json()).contains("\"sku\": \"sku-7\"").contains("\"name\": \"Item sku-7\"").contains("IN_STOCK");
+      assertThat(missing.status()).isEqualTo("NOT_FOUND");
+      assertThat(blocked.status()).isEqualTo("PERMISSION_DENIED");
+      assertThat(updates).singleElement().asString().contains("LOW_STOCK");
+      assertThat(reserved.status()).as(reserved.description()).isEqualTo("OK");
+      assertThat(reserved.json()).contains("\"reserved\": 2");
+      assertThat(empty.status()).isEqualTo("INVALID_ARGUMENT");
+    }
+  }
+
+  @Test
+  void grpcExampleCanBeInstalledOnlyOnceBecauseAServiceBelongsToOneProject() {
+    // Given
+    api.post(API + "/examples/grpc-inventory/install", "");
+    int before = api.get(API + "/projects").json().size();
+
+    // When
+    ApiClient.Result second = api.post(API + "/examples/grpc-inventory/install", "");
+
+    // Then
+    assertThat(second.status()).isEqualTo(409);
+    assertThat(second.body()).contains("inventory.v1.StockService");
+    assertThat(api.get(API + "/projects").json().size()).isEqualTo(before);
+  }
+
+  private static byte[] exampleDescriptor() {
+    try (InputStream in = ExamplesIntegrationTest.class.getResourceAsStream("/examples/inventory.dsc.b64")) {
+      return Base64.getMimeDecoder().decode(in.readAllBytes());
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
   }
 }
