@@ -19,6 +19,7 @@ export interface Project {
   apiKey?: ApiKeyRule | null;
   root?: boolean;
   runtime?: RuntimeSettings | null;
+  domains?: string[];
 }
 
 export interface ApiKeyRule {

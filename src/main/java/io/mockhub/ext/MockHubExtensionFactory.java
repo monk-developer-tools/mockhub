@@ -247,7 +247,8 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     GrpcCatalog grpc = new GrpcCatalog(new FileDescriptorStore(dataDir), id -> projectsRef.get().find(id).map(Project::name).orElse(null));
     SecretBox secrets = SecretBox.of(config.secretKey, JsonFile.inDataDir(dataDir, "secret.key"));
     TlsService tls = new TlsService(new TlsStore(dataDir, secrets));
-    MockHubServerFactory server = new MockHubServerFactory(services.getStores().getBlobStore("grpc"), grpc::fileDescriptors, tls::attach);
+    MockHubServerFactory server = new MockHubServerFactory(services.getStores().getBlobStore("grpc"), grpc::fileDescriptors, tls::attach,
+        host -> projectsRef.get().findForHost(host).map(Project::basePath));
     grpc.onChange(server::loadFileDescriptors);
     ProjectService projects = new ProjectService(new FileProjectRepository(dataDir),
         List.of(stubs, grpc, new ProjectDataCleaner(dataStore, bodyFiles), history, traffic, staged, accessTokens, new SnapshotCleanup(snapshotStore)), clock);

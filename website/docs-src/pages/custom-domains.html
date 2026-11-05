@@ -1,0 +1,44 @@
+<p>A project normally answers under its base path, like <code>https://mocks.example.com/payments/charges/42</code>. Give it a custom domain and the same stubs answer at the root of that host: <code>https://payments.mocks.example.com/charges/42</code>. Use it when a client can't add a path prefix, or when each team should have its own host.</p>
+
+<h3 id="domains-set">Add a domain</h3>
+<p>Open the project's <strong>Settings</strong>, find <strong>Custom domains</strong> and enter one host name per line, up to 10. Anyone who can manage the project can change them. MockHub then checks the <code>Host</code> header of every mock request; when it matches, the request goes to this project as if the base path were in front of it.</p>
+<table>
+  <thead><tr><th>Rule</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr><td>Host names only</td><td>No scheme, port, path or <code>*</code> wildcard. Names are stored in lowercase, and the port in the Host header is ignored.</td></tr>
+    <tr><td>One project per name</td><td>A name that another project already uses is refused, and the message names that project.</td></tr>
+    <tr><td>The base path keeps working</td><td><code>/payments/...</code> still answers on every host, so existing clients don't break.</td></tr>
+    <tr><td>The admin UI and API are not moved</td><td><code>/__admin</code> answers the same on every host.</td></tr>
+    <tr><td>gRPC is not affected</td><td>gRPC paths are already unprefixed and belong to one project.</td></tr>
+  </tbody>
+</table>
+<p>Inside MockHub the request keeps its full path. The request log shows <code>/payments/charges/42</code>, and <code>{{request.path}}</code> in a template gives the same. Domains travel with the project in backups; a restored copy doesn't take names that another project already uses.</p>
+
+<h3 id="domains-dns">DNS and HTTPS</h3>
+<p>Point each name at the machine that runs MockHub, with an A record or a CNAME. A wildcard record such as <code>*.mocks.example.com</code> lets you add projects without touching DNS again. HTTPS stays with your reverse proxy, which needs a certificate for the names and must pass the original <code>Host</code> header on.</p>
+
+<h3 id="domains-nginx">nginx</h3>
+<div class="code"><pre><span class="k">server</span> {
+  <span class="k">listen</span>       443 ssl;
+  <span class="k">server_name</span>  mocks.example.com *.mocks.example.com;
+  <span class="k">ssl_certificate</span>     /etc/ssl/mocks/fullchain.pem;
+  <span class="k">ssl_certificate_key</span> /etc/ssl/mocks/privkey.pem;
+
+  <span class="k">location</span> / {
+    <span class="k">proxy_pass</span>         http://127.0.0.1:8080;
+    <span class="k">proxy_set_header</span>   Host $host;
+    <span class="k">proxy_set_header</span>   X-Forwarded-Proto $scheme;
+    <span class="k">proxy_set_header</span>   X-Forwarded-For $proxy_add_x_forwarded_for;
+  }
+}</pre></div>
+<p>A wildcard certificate for <code>*.mocks.example.com</code> needs a DNS challenge, for example <code>certbot certonly --dns-&lt;provider&gt; -d '*.mocks.example.com'</code>. Or list each name on an ordinary certificate.</p>
+
+<h3 id="domains-caddy">Caddy</h3>
+<div class="code"><pre>mocks.example.com, payments.mocks.example.com, orders.mocks.example.com {
+  reverse_proxy 127.0.0.1:8080
+}</pre></div>
+<p>Caddy gets a certificate for each listed name and passes the Host header on by default.</p>
+
+<h3 id="domains-local">Try it locally</h3>
+<pre><code>curl -H 'Host: payments.mocks.example.com' http://localhost:8080/charges/42</code></pre>
+<p>Or add <code>127.0.0.1 payments.mocks.example.com</code> to <code>/etc/hosts</code> and open <code>http://payments.mocks.example.com:8080/charges/42</code>.</p>

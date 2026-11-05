@@ -234,6 +234,24 @@ class BackupServiceTest {
   }
 
   @Test
+  void carriesCustomDomainsButACopyDoesNotTakeNamesInUse() {
+    // Given
+    source.projects.update(payByBank.id(), tree("{'domains':['bank.mocks.test']}"));
+    JsonNode file = source.backups.export(BackupSelection.of(Set.of(), Set.of(payByBank.id())));
+    Server target = new Server(clock);
+
+    // When
+    target.backups.restore(file, RestoreOptions.everything());
+    source.backups.restore(file, new RestoreOptions(BackupSelection.all(), retail.id(), true));
+
+    // Then
+    assertThat(target.projects.get(payByBank.id()).domains()).containsExactly("bank.mocks.test");
+    Project copy = source.projects.findByOrg(retail.id()).stream().filter(p -> p.name().equals("pay-by-bank")).findFirst().orElseThrow();
+    assertThat(copy.domains()).isEmpty();
+    assertThat(source.projects.findForHost("bank.mocks.test")).map(Project::id).contains(payByBank.id());
+  }
+
+  @Test
   void carriesTeamsAcrossAndPlacesProjectsInAChosenTeam() {
     // Given
     Team checkout = source.teams.create(payments.id(), tree("{'name':'Checkout'}"));

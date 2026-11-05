@@ -1,4 +1,5 @@
-import { Key, Lock, TreeStructure } from '@phosphor-icons/react';
+import { Globe, Key, Lock, TreeStructure } from '@phosphor-icons/react';
+import { domainUrl, parseDomainLines, validateDomains } from '../../model/domains';
 import { API_KEY_PLACEHOLDER } from '../../model/sampleRequest';
 import { useEffect, useState } from 'react';
 import { CopyButton } from '../../components/CopyButton';
@@ -57,6 +58,7 @@ export function ProjectSettingsTab() {
         </div>
       </div>
       <RootPanel />
+      <DomainsPanel />
       <ApiKeyPanel />
       <RuntimePanel />
       {canManage && (
@@ -129,6 +131,70 @@ function RootPanel() {
             <>Stubs answer under <span className="mono">{project.basePath}</span>. Turn this on when you move an existing WireMock server here and your services, or templates like <span className="mono">{'{{request.pathSegments.[0]}}'}</span>, expect the old paths. Only one project per server can do this.</>
           )}
         </p>
+      </div>
+    </div>
+  );
+}
+
+export function DomainsPanel() {
+  const { project, reloadProject } = useProject();
+  const { canManage } = useApp();
+  const toast = useToast();
+  const saved = project.domains ?? [];
+  const [text, setText] = useState(saved.join('\n'));
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => setText((project.domains ?? []).join('\n')), [project.domains]);
+
+  const hosts = parseDomainLines(text);
+  const errors = validateDomains(hosts);
+  const changed = hosts.join('\n') !== saved.join('\n');
+
+  const save = async () => {
+    setBusy(true);
+    try {
+      await api.updateProject(project.id, { domains: hosts });
+      toast.notify(hosts.length ? 'Domains saved' : 'Domains removed');
+      reloadProject();
+    } catch (e) {
+      toast.fail(e);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="panel">
+      <div className="section">
+        <h3><span><Globe size={15} weight="duotone" style={{ verticalAlign: -2, marginRight: 6 }} />Custom domains</span></h3>
+        <p className="muted small" style={{ marginBottom: 10 }}>
+          Requests whose Host is one of these names go to this project without the base path, so{' '}
+          <span className="mono">{domainUrl(saved[0] ?? 'payments.mocks.example.com', project.mockUrl)}/orders/42</span> answers like{' '}
+          <span className="mono">{project.mockUrl}/orders/42</span>. Point the name's DNS at MockHub; HTTPS stays with your reverse proxy,
+          which must pass the Host header on.
+        </p>
+        <label className="field">
+          <span>Host names <span className="hint">one per line, up to 10</span></span>
+          <textarea rows={3} value={text} readOnly={!canManage} placeholder="payments.mocks.example.com" aria-label="Custom domains"
+            onChange={(e) => setText(e.target.value)} />
+        </label>
+        {errors.length > 0 && (
+          <div className="callout danger" role="alert" style={{ marginTop: 8 }}>
+            <div>{errors.length === 1 ? errors[0] : <ul>{errors.map((e) => <li key={e}>{e}</li>)}</ul>}</div>
+          </div>
+        )}
+        {saved.length > 0 && (
+          <div className="stack" style={{ marginTop: 8, gap: 4 }}>
+            {saved.map((host) => (
+              <div key={host} className="small"><span className="mono">{domainUrl(host, project.mockUrl)}/</span> <CopyButton text={`${domainUrl(host, project.mockUrl)}/`} /></div>
+            ))}
+          </div>
+        )}
+        {canManage && (
+          <div className="btn-row" style={{ marginTop: 10 }}>
+            <button className="btn primary" disabled={busy || !changed || errors.length > 0} onClick={save}>{busy ? 'Saving…' : 'Save'}</button>
+          </div>
+        )}
       </div>
     </div>
   );

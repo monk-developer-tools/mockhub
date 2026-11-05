@@ -694,7 +694,7 @@ Goal: the smaller routing and sharing features.
 
 Checklist:
 - [x] Echo template (`mockhub-echo` transformer shared with the public echo tool: method, project-relative path, query, headers without proxy headers, body, parsed JSON and form fields, 1 MB limit, stub status, headers and delays kept; "Echo request" response type in the editor; Echo server example installed at `/echo`)
-- [ ] Custom domains
+- [x] Custom domains (`domains` on a project, up to 10 host names, validated and unique across projects; a servlet filter rebases requests whose Host matches, before WireMock sees them, so matching, templates, the request log and runtime rules work unchanged; base path still works; `/__admin` and gRPC untouched; Custom domains panel in project settings; backups keep names not taken by another project; docs with nginx and Caddy)
 - [ ] Mock these APIs button
 - [ ] Forward proxy with interception
 - [ ] Tests, docs

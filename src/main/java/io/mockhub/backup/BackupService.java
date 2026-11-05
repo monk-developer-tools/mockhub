@@ -250,7 +250,7 @@ public final class BackupService {
       String now = Instant.now(clock).toString();
       boolean root = p.root() && projects.findRoot().filter(r -> !r.id().equals(id)).isEmpty();
       Project saved = new Project(id, p.name(), slug, p.description(), p.color(),
-          options.asCopy() ? now : p.createdAt(), now, orgId, teamId, p.apiKey(), root, p.runtime());
+          options.asCopy() ? now : p.createdAt(), now, orgId, teamId, p.apiKey(), root, p.runtime(), projects.freeDomains(p.domains(), id));
       projects.restore(List.of(saved));
       file.path("files").path(p.id()).fields().forEachRemaining(e -> files.save(saved.id(), e.getKey(), Base64.getDecoder().decode(e.getValue().asText())));
       file.path("grpc").path(p.id()).fields().forEachRemaining(e -> restoreDescriptor(saved, e.getKey(), e.getValue().asText()));

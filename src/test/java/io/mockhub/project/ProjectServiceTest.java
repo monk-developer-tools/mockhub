@@ -163,4 +163,41 @@ class ProjectServiceTest {
     assertThat(service.findForPath("customers")).contains(legacy);
     assertThat(service.findForPath("legacy")).contains(legacy);
   }
+
+  @Test
+  void findsAProjectByOneOfItsDomains() {
+    // Given
+    Project project = service.create(tree("{'orgId':'org1','name':'Pay','domains':['Pay.Example.com']}"));
+
+    // When / Then
+    assertThat(project.domains()).containsExactly("pay.example.com");
+    assertThat(service.findForHost("pay.example.com")).map(Project::id).contains(project.id());
+    assertThat(service.findForHost("other.example.com")).isEmpty();
+  }
+
+  @Test
+  void refusesADomainThatAnotherProjectUses() {
+    // Given
+    service.create(tree("{'orgId':'org1','name':'Pay','domains':['pay.example.com']}"));
+    Project other = service.create(tree("{'orgId':'org1','name':'Other'}"));
+
+    // When / Then
+    assertThatThrownBy(() -> service.update(other.id(), tree("{'domains':['pay.example.com']}")))
+        .isInstanceOf(ApiException.class)
+        .hasMessageContaining("already points to project 'Pay'");
+  }
+
+  @Test
+  void keepsTheDomainsWhenAnUpdateLeavesThemOut() {
+    // Given
+    Project project = service.create(tree("{'orgId':'org1','name':'Pay','domains':['pay.example.com']}"));
+
+    // When
+    Project renamed = service.update(project.id(), tree("{'name':'Payments'}"));
+    Project cleared = service.update(project.id(), tree("{'domains':[]}"));
+
+    // Then
+    assertThat(renamed.domains()).containsExactly("pay.example.com");
+    assertThat(cleared.domains()).isEmpty();
+  }
 }

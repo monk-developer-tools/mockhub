@@ -63,6 +63,14 @@ public final class ProjectService implements OrganizationListener {
     return repository.findBySlug(firstSegment).filter(p -> !p.root()).or(this::findRoot);
   }
 
+  public Optional<Project> findForHost(String host) {
+    return repository.findAll().stream().filter(p -> p.domains().contains(host)).findFirst();
+  }
+
+  public List<String> freeDomains(List<String> domains, String selfId) {
+    return domains.stream().filter(d -> findForHost(d).filter(other -> !other.id().equals(selfId)).isEmpty()).toList();
+  }
+
   public Optional<Project> find(String id) {
     return repository.findById(id);
   }
@@ -76,6 +84,8 @@ public final class ProjectService implements OrganizationListener {
     String requestedSlug = body.path("slug").asText("");
     String slug = requestedSlug.isBlank() ? slugify(name) : requestedSlug;
     validateSlug(slug, null);
+    List<String> domains = Domains.parse(body.get("domains"));
+    validateDomains(domains, null);
     String now = Instant.now(clock).toString();
     String color = body.path("color").asText("");
     Project project = new Project(
@@ -90,7 +100,8 @@ public final class ProjectService implements OrganizationListener {
         body.path("teamId").asText("").isBlank() ? null : body.get("teamId").asText(),
         ApiKey.parse(body.get("apiKey")),
         body.path("root").asBoolean(false),
-        body.has("runtime") ? RuntimeSettings.parse(body.get("runtime")) : null);
+        body.has("runtime") ? RuntimeSettings.parse(body.get("runtime")) : null,
+        domains);
     validateRoot(project);
     repository.save(project);
     return project;
@@ -100,6 +111,8 @@ public final class ProjectService implements OrganizationListener {
     Project before = get(id);
     String slug = body.hasNonNull("slug") ? body.get("slug").asText() : before.slug();
     validateSlug(slug, id);
+    List<String> domains = body.has("domains") ? Domains.parse(body.get("domains")) : before.domains();
+    validateDomains(domains, id);
     Project after = new Project(
         before.id(),
         body.hasNonNull("name") ? requiredText(body, "name").trim() : before.name(),
@@ -112,7 +125,8 @@ public final class ProjectService implements OrganizationListener {
         body.hasNonNull("teamId") && !body.get("teamId").asText().isBlank() ? body.get("teamId").asText() : before.teamId(),
         body.has("apiKey") ? ApiKey.parse(body.get("apiKey")) : before.apiKey(),
         body.hasNonNull("root") ? body.get("root").asBoolean() : before.root(),
-        before.runtime());
+        before.runtime(),
+        domains);
     validateRoot(after);
     if (!before.basePath().equals(after.basePath())) {
       listeners.forEach(l -> l.onBasePathChanged(before, after));
@@ -159,6 +173,14 @@ public final class ProjectService implements OrganizationListener {
     repository.findBySlug(slug).filter(other -> !other.id().equals(selfId)).ifPresent(other -> {
       throw new ApiException(409, "Base path /" + slug + " is already used by project '" + other.name() + "'");
     });
+  }
+
+  private void validateDomains(List<String> domains, String selfId) {
+    for (String domain : domains) {
+      findForHost(domain).filter(other -> !other.id().equals(selfId)).ifPresent(other -> {
+        throw new ApiException(409, domain + " already points to project '" + other.name() + "'");
+      });
+    }
   }
 
   private void validateRoot(Project project) {

@@ -67,6 +67,7 @@ export const GROUPS = [
       { slug: 'api-keys', title: 'API keys', icon: 'Key', description: 'Make a project answer only when a request carries the right key.' },
       { slug: 'cors', title: 'CORS', icon: 'Globe', description: 'Which websites can call a mock from the browser, or make CORS fail on purpose.' },
       { slug: 'ip-allow-list', title: 'IP allow list', icon: 'ShieldCheck', description: 'Only answer calls from listed addresses and ranges.' },
+      { slug: 'custom-domains', title: 'Custom domains', icon: 'Globe', description: 'Give a project its own host name so it answers at the root of that domain, with nginx and Caddy setups.' },
       { slug: 'mtls', title: 'HTTPS & client certificates', icon: 'Certificate', description: 'Serve mocks over HTTPS with your own certificate and require trusted client certificates (mutual TLS).' },
     ],
   },
