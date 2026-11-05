@@ -3,8 +3,9 @@ package io.mockhub.runtime;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.List;
 
-public record RuntimeSettings(DefaultResponse defaultResponse, RateLimit rateLimit, Latency latency, CorsRules cors, List<String> ipAllowList) {
-  public static final RuntimeSettings NONE = new RuntimeSettings(null, null, null, null, List.of());
+public record RuntimeSettings(DefaultResponse defaultResponse, RateLimit rateLimit, Latency latency, CorsRules cors, List<String> ipAllowList,
+    boolean requireClientCert) {
+  public static final RuntimeSettings NONE = new RuntimeSettings(null, null, null, null, List.of(), false);
 
   public RuntimeSettings {
     ipAllowList = ipAllowList == null ? List.of() : List.copyOf(ipAllowList);
@@ -21,7 +22,8 @@ public record RuntimeSettings(DefaultResponse defaultResponse, RateLimit rateLim
         RateLimit.parse(node.get("rateLimit"), "rateLimit"),
         Latency.parse(node.get("latency")),
         CorsRules.parse(node.get("cors")),
-        IpAllowList.parse(node.get("ipAllowList")).entries());
+        IpAllowList.parse(node.get("ipAllowList")).entries(),
+        node.path("requireClientCert").asBoolean(false));
   }
 
   public IpAllowList ipRules() {

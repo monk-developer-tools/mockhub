@@ -36,7 +36,7 @@ Legend: ✅ have it · 🟡 partial · ❌ missing
 | REST from OpenAPI with generated data | OpenAPI import with realistic data | ✅ | — |
 | GraphQL from SDL | Schema import, generated answers, operation stubs, console | ✅ | — |
 | gRPC from proto | Descriptor-set upload, JSON stubs per method, gRPC status codes, reflection | ✅ | — |
-| Mutual TLS | Only through raw `WIREMOCK_OPTIONS` | 🟡 | F10 |
+| Mutual TLS | HTTPS port, own certificate, trusted client CAs, per-project requirement | ✅ | — |
 | Default response | Project setting, templated, hidden managed stub | ✅ | — |
 | Latency profiles | Per-stub delays plus a project default and load-dependent delay | ✅ | — |
 | Rate limits | Per project and per stub, 429 with Retry-After and X-RateLimit headers | ✅ | — |
@@ -676,7 +676,7 @@ Checklist:
 - [x] GraphQL (graphql-java 26.1; `graphql` import of SDL or introspection JSON into one `mockhub-graphql` endpoint stub that executes queries against the schema with generated data: field-name aware values, custom scalars by name, list sizes from first/limit up to 20, arguments and inputs echoed into same-named fields, stable per arguments, undeclared directives ignored, POST/GET/batch/application/graphql, 50,000-value and depth-15 limits; operation stubs match operationName and variables; GraphQL service type, schema response mode and console with example operations and "save answer as a stub"; Library example)
 - [x] gRPC (`wiremock-grpc-extension-jetty12` 0.11.0 behind a MockHub server factory; projects upload protobuf descriptor sets (`protoc --include_imports --descriptor_set_out`), well-known types resolved without imports, 4 MB and 20 per project, a service belongs to one project and clashing services, messages or files are refused; descriptors load without a restart, travel in backups and go with the project; stubs keep the `/package.Service/Method` path unprefixed, match the request message as JSON and metadata as headers, answer with protobuf JSON or a gRPC status and reason, support templating; unary, server-streaming (one message) and client-streaming (first matching message); unmatched calls get UNIMPLEMENTED; server reflection for grpcurl; calls recorded in the owning project's history; gRPC service type, method pickers, starter stubs, grpcurl command)
 - [x] SOAP auto-detect (`SoapMessage` finds version, operation, namespace and SOAPAction with a StAX parser that refuses DTDs; `soap` import of pasted sample requests makes a stub per operation plus a `mockhub-soap` endpoint at priority 10 that answers any operation with `<Operation>Response` or a fault; create stub from a logged SOAP request keeps version, action and a response envelope; "Fill operation from example" in the editor)
-- [ ] Mutual TLS
+- [x] Mutual TLS (`MOCKHUB_HTTPS_PORT` turns on WireMock's HTTPS connector; admins paste a server certificate chain and key (PKCS#8 or PKCS#1 RSA, key checked against the certificate, stored sealed with the secret key) and trusted client CAs on the Server page, applied with a Jetty SSL reload and kept after restarts; client certificates are requested (want, not need) so untrusted ones count as anonymous; a servlet filter strips forged `X-MockHub-Client-Cert-*` headers and sets subject, issuer and SHA-256 from the TLS session, also for gRPC metadata; per-project runtime `requireClientCert` answers 403 / PERMISSION_DENIED; the HTTPS port can't move at runtime, so it stays an environment setting)
 - [ ] Tests, docs, examples
 
 ### Phase F11 — Routing extras

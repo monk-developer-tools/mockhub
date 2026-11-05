@@ -1,0 +1,35 @@
+<p>MockHub can serve mocks over HTTPS with your own certificate, and accept client certificates (mutual TLS). A project can then refuse every caller that doesn't present a trusted certificate. Use this to test services that sign their calls with a certificate.</p>
+
+<h3 id="mtls-port">Turn on the HTTPS port</h3>
+<p>Set <code>MOCKHUB_HTTPS_PORT</code> and publish that port as well:</p>
+<pre><code>docker run -p 8080:8080 -p 8443:8443 -e MOCKHUB_HTTPS_PORT=8443 -v mockhub-data:/data abhaypratap/mockhub</code></pre>
+<p>Every project answers on both ports: <code>http://host:8080/shop/…</code> and <code>https://host:8443/shop/…</code>. At startup MockHub prints both addresses. Until you upload a certificate, HTTPS uses WireMock's built-in self-signed one, so clients have to skip verification (<code>curl -k</code>).</p>
+
+<h3 id="mtls-server">Your own server certificate</h3>
+<p>As an admin, open <strong>Server</strong> and paste the certificate and its private key under <strong>HTTPS and client certificates</strong>. You can also drop the <code>.pem</code> files there. Put the server certificate first, then any intermediates, then the unencrypted private key. MockHub reads PKCS#8 keys (<code>BEGIN PRIVATE KEY</code>, RSA, EC or EdDSA) and RSA keys in PKCS#1 (<code>BEGIN RSA PRIVATE KEY</code>). Convert anything else with <code>openssl pkcs8 -topk8 -nocrypt -in key.pem</code>.</p>
+<p>MockHub checks that the key belongs to the certificate, then uses it for new connections straight away, with no restart. The key is stored encrypted in the data folder, with the same secret key as <a href="#connections">connections</a>. <strong>Go back to the built-in certificate</strong> removes it.</p>
+
+<h3 id="mtls-clients">Accept client certificates</h3>
+<p>Under <strong>Trusted client CAs</strong>, paste the certificates of the CAs that sign your callers' certificates. From then on MockHub asks every HTTPS caller for a certificate. A caller signed by one of those CAs is identified, and stubs see who it is in three request headers:</p>
+<table>
+  <thead><tr><th>Header</th><th>Example</th></tr></thead>
+  <tbody>
+    <tr><td><code>X-MockHub-Client-Cert-Subject</code></td><td><code>O=Acme,CN=billing-service</code></td></tr>
+    <tr><td><code>X-MockHub-Client-Cert-Issuer</code></td><td><code>CN=Acme Internal CA</code></td></tr>
+    <tr><td><code>X-MockHub-Client-Cert-Sha256</code></td><td>The certificate's SHA-256 fingerprint in hex</td></tr>
+  </tbody>
+</table>
+<p>Match on them like any <a href="#matching">header</a>, for example to answer one service differently, or echo them with <code>{{request.headers.X-MockHub-Client-Cert-Subject}}</code>. MockHub removes these headers from every incoming request before it sets them, so a caller can't send them itself.</p>
+<p>A caller without a certificate still connects, and so does one whose certificate no trusted CA signed. Both are treated as anonymous: no headers are set.</p>
+
+<h3 id="mtls-require">Require a certificate for a project</h3>
+<p>In a project's <strong>Settings → Runtime behaviour</strong>, turn on <strong>Client certificate</strong>. Calls without a trusted certificate then get:</p>
+<div class="code"><pre>HTTP/1.1 403 Forbidden
+Content-Type: application/json
+
+{"error":"This mock needs a client certificate. Call it over HTTPS with a certificate signed by a CA trusted on the Server page"}</pre></div>
+<p>Calls on the plain HTTP port can never carry a certificate, so they are refused too. gRPC calls arrive on the plain port, so they're refused with <code>PERMISSION_DENIED</code>. To try it with curl:</p>
+<pre><code>curl --cacert ca.pem --cert client.pem --key client.key https://localhost:8443/payments/whoami</code></pre>
+
+<h3 id="mtls-proxy">Behind a load balancer</h3>
+<p>Client certificates only reach MockHub when the TLS connection ends at MockHub. A proxy or load balancer that terminates TLS itself, such as an AWS ALB or nginx with <code>proxy_pass</code>, drops them. Forward the HTTPS port as plain TCP instead (an AWS NLB with a TCP listener, or nginx's <code>stream</code> module), and keep the HTTP port behind your usual proxy.</p>

@@ -7,6 +7,7 @@ import { StubRoute } from '../components/StubRoute';
 import { useToast } from '../components/Toasts';
 import { useApp } from '../state/AppContext';
 import { PageHeader } from '../components/ui/PageHeader';
+import { TlsPanel } from './TlsPanel';
 
 export function ServerPage() {
   const { info, projects, canEdit, isAdmin, refreshProjects } = useApp();
@@ -128,6 +129,7 @@ export function ServerPage() {
               </div>
             </div>
           )}
+          {isAdmin && <TlsPanel />}
         </div>
 
         <div className="stack">

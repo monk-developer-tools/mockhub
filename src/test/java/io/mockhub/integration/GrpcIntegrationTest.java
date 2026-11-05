@@ -7,6 +7,7 @@ import io.mockhub.api.Jsons;
 import io.mockhub.support.GrpcTestClient;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -197,6 +198,23 @@ class GrpcIntegrationTest {
 
     // Then
     assertThat(services).contains(SERVICE);
+  }
+
+  @Test
+  void refusesGrpcCallsToAProjectThatRequiresAClientCertificateEvenWithAForgedHeader() {
+    // Given
+    upload(projectId, "library.dsc", LIBRARY);
+    stub(grpcStub("GetBook", null, "{\"status\":200,\"jsonBody\":{\"id\":\"1\"}}"));
+    api.put(API + "/projects/" + projectId + "/runtime", "{\"requireClientCert\":true}");
+
+    // When
+    GrpcTestClient.Reply reply;
+    try (GrpcTestClient client = new GrpcTestClient(server.port(), LIBRARY)) {
+      reply = client.unary(SERVICE, "GetBook", "{\"id\":\"1\"}", Map.of("x-mockhub-client-cert-subject", "CN=forged"));
+    }
+
+    // Then
+    assertThat(reply.status()).isEqualTo("PERMISSION_DENIED");
   }
 
   @Test

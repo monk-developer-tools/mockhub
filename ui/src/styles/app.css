@@ -315,6 +315,20 @@
   border-color: transparent;
 }
 
+.cert-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 10px;
+  margin: 6px 0 10px;
+}
+
+.tag.danger {
+  background: var(--danger-soft);
+  color: var(--danger);
+  border-color: transparent;
+}
+
 .code-line {
   display: flex;
   align-items: center;

@@ -665,6 +665,7 @@ export interface RuntimeSettings {
   latency: LatencyRule | null;
   cors: CorsRule | null;
   ipAllowList: string[];
+  requireClientCert?: boolean;
 }
 
 export interface SnapshotSummary {

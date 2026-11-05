@@ -23,6 +23,7 @@ public final class Main {
     List<String> finalArgs = new ArrayList<>();
     addDefault(finalArgs, userArgs, "--port", String.valueOf(config.port));
     addDefault(finalArgs, userArgs, "--root-dir", config.dataDir.toString());
+    if (config.httpsPort >= 0) addDefault(finalArgs, userArgs, "--https-port", String.valueOf(config.httpsPort));
     addDefault(finalArgs, userArgs, "--max-request-journal-entries", String.valueOf(config.journalMaxEntries));
     if (!userArgs.contains("--disable-extensions-scanning")) {
       finalArgs.add("--disable-extensions-scanning");
@@ -52,10 +53,11 @@ public final class Main {
     Runtime.getRuntime().addShutdownHook(new Thread(server::stop, "mockhub-shutdown"));
 
     System.out.printf(
-        "%nMockHub %s is running%n  UI:      http://localhost:%d/__admin/mockhub/ui/%n  Mocks:   http://localhost:%d/<project>/...%n  Data:    %s%n  Auth:    %s%n%n",
+        "%nMockHub %s is running%n  UI:      http://localhost:%d/__admin/mockhub/ui/%n  Mocks:   http://localhost:%d/<project>/...%s%n  Data:    %s%n  Auth:    %s%n%n",
         VERSION,
         server.port(),
         server.port(),
+        server.isHttpsEnabled() ? String.format("%n  HTTPS:   https://localhost:%d/<project>/...", server.httpsPort()) : "",
         options.filesRoot().getPath(),
         config.users.isEmpty() ? "users and SSO are managed in the UI" : config.users.size() + " user(s) from MOCKHUB_USERS");
   }

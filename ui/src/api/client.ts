@@ -1,5 +1,6 @@
 import type { GraphqlOperation } from '../model/graphql';
 import type { GrpcCatalog } from '../model/grpc';
+import type { TlsView } from '../model/tls';
 import type {
   AccessToken,
   NewAccessToken,
@@ -221,6 +222,11 @@ export const api = {
     }),
   deleteGrpcDescriptor: (projectId: string, name: string) =>
     request<void>(`${API}/projects/${projectId}/grpc/descriptors?name=${encodeURIComponent(name)}`, { method: 'DELETE' }),
+  tls: () => request<TlsView>(`${API}/tls`),
+  setServerCertificate: (pem: string) => request<TlsView>(`${API}/tls/server`, { method: 'PUT', body: json({ pem }) }),
+  clearServerCertificate: () => request<TlsView>(`${API}/tls/server`, { method: 'DELETE' }),
+  setClientAuthorities: (pem: string) => request<TlsView>(`${API}/tls/client-authorities`, { method: 'PUT', body: json({ pem }) }),
+  clearClientAuthorities: () => request<TlsView>(`${API}/tls/client-authorities`, { method: 'DELETE' }),
   connections: (orgId: string) => request<Connection[]>(`${API}/orgs/${orgId}/connections`),
   createConnection: (orgId: string, body: ConnectionInput) =>
     request<Connection>(`${API}/orgs/${orgId}/connections`, { method: 'POST', body: json(body) }),

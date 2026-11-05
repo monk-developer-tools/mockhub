@@ -40,7 +40,9 @@ import io.mockhub.controller.GrpcController;
 import io.mockhub.grpc.FileDescriptorStore;
 import io.mockhub.grpc.GrpcCatalog;
 import io.mockhub.grpc.GrpcRequestFilter;
-import io.mockhub.grpc.GrpcServerFactory;
+import io.mockhub.controller.TlsController;
+import io.mockhub.tls.TlsService;
+import io.mockhub.tls.TlsStore;
 import io.mockhub.graphql.ExampleOperations;
 import io.mockhub.graphql.GraphQlEngine;
 import io.mockhub.graphql.GraphQlTransformer;
@@ -242,8 +244,10 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     AccessTokenService accessTokens = new AccessTokenService(new FileAccessTokenRepository(dataDir), users::find,
         id -> projectsRef.get().find(id).isPresent(), clock);
     GrpcCatalog grpc = new GrpcCatalog(new FileDescriptorStore(dataDir), id -> projectsRef.get().find(id).map(Project::name).orElse(null));
-    GrpcServerFactory grpcServer = new GrpcServerFactory(services.getStores().getBlobStore("grpc"), grpc::fileDescriptors);
-    grpc.onChange(grpcServer::loadFileDescriptors);
+    SecretBox secrets = SecretBox.of(config.secretKey, JsonFile.inDataDir(dataDir, "secret.key"));
+    TlsService tls = new TlsService(new TlsStore(dataDir, secrets));
+    MockHubServerFactory server = new MockHubServerFactory(services.getStores().getBlobStore("grpc"), grpc::fileDescriptors, tls::attach);
+    grpc.onChange(server::loadFileDescriptors);
     ProjectService projects = new ProjectService(new FileProjectRepository(dataDir),
         List.of(stubs, grpc, new ProjectDataCleaner(dataStore, bodyFiles), history, traffic, staged, accessTokens, new SnapshotCleanup(snapshotStore)), clock);
     projectsRef.set(projects);
@@ -252,7 +256,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     CalloutTargets calloutTargets = new CalloutTargets(new TargetGuard(config.calloutAllowPrivate, InetAddress::getAllByName, "MOCKHUB_CALLOUT_ALLOW_PRIVATE"),
         () -> port.get() > 0 ? port.get() : services.getOptions().portNumber(), config.publicUrl);
     ConnectionService connections = new ConnectionService(new FileConnectionRepository(dataDir),
-        SecretBox.of(config.secretKey, JsonFile.inDataDir(dataDir, "secret.key")),
+        secrets,
         new TokenClient(new JdkHttpSender(), url -> calloutTargets.resolve(url, null).uri()), clock);
     OrganizationService orgs = new OrganizationService(new FileOrganizationRepository(dataDir), List.of(projects, teams, users, datasets, connections), clock);
     projects.assignOrphans(orgs.ensureDefault().id());
@@ -351,6 +355,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
         new CalloutController(calloutLog),
         new GraphQlController(projects, graphQlExamples),
         new GrpcController(projects, grpc),
+        new TlsController(tls),
         new ImportExportController(projects, stubs, exporters, importers, urls, new WireMockArchiveImporter(bodyFiles)),
         new AiController(aiSettings, aiProviders, chat, assistant, assistantJobs, projects, urls, new BodyGenerator(aiSettings, chat)),
         new BackupController(new BackupService(orgs, teams, projects, gateway, dataStore, bodyFiles, datasets, connections, grpc, clock)),
@@ -388,7 +393,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     maintenance.scheduleWithFixedDelay(() -> safely(rateLimiter::prune), 10, 10, TimeUnit.MINUTES);
 
     List<Extension> extensions = new ArrayList<>(List.of(
-        grpcServer,
+        server,
         new GrpcRequestFilter(),
         publicTools,
         new InstantMockFilter(projectForPath, instantMocks),

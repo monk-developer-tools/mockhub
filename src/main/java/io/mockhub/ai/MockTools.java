@@ -84,11 +84,11 @@ public final class MockTools {
             .set("summary", str("What changes and why")), "id", "stub", "summary")));
     tools.add(tool("delete_stub", "Stage the deletion of a stub, or drop a staged new stub.",
         props(Jsons.object().<ObjectNode>set("id", str("Stub id or staged change id")).set("summary", str("Why it is removed")), "id", "summary")));
-    tools.add(tool("get_runtime", "Get the project's runtime behaviour, including a staged change: default response for unmatched calls, rate limit, latency, CORS and IP allow list.", Jsons.object()));
+    tools.add(tool("get_runtime", "Get the project's runtime behaviour, including a staged change: default response for unmatched calls, rate limit, latency, CORS, IP allow list and whether a client certificate is required.", Jsons.object()));
     ObjectNode runtimeSchema = Jsons.object().put("type", "object").put("description",
         "The complete runtime settings. Leave a section out or null to turn it off. defaultResponse {status, headers, body, templated}; "
             + "rateLimit {requests, per: second|minute|hour}; latency {mode: none|fixed|uniform|lognormal, fixedMs, minMs, maxMs, medianMs, sigma, load {afterRps, msPerRequest}}; "
-            + "cors {origins, methods, headers, credentials, simulateFailure}; ipAllowList [IP or CIDR].");
+            + "cors {origins, methods, headers, credentials, simulateFailure}; ipAllowList [IP or CIDR]; requireClientCert true to accept only HTTPS calls with a trusted client certificate.");
     tools.add(tool("set_runtime", "Stage new runtime behaviour for the whole project. Read get_runtime first and send the complete settings, not a patch. A single stub's rate limit goes in its metadata.mockhub.rateLimit instead.",
         props(Jsons.object().<ObjectNode>set("settings", runtimeSchema).set("summary", str("What changes and why")), "settings", "summary")));
     tools.add(tool("list_snapshots", "List the project's saved snapshots, newest first, with id, name, purpose, author, time and stub count.", Jsons.object()));

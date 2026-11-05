@@ -2,6 +2,7 @@
   <thead><tr><th>Variable</th><th>Default</th><th>Purpose</th></tr></thead>
   <tbody>
     <tr><td><code>PORT</code></td><td><code>8080</code></td><td>Port for UI, API and mocks</td></tr>
+    <tr><td><code>MOCKHUB_HTTPS_PORT</code></td><td>off</td><td>Also serve UI, API and mocks over HTTPS on this port. Certificates and client CAs are set on the Server page; see <a href="#mtls">HTTPS &amp; client certificates</a></td></tr>
     <tr><td><code>MOCKHUB_DATA_DIR</code></td><td><code>/data</code></td><td>Where projects and stubs are stored</td></tr>
     <tr><td><code>MOCKHUB_PUBLIC_URL</code></td><td>from the request</td><td>Public URL used in exports</td></tr>
     <tr><td><code>MOCKHUB_USERS</code></td><td>empty</td><td>Break-glass accounts with a server role, see <a href="#auth">Organisations &amp; roles</a></td></tr>

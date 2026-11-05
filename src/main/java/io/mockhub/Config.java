@@ -7,6 +7,7 @@ import java.util.Map;
 
 public final class Config {
   public final int port;
+  public final int httpsPort;
   public final Path dataDir;
   public final String publicUrl;
   public final int journalMaxEntries;
@@ -29,6 +30,8 @@ public final class Config {
 
   public Config(Map<String, String> env) {
     this.port = Integer.parseInt(env.getOrDefault("PORT", "8080"));
+    String https = env.getOrDefault("MOCKHUB_HTTPS_PORT", "").trim();
+    this.httpsPort = https.isEmpty() ? -1 : Integer.parseInt(https);
     this.dataDir = Path.of(env.getOrDefault("MOCKHUB_DATA_DIR", "./mockhub-data")).toAbsolutePath().normalize();
     this.publicUrl = trimTrailingSlash(env.getOrDefault("MOCKHUB_PUBLIC_URL", ""));
     this.journalMaxEntries = Integer.parseInt(env.getOrDefault("MOCKHUB_JOURNAL_MAX_ENTRIES", "5000"));

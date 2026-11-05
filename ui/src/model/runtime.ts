@@ -26,9 +26,10 @@ export interface RuntimeForm {
   corsHeaders: string;
   corsCredentials: boolean;
   ipAllowList: string;
+  requireClientCert: boolean;
 }
 
-export const EMPTY_RUNTIME: RuntimeSettings = { defaultResponse: null, rateLimit: null, latency: null, cors: null, ipAllowList: [] };
+export const EMPTY_RUNTIME: RuntimeSettings = { defaultResponse: null, rateLimit: null, latency: null, cors: null, ipAllowList: [], requireClientCert: false };
 
 const DEFAULT_BODY = '{\n  "error": "No mock matches {{request.method}} {{request.path}}"\n}';
 
@@ -63,6 +64,7 @@ export function toForm(settings: RuntimeSettings): RuntimeForm {
     corsHeaders: c?.headers.join(', ') ?? '',
     corsCredentials: c?.credentials ?? false,
     ipAllowList: settings.ipAllowList.join('\n'),
+    requireClientCert: settings.requireClientCert === true,
   };
 }
 
@@ -107,6 +109,7 @@ export function toSettings(form: RuntimeForm): RuntimeSettings {
           simulateFailure: form.corsMode === 'fail',
         },
     ipAllowList: lines(form.ipAllowList),
+    requireClientCert: form.requireClientCert,
   };
 }
 
@@ -116,6 +119,7 @@ export function runtimeSummary(settings: RuntimeSettings): string[] {
   if (settings.rateLimit) out.push(`${settings.rateLimit.requests} requests per ${settings.rateLimit.per}`);
   if (settings.latency) out.push(settings.latency.mode === 'none' ? 'Slower under load' : `${settings.latency.mode} delay`);
   if (settings.cors) out.push(settings.cors.simulateFailure ? 'CORS fails on purpose' : `CORS for ${settings.cors.origins.length} origin${settings.cors.origins.length === 1 ? '' : 's'}`);
+  if (settings.requireClientCert) out.push('Client certificate required');
   if (settings.ipAllowList.length) out.push(`${settings.ipAllowList.length} allowed IP range${settings.ipAllowList.length === 1 ? '' : 's'}`);
   return out;
 }

@@ -30,6 +30,15 @@ final class RuntimeResponses {
     return builder.build();
   }
 
+  static ResponseDefinition clientCertificateRequired(Map<String, String> cors) {
+    ResponseDefinitionBuilder builder = new ResponseDefinitionBuilder().withStatus(403)
+        .withHeader("Content-Type", "application/json")
+        .withBody(Jsons.write(Jsons.object().put("error",
+            "This mock needs a client certificate. Call it over HTTPS with a certificate signed by a CA trusted on the Server page")));
+    cors.forEach(builder::withHeader);
+    return builder.build();
+  }
+
   static ResponseDefinition preflight(Map<String, String> headers) {
     ResponseDefinitionBuilder builder = new ResponseDefinitionBuilder().withStatus(204);
     headers.forEach(builder::withHeader);

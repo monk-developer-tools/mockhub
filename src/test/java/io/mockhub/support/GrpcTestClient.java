@@ -6,6 +6,11 @@ import com.google.protobuf.DynamicMessage;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
 import io.grpc.CallOptions;
+import io.grpc.Channel;
+import io.grpc.ClientInterceptors;
+import io.grpc.Metadata;
+import io.grpc.stub.MetadataUtils;
+import java.util.Map;
 import io.grpc.ManagedChannel;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -46,9 +51,16 @@ public final class GrpcTestClient implements AutoCloseable {
   }
 
   public Reply unary(String service, String method, String requestJson) {
+    return unary(service, method, requestJson, Map.of());
+  }
+
+  public Reply unary(String service, String method, String requestJson, Map<String, String> metadata) {
     MethodDescriptor m = method(service, method);
+    Metadata headers = new Metadata();
+    metadata.forEach((k, v) -> headers.put(Metadata.Key.of(k, Metadata.ASCII_STRING_MARSHALLER), v));
+    Channel withHeaders = ClientInterceptors.intercept(channel, MetadataUtils.newAttachHeadersInterceptor(headers));
     try {
-      DynamicMessage reply = ClientCalls.blockingUnaryCall(channel, grpcMethod(m, io.grpc.MethodDescriptor.MethodType.UNARY), options(), message(m, requestJson));
+      DynamicMessage reply = ClientCalls.blockingUnaryCall(withHeaders, grpcMethod(m, io.grpc.MethodDescriptor.MethodType.UNARY), options(), message(m, requestJson));
       return new Reply("OK", JsonFormat.printer().print(reply), null);
     } catch (StatusRuntimeException e) {
       return new Reply(e.getStatus().getCode().name(), null, e.getStatus().getDescription());

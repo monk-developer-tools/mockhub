@@ -156,6 +156,9 @@ screenshots, and the [live demo](https://mockhub.devops-monk.com/__admin/mockhub
   calls each stub answered and when it was last called.
 - **Random failures.** Make a share of calls fail (say 10% with a 503, or a connection reset) to test retries.
 - **API keys.** Require a header such as `X-API-Key` on every call to a project, like the real service would. Only admins see or change the key.
+- **HTTPS and mutual TLS.** Set `MOCKHUB_HTTPS_PORT`, paste your certificate and key on the Server page, and trust
+  the CAs that sign your callers' certificates. Certificate changes apply without a restart. A project can require a
+  client certificate, and stubs see the caller's subject, issuer and fingerprint as headers that callers can't forge.
 - **Request history** per project, kept on disk for days: search by text, method, status, header, stub and time, a live traffic chart with request rates, HAR export, near misses for unmatched requests and *create stub from request*.
 - **CRUD resources with a data store.** One click gives you `/customers` with list (filter, sort, page), read,
   create, replace, patch and delete, backed by real stored records. A **Data** tab shows and edits the records, and
@@ -237,6 +240,7 @@ All configuration is through environment variables.
 | Variable | Default | Purpose |
 |---|---|---|
 | `PORT` | `8080` | HTTP port for UI, API and mocks |
+| `MOCKHUB_HTTPS_PORT` | off | Also serve UI, API and mocks over HTTPS on this port. Upload a certificate and trusted client CAs on the Server page. |
 | `MOCKHUB_DATA_DIR` | `/data` in Docker, `./mockhub-data` otherwise | Where projects, stubs and body files are stored. Mount a volume (EFS on ECS). |
 | `MOCKHUB_PUBLIC_URL` | taken from the request | The URL people use to reach MockHub, e.g. `https://mocks.acme.internal`. Used in exports. |
 | `MOCKHUB_USERS` | empty | Optional break-glass accounts: `user:password:role` entries separated by commas. Roles: `admin`, `editor`, `viewer` (server-wide). A password can be `sha256:<hex>`. |

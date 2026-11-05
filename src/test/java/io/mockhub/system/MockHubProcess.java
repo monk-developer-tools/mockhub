@@ -85,7 +85,7 @@ final class MockHubProcess implements AutoCloseable {
     return jar;
   }
 
-  private static int freePort() throws IOException {
+  static int freePort() throws IOException {
     try (ServerSocket socket = new ServerSocket(0)) {
       return socket.getLocalPort();
     }

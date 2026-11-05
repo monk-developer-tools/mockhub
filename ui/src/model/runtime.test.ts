@@ -11,6 +11,7 @@ describe('runtime form', () => {
       latency: { mode: 'uniform', minMs: 100, maxMs: 900, load: { afterRps: 4, msPerRequest: 25 } },
       cors: { origins: ['https://app.example'], methods: ['GET', 'POST'], headers: ['X-Trace'], credentials: true, simulateFailure: false },
       ipAllowList: ['10.0.0.0/8'],
+      requireClientCert: true,
     };
 
     // When
@@ -44,12 +45,12 @@ describe('runtime form', () => {
 
   it('describes the active settings in short phrases', () => {
     // Given
-    const settings: RuntimeSettings = { ...EMPTY_RUNTIME, rateLimit: { requests: 2, per: 'minute' }, cors: { origins: [], methods: [], headers: [], credentials: false, simulateFailure: true } };
+    const settings: RuntimeSettings = { ...EMPTY_RUNTIME, rateLimit: { requests: 2, per: 'minute' }, cors: { origins: [], methods: [], headers: [], credentials: false, simulateFailure: true }, requireClientCert: true };
 
     // When
     const summary = runtimeSummary(settings);
 
     // Then
-    expect(summary).toEqual(['2 requests per minute', 'CORS fails on purpose']);
+    expect(summary).toEqual(['2 requests per minute', 'CORS fails on purpose', 'Client certificate required']);
   });
 });

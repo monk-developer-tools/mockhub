@@ -15,6 +15,7 @@ class ConfigTest {
 
     // Then
     assertThat(config.port).isEqualTo(8080);
+    assertThat(config.httpsPort).isEqualTo(-1);
     assertThat(config.dataDir.toString()).endsWith("mockhub-data");
     assertThat(config.users).isEmpty();
     assertThat(config.stubCors).isTrue();
@@ -27,6 +28,7 @@ class ConfigTest {
     // Given
     Map<String, String> env = Map.of(
         "PORT", "9000",
+        "MOCKHUB_HTTPS_PORT", " 8443 ",
         "MOCKHUB_PUBLIC_URL", "https://mocks.acme.com/",
         "MOCKHUB_USERS", "alice:pw:admin, bob:pw2:viewer,carol:pw3",
         "WIREMOCK_OPTIONS", "--verbose  --async-response-enabled true");
@@ -36,6 +38,7 @@ class ConfigTest {
 
     // Then
     assertThat(config.port).isEqualTo(9000);
+    assertThat(config.httpsPort).isEqualTo(8443);
     assertThat(config.publicUrl).isEqualTo("https://mocks.acme.com");
     assertThat(config.users).extracting(Config.AuthUser::role).containsExactly("admin", "viewer", "admin");
     assertThat(config.extraWireMockArgs).containsExactly("--verbose", "--async-response-enabled", "true");

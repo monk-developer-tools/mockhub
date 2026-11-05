@@ -8,6 +8,7 @@ import com.github.tomakehurst.wiremock.http.Request;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
 import io.mockhub.project.Project;
+import io.mockhub.tls.ClientCertificates;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
@@ -42,6 +43,9 @@ public final class RuntimeFilter implements StubRequestFilterV2 {
     if (project.isEmpty()) return RequestFilterAction.continueWith(request);
     load.record(project.get().id());
     Map<String, String> corsHeaders = cors.forResponse(rules, origin);
+    if (settings.requireClientCert() && request.getHeader(ClientCertificates.SUBJECT) == null) {
+      return RequestFilterAction.stopWith(RuntimeResponses.clientCertificateRequired(corsHeaders));
+    }
     if (!settings.ipRules().allows(ClientAddress.of(request))) {
       return RequestFilterAction.stopWith(RuntimeResponses.forbiddenIp(ClientAddress.of(request), corsHeaders));
     }

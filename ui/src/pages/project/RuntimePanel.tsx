@@ -1,4 +1,4 @@
-import { ArrowUDownLeft, Gauge, Globe, ShieldCheck, Timer } from '@phosphor-icons/react';
+import { ArrowUDownLeft, Certificate, Gauge, Globe, ShieldCheck, Timer } from '@phosphor-icons/react';
 import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import { api } from '../../api/client';
@@ -179,6 +179,15 @@ export function RuntimePanel() {
             <span>Addresses and ranges <span className="hint">one per line, e.g. 10.0.0.0/8 or 2001:db8::/32</span></span>
             <textarea className="mono" rows={3} value={form.ipAllowList} onChange={(e) => set('ipAllowList', e.target.value)} />
           </label>
+        </Rule>
+
+        <Rule icon={<Certificate size={15} weight="duotone" />} title="Client certificate"
+          text="Only HTTPS calls with a certificate signed by a client CA trusted on the Server page get through; everyone else gets a 403."
+          on={form.requireClientCert} onToggle={(v) => set('requireClientCert', v)}>
+          <p className="muted small">
+            Stubs see who called in <span className="mono">X-MockHub-Client-Cert-Subject</span>, <span className="mono">-Issuer</span> and{' '}
+            <span className="mono">-Sha256</span>, so they can match on it or echo it with <span className="mono">{'{{request.headers.X-MockHub-Client-Cert-Subject}}'}</span>.
+          </p>
         </Rule>
       </fieldset>
       {canEdit && changed && (
