@@ -25,6 +25,11 @@ public final class Main {
     addDefault(finalArgs, userArgs, "--root-dir", config.dataDir.toString());
     if (config.httpsPort >= 0) addDefault(finalArgs, userArgs, "--https-port", String.valueOf(config.httpsPort));
     addDefault(finalArgs, userArgs, "--max-request-journal-entries", String.valueOf(config.journalMaxEntries));
+    if (config.proxyEnabled) {
+      config.proxyCaKeystore().getParent().toFile().mkdirs();
+      if (!userArgs.contains("--enable-browser-proxying")) finalArgs.add("--enable-browser-proxying");
+      addDefault(finalArgs, userArgs, "--ca-keystore", config.proxyCaKeystore().toString());
+    }
     if (!userArgs.contains("--disable-extensions-scanning")) {
       finalArgs.add("--disable-extensions-scanning");
     }
@@ -53,11 +58,12 @@ public final class Main {
     Runtime.getRuntime().addShutdownHook(new Thread(server::stop, "mockhub-shutdown"));
 
     System.out.printf(
-        "%nMockHub %s is running%n  UI:      http://localhost:%d/__admin/mockhub/ui/%n  Mocks:   http://localhost:%d/<project>/...%s%n  Data:    %s%n  Auth:    %s%n%n",
+        "%nMockHub %s is running%n  UI:      http://localhost:%d/__admin/mockhub/ui/%n  Mocks:   http://localhost:%d/<project>/...%s%s%n  Data:    %s%n  Auth:    %s%n%n",
         VERSION,
         server.port(),
         server.port(),
         server.isHttpsEnabled() ? String.format("%n  HTTPS:   https://localhost:%d/<project>/...", server.httpsPort()) : "",
+        config.proxyEnabled ? String.format("%n  Proxy:   http://localhost:%d (choose its project on the Server page)", server.port()) : "",
         options.filesRoot().getPath(),
         config.users.isEmpty() ? "users and SSO are managed in the UI" : config.users.size() + " user(s) from MOCKHUB_USERS");
   }

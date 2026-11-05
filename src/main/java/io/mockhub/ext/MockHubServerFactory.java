@@ -8,6 +8,8 @@ import com.github.tomakehurst.wiremock.jetty12.Jetty12HttpServer;
 import com.github.tomakehurst.wiremock.store.BlobStore;
 import com.google.protobuf.Descriptors.FileDescriptor;
 import io.mockhub.domain.CustomDomainFilter;
+import io.mockhub.proxy.ProxyCaptureFilter;
+import io.mockhub.proxy.ProxyService;
 import io.mockhub.tls.ClientCertFilter;
 import io.mockhub.tls.JettyTls;
 import io.mockhub.tls.TlsTarget;
@@ -27,13 +29,15 @@ public final class MockHubServerFactory extends Jetty12GrpcHttpServerFactory {
   private final Supplier<List<FileDescriptor>> descriptors;
   private final Consumer<TlsTarget> httpsReady;
   private final Function<String, Optional<String>> basePathForHost;
+  private final ProxyService proxy;
 
   public MockHubServerFactory(BlobStore unused, Supplier<List<FileDescriptor>> descriptors, Consumer<TlsTarget> httpsReady,
-      Function<String, Optional<String>> basePathForHost) {
+      Function<String, Optional<String>> basePathForHost, ProxyService proxy) {
     super(unused);
     this.descriptors = descriptors;
     this.httpsReady = httpsReady;
     this.basePathForHost = basePathForHost;
+    this.proxy = proxy;
   }
 
   @Override
@@ -53,6 +57,7 @@ public final class MockHubServerFactory extends Jetty12GrpcHttpServerFactory {
       protected void decorateMockServiceContextBeforeConfig(ServletContextHandler context) {
         grpcFilter = new GrpcFilter(stubRequestHandler);
         loadFileDescriptors();
+        context.addFilter(new FilterHolder(new ProxyCaptureFilter(proxy)), "/*", EnumSet.of(DispatcherType.REQUEST));
         context.addFilter(new FilterHolder(new CustomDomainFilter(basePathForHost)), "/*", EnumSet.of(DispatcherType.REQUEST));
         context.addFilter(new FilterHolder(new ClientCertFilter()), "/*", EnumSet.of(DispatcherType.REQUEST));
         context.addFilter(new FilterHolder(grpcFilter), "/*", EnumSet.of(DispatcherType.REQUEST));

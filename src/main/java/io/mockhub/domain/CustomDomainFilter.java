@@ -1,6 +1,7 @@
 package io.mockhub.domain;
 
 import io.mockhub.project.Domains;
+import io.mockhub.proxy.ProxyRequests;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpFilter;
@@ -27,7 +28,7 @@ public final class CustomDomainFilter extends HttpFilter {
 
   HttpServletRequest rebased(HttpServletRequest request) {
     String uri = request.getRequestURI();
-    if (uri == null || uri.equals(ADMIN) || uri.startsWith(ADMIN + "/") || isGrpc(request)) return request;
+    if (uri == null || uri.equals(ADMIN) || uri.startsWith(ADMIN + "/") || isGrpc(request) || ProxyRequests.isProxied(request)) return request;
     return Domains.hostOf(request.getHeader("Host"))
         .flatMap(basePathForHost)
         .filter(base -> !base.isEmpty())

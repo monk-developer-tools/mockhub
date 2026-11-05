@@ -139,6 +139,9 @@ screenshots, and the [live demo](https://mockhub.devops-monk.com/__admin/mockhub
 - **gRPC from a descriptor set.** Upload the output of `protoc --include_imports --descriptor_set_out` and MockHub
   serves those services over HTTP/2 on its port, with server reflection for grpcurl. Stubs match the request message
   as JSON and answer with a message written as JSON or with any gRPC status code.
+- **Forward proxy.** With `MOCKHUB_PROXY=true`, browsers, apps and phones can use MockHub as an HTTP and HTTPS proxy:
+  calls that match a stub get the mock, the rest go to the real service, and all of them are recorded in a chosen
+  project. Setup guides cover curl, browsers, macOS and Android.
 - **Custom domains.** Give a project host names like `payments.mocks.example.com` and it answers at the root of each,
   next to its base path. Docs include nginx and Caddy setups.
 - **Echo the request.** An "Echo request" response type, or the Echo server example at `/echo`, answers any call with

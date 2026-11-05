@@ -7,6 +7,7 @@ import { StubRoute } from '../components/StubRoute';
 import { useToast } from '../components/Toasts';
 import { useApp } from '../state/AppContext';
 import { PageHeader } from '../components/ui/PageHeader';
+import { ProxyPanel } from './ProxyPanel';
 import { TlsPanel } from './TlsPanel';
 
 export function ServerPage() {
@@ -130,6 +131,7 @@ export function ServerPage() {
             </div>
           )}
           {isAdmin && <TlsPanel />}
+          {isAdmin && <ProxyPanel />}
         </div>
 
         <div className="stack">

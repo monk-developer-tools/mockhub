@@ -30,6 +30,17 @@ public record IpAllowList(List<String> entries) {
     return new IpAllowList(out);
   }
 
+  public static IpAllowList ofText(String commaSeparated) {
+    List<String> out = new ArrayList<>();
+    for (String part : commaSeparated.split(",")) {
+      String entry = part.trim();
+      if (entry.isEmpty()) continue;
+      if (Range.parse(entry) == null) throw new IllegalArgumentException("'" + entry + "' isn't an IP address or CIDR range like 10.0.0.0/8");
+      out.add(entry);
+    }
+    return new IpAllowList(out);
+  }
+
   public boolean isEmpty() {
     return entries.isEmpty();
   }

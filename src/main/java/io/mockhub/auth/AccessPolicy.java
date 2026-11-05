@@ -17,7 +17,7 @@ public final class AccessPolicy {
   private static final Pattern DATASETS = Pattern.compile("/orgs/([^/]+)/datasets(/.*)?");
 
   private static final Set<String> PUBLIC_API =
-      Set.of("/auth/info", "/auth/login", "/auth/sso/exchange");
+      Set.of("/proxy/ca.pem", "/auth/info", "/auth/login", "/auth/sso/exchange");
   private static final Set<String> ANY_SIGNED_IN =
       Set.of("/auth/me", "/auth/password", "/auth/tokens", "/info", "/projects", "/orgs", "/examples", "/ai/status", "/fake/generate");
   private static final Set<String> SCOPED_TOKEN_READS = Set.of("/auth/me", "/info", "/projects", "/examples", "/ai/status");

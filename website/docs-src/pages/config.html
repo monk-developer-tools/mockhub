@@ -2,6 +2,8 @@
   <thead><tr><th>Variable</th><th>Default</th><th>Purpose</th></tr></thead>
   <tbody>
     <tr><td><code>PORT</code></td><td><code>8080</code></td><td>Port for UI, API and mocks</td></tr>
+    <tr><td><code>MOCKHUB_PROXY</code></td><td><code>false</code></td><td>Also act as an HTTP and HTTPS forward proxy on the main port, reading HTTPS with a MockHub CA; see <a href="#forward-proxy">Forward proxy</a></td></tr>
+    <tr><td><code>MOCKHUB_PROXY_ALLOW</code></td><td>loopback and private networks</td><td>Comma-separated IP addresses or CIDR ranges allowed to use the forward proxy</td></tr>
     <tr><td><code>MOCKHUB_HTTPS_PORT</code></td><td>off</td><td>Also serve UI, API and mocks over HTTPS on this port. Certificates and client CAs are set on the Server page; see <a href="#mtls">HTTPS &amp; client certificates</a></td></tr>
     <tr><td><code>MOCKHUB_DATA_DIR</code></td><td><code>/data</code></td><td>Where projects and stubs are stored</td></tr>
     <tr><td><code>MOCKHUB_PUBLIC_URL</code></td><td>from the request</td><td>Public URL used in exports</td></tr>

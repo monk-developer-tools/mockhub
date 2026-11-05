@@ -1,0 +1,51 @@
+<p>Set MockHub as the proxy of a browser, an app, a phone or a test run. Calls that match a stub in the chosen project get the mock answer. Every other call goes on to the real service, and all of them are recorded in that project, so you can turn any real answer into a stub with one click. HTTPS works too: MockHub reads it with its own certificate authority (CA), which you trust on the client.</p>
+
+<h3 id="proxy-on">Turn it on</h3>
+<pre><code>docker run -p 8080:8080 -e MOCKHUB_PROXY=true -v mockhub-data:/data mockhub/mockhub</code></pre>
+<p>The proxy uses the main port, so the client's proxy is <code>http://&lt;mockhub-host&gt;:8080</code>. Then, as an admin, open <strong>Server</strong>, find <strong>Forward proxy</strong> and choose the project for proxied traffic. Until you do, proxied calls get <code>503</code>.</p>
+<table>
+  <thead><tr><th>Rule</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr><td>Only trusted networks</td><td>By default only loopback and private addresses (10.x, 172.16–31.x, 192.168.x, fc00::/7) may use the proxy; others get <code>403</code>. Set <code>MOCKHUB_PROXY_ALLOW</code> to a comma-separated list of addresses or CIDR ranges to change it. Don't open the proxy to the internet.</td></tr>
+    <tr><td>Connect to MockHub directly</td><td>A reverse proxy such as nginx in front of MockHub doesn't pass proxy requests on. Give clients MockHub's own port, for example on your LAN or through a VPN.</td></tr>
+    <tr><td>Stubs match the path, any host</td><td>A proxied call to <code>https://api.example.com/users/42</code> is matched as <code>/users/42</code> in the chosen project. To mock only one host, add a <code>Host</code> header rule to the stub.</td></tr>
+    <tr><td>The CA stays the same</td><td>MockHub creates it on first start and keeps it in <code>/data/mockhub/proxy</code>, so clients trust it once.</td></tr>
+  </tbody>
+</table>
+<p>In the request log, proxied calls show with the project's base path in front, like <code>/captured/users/42</code>. Open one and choose <strong>Create stub from this request</strong> to mock it from then on.</p>
+
+<h3 id="proxy-ca">Trust the CA certificate</h3>
+<p>Download it from <strong>Server → Forward proxy → Download CA certificate</strong>, or without signing in:</p>
+<pre><code>curl -o mockhub-proxy-ca.pem http://&lt;mockhub-host&gt;:8080/__admin/mockhub/api/proxy/ca.pem</code></pre>
+<p>Anyone who has the CA's private key could read the traffic of a device that trusts it. Trust it only on test devices and remove it when you're done.</p>
+
+<h3 id="proxy-curl">curl and command-line tools</h3>
+<pre><code>curl -x http://localhost:8080 --cacert mockhub-proxy-ca.pem https://api.example.com/users/42
+
+export HTTP_PROXY=http://localhost:8080 HTTPS_PROXY=http://localhost:8080</code></pre>
+<p>Most tools read <code>HTTP_PROXY</code> and <code>HTTPS_PROXY</code>. Node.js needs <code>NODE_EXTRA_CA_CERTS=mockhub-proxy-ca.pem</code>, Python requests <code>REQUESTS_CA_BUNDLE</code>, and Java the CA imported with <code>keytool -importcert -alias mockhub -file mockhub-proxy-ca.pem -keystore truststore.jks</code> plus <code>-Dhttps.proxyHost=localhost -Dhttps.proxyPort=8080</code>.</p>
+
+<h3 id="proxy-browser">Browsers</h3>
+<ul>
+  <li><strong>Firefox</strong>: Settings → Network Settings → Manual proxy configuration, HTTP proxy <code>localhost</code> port <code>8080</code>, and tick "Also use this proxy for HTTPS". Import the CA under Settings → Privacy &amp; Security → Certificates → View Certificates → Authorities, and trust it to identify websites. Firefox keeps its own trust store, so this doesn't touch the rest of the system.</li>
+  <li><strong>Chrome and Edge</strong> use the system proxy and trust store; set them up as for macOS or Windows. To keep it separate, start a profile with <code>--proxy-server=http://localhost:8080</code>.</li>
+</ul>
+
+<h3 id="proxy-macos">macOS</h3>
+<ol>
+  <li>System Settings → Network → your network → Details → Proxies: turn on <strong>Web proxy (HTTP)</strong> and <strong>Secure web proxy (HTTPS)</strong>, both <code>localhost</code> port <code>8080</code>.</li>
+  <li>Double-click <code>mockhub-proxy-ca.pem</code> to add it to Keychain Access, open it, and under <strong>Trust</strong> set "When using this certificate" to <strong>Always Trust</strong>.</li>
+</ol>
+
+<h3 id="proxy-android">Android</h3>
+<ol>
+  <li>Settings → Network → Wi-Fi → your network → Edit → Advanced → Proxy: <strong>Manual</strong>, host the computer running MockHub, port <code>8080</code>. Phone and computer must be on the same network, and the phone's address must be allowed by <code>MOCKHUB_PROXY_ALLOW</code> (private networks are by default).</li>
+  <li>Copy <code>mockhub-proxy-ca.pem</code> to the phone and install it under Settings → Security → Encryption &amp; credentials → Install a certificate → CA certificate.</li>
+  <li>Browsers then trust it. Apps on Android 7 and later trust user-installed CAs only when their <code>network_security_config</code> allows it, which you can add to debug builds of your own app:</li>
+</ol>
+<pre><code>&lt;network-security-config&gt;
+  &lt;debug-overrides&gt;
+    &lt;trust-anchors&gt;&lt;certificates src="user" /&gt;&lt;/trust-anchors&gt;
+  &lt;/debug-overrides&gt;
+&lt;/network-security-config&gt;</code></pre>
+<p>Apps that pin certificates don't accept any proxy CA.</p>

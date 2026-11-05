@@ -696,8 +696,8 @@ Checklist:
 - [x] Echo template (`mockhub-echo` transformer shared with the public echo tool: method, project-relative path, query, headers without proxy headers, body, parsed JSON and form fields, 1 MB limit, stub status, headers and delays kept; "Echo request" response type in the editor; Echo server example installed at `/echo`)
 - [x] Custom domains (`domains` on a project, up to 10 host names, validated and unique across projects; a servlet filter rebases requests whose Host matches, before WireMock sees them, so matching, templates, the request log and runtime rules work unchanged; base path still works; `/__admin` and gRPC untouched; Custom domains panel in project settings; backups keep names not taken by another project; docs with nginx and Caddy)
 - [x] Mock these APIs button (`POST /openapi/fetch` downloads an OpenAPI URL for editors, 5 MB, 20 s, 3 redirects, private addresses refused on every hop unless `MOCKHUB_PLAYGROUND_ALLOW_PRIVATE`; the `mock-these-apis?openapi=` page previews it and creates a project with its stubs; Link, Markdown and HTML snippets with a public SVG badge; sidebar and command palette entries)
-- [ ] Forward proxy with interception
-- [ ] Tests, docs
+- [x] Forward proxy with interception (`MOCKHUB_PROXY=true` turns on WireMock browser proxying on the main port with a CA keystore kept in `/data/mockhub/proxy`; the jar manifest exports `sun.security.x509` so certificates can be generated; a servlet filter refuses clients outside `MOCKHUB_PROXY_ALLOW` (loopback and private by default) and rebases proxied calls into the project chosen on the Server page, so stubs answer and misses are forwarded to the real service and recorded; public `proxy/ca.pem`; Forward proxy panel with CA download and setup commands; docs for curl, browsers, macOS and Android. The plan's separate port became the main port, which is how WireMock serves it)
+- [x] Tests, docs (unit, integration and system tests for each item; docs pages for echo, custom domains and the forward proxy; import docs for Mock these APIs)
 
 ### Phase F12 — Local tunnel
 

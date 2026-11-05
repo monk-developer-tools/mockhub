@@ -377,6 +377,26 @@ class MockHubSystemTest {
   }
 
   @Test
+  void theJarGeneratesTheForwardProxyCaAndKeepsItAcrossRestarts() throws Exception {
+    // Given
+    Map<String, String> env = Map.of("MOCKHUB_USERS", "lead:s3cret:admin", "MOCKHUB_PROXY", "true");
+    String first;
+    try (MockHubProcess hub = MockHubProcess.start(data, env)) {
+      first = sendAnonymously(hub, API + "/proxy/ca.pem").body();
+    }
+
+    // When
+    try (MockHubProcess restarted = MockHubProcess.start(data, env)) {
+      HttpResponse<String> again = sendAnonymously(restarted, API + "/proxy/ca.pem");
+
+      // Then
+      assertThat(first).startsWith("-----BEGIN CERTIFICATE-----");
+      assertThat(again.statusCode()).isEqualTo(200);
+      assertThat(again.body()).isEqualTo(first);
+    }
+  }
+
+  @Test
   void servesTheMockTheseApisBadgeWithoutSignIn() throws Exception {
     try (MockHubProcess hub = MockHubProcess.start(data, AUTH_ENV)) {
       // When

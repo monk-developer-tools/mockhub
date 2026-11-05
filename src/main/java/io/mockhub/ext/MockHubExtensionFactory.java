@@ -144,6 +144,9 @@ import io.mockhub.controller.DataController;
 import io.mockhub.controller.FilesController;
 import io.mockhub.controller.BaseUrls;
 import io.mockhub.controller.ExampleController;
+import io.mockhub.runtime.IpAllowList;
+import io.mockhub.controller.ProxyController;
+import io.mockhub.proxy.ProxyService;
 import io.mockhub.controller.OpenApiLinkController;
 import io.mockhub.importer.SpecFetcher;
 import io.mockhub.controller.ImportExportController;
@@ -249,11 +252,13 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     GrpcCatalog grpc = new GrpcCatalog(new FileDescriptorStore(dataDir), id -> projectsRef.get().find(id).map(Project::name).orElse(null));
     SecretBox secrets = SecretBox.of(config.secretKey, JsonFile.inDataDir(dataDir, "secret.key"));
     TlsService tls = new TlsService(new TlsStore(dataDir, secrets));
+    ProxyService proxy = new ProxyService(config.proxyEnabled, IpAllowList.ofText(config.proxyAllow), config.proxyCaKeystore(),
+        id -> projectsRef.get().find(id));
     MockHubServerFactory server = new MockHubServerFactory(services.getStores().getBlobStore("grpc"), grpc::fileDescriptors, tls::attach,
-        host -> projectsRef.get().findForHost(host).map(Project::basePath));
+        host -> projectsRef.get().findForHost(host).map(Project::basePath), proxy);
     grpc.onChange(server::loadFileDescriptors);
     ProjectService projects = new ProjectService(new FileProjectRepository(dataDir),
-        List.of(stubs, grpc, new ProjectDataCleaner(dataStore, bodyFiles), history, traffic, staged, accessTokens, new SnapshotCleanup(snapshotStore)), clock);
+        List.of(stubs, grpc, new ProjectDataCleaner(dataStore, bodyFiles), history, traffic, staged, accessTokens, new SnapshotCleanup(snapshotStore), proxy), clock);
     projectsRef.set(projects);
     TeamService teams = new TeamService(new FileTeamRepository(dataDir), List.of(users), clock);
     DatasetService datasets = new DatasetService(new FileDatasetRepository(dataDir), DatasetService.Limits.DEFAULT, clock);
@@ -360,6 +365,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
         new GraphQlController(projects, graphQlExamples),
         new GrpcController(projects, grpc),
         new TlsController(tls),
+        new ProxyController(proxy),
         new ImportExportController(projects, stubs, exporters, importers, urls, new WireMockArchiveImporter(bodyFiles)),
         new OpenApiLinkController(new SpecFetcher(new JdkHttpSender(), new TargetGuard(config.playgroundAllowPrivate, InetAddress::getAllByName)), importers),
         new AiController(aiSettings, aiProviders, chat, assistant, assistantJobs, projects, urls, new BodyGenerator(aiSettings, chat)),

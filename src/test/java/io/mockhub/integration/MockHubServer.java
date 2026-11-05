@@ -42,6 +42,10 @@ final class MockHubServer implements AutoCloseable {
         .withRootDirectory(dataDir.toString())
         .extensions(factory);
     if (https) options.dynamicHttpsPort();
+    if (config.proxyEnabled) {
+      config.proxyCaKeystore().getParent().toFile().mkdirs();
+      options.enableBrowserProxying(true).caKeystorePath(config.proxyCaKeystore().toString());
+    }
     WireMockServer server = new WireMockServer(options);
     server.start();
     factory.serverStarted(server.port());

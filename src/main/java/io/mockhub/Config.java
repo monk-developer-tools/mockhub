@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 public final class Config {
+  public static final String DEFAULT_PROXY_ALLOW = "127.0.0.0/8,::1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fc00::/7";
   public final int port;
   public final int httpsPort;
   public final Path dataDir;
@@ -27,6 +28,8 @@ public final class Config {
   public final boolean publicTools;
   public final int maxRecords;
   public final String secretKey;
+  public final boolean proxyEnabled;
+  public final String proxyAllow;
 
   public Config(Map<String, String> env) {
     this.port = Integer.parseInt(env.getOrDefault("PORT", "8080"));
@@ -51,6 +54,12 @@ public final class Config {
     this.publicTools = Boolean.parseBoolean(env.getOrDefault("MOCKHUB_PUBLIC_TOOLS", "false"));
     this.maxRecords = Math.max(0, Integer.parseInt(env.getOrDefault("MOCKHUB_MAX_RECORDS", "10000")));
     this.secretKey = env.getOrDefault("MOCKHUB_SECRET_KEY", "");
+    this.proxyEnabled = Boolean.parseBoolean(env.getOrDefault("MOCKHUB_PROXY", "false"));
+    this.proxyAllow = env.getOrDefault("MOCKHUB_PROXY_ALLOW", DEFAULT_PROXY_ALLOW);
+  }
+
+  public Path proxyCaKeystore() {
+    return dataDir.resolve("mockhub").resolve("proxy").resolve("ca-keystore.jks");
   }
 
   private static String trimTrailingSlash(String s) {

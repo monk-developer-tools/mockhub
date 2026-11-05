@@ -1,6 +1,7 @@
 import type { GraphqlOperation } from '../model/graphql';
 import type { GrpcCatalog } from '../model/grpc';
 import type { TlsView } from '../model/tls';
+import type { ProxyView } from '../model/proxy';
 import type {
   AccessToken,
   FetchedSpec,
@@ -223,6 +224,8 @@ export const api = {
     }),
   deleteGrpcDescriptor: (projectId: string, name: string) =>
     request<void>(`${API}/projects/${projectId}/grpc/descriptors?name=${encodeURIComponent(name)}`, { method: 'DELETE' }),
+  proxy: () => request<ProxyView>(`${API}/proxy`),
+  setProxyProject: (projectId: string | null) => request<ProxyView>(`${API}/proxy`, { method: 'PUT', body: json({ projectId }) }),
   tls: () => request<TlsView>(`${API}/tls`),
   setServerCertificate: (pem: string) => request<TlsView>(`${API}/tls/server`, { method: 'PUT', body: json({ pem }) }),
   clearServerCertificate: () => request<TlsView>(`${API}/tls/server`, { method: 'DELETE' }),
