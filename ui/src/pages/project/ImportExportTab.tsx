@@ -37,6 +37,7 @@ export function ImportExportTab() {
   const [format, setFormat] = useState(IMPORTS[0].format);
   const [path, setPath] = useState('');
   const [stripPrefix, setStripPrefix] = useState('');
+  const [keepContract, setKeepContract] = useState(true);
   const [pasted, setPasted] = useState('');
   const [result, setResult] = useState<string>('');
   const [filesVersion, setFilesVersion] = useState(0);
@@ -47,9 +48,13 @@ export function ImportExportTab() {
     if ((format === 'wsdl' || format === 'graphql' || format === 'soap') && path) options.path = path;
     if ((format === 'graphql' || format === 'soap') && fileName !== PASTED) options.name = fileName.replace(/\.[^.]+$/, '');
     if (format === 'openapi' && stripPrefix) options.stripPrefix = stripPrefix;
+    if (format === 'openapi' && keepContract) {
+      options.contract = 'true';
+      if (fileName !== PASTED) options.fileName = fileName;
+    }
     try {
       const r = await api.importInto(project.id, format, text, options);
-      setResult(`Imported ${r.imported} stub${r.imported === 1 ? '' : 's'} from ${fileName}.`);
+      setResult(`Imported ${r.imported} stub${r.imported === 1 ? '' : 's'} from ${fileName}.${r.contract === true ? ' It is now the contract that traffic is checked against.' : ''}`);
       toast.notify(`Imported ${r.imported} stubs`);
       reloadProject();
       refreshProjects();
@@ -138,6 +143,12 @@ export function ImportExportTab() {
                 <label className="field">
                   <span>Strip path prefix <span className="hint">optional, e.g. /api/v1</span></span>
                   <input type="text" className="mono" value={stripPrefix} onChange={(e) => setStripPrefix(e.target.value)} />
+                </label>
+              )}
+              {format === 'openapi' && (
+                <label className="check">
+                  <input type="checkbox" checked={keepContract} onChange={(e) => setKeepContract(e.target.checked)} /> Keep it as the project's contract and
+                  check traffic against it
                 </label>
               )}
               {format === 'wiremock-zip' && !project.root && (

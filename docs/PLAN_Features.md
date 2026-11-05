@@ -54,7 +54,7 @@ Legend: ✅ have it · 🟡 partial · ❌ missing
 | Mock server security (required header) | Project API key header (401) and IP allow list (403) | ✅ | — |
 | AI rules generator | AI assistant with staged diffs | ✅ | — |
 | Agentic mode (MCP) | MCP server with 22 tools, direct or review tokens, audited | ✅ | — |
-| Contract drift detection | Missing | ❌ | F13 |
+| Contract drift detection | OpenAPI contract per project, drift findings, AI patch and webhook | ✅ | F13 |
 | Live traffic (RPS) | Traffic chart 5m–24h and 30 days, average and peak RPS, drag to select | ✅ | — |
 | Test data editor for OpenAPI mocks | Edit generated stubs by hand, AI body generator | 🟡 | F8 |
 | HTTP echo server | Missing as a built-in | ❌ | F11 |
@@ -728,11 +728,11 @@ Goal: show where real or mocked traffic disagrees with an OpenAPI contract.
 - Optional e-mail or webhook notification for new drift.
 
 Checklist:
-- [ ] Spec storage and validator
-- [ ] Drift detection job and findings API
-- [ ] Drift page and AI patch
-- [ ] Notifications
-- [ ] Tests, docs
+- [x] Spec storage and validator (`contract.json` per project with source, file name, author and an optional prefix the traffic leaves out; PUT, download as JSON or YAML, delete; OpenAPI 3.0, 3.1 and Swagger 2 up to 5 MB; an OpenAPI import with `contract=true` keeps the document; operations matched with literal paths before templates and with the server path optional; parameters, bodies and responses checked with the networknt JSON Schema validator WireMock already ships, following `$ref` and `nullable`)
+- [x] Drift detection job and findings API (every 5 minutes, and on demand, over history recorded since the last check; 13 kinds of finding grouped by kind, method, path template and detail with counts, first and last seen and the latest example; up to 500 per project; expected marks kept across rechecks and new versions; viewers can check, editors change)
+- [x] Drift page and AI patch (Contract tab with open, expected and all filters, links to the calls in the request log, mark expected and reopen; the assistant gets the chosen findings, up to five example calls and the touched paths and schemas, and answers with an RFC 6902 patch limited to add, replace and remove, applied to a copy and shown as a diff before Apply saves it and rechecks)
+- [x] Notifications (a per-contract webhook gets a `contract.drift` POST for new findings that aren't marked expected, through the callout address rules; the last failure shows on the tab. E-mail isn't built: MockHub has no mail settings, so it's left out)
+- [x] Tests, docs (unit tests for the checker, schema dialects, JSON Patch, the drift service and the patcher; integration tests for drift, expected marks, import with and without a prefix, the webhook, the AI patch round trip and permissions; Contract drift docs page)
 
 ## 3. Order and size
 

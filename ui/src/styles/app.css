@@ -5312,3 +5312,43 @@ button.map-node:hover,
 .connection-test.failed {
   color: var(--danger);
 }
+
+.drift-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+}
+
+.drift-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 8px 12px;
+}
+
+.drift-list li + li {
+  border-top: 1px solid var(--line);
+}
+
+.drift-list li.expired,
+.drift-list li.expected {
+  opacity: 0.65;
+}
+
+.drift-list .route {
+  min-width: 0;
+}
+
+.drift-list .drift-detail {
+  flex: 1 1 260px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--text-2, inherit);
+}
+
+.drift-list .btn-row {
+  margin-left: auto;
+}

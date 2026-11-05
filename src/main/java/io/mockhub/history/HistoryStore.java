@@ -106,6 +106,19 @@ public final class HistoryStore implements ProjectListener, AutoCloseable {
         new HistoryPage.Facets(sorted(methods), sorted(statuses), counts[1], counts[2], topStubs));
   }
 
+  public int each(String projectId, long after, java.util.function.Consumer<HistoryEntry> visitor) {
+    flush();
+    int[] visited = {0};
+    requests.scanNewestFirst(projectId, after + 1, Long.MAX_VALUE, MAX_SCAN, e -> {
+      if (e.at() > after) {
+        visited[0]++;
+        visitor.accept(e);
+      }
+      return true;
+    });
+    return visited[0];
+  }
+
   public Optional<HistoryEntry> get(String projectId, String id) {
     flush();
     HistoryEntry[] found = new HistoryEntry[1];

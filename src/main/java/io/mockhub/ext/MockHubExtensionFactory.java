@@ -29,6 +29,11 @@ import io.mockhub.callout.CalloutTargets;
 import io.mockhub.history.HistoryCalloutLog;
 import io.mockhub.history.HistoryRecorder;
 import io.mockhub.history.HistoryStore;
+import io.mockhub.contract.ContractPatcher;
+import io.mockhub.contract.ContractStore;
+import io.mockhub.contract.DriftNotifier;
+import io.mockhub.contract.DriftService;
+import io.mockhub.controller.ContractController;
 import io.mockhub.history.TrafficCounters;
 import io.mockhub.controller.ConnectionController;
 import io.mockhub.controller.DatasetController;
@@ -272,8 +277,10 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     MockHubServerFactory server = new MockHubServerFactory(services.getStores().getBlobStore("grpc"), grpc::fileDescriptors, tls::attach,
         host -> projectsRef.get().findForHost(host).map(Project::basePath), proxy, tunnelServlet);
     grpc.onChange(server::loadFileDescriptors);
+    ContractStore contracts = new ContractStore(dataDir);
     ProjectService projects = new ProjectService(new FileProjectRepository(dataDir),
-        List.of(stubs, grpc, new ProjectDataCleaner(dataStore, bodyFiles), history, traffic, staged, accessTokens, new SnapshotCleanup(snapshotStore), proxy), clock);
+        List.of(stubs, grpc, new ProjectDataCleaner(dataStore, bodyFiles), history, traffic, staged, accessTokens, new SnapshotCleanup(snapshotStore), proxy,
+            contracts), clock);
     projectsRef.set(projects);
     TeamService teams = new TeamService(new FileTeamRepository(dataDir), List.of(users), clock);
     DatasetService datasets = new DatasetService(new FileDatasetRepository(dataDir), DatasetService.Limits.DEFAULT, clock);
@@ -308,6 +315,11 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     maintenance.scheduleWithFixedDelay(() -> safely(history::prune), 1, 30, TimeUnit.MINUTES);
     maintenance.scheduleWithFixedDelay(() -> safely(traffic::save), 1, 1, TimeUnit.MINUTES);
     maintenance.scheduleWithFixedDelay(() -> safely(accessTokens::flushUse), 1, 1, TimeUnit.MINUTES);
+    DriftService drift = new DriftService(contracts, history, projects::find,
+        new DriftNotifier(new JdkHttpSender(), new TargetGuard(config.calloutAllowPrivate, InetAddress::getAllByName, "MOCKHUB_CALLOUT_ALLOW_PRIVATE")),
+        p -> config.publicUrl == null || config.publicUrl.isBlank() ? null
+            : config.publicUrl.replaceAll("/+$", "") + "/__admin/mockhub/ui/projects/" + p.id() + "/contract", clock);
+    maintenance.scheduleWithFixedDelay(() -> safely(drift::checkAll), 2, 5, TimeUnit.MINUTES);
     Runtime.getRuntime().addShutdownHook(new Thread(() -> {
       traffic.save();
       history.close();
@@ -383,7 +395,8 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
         new TlsController(tls),
         new ProxyController(proxy),
         new TunnelController(tunnels),
-        new ImportExportController(projects, stubs, exporters, importers, urls, new WireMockArchiveImporter(bodyFiles)),
+        new ImportExportController(projects, stubs, exporters, importers, urls, new WireMockArchiveImporter(bodyFiles), drift),
+        new ContractController(projects, drift, new ContractPatcher(aiSettings, chat, history::get)),
         new OpenApiLinkController(new SpecFetcher(new JdkHttpSender(), new TargetGuard(config.playgroundAllowPrivate, InetAddress::getAllByName)), importers),
         new AiController(aiSettings, aiProviders, chat, assistant, assistantJobs, projects, urls, new BodyGenerator(aiSettings, chat)),
         new BackupController(new BackupService(orgs, teams, projects, gateway, dataStore, bodyFiles, datasets, connections, grpc, clock)),

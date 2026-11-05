@@ -6,6 +6,7 @@ import { ToastProvider } from './components/Toasts';
 import { DashboardPage } from './pages/DashboardPage';
 import { ExamplesPage } from './pages/ExamplesPage';
 import { LoginPage } from './pages/LoginPage';
+import { ContractTab } from './pages/project/ContractTab';
 import { ImportExportTab } from './pages/project/ImportExportTab';
 import { SnapshotsTab } from './pages/project/snapshots/SnapshotsTab';
 import { OverviewTab } from './pages/project/OverviewTab';
@@ -65,6 +66,7 @@ const router = createBrowserRouter(
             { path: 'requests', element: <RequestsTab /> },
             { path: 'callouts', element: <CalloutsTab /> },
             { path: 'scenarios', element: <ScenariosTab /> },
+            { path: 'contract', element: <ContractTab /> },
             { path: 'import-export', element: <ImportExportTab /> },
             { path: 'snapshots', element: <SnapshotsTab /> },
             { path: 'activity', element: <ActivityTab /> },

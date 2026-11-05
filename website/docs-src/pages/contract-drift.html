@@ -1,0 +1,70 @@
+<p>Attach a project's OpenAPI document and MockHub compares every recorded call with it. Where traffic and contract disagree (a path the contract doesn't have, a missing required header, a response body that doesn't fit its schema), the <strong>Contract</strong> tab shows it, grouped, with how often it happened and an example call. Use it to keep mocks honest, or put MockHub in front of a real service with a <a href="#proxy">proxy stub</a> and see where the service has drifted from its own documentation.</p>
+
+<h3 id="drift-attach">Attach a contract</h3>
+<ul>
+  <li><strong>When you import</strong>: in <strong>Import &amp; export</strong>, pick OpenAPI / Swagger and leave <strong>Keep it as the project's contract</strong> ticked.</li>
+  <li><strong>On the Contract tab</strong>: upload a <code>.json</code>, <code>.yaml</code> or <code>.yml</code> file, paste it, or give the URL of the document.</li>
+</ul>
+<p>OpenAPI 3.0, 3.1 and Swagger 2 are supported, up to 5 MB. Paths are matched with and without the path of the first server URL (or Swagger's <code>basePath</code>), so <code>/v1/orders</code> and <code>/orders</code> both match a contract served from <code>https://api.example.com/v1</code>. If calls arrive without a prefix the contract's paths have, such as <code>/api/v1</code>, fill in <strong>Prefix the traffic leaves out</strong>; an import that strips a prefix keeps it there for you.</p>
+
+<h3 id="drift-checks">What is checked</h3>
+<table>
+  <thead><tr><th>Finding</th><th>When</th></tr></thead>
+  <tbody>
+    <tr><td>Path not in the contract</td><td>No path template matches. Numbers, UUIDs and long hex ids in the path are shown as <code>{id}</code> so the same route groups together.</td></tr>
+    <tr><td>Method not in the contract</td><td>The path exists but not for this method. <code>OPTIONS</code> preflights are ignored.</td></tr>
+    <tr><td>Query parameter not in the contract</td><td>A query parameter the operation doesn't list.</td></tr>
+    <tr><td>Header not in the contract</td><td>A custom <code>X-</code> request header the operation doesn't list. Proxy and tracing headers such as <code>X-Forwarded-For</code>, <code>X-Request-Id</code> and <code>X-B3-*</code> are ignored, and so are API key headers from the security schemes.</td></tr>
+    <tr><td>Required parameter missing</td><td>A required query, header or path parameter is absent.</td></tr>
+    <tr><td>Parameter doesn't match its schema</td><td>A query, header or path value has the wrong type, is out of range or isn't in its enum.</td></tr>
+    <tr><td>Request body problems</td><td>A body the operation doesn't describe, a missing required body, a content type it doesn't list, or a JSON body that doesn't fit its schema.</td></tr>
+    <tr><td>Status code not in the contract</td><td>The answer's status isn't listed, nor its range (<code>4XX</code>) nor <code>default</code>.</td></tr>
+    <tr><td>Response content type and body</td><td>A content type the response doesn't list, a body where the contract describes none, or a JSON body that doesn't fit its schema.</td></tr>
+  </tbody>
+</table>
+<p>Schemas are checked with JSON Schema, following <code>$ref</code>s to <code>components/schemas</code> (or <code>definitions</code>) and OpenAPI's <code>nullable</code>. Each schema problem is its own finding, such as <code>200 $.total: string found, number expected</code>, with array positions written as <code>[*]</code> so they group. Response checks only apply to calls a stub answered, including proxy stubs that pass the call to a real service; MockHub's own "no stub matched" answers are skipped. Bodies over 64 KB are only partly recorded, so their schema isn't checked.</p>
+
+<h3 id="drift-tab">The Contract tab</h3>
+<ul>
+  <li>Checks run every 5 minutes on traffic recorded since the last check. <strong>Check now</strong> runs one at once; <strong>Recheck all</strong> forgets the findings and checks all recorded traffic again (up to the last 200,000 calls in your <a href="#requests">history retention</a>).</li>
+  <li>Each finding shows how many calls had it, when it was first and last seen, and a link to those calls in the request log.</li>
+  <li><strong>Mark expected</strong> moves a finding out of the open list and stops notifications for it. Marks are kept when you recheck or replace the contract; <strong>Reopen</strong> brings it back.</li>
+  <li>Up to 500 different findings are kept per project. After that, new kinds are ignored until you recheck.</li>
+  <li><strong>Download</strong> gives the stored contract as YAML. <strong>Replace</strong> attaches a new version and checks all traffic against it.</li>
+</ul>
+<p>Viewers can see findings and run <strong>Check now</strong>. Attaching, replacing, marking and patching need the editor role.</p>
+
+<h3 id="drift-patch">Fix the contract with the assistant</h3>
+<p>With the <a href="#ai">AI assistant</a> turned on, tick the findings that the contract should accept (or none, for all open ones) and choose <strong>Suggest a patch</strong>. MockHub sends the findings, up to five example calls and the parts of the contract they touch, and asks for the smallest JSON Patch that documents them. The result is applied to a copy and shown as a diff. Nothing changes until you choose <strong>Apply to the contract</strong>, which saves the new version and checks all traffic again. A patch that doesn't fit the contract is refused, and you can ask again. Leave out findings that are client bugs rather than contract gaps.</p>
+
+<h3 id="drift-notify">Get told about new drift</h3>
+<p>Set <strong>Webhook for new drift</strong> to an <code>http</code> or <code>https</code> URL. When a check finds kinds of drift it hasn't seen before (and that aren't marked expected), MockHub POSTs:</p>
+<pre><code>{
+  "event": "contract.drift",
+  "at": "2026-11-05T10:05:00Z",
+  "project": { "id": "…", "name": "Orders" },
+  "newFindings": 1,
+  "url": "https://mockhub.example.com/__admin/mockhub/ui/projects/…/contract",
+  "findings": [
+    { "kind": "UNDOCUMENTED_PATH", "label": "Path not in the contract", "method": "GET", "path": "/refunds/{id}", "detail": "", "count": 3 }
+  ]
+}</code></pre>
+<p>Up to 20 findings are listed. <code>url</code> is only included when <code>MOCKHUB_PUBLIC_URL</code> is set. The webhook follows the same address rules as callouts: private and local addresses are refused unless <code>MOCKHUB_CALLOUT_ALLOW_PRIVATE=true</code>. If it fails, the Contract tab says why. Slack, Teams and similar tools can take this through an incoming-webhook bridge. MockHub doesn't send e-mail.</p>
+
+<h3 id="drift-api">API</h3>
+<table>
+  <thead><tr><th>Call</th><th>Does</th></tr></thead>
+  <tbody>
+    <tr><td><code>GET /projects/{id}/contract</code></td><td>Title, version, source, operations, webhook</td></tr>
+    <tr><td><code>PUT /projects/{id}/contract</code></td><td><code>{"content": "&lt;JSON or YAML&gt;", "source": "upload", "fileName": "…", "stripPrefix": "/api"}</code></td></tr>
+    <tr><td><code>GET /projects/{id}/contract/spec?format=yaml</code></td><td>Download the stored contract (JSON by default)</td></tr>
+    <tr><td><code>PUT /projects/{id}/contract/notify</code></td><td><code>{"url": "…"}</code>, empty to turn off</td></tr>
+    <tr><td><code>DELETE /projects/{id}/contract</code></td><td>Remove the contract and its findings</td></tr>
+    <tr><td><code>GET /projects/{id}/drift</code></td><td>Findings with counts, times, example and <code>expected</code></td></tr>
+    <tr><td><code>POST /projects/{id}/drift/check</code>, <code>/drift/recheck</code></td><td>Check new traffic, or all of it again</td></tr>
+    <tr><td><code>PUT /projects/{id}/drift/findings/{key}</code></td><td><code>{"expected": true}</code></td></tr>
+    <tr><td><code>POST /projects/{id}/drift/patch</code></td><td><code>{"keys": […]}</code>; returns <code>summary</code>, <code>operations</code>, <code>before</code> and <code>after</code></td></tr>
+    <tr><td><code>POST /projects/{id}/import/openapi?contract=true</code></td><td>Import stubs and keep the document as the contract</td></tr>
+  </tbody>
+</table>
+<p>All paths are under <code>/__admin/mockhub/api</code>.</p>

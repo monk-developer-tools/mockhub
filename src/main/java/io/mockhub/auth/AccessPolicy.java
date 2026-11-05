@@ -10,7 +10,7 @@ import java.util.regex.Pattern;
 public final class AccessPolicy {
   public static final String MCP = "/mockhub/mcp";
   private static final String API = "/mockhub/api";
-  private static final Set<String> ASK_ONLY = Set.of("/ai/chat", "/ai/jobs", "/graphql/operations");
+  private static final Set<String> ASK_ONLY = Set.of("/ai/chat", "/ai/jobs", "/graphql/operations", "/drift/check");
   private static final Pattern PROJECT = Pattern.compile("/projects/([^/]+)(/.*)?");
   private static final Pattern ORG = Pattern.compile("/orgs/([^/]+)(/.*)?");
   private static final Pattern TEAM = Pattern.compile("/orgs/([^/]+)/teams/([^/]+)(/.*)?");

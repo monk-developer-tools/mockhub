@@ -3,6 +3,7 @@ import type { GrpcCatalog } from '../model/grpc';
 import type { TlsView } from '../model/tls';
 import type { ProxyView } from '../model/proxy';
 import type { TunnelView } from '../model/tunnels';
+import type { ContractSource, ContractView, DriftPatch, DriftView } from '../model/contract';
 import type {
   AccessToken,
   FetchedSpec,
@@ -303,6 +304,20 @@ export const api = {
   createAccessToken: (token: NewAccessToken) =>
     request<AccessToken & { secret: string }>(`${API}/auth/tokens`, { method: 'POST', body: json(token) }),
   revokeAccessToken: (id: string) => request<void>(`${API}/auth/tokens/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+  contract: (projectId: string) => request<ContractView>(`${API}/projects/${projectId}/contract`),
+  saveContract: (projectId: string, body: { content: string; source: ContractSource; fileName?: string; stripPrefix?: string }) =>
+    request<ContractView>(`${API}/projects/${projectId}/contract`, { method: 'PUT', body: json(body) }),
+  downloadContract: (projectId: string, format: 'json' | 'yaml') => download(`${API}/projects/${projectId}/contract/spec?format=${format}`),
+  removeContract: (projectId: string) => request<void>(`${API}/projects/${projectId}/contract`, { method: 'DELETE' }),
+  setContractNotify: (projectId: string, url: string) =>
+    request<ContractView>(`${API}/projects/${projectId}/contract/notify`, { method: 'PUT', body: json({ url }) }),
+  drift: (projectId: string) => request<DriftView>(`${API}/projects/${projectId}/drift`),
+  checkDrift: (projectId: string) => request<DriftView>(`${API}/projects/${projectId}/drift/check`, { method: 'POST' }),
+  recheckDrift: (projectId: string) => request<DriftView>(`${API}/projects/${projectId}/drift/recheck`, { method: 'POST' }),
+  markFinding: (projectId: string, key: string, expected: boolean) =>
+    request<DriftView>(`${API}/projects/${projectId}/drift/findings/${encodeURIComponent(key)}`, { method: 'PUT', body: json({ expected }) }),
+  driftPatch: (projectId: string, keys: string[]) =>
+    request<DriftPatch>(`${API}/projects/${projectId}/drift/patch`, { method: 'POST', body: json({ keys }) }),
   tunnels: () => request<TunnelView[]>(`${API}/tunnels`),
   closeTunnel: (name: string) => request<void>(`${API}/tunnels/${encodeURIComponent(name)}`, { method: 'DELETE' }),
   applyChanges: (projectId: string, changes: ProposedChange[]) =>

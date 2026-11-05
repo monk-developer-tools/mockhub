@@ -6,6 +6,8 @@ import io.mockhub.api.ApiException;
 import com.github.tomakehurst.wiremock.stubbing.StubMapping;
 import io.mockhub.api.ApiRouter;
 import io.mockhub.api.Response;
+import io.mockhub.contract.ContractDocument;
+import io.mockhub.contract.DriftService;
 import io.mockhub.export.CollectionExporter;
 import io.mockhub.export.ExporterRegistry;
 import io.mockhub.api.Jsons;
@@ -25,10 +27,12 @@ public final class ImportExportController implements ApiController {
   private final ImporterRegistry importers;
   private final BaseUrls urls;
   private final WireMockArchiveImporter archives;
+  private final DriftService drift;
 
   public ImportExportController(ProjectService projects, StubService stubs, ExporterRegistry exporters,
-      ImporterRegistry importers, BaseUrls urls, WireMockArchiveImporter archives) {
+      ImporterRegistry importers, BaseUrls urls, WireMockArchiveImporter archives, DriftService drift) {
     this.archives = archives;
+    this.drift = drift;
     this.projects = projects;
     this.stubs = stubs;
     this.exporters = exporters;
@@ -64,9 +68,13 @@ public final class ImportExportController implements ApiController {
       String body = ctx.body();
       if (body == null || body.isBlank()) throw ApiException.badRequest("Send the document to import as the request body");
       StubImporter.Result result = importers.get(ctx.path("format")).parse(new StubImporter.Request(p, body, ctx.queryParams()));
+      boolean keepContract = ctx.path("format").equals("openapi") && "true".equals(ctx.query("contract"));
+      if (keepContract) drift.attach(p.id(), ContractDocument.parse(body), "import", ctx.query("fileName"),
+          ctx.query("stripPrefix") == null ? "" : ctx.query("stripPrefix"), ctx.principal());
       List<ObjectNode> created = stubs.createAll(p.id(), result.stubs());
       ObjectNode out = result.details().deepCopy();
       out.put("imported", created.size());
+      out.put("contract", keepContract);
       return out;
     });
   }

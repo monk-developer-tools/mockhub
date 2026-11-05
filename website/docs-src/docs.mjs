@@ -80,6 +80,7 @@ export const GROUPS = [
     description: 'See every call, find why a request missed and try calls yourself.',
     pages: [
       { slug: 'requests', title: 'Request history', icon: 'Pulse', description: 'Search days of traffic, see the request rate, export HAR and find why a call missed.' },
+      { slug: 'contract-drift', title: 'Contract drift', icon: 'ListChecks', description: 'Compare recorded traffic with an OpenAPI contract, mark what is expected, patch the contract with the assistant and get a webhook on new drift.' },
       { slug: 'playground', title: 'Playground', icon: 'PaperPlaneTilt', description: 'Call mocks or public APIs, keep a history and save a response as a stub.' },
       { slug: 'error-codes', title: 'Error codes', icon: 'WarningCircle', description: 'Every status and header MockHub adds itself, what causes it and how to fix it.' },
     ],

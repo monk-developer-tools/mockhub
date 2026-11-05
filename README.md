@@ -142,6 +142,11 @@ screenshots, and the [live demo](https://mockhub.devops-monk.com/__admin/mockhub
 - **Forward proxy.** With `MOCKHUB_PROXY=true`, browsers, apps and phones can use MockHub as an HTTP and HTTPS proxy:
   calls that match a stub get the mock, the rest go to the real service, and all of them are recorded in a chosen
   project. Setup guides cover curl, browsers, macOS and Android.
+- **Contract drift.** Attach a project's OpenAPI 3 or Swagger 2 document (or keep it when you import) and MockHub
+  checks recorded traffic against it every 5 minutes: undocumented paths, methods, parameters and headers, request and
+  response schema mismatches, status codes and content types. The Contract tab groups findings with counts, first and
+  last seen and an example; mark them expected, ask the AI assistant for a JSON Patch shown as a diff, and get a
+  webhook when new drift appears.
 - **Local tunnel.** `java -jar mockhub.jar tunnel --name laptop --to http://localhost:3000` connects a service on your
   machine with an access token. Proxy stubs and callouts that target `tunnel://laptop/path` reach it through MockHub,
   using only outgoing requests, with size, load and per-project permission limits. The account dialog lists your tunnels.

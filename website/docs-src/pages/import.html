@@ -1,7 +1,7 @@
 <table>
   <thead><tr><th>Format</th><th>What you get</th></tr></thead>
   <tbody>
-    <tr><td>OpenAPI 3 / Swagger 2 (JSON or YAML)</td><td>One stub per operation. The response uses the spec's example, or sample data generated from the schema. Optionally strip a prefix such as <code>/api/v1</code>.</td></tr>
+    <tr><td>OpenAPI 3 / Swagger 2 (JSON or YAML)</td><td>One stub per operation. The response uses the spec's example, or sample data generated from the schema. Optionally strip a prefix such as <code>/api/v1</code>, and keep the document as the project's contract for <a href="#contract-drift">drift checks</a>.</td></tr>
     <tr><td>WSDL 1.1</td><td>See <a href="#soap">SOAP &amp; WSDL</a>.</td></tr>
     <tr><td>SOAP requests (no WSDL)</td><td>One stub per operation found, plus an endpoint for any other operation. See <a href="#soap">SOAP &amp; WSDL</a>.</td></tr>
     <tr><td>GraphQL SDL or introspection JSON</td><td>One endpoint that answers from the schema. See <a href="#graphql">GraphQL</a>.</td></tr>

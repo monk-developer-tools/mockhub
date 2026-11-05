@@ -29,6 +29,7 @@ dependencies {
     implementation("org.wiremock.extensions:wiremock-state-extension:0.10.1")
     implementation("net.datafaker:datafaker:2.7.0")
     implementation("com.graphql-java:graphql-java:26.1")
+    implementation("com.networknt:json-schema-validator:1.5.9")
     implementation("org.wiremock:wiremock-grpc-extension-jetty12:0.11.0")
     testImplementation("com.google.protobuf:protobuf-java-util:3.25.8")
     testImplementation("io.grpc:grpc-netty:1.73.0")
@@ -45,7 +46,7 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter")
     testImplementation("org.assertj:assertj-core:3.27.3")
     testImplementation("io.modelcontextprotocol.sdk:mcp-core:2.1.0")
-    testImplementation("io.modelcontextprotocol.sdk:mcp-json-jackson2:2.1.0")
+    testImplementation("io.modelcontextprotocol.sdk:mcp-json-jackson2:2.1.0") { exclude(group = "com.networknt") }
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

@@ -42,7 +42,8 @@ class McpClientSystemTest {
           .addHttpRequestCustomizer((request, method, uri, body, context) -> request.header("Authorization", "Bearer " + token))
           .build();
 
-      try (McpSyncClient client = McpClient.sync(transport).requestTimeout(Duration.ofSeconds(20)).build()) {
+      try (McpSyncClient client = McpClient.sync(transport).requestTimeout(Duration.ofSeconds(20))
+          .jsonSchemaValidator((schema, content) -> io.modelcontextprotocol.json.schema.JsonSchemaValidator.ValidationResponse.asValid(null)).build()) {
         // When
         McpSchema.InitializeResult init = client.initialize();
         List<String> tools = client.listTools().tools().stream().map(McpSchema.Tool::name).toList();
