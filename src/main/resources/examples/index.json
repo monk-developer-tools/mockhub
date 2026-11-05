@@ -12,6 +12,18 @@
     "file": "rest-basics.json"
   },
   {
+    "id": "echo",
+    "name": "Echo server — see what you send",
+    "slug": "echo",
+    "description": "Every method and path answers with JSON describing the request: method, path, query, headers, body and parsed JSON or form fields. Point a client at it to see exactly what it sends.",
+    "tags": [
+      "REST",
+      "Echo",
+      "Beginner"
+    ],
+    "file": "echo.json"
+  },
+  {
     "id": "fake-data",
     "name": "Fake data — realistic test data",
     "slug": "example-fake-data",

@@ -18,14 +18,17 @@ public record PublicRequest(String method, String path, String rawQuery, Map<Str
   public static final String PREFIX = "/__public";
 
   public static PublicRequest from(Request request) {
+    return at(request, Urls.getPath(request.getUrl()).substring(PREFIX.length()));
+  }
+
+  public static PublicRequest at(Request request, String path) {
     String url = request.getUrl();
-    String path = Urls.getPath(url);
     int at = url.indexOf('?');
     String rawQuery = at < 0 ? "" : url.substring(at + 1);
     Map<String, String> headers = new LinkedHashMap<>();
     for (HttpHeader h : request.getHeaders().all()) headers.put(h.key(), String.join(", ", h.values()));
     byte[] body = request.getBody();
-    return new PublicRequest(request.getMethod().getName().toUpperCase(Locale.ROOT), path.substring(PREFIX.length()), rawQuery,
+    return new PublicRequest(request.getMethod().getName().toUpperCase(Locale.ROOT), path, rawQuery,
         parseQuery(rawQuery), headers, request.getBodyAsString(), body == null ? 0 : body.length, ClientAddress.of(request));
   }
 

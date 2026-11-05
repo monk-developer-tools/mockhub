@@ -71,6 +71,7 @@ const RESPONSE_MODE_LABELS: Record<ResponseMode, string> = {
   proxy: 'Proxy',
   fault: 'Fault',
   graphql: 'From schema',
+  echo: 'Echo request',
 };
 
 function describeUrlOf(form: StubForm) {
@@ -542,7 +543,7 @@ export function StubEditor({ project, moveTargets, stub, isNew, canEdit, onSaved
             <h3>
               Response
               {!grpc && <div className="segmented" role="group" aria-label="Response type">
-                {(['direct', 'callout', 'proxy', 'fault', ...(form.kind === 'graphql' || form.responseMode === 'graphql' ? ['graphql'] : [])] as ResponseMode[]).map((m) => (
+                {(['direct', 'callout', 'proxy', 'fault', ...(form.kind === 'graphql' || form.responseMode === 'graphql' ? ['graphql'] : []), ...(form.kind === 'rest' || form.responseMode === 'echo' ? ['echo'] : [])] as ResponseMode[]).map((m) => (
                   <button type="button" key={m} aria-pressed={form.responseMode === m} onClick={() => update({ responseMode: m })}>
                     {RESPONSE_MODE_LABELS[m]}
                   </button>
@@ -691,6 +692,19 @@ export function StubEditor({ project, moveTargets, stub, isNew, canEdit, onSaved
                 <span className="hint">
                   Arguments and inputs are echoed into fields with the same name, so user(id: "42") answers with id 42. Lists hold 3 items,
                   or as many as a first, last or limit argument asks for (up to 20). Stubs for one operation name win when their priority is higher.
+                </span>
+              </div>
+            )}
+
+            {form.responseMode === 'echo' && (
+              <div className="rows">
+                <label className="field" style={{ maxWidth: 220 }}>
+                  <span>Status</span>
+                  <input type="number" value={form.status} readOnly={readOnly} onChange={(e) => update({ status: e.target.value })} />
+                </label>
+                <span className="hint">
+                  Answers with JSON describing the request: method, path inside the project, query, headers, body, and the parsed JSON or form
+                  fields. Bodies up to 1 MB.
                 </span>
               </div>
             )}

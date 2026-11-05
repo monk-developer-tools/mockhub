@@ -1,0 +1,18 @@
+{
+  "stubs": [
+    {
+      "name": "Echo · slow, after 2 seconds",
+      "priority": 1,
+      "request": { "method": "ANY", "urlPathPattern": "/slow(/.*)?" },
+      "response": { "status": 200, "fixedDelayMilliseconds": 2000, "transformers": ["mockhub-echo"] },
+      "metadata": { "mockhub": { "folder": "Echo", "description": "The echo works with delays, headers and every other response setting." } }
+    },
+    {
+      "name": "Echo · any request",
+      "priority": 10,
+      "request": { "method": "ANY", "urlPattern": "/.*" },
+      "response": { "status": 200, "headers": { "Cache-Control": "no-store" }, "transformers": ["mockhub-echo"] },
+      "metadata": { "mockhub": { "folder": "Echo", "description": "Answers every method and path with JSON describing the request: method, path, query, headers, body, and the parsed JSON or form fields." } }
+    }
+  ]
+}

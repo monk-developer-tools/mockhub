@@ -14,7 +14,7 @@ export type BodyOperator =
   | 'doesNotMatch';
 export type BodyType = 'json' | 'text' | 'xml' | 'file' | 'base64' | 'none';
 export type DelayType = 'none' | 'fixed' | 'uniform' | 'lognormal' | 'chunked';
-export type ResponseMode = 'direct' | 'proxy' | 'fault' | 'callout' | 'graphql';
+export type ResponseMode = 'direct' | 'proxy' | 'fault' | 'callout' | 'graphql' | 'echo';
 export type StubKind = 'rest' | 'soap' | 'graphql' | 'grpc';
 export type Fault = 'CONNECTION_RESET_BY_PEER' | 'EMPTY_RESPONSE' | 'MALFORMED_RESPONSE_CHUNK' | 'RANDOM_DATA_THEN_CLOSE';
 
@@ -64,6 +64,7 @@ export const SYNC_CALLOUT_TRANSFORMER = 'mockhub-sync-callout';
 export const WEIGHTED_TRANSFORMER = 'mockhub-weighted';
 export const CONNECTION_TRANSFORMER = 'mockhub-connection';
 export const GRAPHQL_TRANSFORMER = 'mockhub-graphql';
+export const ECHO_TRANSFORMER = 'mockhub-echo';
 const GRAPHQL_OPERATION = /^\$\[\?\(@\.operationName == '([A-Za-z_][A-Za-z0-9_]*)'\)\]$/;
 
 export function graphqlOperationPattern(operation: string): string {
@@ -390,7 +391,7 @@ export function fromStub(stub: Stub): Conversion {
   const transformers = Array.isArray(response.transformers) ? response.transformers.map(String) : [];
   form.templating = transformers.includes(TEMPLATE_TRANSFORMER);
   const waitsForCallout = transformers.includes(SYNC_CALLOUT_TRANSFORMER) && !response.fault && !response.proxyBaseUrl;
-  const known = new Set([TEMPLATE_TRANSFORMER, SYNC_CALLOUT_TRANSFORMER, WEIGHTED_TRANSFORMER, CONNECTION_TRANSFORMER, GRAPHQL_TRANSFORMER]);
+  const known = new Set([TEMPLATE_TRANSFORMER, SYNC_CALLOUT_TRANSFORMER, WEIGHTED_TRANSFORMER, CONNECTION_TRANSFORMER, GRAPHQL_TRANSFORMER, ECHO_TRANSFORMER]);
   if (transformers.some((t) => !known.has(t))) unsupported.push(`Transformers ${transformers.join(', ')}`);
   const transformerParameters = obj(response.transformerParameters);
   const weighted = transformers.includes(WEIGHTED_TRANSFORMER) && form.responseMode === 'direct';
@@ -400,6 +401,10 @@ export function fromStub(stub: Stub): Conversion {
     form.responseMode = 'graphql';
     form.templating = false;
     form.graphqlSchema = str(transformerParameters.schema);
+  }
+  if (transformers.includes(ECHO_TRANSFORMER) && !response.fault && !response.proxyBaseUrl) {
+    form.responseMode = 'echo';
+    form.templating = false;
   }
   if (waitsForCallout) {
     form.responseMode = 'callout';
@@ -521,6 +526,12 @@ export function toStub(input: StubForm, original: Stub = {}): Stub {
     for (const h of form.responseHeaders) if (h.key.trim()) headers[h.key.trim()] = h.value;
     if (Object.keys(headers).length) response.headers = headers;
     response.transformers = [GRAPHQL_TRANSFORMER];
+  } else if (form.responseMode === 'echo') {
+    response.status = Number(form.status) || 200;
+    const headers: JsonObject = {};
+    for (const h of form.responseHeaders) if (h.key.trim() && h.key.trim().toLowerCase() !== 'content-type') headers[h.key.trim()] = h.value;
+    if (Object.keys(headers).length) response.headers = headers;
+    response.transformers = [ECHO_TRANSFORMER];
   } else if (form.responseMode === 'fault') {
     response.fault = form.fault;
   } else if (form.responseMode === 'proxy') {
@@ -535,7 +546,7 @@ export function toStub(input: StubForm, original: Stub = {}): Stub {
     writeResponseBody(response, form);
   }
   if (form.responseMode !== 'fault') writeDelay(response, form);
-  if (form.templating && form.responseMode !== 'fault' && form.responseMode !== 'callout' && form.responseMode !== 'graphql') response.transformers = [TEMPLATE_TRANSFORMER];
+  if (form.templating && (form.responseMode === 'direct' || form.responseMode === 'proxy')) response.transformers = [TEMPLATE_TRANSFORMER];
   if (signsProxy) response.transformers = [...(Array.isArray(response.transformers) ? response.transformers : []), CONNECTION_TRANSFORMER];
   if (form.responseMode === 'direct' && form.alternatives.length) writeAlternatives(response, form);
   stub.response = response;

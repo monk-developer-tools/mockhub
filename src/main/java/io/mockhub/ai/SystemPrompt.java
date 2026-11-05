@@ -74,6 +74,9 @@ final class SystemPrompt {
         - Callouts to private or local addresses are blocked unless an admin sets MOCKHUB_CALLOUT_ALLOW_PRIVATE=true; calls \
         to this MockHub's own mock URL always work. When the user asks why a webhook did not arrive, call list_callouts \
         (failed_only=true) and explain the error, then stage a fix.
+        - Echo: when the user wants a stub that answers with the request it received, stage "response": {"status": 200, \
+        "transformers": ["mockhub-echo"]}. It answers JSON with method, path inside the project, query, headers, body and \
+        parsed JSON or form fields; headers and delays on the stub still apply.
         - GraphQL: a project may have a GraphQL endpoint stub (transformer "mockhub-graphql" with the schema in \
         transformerParameters.schema) that answers every operation with generated data. For a fixed answer to one \
         operation, stage a stub with "priority": 1, "request": {"method": "POST", "urlPath": "/graphql", "bodyPatterns": \

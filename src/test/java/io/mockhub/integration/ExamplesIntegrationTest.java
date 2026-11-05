@@ -42,7 +42,7 @@ class ExamplesIntegrationTest {
 
   @Test
   void listsExamples() {
-    assertThat(api.get(API + "/examples").json()).hasSize(12);
+    assertThat(api.get(API + "/examples").json()).hasSize(13);
   }
 
   @Test
@@ -353,5 +353,23 @@ class ExamplesIntegrationTest {
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     }
+  }
+
+  @Test
+  void echoExampleAnswersWithTheRequestAtSlashEcho() {
+    // Given
+    ApiClient.Result installed = api.post(API + "/examples/echo/install", "");
+
+    // When
+    ApiClient.Result r = api.send("DELETE", "/echo/carts/3?force=true", null, null, Map.of("X-Trace", "t1"));
+
+    // Then
+    assertThat(installed.json().get("slug").asText()).isEqualTo("echo");
+    assertThat(r.status()).isEqualTo(200);
+    assertThat(r.json().get("method").asText()).isEqualTo("DELETE");
+    assertThat(r.json().get("path").asText()).isEqualTo("/carts/3");
+    assertThat(r.json().at("/query/force").asText()).isEqualTo("true");
+    assertThat(r.json().at("/headers/X-Trace").asText()).isEqualTo("t1");
+    assertThat(r.header("Cache-Control")).isEqualTo("no-store");
   }
 }

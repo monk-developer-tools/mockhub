@@ -50,6 +50,7 @@ import io.mockhub.graphql.MockSchemas;
 import io.mockhub.importer.GraphQlStubImporter;
 import io.mockhub.importer.SoapSampleImporter;
 import io.mockhub.soap.SoapEndpointTransformer;
+import io.mockhub.echo.EchoTransformer;
 import io.mockhub.connection.ConnectionAuth;
 import io.mockhub.connection.ConnectionProxyTransformer;
 import io.mockhub.controller.CalloutController;
@@ -408,6 +409,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
         new SyncCalloutTransformer(callouts),
         new GraphQlTransformer(new GraphQlEngine(graphQlSchemas)),
         new SoapEndpointTransformer(),
+        new EchoTransformer(projects::find),
         new ConnectionProxyTransformer(connectionAuth),
         new RuntimeFilter(projectForPath, corsHeaders, rateLimiter, loadMeter),
         new ApiKeyFilter(projectForPath, corsForRequest::headers),

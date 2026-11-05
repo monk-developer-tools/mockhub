@@ -1,0 +1,37 @@
+<p>An echo stub answers with the request it received, written as JSON. Point a client, a webhook or a proxy at it to see exactly what it sends: method, path, query, headers and body.</p>
+
+<h3 id="echo-project">An echo server in one click</h3>
+<p>Install the <em>Echo server — see what you send</em> example from <strong>Examples</strong> in the sidebar. It becomes a project at <code>/echo</code> where every method and path answers with the request:</p>
+<pre><code>curl -X POST "http://localhost:8080/echo/orders/7?x=1&amp;x=2" \
+  -H 'Content-Type: application/json' -d '{"total": 12.5}'</code></pre>
+<pre><code>{
+  "method": "POST",
+  "path": "/orders/7",
+  "query": { "x": ["1", "2"] },
+  "headers": { "Content-Type": "application/json", ... },
+  "bodySize": 15,
+  "body": "{\"total\": 12.5}",
+  "json": { "total": 12.5 }
+}</code></pre>
+<p>It also has a <code>/echo/slow</code> stub that answers after two seconds. Edit it, or add your own stubs beside it.</p>
+
+<h3 id="echo-stub">Echo in any stub</h3>
+<p>In the stub editor, choose <strong>Echo request</strong> as the response type. Set the status, and add headers if you need them. Delays, failure rates and every other response setting still apply. In JSON:</p>
+<pre><code>{
+  "request": { "method": "ANY", "urlPattern": "/.*" },
+  "response": { "status": 200, "transformers": ["mockhub-echo"] }
+}</code></pre>
+<table>
+  <thead><tr><th>Field</th><th>What it holds</th></tr></thead>
+  <tbody>
+    <tr><td><code>method</code></td><td>The HTTP method.</td></tr>
+    <tr><td><code>path</code></td><td>The path inside the project, without its base path.</td></tr>
+    <tr><td><code>query</code></td><td>Query parameters; a parameter sent more than once becomes a list.</td></tr>
+    <tr><td><code>headers</code></td><td>Request headers, without the <code>X-Forwarded-*</code> and <code>X-Real-IP</code> headers a proxy adds.</td></tr>
+    <tr><td><code>bodySize</code>, <code>body</code></td><td>The body as text and its size in bytes.</td></tr>
+    <tr><td><code>json</code></td><td>The parsed body, when it is JSON.</td></tr>
+    <tr><td><code>form</code></td><td>Form fields, when the body is <code>application/x-www-form-urlencoded</code>.</td></tr>
+  </tbody>
+</table>
+<p>The answer is always <code>application/json</code>. Bodies over 1 MB get <code>413</code>. Echo answers are recorded in the request log like any other call.</p>
+<p>No server of your own? The free <a href="/tools/http-echo/">HTTP echo tool</a> does the same on the public demo.</p>

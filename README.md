@@ -139,6 +139,8 @@ screenshots, and the [live demo](https://mockhub.devops-monk.com/__admin/mockhub
 - **gRPC from a descriptor set.** Upload the output of `protoc --include_imports --descriptor_set_out` and MockHub
   serves those services over HTTP/2 on its port, with server reflection for grpcurl. Stubs match the request message
   as JSON and answer with a message written as JSON or with any gRPC status code.
+- **Echo the request.** An "Echo request" response type, or the Echo server example at `/echo`, answers any call with
+  JSON describing it: method, path, query, headers, body and parsed JSON or form fields.
 - **Import** OpenAPI 3 / Swagger 2 (JSON or YAML), WSDL, SOAP sample requests, GraphQL schemas, or WireMock mappings.
 - **Move a whole WireMock repository.** Start MockHub on a copy of the folder, or import it as one zip (up to 20,000
   files): files with many stubs, `./` body file paths, folders and templated file names all keep working, and the stub
@@ -190,7 +192,7 @@ screenshots, and the [live demo](https://mockhub.devops-monk.com/__admin/mockhub
   message when the request is wrong. A stub can answer with one of several responses by weight. Also `len`, `object`,
   `json`, `toNumber` and `default`. Every entry in the helper picker is rendered against a real server in CI.
 - **Response files.** Upload PDFs, images or large JSON (up to 10 MB) and serve them as response bodies.
-- **Built-in examples:** twelve ready-made projects that cover every feature: REST matching, fake data, templating, real-world matching patterns, CRUD with saved data, stateful scenarios, webhooks, faults and failure rates, an OpenAPI import with response files, a SOAP calculator from WSDL, a GraphQL library from a schema and a gRPC inventory service from a descriptor set. The [tour of the examples](https://mockhub.devops-monk.com/tutorials/#tour) has commands to try with each.
+- **Built-in examples:** thirteen ready-made projects that cover every feature: REST matching, an echo server, fake data, templating, real-world matching patterns, CRUD with saved data, stateful scenarios, webhooks, faults and failure rates, an OpenAPI import with response files, a SOAP calculator from WSDL, a GraphQL library from a schema and a gRPC inventory service from a descriptor set. The [tour of the examples](https://mockhub.devops-monk.com/tutorials/#tour) has commands to try with each.
   Install one with a click and copy what you need. The editor also has a template gallery.
 - **Persistence.** Every stub, including ones created through the native `/__admin` API, is written to `/data`.
   Admins can back up everything, whole organisations or single projects to one file, and later restore all of it

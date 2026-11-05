@@ -1,12 +1,8 @@
 package io.mockhub.publictools;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.http.ResponseDefinition;
 import io.mockhub.api.Jsons;
-import java.util.Locale;
-import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -21,7 +17,7 @@ public final class EchoTool implements PublicTool {
   public Optional<ResponseDefinition> handle(PublicRequest request) {
     String path = request.path();
     if (path.equals("/echo") || path.startsWith("/echo/")) return Optional.of(echo(request));
-    if (path.equals("/headers")) return Optional.of(PublicResponses.json(200, Jsons.object().set("headers", headers(request.headers()))));
+    if (path.equals("/headers")) return Optional.of(PublicResponses.json(200, Jsons.object().set("headers", RequestEcho.headers(request.headers()))));
     Matcher status = STATUS.matcher(path);
     if (status.matches()) return Optional.of(status(Integer.parseInt(status.group(1))));
     Matcher delay = DELAY.matcher(path);
@@ -31,40 +27,8 @@ public final class EchoTool implements PublicTool {
 
   private static ResponseDefinition echo(PublicRequest request) {
     if (request.bodySize() > MAX_BODY) return PublicResponses.error(413, "The echo takes bodies up to 1 MB");
-    return PublicResponses.json(200, describe(request));
-  }
-
-  static ObjectNode describe(PublicRequest request) {
-    ObjectNode out = Jsons.object();
-    out.put("method", request.method());
-    out.put("path", request.path().replaceFirst("^/echo", "").isEmpty() ? "/" : request.path().replaceFirst("^/echo", ""));
-    ObjectNode query = out.putObject("query");
-    request.query().forEach((k, v) -> {
-      if (v.size() == 1) query.put(k, v.get(0));
-      else v.forEach(query.withArray(k)::add);
-    });
-    out.set("headers", headers(request.headers()));
-    String type = Optional.ofNullable(request.header("Content-Type")).orElse("").toLowerCase(Locale.ROOT);
-    out.put("bodySize", request.bodySize());
-    if (request.bodySize() > 0) {
-      out.put("body", request.body());
-      JsonNode json = type.contains("json") ? PublicJson.parse(request.body()) : null;
-      if (json != null) out.set("json", json);
-      if (type.contains("application/x-www-form-urlencoded")) {
-        ObjectNode form = out.putObject("form");
-        PublicRequest.parseQuery(request.body()).forEach((k, v) -> form.put(k, String.join(",", v)));
-      }
-    }
-    return out;
-  }
-
-  private static ObjectNode headers(Map<String, String> headers) {
-    ObjectNode node = Jsons.object();
-    headers.forEach((k, v) -> {
-      String lower = k.toLowerCase(Locale.ROOT);
-      if (!lower.startsWith("x-forwarded-") && !lower.equals("x-real-ip")) node.put(k, v);
-    });
-    return node;
+    String path = request.path().replaceFirst("^/echo", "");
+    return PublicResponses.json(200, RequestEcho.describe(request, path.isEmpty() ? "/" : path));
   }
 
   private static ResponseDefinition status(int code) {

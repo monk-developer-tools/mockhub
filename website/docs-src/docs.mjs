@@ -34,6 +34,7 @@ export const GROUPS = [
     description: 'Answers built from the request, realistic data and state.',
     pages: [
       { slug: 'templating', title: 'Templating', icon: 'Code', description: 'Handlebars templates in bodies and headers, and the Insert dynamic value picker.' },
+      { slug: 'echo', title: 'Echo the request', icon: 'ArrowsCounterClockwise', description: 'A stub or a whole project that answers with the request it received, as JSON.' },
       { slug: 'helpers', title: 'Helper reference', icon: 'ListMagnifyingGlass', description: 'Every helper the picker offers, by category, ready to copy.' },
       { slug: 'fake-data', title: 'Fake data', icon: 'Sparkle', description: 'Realistic names, e-mails, addresses and products in many languages.' },
       { slug: 'data-generator', title: 'Data generator', icon: 'Table', description: 'Generate up to 1,000 typed records for a body or a CRUD resource.' },

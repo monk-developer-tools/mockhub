@@ -693,7 +693,7 @@ Goal: the smaller routing and sharing features.
   chosen project. Setup guides for browsers, curl, macOS and Android.
 
 Checklist:
-- [ ] Echo template
+- [x] Echo template (`mockhub-echo` transformer shared with the public echo tool: method, project-relative path, query, headers without proxy headers, body, parsed JSON and form fields, 1 MB limit, stub status, headers and delays kept; "Echo request" response type in the editor; Echo server example installed at `/echo`)
 - [ ] Custom domains
 - [ ] Mock these APIs button
 - [ ] Forward proxy with interception
