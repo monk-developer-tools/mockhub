@@ -10,6 +10,7 @@ public final class StubPaths {
   private StubPaths() {}
 
   public static void toAbsolute(ObjectNode stub, String basePath) {
+    if (isGrpc(stub)) return;
     stripBasePathBeforeProxying(stub, basePath);
     ObjectNode request = request(stub);
     boolean hasUrl = false;
@@ -31,6 +32,7 @@ public final class StubPaths {
   }
 
   public static void toRelative(ObjectNode stub, String basePath) {
+    if (isGrpc(stub)) return;
     hideDefaultProxyPrefix(stub, basePath);
     ObjectNode request = request(stub);
     if (request.path("urlPattern").asText("").equals(catchAll(basePath))) {
@@ -97,6 +99,10 @@ public final class StubPaths {
     if (regex.startsWith("^")) return "^" + stripRegex(base, regex.substring(1));
     if (regex.startsWith(base + "/")) return regex.substring(base.length());
     return regex;
+  }
+
+  public static boolean isGrpc(JsonNode stub) {
+    return "grpc".equals(stub.path("metadata").path(StubMetadata.KEY).path(StubMetadata.TYPE).asText(null));
   }
 
   private static ObjectNode request(ObjectNode stub) {

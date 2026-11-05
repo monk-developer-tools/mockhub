@@ -1,4 +1,5 @@
 import type { GraphqlOperation } from '../model/graphql';
+import type { GrpcCatalog } from '../model/grpc';
 import type {
   AccessToken,
   NewAccessToken,
@@ -211,6 +212,15 @@ export const api = {
     request<void>(`${API}/projects/${projectId}/data/records?resource=${encodeURIComponent(resource)}`, { method: 'DELETE' }),
   graphqlOperations: (projectId: string, schema: string) =>
     request<{ schema: string; operations: GraphqlOperation[] }>(`${API}/projects/${projectId}/graphql/operations`, { method: 'POST', body: json({ schema }) }),
+  grpc: (projectId: string) => request<GrpcCatalog>(`${API}/projects/${projectId}/grpc`),
+  uploadGrpcDescriptor: (projectId: string, name: string, file: Blob) =>
+    request<GrpcCatalog>(`${API}/projects/${projectId}/grpc/descriptors?name=${encodeURIComponent(name)}`, {
+      method: 'POST',
+      body: file,
+      headers: { 'Content-Type': 'application/octet-stream' },
+    }),
+  deleteGrpcDescriptor: (projectId: string, name: string) =>
+    request<void>(`${API}/projects/${projectId}/grpc/descriptors?name=${encodeURIComponent(name)}`, { method: 'DELETE' }),
   connections: (orgId: string) => request<Connection[]>(`${API}/orgs/${orgId}/connections`),
   createConnection: (orgId: string, body: ConnectionInput) =>
     request<Connection>(`${API}/orgs/${orgId}/connections`, { method: 'POST', body: json(body) }),

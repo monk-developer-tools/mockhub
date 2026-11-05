@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package shop.v1;
+
+message Ping {
+  string text = 1;
+}
+
+service PingService {
+  rpc Echo(Ping) returns (Ping);
+}

@@ -6,6 +6,7 @@ import { useToast } from '../../components/Toasts';
 import { useApp } from '../../state/AppContext';
 import { useProject } from './ProjectPage';
 import { ResponseFiles } from './ResponseFiles';
+import { GrpcServices } from './GrpcServices';
 
 const EXPORTS = [
   { format: 'postman', name: 'Postman collection', detail: 'Collection v2.1 with a baseUrl variable, folders and a status test per request. Import it in Postman.' },
@@ -169,6 +170,7 @@ export function ImportExportTab() {
             </div>
           </div>
         )}
+        <GrpcServices projectId={project.id} canEdit={canEdit} onStubsCreated={() => { reloadProject(); refreshProjects(); }} />
         <ResponseFiles key={filesVersion} projectId={project.id} canEdit={canEdit} />
       </div>
     </div>

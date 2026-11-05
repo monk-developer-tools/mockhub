@@ -29,6 +29,9 @@ dependencies {
     implementation("org.wiremock.extensions:wiremock-state-extension:0.10.1")
     implementation("net.datafaker:datafaker:2.7.0")
     implementation("com.graphql-java:graphql-java:26.1")
+    implementation("org.wiremock:wiremock-grpc-extension-jetty12:0.11.0")
+    testImplementation("com.google.protobuf:protobuf-java-util:3.25.8")
+    testImplementation("io.grpc:grpc-netty:1.73.0")
     constraints {
         implementation("org.apache.httpcomponents.client5:httpclient5:5.6.5")
         implementation("org.apache.httpcomponents.core5:httpcore5:5.4.4")

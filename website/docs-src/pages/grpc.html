@@ -1,0 +1,57 @@
+<p>MockHub answers gRPC calls from stubs. Upload a protobuf descriptor set for your services and write each answer as JSON. MockHub converts it to the protobuf message the client expects.</p>
+
+<h3 id="grpc-descriptors">Upload a descriptor set</h3>
+<p>gRPC messages are binary, so MockHub needs your service definitions. Build a descriptor set from your <code>.proto</code> files with <code>protoc</code>:</p>
+<pre><code>protoc --include_imports --descriptor_set_out=library.dsc library.proto</code></pre>
+<p><code>--include_imports</code> puts every imported file in the set. Google's well-known types, such as <code>Timestamp</code>, <code>Duration</code> and the wrappers, work even without it. Buf users can run <code>buf build -o library.dsc</code>.</p>
+<p>In a project's <strong>Import / export</strong> tab, drop the file on <strong>gRPC services</strong>. MockHub lists each service with its methods and starts answering them right away. No restart is needed. <strong>Create stubs</strong> adds one stub per method, each answering with an example message built from the response type.</p>
+<table>
+  <thead><tr><th>Rule</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr><td>A service belongs to one project</td><td>gRPC paths are <code>/package.Service/Method</code> and clients can't add a prefix, so two projects can't both serve <code>library.v1.BookService</code>. The second upload is refused and the message names the project that serves it.</td></tr>
+    <tr><td>Files are <code>.dsc</code>, <code>.desc</code>, <code>.pb</code>, <code>.protoset</code> or <code>.bin</code>, up to 4 MB</td><td>Up to 20 per project. Uploading a file with the same name replaces it.</td></tr>
+    <tr><td>Removing a descriptor stops its services</td><td>Calls then get <code>UNIMPLEMENTED</code>. The stubs stay in the project for when you upload it again.</td></tr>
+  </tbody>
+</table>
+<p>Descriptors are part of the project. They're saved in the data folder, loaded again on restart and included in <a href="#persistence">backups</a>.</p>
+
+<h3 id="grpc-stubs">gRPC stubs</h3>
+<p>Choose <strong>gRPC stub</strong> in the Stubs tab, or <strong>gRPC</strong> as the service type in the editor. Then pick the service and method. Picking a method fills in an example response and an example request. A gRPC stub in JSON:</p>
+<pre><code>{
+  "request": {
+    "method": "POST",
+    "urlPath": "/library.v1.BookService/GetBook",
+    "bodyPatterns": [{ "equalToJson": "{\"id\": \"7\"}", "ignoreExtraElements": true }]
+  },
+  "response": { "status": 200, "jsonBody": { "id": "7", "title": "Dune", "year": 1965, "genre": "FICTION" } },
+  "metadata": { "mockhub": { "type": "grpc" } }
+}</code></pre>
+<ul>
+  <li><strong>Request message.</strong> The request message arrives as JSON, so match it with the usual <a href="#matching">body matchers</a>. <em>JSON equals</em> with extra fields allowed is the most useful, and JSONPath works too. Leave the body empty to answer every call to the method.</li>
+  <li><strong>Metadata.</strong> gRPC metadata such as <code>authorization</code> can be matched like headers.</li>
+  <li><strong>Response message.</strong> Protobuf JSON, with either the proto field names (<code>published_at</code>) or their lowerCamel form (<code>publishedAt</code>). Enums are written by name, 64-bit numbers as strings, and <code>Timestamp</code> as <code>"2026-01-01T00:00:00Z"</code>.</li>
+  <li><strong>Templating.</strong> Turn on response templating to build the answer from the request: <code>{{jsonPath request.body '$.id'}}</code> echoes a field.</li>
+  <li><strong>Path.</strong> The path is never prefixed with the project path, because gRPC clients always call <code>/package.Service/Method</code>.</li>
+</ul>
+
+<h3 id="grpc-status">Errors and status codes</h3>
+<p>Set <strong>Status</strong> to any gRPC code, such as <code>NOT_FOUND</code>, <code>INVALID_ARGUMENT</code>, <code>UNAUTHENTICATED</code> or <code>UNAVAILABLE</code>, and optionally a message. The client gets that status and message with no response message. In JSON these are two response headers:</p>
+<pre><code>"response": { "status": 200, "headers": { "grpc-status-name": "NOT_FOUND", "grpc-status-reason": "No book 404" } }</code></pre>
+<p>A call that no stub matches gets <code>UNIMPLEMENTED</code>. Use <a href="#matching">priority</a> to let an error stub for one id win over a general stub for the method.</p>
+
+<h3 id="grpc-streaming">Streaming methods</h3>
+<table>
+  <thead><tr><th>Method kind</th><th>How MockHub answers</th></tr></thead>
+  <tbody>
+    <tr><td>Unary</td><td>One request, one response message from the matching stub.</td></tr>
+    <tr><td>Server streaming</td><td>The stream holds one message, the stub's response, then completes.</td></tr>
+    <tr><td>Client streaming</td><td>Each message the client sends is matched in turn. The first one that matches a stub decides the answer.</td></tr>
+  </tbody>
+</table>
+
+<h3 id="grpc-calling">Calling the mock</h3>
+<p>gRPC runs over HTTP/2. MockHub serves it in plaintext (h2c) on its own port, next to the HTTP mocks. Server reflection is on, so <a href="https://github.com/fullstorydev/grpcurl">grpcurl</a> and tools like Postman can find the services without the <code>.proto</code> files:</p>
+<pre><code>grpcurl -plaintext localhost:8080 list
+grpcurl -plaintext -d '{"id": "7"}' localhost:8080 library.v1.BookService/GetBook</code></pre>
+<p>A gRPC stub's editor shows this command, with its example request, where other stubs have <strong>Try it</strong>. Point your app's gRPC channel at the same host and port with TLS turned off. Calls appear in the project's history like other requests.</p>
+<p>A reverse proxy in front of MockHub must forward HTTP/2 for gRPC to work, for example with nginx's <code>grpc_pass</code>. A proxy that only speaks HTTP/1.1 to MockHub breaks gRPC calls, while the UI and HTTP mocks keep working.</p>

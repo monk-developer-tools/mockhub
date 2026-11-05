@@ -41,6 +41,10 @@ final class MockHubServer implements AutoCloseable {
     return "http://localhost:" + server.port();
   }
 
+  int port() {
+    return server.port();
+  }
+
   ApiClient api() {
     return new ApiClient(baseUrl());
   }

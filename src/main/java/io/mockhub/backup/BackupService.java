@@ -8,6 +8,10 @@ import com.github.tomakehurst.wiremock.stubbing.StubMapping;
 import io.mockhub.Main;
 import io.mockhub.api.ApiException;
 import io.mockhub.api.Jsons;
+import io.mockhub.grpc.GrpcCatalog;
+import io.mockhub.grpc.GrpcException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import io.mockhub.data.DataStore;
 import io.mockhub.connection.Connection;
 import io.mockhub.connection.ConnectionService;
@@ -43,6 +47,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 public final class BackupService {
+  private static final Logger LOG = LoggerFactory.getLogger(BackupService.class);
   public static final String FORMAT = "mockhub-backup";
   public static final int VERSION = 2;
 
@@ -54,10 +59,12 @@ public final class BackupService {
   private final BodyFiles files;
   private final DatasetService datasets;
   private final ConnectionService connections;
+  private final GrpcCatalog grpc;
   private final Clock clock;
 
   public BackupService(OrganizationService orgs, TeamService teams, ProjectService projects, StubGateway gateway, DataStore data,
-      BodyFiles files, DatasetService datasets, ConnectionService connections, Clock clock) {
+      BodyFiles files, DatasetService datasets, ConnectionService connections, GrpcCatalog grpc, Clock clock) {
+    this.grpc = grpc;
     this.orgs = orgs;
     this.teams = teams;
     this.projects = projects;
@@ -116,6 +123,7 @@ public final class BackupService {
     }
     ObjectNode records = out.putObject("data");
     ObjectNode bodyFiles = out.putObject("files");
+    ObjectNode descriptors = out.putObject("grpc");
     for (Project p : chosen) {
       Map<String, Map<String, ObjectNode>> snapshot = data.snapshot(p.id());
       if (!snapshot.isEmpty()) records.set(p.id(), Jsons.MAPPER.valueToTree(snapshot));
@@ -123,6 +131,11 @@ public final class BackupService {
       if (!projectFiles.isEmpty()) {
         ObjectNode encoded = bodyFiles.putObject(p.id());
         projectFiles.forEach((name, bytes) -> encoded.put(name, Base64.getEncoder().encodeToString(bytes)));
+      }
+      Map<String, byte[]> projectDescriptors = grpc.snapshot(p.id());
+      if (!projectDescriptors.isEmpty()) {
+        ObjectNode encoded = descriptors.putObject(p.id());
+        projectDescriptors.forEach((name, bytes) -> encoded.put(name, Base64.getEncoder().encodeToString(bytes)));
       }
     }
     out.set("projects", Jsons.MAPPER.valueToTree(chosen));
@@ -240,6 +253,7 @@ public final class BackupService {
           options.asCopy() ? now : p.createdAt(), now, orgId, teamId, p.apiKey(), root, p.runtime());
       projects.restore(List.of(saved));
       file.path("files").path(p.id()).fields().forEachRemaining(e -> files.save(saved.id(), e.getKey(), Base64.getDecoder().decode(e.getValue().asText())));
+      file.path("grpc").path(p.id()).fields().forEachRemaining(e -> restoreDescriptor(saved, e.getKey(), e.getValue().asText()));
       JsonNode stored = file.path("data").path(p.id());
       if (stored.isObject()) {
         data.restore(saved.id(), Jsons.MAPPER.convertValue(stored, new TypeReference<Map<String, Map<String, ObjectNode>>>() {}));
@@ -260,6 +274,14 @@ public final class BackupService {
     projects.assignOrphans(orgs.ensureDefault().id());
     projects.assignTeams(org -> teams.ensureDefault(org).id());
     return new Result(orgCount, chosen.size(), stubCount, datasetCount, renamed);
+  }
+
+  private void restoreDescriptor(Project project, String name, String base64) {
+    try {
+      grpc.add(project.id(), name, Base64.getDecoder().decode(base64));
+    } catch (GrpcException | IllegalArgumentException e) {
+      LOG.warn("Skipped gRPC descriptor {} of project {}: {}", name, project.name(), e.getMessage());
+    }
   }
 
   private Contents read(JsonNode file) {

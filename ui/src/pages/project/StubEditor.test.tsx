@@ -34,6 +34,30 @@ describe('StubEditor', () => {
     expect(screen.getByRole('button', { name: 'Proxy' })).toHaveAttribute('aria-pressed', 'true');
   });
 
+  it('edits a gRPC stub with a status and shows a grpcurl command instead of Try it', async () => {
+    // Given
+    const grpcStub: Stub = {
+      id: 's2',
+      request: { method: 'POST', urlPath: '/library.v1.BookService/GetBook' },
+      response: { status: 200, jsonBody: { id: '7' } },
+      metadata: { mockhub: { type: 'grpc' } },
+    };
+    renderWithShell(<StubEditor project={project} moveTargets={[]} stub={grpcStub} isNew={false} canEdit onSaved={() => undefined}
+      onDeleted={() => undefined} onDirtyChange={() => undefined} />);
+
+    // When
+    fireEvent.change(screen.getByRole('combobox', { name: 'Status' }), { target: { value: 'NOT_FOUND' } });
+
+    // Then
+    expect(screen.getByRole('button', { name: 'gRPC' })).toHaveAttribute('aria-pressed', 'true');
+    expect(await screen.findByDisplayValue('library.v1.BookService')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('GetBook')).toBeInTheDocument();
+    expect(screen.getByText(/grpcurl -plaintext -d '\{\}' x:80 library.v1.BookService\/GetBook/)).toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: 'Response message' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Query parameters')).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /Try it/ })).not.toBeInTheDocument();
+  });
+
   it('tells viewers the stub is read-only', () => {
     // Given
     renderWithShell(<Host canEdit={false} />);

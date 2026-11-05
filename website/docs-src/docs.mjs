@@ -22,6 +22,7 @@ export const GROUPS = [
       { slug: 'files', title: 'Response files', icon: 'FileArrowUp', description: 'Serve images, PDFs, CSV and other large or binary bodies with the right content type.' },
       { slug: 'soap', title: 'SOAP & WSDL', icon: 'Envelope', description: 'Generate SOAP stubs from a WSDL, match operations and answer with faults.' },
       { slug: 'graphql', title: 'GraphQL', icon: 'Graph', description: 'Mock a GraphQL API from its schema with generated data, fixed answers per operation and a console.' },
+      { slug: 'grpc', title: 'gRPC', icon: 'Plugs', description: 'Serve gRPC services from a protobuf descriptor set and answer each method with JSON stubs and gRPC status codes.' },
       { slug: 'proxy', title: 'Proxy & record', icon: 'ArrowsLeftRight', description: 'Pass calls through to a real service and record the answers as stubs.' },
       { slug: 'stub-controls', title: 'On, off & usage', icon: 'ToggleRight', description: 'Turn stubs off without deleting them and see how often each one is called.' },
     ],

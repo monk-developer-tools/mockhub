@@ -27,4 +27,18 @@ describe('StubRoute', () => {
     expect(screen.getByText('*')).toBeInTheDocument();
     expect(screen.getByText('proxy')).toBeInTheDocument();
   });
+
+  it('shows gRPC stubs with their method path and gRPC status', () => {
+    // When
+    render(<StubRoute basePath="/shop" stub={{
+      request: { method: 'POST', urlPath: '/library.v1.BookService/GetBook' },
+      response: { status: 200, headers: { 'grpc-status-name': 'NOT_FOUND' } },
+      metadata: { mockhub: { type: 'grpc' } },
+    }} />);
+
+    // Then
+    expect(screen.getByText('gRPC')).toHaveClass('jack', 'gRPC');
+    expect(screen.getByText('/library.v1.BookService/GetBook')).toHaveAttribute('title', '/library.v1.BookService/GetBook');
+    expect(screen.getByText('NOT_FOUND')).toHaveClass('status-plug', 's4');
+  });
 });

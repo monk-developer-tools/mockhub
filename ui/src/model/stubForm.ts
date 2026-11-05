@@ -1,4 +1,5 @@
 import type { Json, JsonObject, RatePeriod, Stub } from '../api/types';
+import { applyGrpc, readGrpc, validateGrpc } from './grpc';
 
 export type UrlMatchType = 'url' | 'urlPath' | 'urlPathTemplate' | 'urlPattern' | 'urlPathPattern' | 'any';
 export type ValueOperator = 'equalTo' | 'contains' | 'matches' | 'doesNotMatch' | 'doesNotContain' | 'absent' | 'present';
@@ -14,7 +15,7 @@ export type BodyOperator =
 export type BodyType = 'json' | 'text' | 'xml' | 'file' | 'base64' | 'none';
 export type DelayType = 'none' | 'fixed' | 'uniform' | 'lognormal' | 'chunked';
 export type ResponseMode = 'direct' | 'proxy' | 'fault' | 'callout' | 'graphql';
-export type StubKind = 'rest' | 'soap' | 'graphql';
+export type StubKind = 'rest' | 'soap' | 'graphql' | 'grpc';
 export type Fault = 'CONNECTION_RESET_BY_PEER' | 'EMPTY_RESPONSE' | 'MALFORMED_RESPONSE_CHUNK' | 'RANDOM_DATA_THEN_CLOSE';
 
 export interface ValueMatcher {
@@ -128,6 +129,10 @@ export interface StubForm {
   graphqlSchema: string;
   graphqlOperation: string;
   graphqlVariables: string;
+  grpcService: string;
+  grpcMethod: string;
+  grpcStatus: string;
+  grpcReason: string;
   soapVersion: '1.1' | '1.2';
   soapAction: string;
   soapOperation: string;
@@ -182,15 +187,16 @@ export function soapOperationXPath(operation: string) {
 export function emptyForm(kind: StubKind = 'rest'): StubForm {
   const soap = kind === 'soap';
   const graphql = kind === 'graphql';
+  const grpc = kind === 'grpc';
   return {
     kind,
     name: '',
     description: '',
     folder: '',
     priority: '',
-    method: soap || graphql ? 'POST' : 'GET',
+    method: soap || graphql || grpc ? 'POST' : 'GET',
     urlMatch: soap ? 'urlPath' : 'urlPath',
-    url: soap ? '/ws/service' : graphql ? '/graphql' : '/',
+    url: soap ? '/ws/service' : graphql ? '/graphql' : grpc ? '' : '/',
     query: [],
     headers: [],
     cookies: [],
@@ -201,9 +207,9 @@ export function emptyForm(kind: StubKind = 'rest'): StubForm {
     responseMode: 'direct',
     status: '200',
     statusMessage: '',
-    responseHeaders: [{ key: 'Content-Type', value: soap ? soapContentType('1.1') : 'application/json' }],
+    responseHeaders: grpc ? [] : [{ key: 'Content-Type', value: soap ? soapContentType('1.1') : 'application/json' }],
     bodyType: soap ? 'xml' : 'json',
-    responseBody: soap ? soapEnvelope('1.1', '<ns:OperationResponse xmlns:ns="http://example.com/">\n      <ns:result>ok</ns:result>\n    </ns:OperationResponse>') : graphql ? '{\n  "data": {\n    "thing": null\n  }\n}' : '{\n  "message": "Hello from MockHub"\n}',
+    responseBody: soap ? soapEnvelope('1.1', '<ns:OperationResponse xmlns:ns="http://example.com/">\n      <ns:result>ok</ns:result>\n    </ns:OperationResponse>') : graphql ? '{\n  "data": {\n    "thing": null\n  }\n}' : grpc ? '{}' : '{\n  "message": "Hello from MockHub"\n}',
     templating: false,
     delayType: 'none',
     fixedDelay: '500',
@@ -220,6 +226,10 @@ export function emptyForm(kind: StubKind = 'rest'): StubForm {
     graphqlSchema: '',
     graphqlOperation: graphql ? 'GetThing' : '',
     graphqlVariables: '',
+    grpcService: '',
+    grpcMethod: '',
+    grpcStatus: 'OK',
+    grpcReason: '',
     soapVersion: '1.1',
     soapAction: '',
     soapOperation: soap ? 'Operation' : '',
@@ -330,7 +340,7 @@ export function fromStub(stub: Stub): Conversion {
   const request = obj(stub.request);
   const response = obj(stub.response);
   const meta = obj(obj(stub.metadata).mockhub);
-  const kind: StubKind = meta.type === 'soap' ? 'soap' : meta.type === 'graphql' ? 'graphql' : 'rest';
+  const kind: StubKind = meta.type === 'soap' ? 'soap' : meta.type === 'graphql' ? 'graphql' : meta.type === 'grpc' ? 'grpc' : 'rest';
   const form = emptyForm(kind);
 
   form.name = str(stub.name);
@@ -464,10 +474,11 @@ export function fromStub(stub: Stub): Conversion {
     const xpath = form.body.find((b) => b.operator === 'matchesXPath')?.value ?? '';
     form.soapOperation = /local-name\(\)='([^']+)'\]$/.exec(xpath)?.[1] ?? '';
   }
-  return { form, unsupported };
+  return { form: kind === 'grpc' ? readGrpc(form) : form, unsupported };
 }
 
-export function toStub(form: StubForm, original: Stub = {}): Stub {
+export function toStub(input: StubForm, original: Stub = {}): Stub {
+  const form = input.kind === 'grpc' ? applyGrpc(input) : input;
   const stub: Stub = structuredClone(original);
   const request: JsonObject = { ...obj(stub.request) };
   for (const key of [...URL_FIELDS, 'method', 'queryParameters', 'headers', 'cookies', 'bodyPatterns']) delete request[key];
@@ -728,8 +739,9 @@ export function applySoapDefaults(form: StubForm): StubForm {
   return next;
 }
 
-export function validate(form: StubForm): string[] {
-  const errors: string[] = [];
+export function validate(input: StubForm): string[] {
+  const form = input.kind === 'grpc' ? applyGrpc(input) : input;
+  const errors: string[] = input.kind === 'grpc' ? validateGrpc(input) : [];
   if (form.urlMatch !== 'any' && !form.url.trim()) errors.push('Enter a URL or choose "Any URL".');
   if ((form.urlMatch === 'urlPattern' || form.urlMatch === 'urlPathPattern') && !isValidRegex(form.url)) {
     errors.push('The URL pattern is not a valid regular expression.');

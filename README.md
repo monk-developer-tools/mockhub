@@ -6,7 +6,7 @@
 
 <p align="center">
   <strong>Every dependency. Mocked in minutes.</strong><br>
-  A team mock server for REST, SOAP and GraphQL, built on WireMock, with a web UI, an AI assistant and one Docker image.
+  A team mock server for REST, SOAP, GraphQL and gRPC, built on WireMock, with a web UI, an AI assistant and one Docker image.
 </p>
 
 <p align="center">
@@ -136,6 +136,9 @@ screenshots, and the [live demo](https://mockhub.devops-monk.com/__admin/mockhub
 - **GraphQL from a schema.** Import SDL or an introspection result and one endpoint answers every query and mutation
   with realistic data in exactly the requested shape, echoing arguments such as ids and inputs. Fixed answers match an
   operation name and variables, and a GraphQL console runs example operations and saves answers as stubs.
+- **gRPC from a descriptor set.** Upload the output of `protoc --include_imports --descriptor_set_out` and MockHub
+  serves those services over HTTP/2 on its port, with server reflection for grpcurl. Stubs match the request message
+  as JSON and answer with a message written as JSON or with any gRPC status code.
 - **Import** OpenAPI 3 / Swagger 2 (JSON or YAML), WSDL, SOAP sample requests, GraphQL schemas, or WireMock mappings.
 - **Move a whole WireMock repository.** Start MockHub on a copy of the folder, or import it as one zip (up to 20,000
   files): files with many stubs, `./` body file paths, folders and templated file names all keep working, and the stub

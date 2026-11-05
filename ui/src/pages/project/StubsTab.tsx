@@ -15,6 +15,7 @@ import { describeUrl, emptyForm, errorPercentOf, isDisabled, toStub } from '../.
 import { useApp } from '../../state/AppContext';
 import { moveTargets } from '../../model/moveTargets';
 import { useProject } from './ProjectPage';
+import { parseGrpcPath } from '../../model/grpc';
 import { StubEditor } from './StubEditor';
 import { TemplateGallery } from './TemplateGallery';
 import { CrudDialog } from './CrudDialog';
@@ -30,6 +31,7 @@ function folderOf(stub: Stub) {
   if (meta.folder) return meta.folder;
   if (meta.type === 'soap') return 'SOAP';
   if (meta.type === 'graphql') return 'GraphQL';
+  if (meta.type === 'grpc') return parseGrpcPath(describeUrl(stub)).service || 'gRPC';
   const first = describeUrl(stub).split('/').find((s) => s && !s.startsWith('{') && !/[.*+?^$()[\]|\\]/.test(s));
   return first ?? 'root';
 }
@@ -83,12 +85,13 @@ export function StubsTab() {
     const ordered = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'ANY'].filter((m) => methods.has(m));
     const soap = (stubs ?? []).some((s) => metaOf(s).type === 'soap');
     const graphql = (stubs ?? []).some((s) => metaOf(s).type === 'graphql');
-    return ['All', ...ordered, ...(soap ? ['SOAP'] : []), ...(graphql ? ['GraphQL'] : [])];
+    const grpc = (stubs ?? []).some((s) => metaOf(s).type === 'grpc');
+    return ['All', ...ordered, ...(soap ? ['SOAP'] : []), ...(graphql ? ['GraphQL'] : []), ...(grpc ? ['gRPC'] : [])];
   }, [stubs]);
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return (stubs ?? [])
-      .filter((s) => chip === 'All' || (chip === 'SOAP' ? metaOf(s).type === 'soap' : chip === 'GraphQL' ? metaOf(s).type === 'graphql' : methodOf(s) === chip))
+      .filter((s) => chip === 'All' || (chip === 'SOAP' ? metaOf(s).type === 'soap' : chip === 'GraphQL' ? metaOf(s).type === 'graphql' : chip === 'gRPC' ? metaOf(s).type === 'grpc' : methodOf(s) === chip))
       .filter((s) => !q || JSON.stringify(s).toLowerCase().includes(q));
   }, [stubs, query, chip]);
   const grouped = useMemo(() => {
@@ -169,6 +172,9 @@ export function StubsTab() {
             <button className="btn small" onClick={() => startDraft(toStub(emptyForm('graphql')))}>
               <Plus size={14} /> GraphQL stub
             </button>
+            <button className="btn small" onClick={() => startDraft(toStub(emptyForm('grpc')))}>
+              <Plus size={14} /> gRPC stub
+            </button>
             <button className="btn small" onClick={() => setCrudOpen(true)}>
               <Database size={14} /> CRUD resource
             </button>
@@ -224,6 +230,7 @@ export function StubsTab() {
                         {errorPercentOf(s) > 0 && <span className="tag warn" title={`Fails ${errorPercentOf(s)}% of calls`}>{errorPercentOf(s)}% fail</span>}
                         {metaOf(s).type === 'soap' && <span className="tag soap">SOAP</span>}
                         {metaOf(s).type === 'graphql' && <span className="tag graphql">GraphQL</span>}
+                        {metaOf(s).type === 'grpc' && <span className="tag grpc">gRPC</span>}
                         {Boolean(s.scenarioName) && <span className="tag scenario">{String(s.scenarioName)}</span>}
                         {s.priority !== undefined && <span className="tag">p{String(s.priority)}</span>}
                         {String(s.name ?? '')}
@@ -276,6 +283,9 @@ export function StubsTab() {
                     </button>
                     <button className="btn" onClick={() => startDraft(toStub(emptyForm('graphql')))}>
                       <Plus size={15} /> GraphQL stub
+                    </button>
+                    <button className="btn" onClick={() => startDraft(toStub(emptyForm('grpc')))}>
+                      <Plus size={15} /> gRPC stub
                     </button>
                     <button className="btn" onClick={() => setCrudOpen(true)}>
                       <Database size={15} /> CRUD resource

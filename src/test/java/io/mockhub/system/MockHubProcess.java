@@ -46,6 +46,10 @@ final class MockHubProcess implements AutoCloseable {
     return java.nio.file.Files.readString(output);
   }
 
+  int port() {
+    return port;
+  }
+
   String baseUrl() {
     return "http://localhost:" + port;
   }

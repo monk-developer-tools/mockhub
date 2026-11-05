@@ -29,6 +29,8 @@
 
 .jack.CRUD { --tone: var(--accent); }
 
+.jack.gRPC { --tone: var(--ok); }
+
 .status-plug {
   --tone: var(--muted);
   display: inline-flex;
@@ -305,6 +307,63 @@
   background: var(--accent-soft);
   color: var(--accent);
   border-color: transparent;
+}
+
+.tag.grpc {
+  background: var(--ok-soft);
+  color: var(--ok);
+  border-color: transparent;
+}
+
+.code-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--line);
+  min-width: 0;
+}
+
+.code-line code {
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.grpc-list,
+.grpc-methods {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.grpc-list > li + li {
+  border-top: 1px solid var(--line);
+  margin-top: 10px;
+  padding-top: 10px;
+}
+
+.grpc-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+.grpc-service {
+  margin: 8px 0 0 12px;
+}
+
+.grpc-methods li {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  flex-wrap: wrap;
+  padding: 3px 0;
 }
 
 .graphql-console .cm-editor {

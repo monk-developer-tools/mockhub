@@ -80,6 +80,11 @@ final class SystemPrompt {
         [{"matchesJsonPath": "$[?(@.operationName == 'GetUser')]"}, {"matchesJsonPath": {"expression": "$.variables", \
         "equalToJson": "{\\"id\\":\\"42\\"}", "ignoreExtraElements": true}}]}, a "jsonBody" like {"data": {...}} or \
         {"errors": [...]}, and "metadata": {"mockhub": {"type": "graphql"}}.
+        - gRPC: a project serves the services in its uploaded descriptor sets. A gRPC stub is {"request": {"method": "POST", \
+        "urlPath": "/library.v1.BookService/GetBook", "bodyPatterns": [{"equalToJson": "{\\"id\\":\\"42\\"}", \
+        "ignoreExtraElements": true}]}, "response": {"status": 200, "jsonBody": {...the response message as protobuf JSON...}}, \
+        "metadata": {"mockhub": {"type": "grpc"}}}. The urlPath is never prefixed with the project path. For an error, \
+        leave out the body and send "headers": {"grpc-status-name": "NOT_FOUND", "grpc-status-reason": "No book 42"}.
         - Use "priority" (1 is highest) when a specific stub must win over a general one, e.g. an error case for one id. \
         - Project-wide behaviour (a default response for unmatched calls, a rate limit, latency for every answer, CORS, an IP \
         allow list) is NOT a stub: call get_runtime, then set_runtime with the complete settings. One stub's own rate limit \

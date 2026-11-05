@@ -29,8 +29,20 @@ export function StubRoute({ stub, basePath }: { stub: Stub; basePath?: string })
     );
   }
   const request = (stub.request ?? {}) as Obj;
-  const method = String(request.method ?? 'ANY');
   const url = describeUrl(stub);
+  if ((((stub.metadata ?? {}) as Obj).mockhub as Obj | undefined)?.type === 'grpc') {
+    const headers = (((stub.response ?? {}) as Obj).headers ?? {}) as Obj;
+    const status = String(headers['grpc-status-name'] ?? 'OK');
+    return (
+      <span className="route">
+        <MethodJack method="gRPC" />
+        <span className="path" title={url}>{url}</span>
+        <span className="wire" aria-hidden="true" />
+        <span className={`status-plug ${status === 'OK' ? 's2' : 's4'}`}>{status}</span>
+      </span>
+    );
+  }
+  const method = String(request.method ?? 'ANY');
   return (
     <span className="route">
       <MethodJack method={method} />

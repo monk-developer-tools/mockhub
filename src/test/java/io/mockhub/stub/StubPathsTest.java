@@ -171,4 +171,19 @@ class StubPathsTest {
     // Then
     assertThat(stub.path("response").has("proxyUrlPrefixToRemove")).isFalse();
   }
+
+  @org.junit.jupiter.api.Test
+  void leavesGrpcPathsAloneBecauseClientsCannotAddAPrefix() {
+    // Given
+    ObjectNode stub = json("{'request':{'method':'POST','urlPath':'/library.v1.BookService/GetBook'},'metadata':{'mockhub':{'type':'grpc'}}}");
+
+    // When
+    StubPaths.toAbsolute(stub, "/pay");
+    String absolute = stub.at("/request/urlPath").asText();
+    StubPaths.toRelative(stub, "/library.v1.BookService");
+
+    // Then
+    assertThat(absolute).isEqualTo("/library.v1.BookService/GetBook");
+    assertThat(stub.at("/request/urlPath").asText()).isEqualTo("/library.v1.BookService/GetBook");
+  }
 }

@@ -41,6 +41,7 @@ import {
 import { BodyMatcherRows, KeyValueRows, ValueMatcherRows } from './MatcherRows';
 import { TryIt } from './TryIt';
 import { GraphQlConsole } from './GraphQlConsole';
+import { GrpcCall, GrpcRequestFields, GrpcResponseFields } from './GrpcStubFields';
 import { detectSoap } from '../../model/soap';
 import { WeightedResponses } from './WeightedResponses';
 import { CodeSnippets } from '../../components/CodeSnippets';
@@ -273,6 +274,7 @@ export function StubEditor({ project, moveTargets, stub, isNew, canEdit, onSaved
 
   const readOnly = !canEdit;
   const soap = form.kind === 'soap';
+  const grpc = form.kind === 'grpc';
   const bodyLanguage = form.bodyType === 'json' ? 'json' : form.bodyType === 'xml' ? 'xml' : 'text';
   const bodyTable = useMemo(() => (form.bodyType === 'json' ? tableOf(form.responseBody) : null), [form.bodyType, form.responseBody]);
 
@@ -408,6 +410,10 @@ export function StubEditor({ project, moveTargets, stub, isNew, canEdit, onSaved
                     onClick={() => update({ kind: 'graphql', method: form.method === 'GET' ? 'POST' : form.method })}>
                     GraphQL
                   </button>
+                  <button type="button" aria-pressed={grpc}
+                    onClick={() => update({ kind: 'grpc', responseMode: 'direct', bodyType: 'json', alternatives: [], responseHeaders: form.responseHeaders.filter((h) => h.key.toLowerCase() !== 'content-type') })}>
+                    gRPC
+                  </button>
                 </div>
               </div>
               <label className="field">
@@ -427,7 +433,9 @@ export function StubEditor({ project, moveTargets, stub, isNew, canEdit, onSaved
             </div>
           </div>
 
-          <div className="section">
+          {grpc && <GrpcRequestFields project={project} form={form} update={update} readOnly={readOnly} />}
+
+          {!grpc && <div className="section">
             <h3>Request</h3>
             <div className="rows">
               <div className="row" style={{ gridTemplateColumns: '120px 210px 1fr' }}>
@@ -456,7 +464,7 @@ export function StubEditor({ project, moveTargets, stub, isNew, canEdit, onSaved
                 {form.urlMatch === 'any' ? '/…' : form.url}
               </p>
             </div>
-          </div>
+          </div>}
 
           {soap && (
             <div className="section">
@@ -504,21 +512,28 @@ export function StubEditor({ project, moveTargets, stub, isNew, canEdit, onSaved
             </div>
           )}
 
+          {!grpc && (
+            <div className="section">
+              <h3>Query parameters <span className="muted small">all must match</span></h3>
+              <ValueMatcherRows label="Parameter" keyPlaceholder="status" rows={form.query} onChange={(query) => update({ query })} disabled={readOnly} />
+            </div>
+          )}
           <div className="section">
-            <h3>Query parameters <span className="muted small">all must match</span></h3>
-            <ValueMatcherRows label="Parameter" keyPlaceholder="status" rows={form.query} onChange={(query) => update({ query })} disabled={readOnly} />
+            <h3>{grpc ? <>Metadata <span className="muted small">gRPC request metadata, all must match</span></> : 'Headers'}</h3>
+            <ValueMatcherRows label="Header" keyPlaceholder={grpc ? 'authorization' : 'Authorization'} rows={form.headers} onChange={(headers) => update({ headers })} disabled={readOnly} />
           </div>
-          <div className="section">
-            <h3>Headers</h3>
-            <ValueMatcherRows label="Header" keyPlaceholder="Authorization" rows={form.headers} onChange={(headers) => update({ headers })} disabled={readOnly} />
-          </div>
-          <div className="section">
-            <h3>Cookies</h3>
-            <ValueMatcherRows label="Cookie" keyPlaceholder="session" rows={form.cookies} onChange={(cookies) => update({ cookies })} disabled={readOnly} />
-          </div>
+          {!grpc && (
+            <div className="section">
+              <h3>Cookies</h3>
+              <ValueMatcherRows label="Cookie" keyPlaceholder="session" rows={form.cookies} onChange={(cookies) => update({ cookies })} disabled={readOnly} />
+            </div>
+          )}
           <div className="section">
             <h3>
-              Body {soap ? <span className="muted small">extra XPath conditions, e.g. a field value</span> : <span className="muted small">all must match</span>}
+              {grpc ? 'Request message' : 'Body'}{' '}
+              {soap ? <span className="muted small">extra XPath conditions, e.g. a field value</span>
+                : grpc ? <span className="muted small">the message arrives as JSON, so match fields with JSON or JSONPath</span>
+                : <span className="muted small">all must match</span>}
             </h3>
             <BodyMatcherRows rows={form.body} onChange={(body) => update({ body })} disabled={readOnly} />
           </div>
@@ -526,16 +541,18 @@ export function StubEditor({ project, moveTargets, stub, isNew, canEdit, onSaved
           <div className="section">
             <h3>
               Response
-              <div className="segmented" role="group" aria-label="Response type">
+              {!grpc && <div className="segmented" role="group" aria-label="Response type">
                 {(['direct', 'callout', 'proxy', 'fault', ...(form.kind === 'graphql' || form.responseMode === 'graphql' ? ['graphql'] : [])] as ResponseMode[]).map((m) => (
                   <button type="button" key={m} aria-pressed={form.responseMode === m} onClick={() => update({ responseMode: m })}>
                     {RESPONSE_MODE_LABELS[m]}
                   </button>
                 ))}
-              </div>
+              </div>}
             </h3>
 
-            {form.responseMode === 'direct' && (
+            {grpc && <GrpcResponseFields form={form} update={update} readOnly={readOnly} />}
+
+            {form.responseMode === 'direct' && !grpc && (
               <div className="rows" style={{ gap: 14 }}>
                 <div className="grid two">
                   <label className="field">
@@ -690,7 +707,7 @@ export function StubEditor({ project, moveTargets, stub, isNew, canEdit, onSaved
             )}
           </div>
 
-          {form.responseMode === 'direct' && <WeightedResponses form={form} update={update} readOnly={readOnly} soap={soap} />}
+          {form.responseMode === 'direct' && !grpc && <WeightedResponses form={form} update={update} readOnly={readOnly} soap={soap} />}
 
           {form.responseMode !== 'fault' && (
             <div className="section">
@@ -731,7 +748,7 @@ export function StubEditor({ project, moveTargets, stub, isNew, canEdit, onSaved
             </div>
           )}
 
-          {form.responseMode !== 'fault' && (
+          {form.responseMode !== 'fault' && !grpc && (
             <div className="section">
               <h3>Failures <span className="muted small">optional: make some calls fail at random or limit how often it answers</span></h3>
               <div className="rows">
@@ -887,7 +904,8 @@ export function StubEditor({ project, moveTargets, stub, isNew, canEdit, onSaved
 
           <div className="section">
             <h3>
-              Example request body <span className="muted small">used by Try it and the Postman / Bruno exports</span>
+              {grpc ? 'Example request message' : 'Example request body'}{' '}
+              <span className="muted small">{grpc ? 'used by the grpcurl command below' : 'used by Try it and the Postman / Bruno exports'}</span>
               {soap && !readOnly && (
                 <button type="button" className="btn small" disabled={!detectSoap(form.sampleBody)} onClick={fillFromSample}
                   title="Take the operation and SOAP version from the example request">
@@ -903,8 +921,9 @@ export function StubEditor({ project, moveTargets, stub, isNew, canEdit, onSaved
       {!isNew && form.kind === 'graphql' && mode === 'form' && (
         <GraphQlConsole project={project} form={form} canEdit={canEdit} onCreate={createOperationStub} />
       )}
-      {!isNew && !(form.kind === 'graphql' && mode === 'form') && <TryIt project={project} form={mode === 'form' ? form : fromStub(preview).form} />}
-      {!isNew && (
+      {!isNew && grpc && <GrpcCall project={project} form={mode === 'form' ? form : fromStub(preview).form} />}
+      {!isNew && !grpc && !(form.kind === 'graphql' && mode === 'form') && <TryIt project={project} form={mode === 'form' ? form : fromStub(preview).form} />}
+      {!isNew && !grpc && (
         <div className="section">
           <h3>Call it from your code</h3>
           <CodeSnippets request={sampleRequest(mode === 'form' ? form : fromStub(preview).form, project.apiKey)} baseUrl={project.mockUrl} />

@@ -36,6 +36,11 @@ import io.mockhub.controller.HistoryController;
 import io.mockhub.Main;
 import io.mockhub.callout.SyncCalloutTransformer;
 import io.mockhub.controller.GraphQlController;
+import io.mockhub.controller.GrpcController;
+import io.mockhub.grpc.FileDescriptorStore;
+import io.mockhub.grpc.GrpcCatalog;
+import io.mockhub.grpc.GrpcRequestFilter;
+import io.mockhub.grpc.GrpcServerFactory;
 import io.mockhub.graphql.ExampleOperations;
 import io.mockhub.graphql.GraphQlEngine;
 import io.mockhub.graphql.GraphQlTransformer;
@@ -72,6 +77,7 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.function.Function;
+import java.util.Optional;
 import com.github.tomakehurst.wiremock.http.Request;
 import io.mockhub.audit.AuditLog;
 import io.mockhub.audit.AuditRecorder;
@@ -235,8 +241,11 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     UserService users = new UserService(new FileUserRepository(dataDir), config.users, new PasswordHasher(), clock);
     AccessTokenService accessTokens = new AccessTokenService(new FileAccessTokenRepository(dataDir), users::find,
         id -> projectsRef.get().find(id).isPresent(), clock);
+    GrpcCatalog grpc = new GrpcCatalog(new FileDescriptorStore(dataDir), id -> projectsRef.get().find(id).map(Project::name).orElse(null));
+    GrpcServerFactory grpcServer = new GrpcServerFactory(services.getStores().getBlobStore("grpc"), grpc::fileDescriptors);
+    grpc.onChange(grpcServer::loadFileDescriptors);
     ProjectService projects = new ProjectService(new FileProjectRepository(dataDir),
-        List.of(stubs, new ProjectDataCleaner(dataStore, bodyFiles), history, traffic, staged, accessTokens, new SnapshotCleanup(snapshotStore)), clock);
+        List.of(stubs, grpc, new ProjectDataCleaner(dataStore, bodyFiles), history, traffic, staged, accessTokens, new SnapshotCleanup(snapshotStore)), clock);
     projectsRef.set(projects);
     TeamService teams = new TeamService(new FileTeamRepository(dataDir), List.of(users), clock);
     DatasetService datasets = new DatasetService(new FileDatasetRepository(dataDir), DatasetService.Limits.DEFAULT, clock);
@@ -319,7 +328,8 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     JwtHelpers jwtHelpers = new JwtHelpers(new JwtKeys(dataDir), clock);
     CorsHeaders corsHeaders = new CorsHeaders(config.stubCors);
     LoadMeter loadMeter = new LoadMeter(clock);
-    CorsForRequest corsForRequest = new CorsForRequest(projects::findForPath, corsHeaders);
+    Function<String, Optional<Project>> projectForPath = segment -> grpc.ownerOf(segment).flatMap(projects::find).or(() -> projects.findForPath(segment));
+    CorsForRequest corsForRequest = new CorsForRequest(projectForPath, corsHeaders);
     PlaygroundHistory playgroundHistory = new PlaygroundHistory(dataDir);
 
     Function<Request, Principal> principals = request -> auth.principal(request.getHeader("Authorization")).orElse(null);
@@ -340,9 +350,10 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
         new HistoryController(projects, history, traffic, Main.VERSION),
         new CalloutController(calloutLog),
         new GraphQlController(projects, graphQlExamples),
+        new GrpcController(projects, grpc),
         new ImportExportController(projects, stubs, exporters, importers, urls, new WireMockArchiveImporter(bodyFiles)),
         new AiController(aiSettings, aiProviders, chat, assistant, assistantJobs, projects, urls, new BodyGenerator(aiSettings, chat)),
-        new BackupController(new BackupService(orgs, teams, projects, gateway, dataStore, bodyFiles, datasets, connections, clock)),
+        new BackupController(new BackupService(orgs, teams, projects, gateway, dataStore, bodyFiles, datasets, connections, grpc, clock)),
         new DataController(projects, stubs, dataStore, crud),
         new StateController(projects, stateRepository, clock),
         new DatasetController(orgs, datasets),
@@ -377,25 +388,27 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     maintenance.scheduleWithFixedDelay(() -> safely(rateLimiter::prune), 10, 10, TimeUnit.MINUTES);
 
     List<Extension> extensions = new ArrayList<>(List.of(
+        grpcServer,
+        new GrpcRequestFilter(),
         publicTools,
-        new InstantMockFilter(projects::findForPath, instantMocks),
+        new InstantMockFilter(projectForPath, instantMocks),
         new SandboxTemplateTransformer(templatePlayground),
         new PersistenceListener(),
         new CrudTransformer(crud),
         new ErrorRateTransformer(() -> ThreadLocalRandom.current().nextDouble()),
         new DisabledStubMatcher(),
         new CalloutListener(callouts, calloutScheduler),
-        new HistoryRecorder(projects::findForPath, history, traffic),
-        new StateScopeListener(projects::findForPath, stateScope),
+        new HistoryRecorder(projectForPath, history, traffic),
+        new StateScopeListener(projectForPath, stateScope),
         new SyncCalloutTransformer(callouts),
         new GraphQlTransformer(new GraphQlEngine(graphQlSchemas)),
         new SoapEndpointTransformer(),
         new ConnectionProxyTransformer(connectionAuth),
-        new RuntimeFilter(projects::findForPath, corsHeaders, rateLimiter, loadMeter),
-        new ApiKeyFilter(projects::findForPath, corsForRequest::headers),
+        new RuntimeFilter(projectForPath, corsHeaders, rateLimiter, loadMeter),
+        new ApiKeyFilter(projectForPath, corsForRequest::headers),
         new RuntimeTransformer(projects::find, rateLimiter, loadMeter),
         new CorsTransformer(corsForRequest),
-        new ProjectScopeMatcher(projects::findForPath),
+        new ProjectScopeMatcher(projectForPath),
         fakeHelpers,
         valueHelpers,
         datasetHelpers,
