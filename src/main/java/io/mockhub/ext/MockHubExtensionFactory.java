@@ -136,6 +136,7 @@ import io.mockhub.template.ValueHelpers;
 import io.mockhub.template.WeightedTransformer;
 import io.mockhub.auth.ProjectScope;
 import io.mockhub.auth.AuthService;
+import io.mockhub.auth.Role;
 import io.mockhub.auth.Principal;
 import io.mockhub.auth.TokenService;
 import io.mockhub.controller.AuthController;
@@ -147,6 +148,10 @@ import io.mockhub.controller.ExampleController;
 import io.mockhub.runtime.IpAllowList;
 import io.mockhub.controller.ProxyController;
 import io.mockhub.proxy.ProxyService;
+import io.mockhub.controller.TunnelController;
+import io.mockhub.tunnel.TunnelHub;
+import io.mockhub.tunnel.TunnelServlet;
+import io.mockhub.tunnel.TunnelProxyTransformer;
 import io.mockhub.controller.OpenApiLinkController;
 import io.mockhub.importer.SpecFetcher;
 import io.mockhub.controller.ImportExportController;
@@ -252,10 +257,20 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     GrpcCatalog grpc = new GrpcCatalog(new FileDescriptorStore(dataDir), id -> projectsRef.get().find(id).map(Project::name).orElse(null));
     SecretBox secrets = SecretBox.of(config.secretKey, JsonFile.inDataDir(dataDir, "secret.key"));
     TlsService tls = new TlsService(new TlsStore(dataDir, secrets));
+    AtomicReference<AuthService> authRef = new AtomicReference<>();
+    TunnelHub tunnels = new TunnelHub((principal, projectId) -> principal.allowsProject(projectId)
+        && projectsRef.get().find(projectId).map(p -> principal.isAdmin() || principal.canInTeam(p.orgId(), p.teamId(), Role.EDITOR)).orElse(false),
+        Executors.newSingleThreadScheduledExecutor(r -> {
+          Thread t = new Thread(r, "mockhub-tunnels");
+          t.setDaemon(true);
+          return t;
+        }), clock);
+    accessTokens.onRevoke(tunnels::onTokenRevoked);
+    TunnelServlet tunnelServlet = new TunnelServlet(tunnels, header -> authRef.get().principal(header));
     ProxyService proxy = new ProxyService(config.proxyEnabled, IpAllowList.ofText(config.proxyAllow), config.proxyCaKeystore(),
         id -> projectsRef.get().find(id));
     MockHubServerFactory server = new MockHubServerFactory(services.getStores().getBlobStore("grpc"), grpc::fileDescriptors, tls::attach,
-        host -> projectsRef.get().findForHost(host).map(Project::basePath), proxy);
+        host -> projectsRef.get().findForHost(host).map(Project::basePath), proxy, tunnelServlet);
     grpc.onChange(server::loadFileDescriptors);
     ProjectService projects = new ProjectService(new FileProjectRepository(dataDir),
         List.of(stubs, grpc, new ProjectDataCleaner(dataStore, bodyFiles), history, traffic, staged, accessTokens, new SnapshotCleanup(snapshotStore), proxy), clock);
@@ -279,7 +294,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     CalloutService callouts = new CalloutService(
         new CalloutRenderer(services::getTemplateEngine),
         calloutTargets,
-        new JdkHttpSender(), calloutLog, clock, connectionAuth, Thread::sleep);
+        new JdkHttpSender(), calloutLog, clock, connectionAuth, Thread::sleep, tunnels);
     ScheduledExecutorService calloutScheduler = Executors.newScheduledThreadPool(4, r -> {
       Thread t = new Thread(r, "mockhub-callout");
       t.setDaemon(true);
@@ -304,6 +319,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
         List.of(new AzureEntraProvider(http, new JwtVerifier(http, clock), config.ssoAuthority)),
         ssoSettings, users, new RoleMapper(orgs::exists, id -> teams.find(id).map(Team::orgId)), clock);
     AuthService auth = new AuthService(users, TokenService.fromDataDir(dataDir, clock), ssoSettings::active, accessTokens::principal);
+    authRef.set(auth);
     AccessPolicy policy = new AccessPolicy(id -> projects.find(id).map(p -> new ProjectScope(p.orgId(), p.teamId())), config.publicTools);
 
     BaseUrls urls = new BaseUrls(config.publicUrl);
@@ -366,6 +382,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
         new GrpcController(projects, grpc),
         new TlsController(tls),
         new ProxyController(proxy),
+        new TunnelController(tunnels),
         new ImportExportController(projects, stubs, exporters, importers, urls, new WireMockArchiveImporter(bodyFiles)),
         new OpenApiLinkController(new SpecFetcher(new JdkHttpSender(), new TargetGuard(config.playgroundAllowPrivate, InetAddress::getAllByName)), importers),
         new AiController(aiSettings, aiProviders, chat, assistant, assistantJobs, projects, urls, new BodyGenerator(aiSettings, chat)),
@@ -421,6 +438,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
         new SoapEndpointTransformer(),
         new EchoTransformer(projects::find),
         new ConnectionProxyTransformer(connectionAuth),
+        new TunnelProxyTransformer(tunnels),
         new RuntimeFilter(projectForPath, corsHeaders, rateLimiter, loadMeter),
         new ApiKeyFilter(projectForPath, corsForRequest::headers),
         new RuntimeTransformer(projects::find, rateLimiter, loadMeter),

@@ -79,7 +79,7 @@ final class MockHubProcess implements AutoCloseable {
     throw new IllegalStateException("MockHub did not become healthy within " + STARTUP_TIMEOUT);
   }
 
-  private static String jarPath() {
+  static String jarPath() {
     String jar = System.getProperty("mockhub.jar");
     if (jar == null) throw new IllegalStateException("System property mockhub.jar is not set; run through Gradle");
     return jar;

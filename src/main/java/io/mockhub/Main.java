@@ -3,6 +3,7 @@ package io.mockhub;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.common.FatalStartupException;
 import io.mockhub.ext.MockHubExtensionFactory;
+import io.mockhub.tunnel.TunnelClient;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -14,6 +15,10 @@ public final class Main {
           : "dev";
 
   public static void main(String[] args) {
+    if (args.length > 0 && args[0].equals("tunnel")) {
+      TunnelClient.main(Arrays.copyOfRange(args, 1, args.length));
+      return;
+    }
     String level = System.getenv("MOCKHUB_LOG_LEVEL");
     if (level != null && !level.isBlank()) System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", level.trim().toLowerCase());
     Config config = new Config(System.getenv());

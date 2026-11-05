@@ -42,9 +42,9 @@ Legend: ✅ have it · 🟡 partial · ❌ missing
 | Rate limits | Per project and per stub, 429 with Retry-After and X-RateLimit headers | ✅ | — |
 | CORS origin allow list | Per project allow list, credentials, simulated failure | ✅ | — |
 | Proxying and intercepting | Proxy and record per stub or project | ✅ | — |
-| Forward proxy (browser/OS proxy) | Missing | ❌ | F11 |
-| Local tunnelling | Missing | ❌ | F12 |
-| White-labelled domains | Missing | ❌ | F11 |
+| Forward proxy (browser/OS proxy) | `MOCKHUB_PROXY` with HTTPS interception through a MockHub CA | ✅ | F11 |
+| Local tunnelling | `mockhub.jar tunnel` and `tunnel://name` targets for proxy stubs and callouts | ✅ | F12 |
+| White-labelled domains | Custom domains per project, matched on the Host header | ✅ | F11 |
 | Request history: search, facets, 10-day retention | On-disk history, search, facets, HAR, configurable retention (default 7 days) | ✅ | — |
 | Snapshots: create, restore, pull to another endpoint | Snapshots with diff, restore, pull between projects, file download and upload | ✅ | — |
 | Stateful data management UI | Data tab for CRUD records and recorded state contexts | ✅ | — |
@@ -325,7 +325,7 @@ page reachable straight from the menu, and a visitor can use real MockHub featur
 /resources/http-echo/, /resources/test-data-generator/, /resources/2fa-code-generator/, /http-debugger/,
 /virtual-sandbox/explore/.
 
-We list only what MockHub really does: no GraphQL, gRPC or local-tunnel pages until F10 and F12 ship.
+We list only what MockHub really does.
 
 #### Navigation
 
@@ -711,10 +711,10 @@ Goal: a stub can proxy to a service on a developer's laptop, so webhooks reach l
 - Limits on body size and concurrent requests; tunnels close when the token is revoked.
 
 Checklist:
-- [ ] Tunnel protocol and server side
-- [ ] CLI
-- [ ] Proxy and callout targets
-- [ ] Tests, docs
+- [x] Tunnel protocol and server side (HTTP long polling instead of a WebSocket, so it passes through nginx with no new dependency and holds no server thread while waiting: `POST /__admin/mockhub/tunnel/{name}/next` waits up to 25 s for a request, `POST .../responses/{id}` returns the answer; JSON messages with header pairs and base64 bodies; the first poll registers the name for its owner, who needs the editor role and a token that isn't review-only; a name held by someone else gets 409; `GET /tunnels` and `DELETE /tunnels/{name}`)
+- [x] CLI (`java -jar mockhub.jar tunnel --server --token --name --to [--workers]`, also `MOCKHUB_URL` and `MOCKHUB_TOKEN`; workers poll, call the local service and send the answer back; 502 when the local service can't be reached; stops on 4xx such as a revoked token, retries on 5xx and network errors)
+- [x] Proxy and callout targets (`tunnel://name/path` as a proxy target, then-call and wait-for-callout URL; only projects the owner can edit and the token allows; 5 MB bodies, 20 waiting requests per tunnel, 5 tunnels per user, 30 s per request; errors in `X-MockHub-Tunnel-Error`; revoking the token closes its tunnels; Tunnels tab in the account dialog with status and traffic)
+- [x] Tests, docs (unit tests for the hub, messages and CLI options; integration tests with a real CLI and a local service for proxy, callout, offline, revoke and name clashes; Local tunnel docs page)
 
 ### Phase F13 — Contract drift detection
 

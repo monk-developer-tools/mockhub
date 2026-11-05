@@ -1,3 +1,4 @@
+import { isTunnelUrl } from './tunnels';
 import type { Json, JsonObject, RatePeriod, Stub } from '../api/types';
 import { applyGrpc, readGrpc, validateGrpc } from './grpc';
 
@@ -773,7 +774,7 @@ export function validate(input: StubForm): string[] {
       if (!Number.isInteger(status) || status < 100 || status > 599) errors.push('Each other response needs a status between 100 and 599.');
     }
   }
-  if (form.responseMode === 'proxy' && !/^https?:\/\//.test(form.proxyBaseUrl)) errors.push('Proxy target must start with http:// or https://');
+  if (form.responseMode === 'proxy' && !/^https?:\/\//.test(form.proxyBaseUrl) && !isTunnelUrl(form.proxyBaseUrl)) errors.push('Proxy target must start with http://, https:// or tunnel://');
   if (form.responseMode === 'callout' && !form.syncCallout.url.trim()) errors.push('Enter the URL to call, e.g. https://partner.example.com/authorize');
   if (form.responseMode === 'graphql' && !form.graphqlSchema.trim()) errors.push('Paste the GraphQL schema the answers come from.');
   if (form.kind === 'graphql' && form.graphqlOperation.trim() && !/^[A-Za-z_][A-Za-z0-9_]*$/.test(form.graphqlOperation.trim())) {

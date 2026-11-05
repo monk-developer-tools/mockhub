@@ -142,6 +142,9 @@ screenshots, and the [live demo](https://mockhub.devops-monk.com/__admin/mockhub
 - **Forward proxy.** With `MOCKHUB_PROXY=true`, browsers, apps and phones can use MockHub as an HTTP and HTTPS proxy:
   calls that match a stub get the mock, the rest go to the real service, and all of them are recorded in a chosen
   project. Setup guides cover curl, browsers, macOS and Android.
+- **Local tunnel.** `java -jar mockhub.jar tunnel --name laptop --to http://localhost:3000` connects a service on your
+  machine with an access token. Proxy stubs and callouts that target `tunnel://laptop/path` reach it through MockHub,
+  using only outgoing requests, with size, load and per-project permission limits. The account dialog lists your tunnels.
 - **Custom domains.** Give a project host names like `payments.mocks.example.com` and it answers at the root of each,
   next to its base path. Docs include nginx and Caddy setups.
 - **Echo the request.** An "Echo request" response type, or the Echo server example at `/echo`, answers any call with

@@ -24,12 +24,14 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
 public final class AccessTokenService implements ProjectListener {
   public static final String PREFIX = "mh_";
   public static final int MAX_PER_USER = 50;
+  private final List<Consumer<String>> revokeListeners = new java.util.concurrent.CopyOnWriteArrayList<>();
   private static final Set<Integer> EXPIRY_DAYS = Set.of(0, 7, 30, 90, 365);
   private static final Set<Role> ROLES = Set.of(Role.VIEWER, Role.EDITOR, Role.MANAGER, Role.ADMIN);
   private static final Duration USE_WRITE_INTERVAL = Duration.ofMinutes(5);
@@ -87,6 +89,10 @@ public final class AccessTokenService implements ProjectListener {
     return new Created(token, secret);
   }
 
+  public void onRevoke(Consumer<String> listener) {
+    revokeListeners.add(listener);
+  }
+
   public AccessToken revoke(Principal principal, String tokenId) {
     if (principal.grant() != null) throw new ApiException(403, "An access token can't revoke tokens");
     AccessToken token = repository.findAll().stream().filter(t -> t.id().equals(tokenId)).findFirst()
@@ -95,6 +101,7 @@ public final class AccessTokenService implements ProjectListener {
     repository.deleteById(tokenId);
     lastUse.remove(tokenId);
     written.remove(tokenId);
+    revokeListeners.forEach(l -> l.accept(tokenId));
     return token;
   }
 

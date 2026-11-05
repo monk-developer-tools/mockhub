@@ -4,6 +4,9 @@ import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
 import com.github.tomakehurst.wiremock.stubbing.StubMapping;
 import io.mockhub.playground.Header;
 import io.mockhub.playground.HttpSender;
+import io.mockhub.tunnel.TunnelException;
+import io.mockhub.tunnel.TunnelGateway;
+import io.mockhub.tunnel.TunnelMessages;
 import io.mockhub.stub.StubMetadata;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
@@ -33,6 +36,7 @@ public final class CalloutService {
   private final Clock clock;
   private final CalloutAuth auth;
   private final Pause pause;
+  private final TunnelGateway tunnels;
 
   public CalloutService(CalloutRenderer renderer, CalloutTargets targets, HttpSender sender, CalloutLog log, Clock clock) {
     this(renderer, targets, sender, log, clock, CalloutAuth.NONE, Thread::sleep);
@@ -40,6 +44,12 @@ public final class CalloutService {
 
   public CalloutService(CalloutRenderer renderer, CalloutTargets targets, HttpSender sender, CalloutLog log, Clock clock,
       CalloutAuth auth, Pause pause) {
+    this(renderer, targets, sender, log, clock, auth, pause, TunnelGateway.NONE);
+  }
+
+  public CalloutService(CalloutRenderer renderer, CalloutTargets targets, HttpSender sender, CalloutLog log, Clock clock,
+      CalloutAuth auth, Pause pause, TunnelGateway tunnels) {
+    this.tunnels = tunnels;
     this.renderer = renderer;
     this.targets = targets;
     this.sender = sender;
@@ -89,12 +99,17 @@ public final class CalloutService {
             with(request.headers(), new Header(credential.name(), "\u2022\u2022\u2022 (connection " + spec.connection() + ")")), request.body());
       }
       CalloutTargets.Target target = targets.resolve(request.url(), event.getRequest());
-      HttpSender.Raw raw = sender.send(target.uri(), request.method(), sent, request.body(), TIMEOUT, MAX_RESPONSE_BYTES);
+      HttpSender.Raw raw = TunnelGateway.isTunnel(target.uri().toString())
+          ? viaTunnel(projectId, target, request.method(), sent, request.body())
+          : sender.send(target.uri(), request.method(), sent, request.body(), TIMEOUT, MAX_RESPONSE_BYTES);
       body = raw.body();
       result = new CalloutEntry.Result(raw.status(), raw.headers(), text(raw.body()), raw.truncated());
       retryable = spec.retry().retriesStatus(raw.status());
     } catch (CalloutException e) {
       error = e.getMessage();
+    } catch (TunnelException e) {
+      error = e.getMessage();
+      retryable = e.status() >= 500;
     } catch (Exception e) {
       error = describe(e);
       retryable = true;
@@ -107,6 +122,13 @@ public final class CalloutService {
         mode, trigger, request, result, error, ms, event.getId() == null ? null : event.getId().toString(), attempt);
     log.add(entry);
     return new Outcome(entry, body, retryable);
+  }
+
+  private HttpSender.Raw viaTunnel(String projectId, CalloutTargets.Target target, String method, List<Header> headers, String body) {
+    TunnelMessages.Response answer = tunnels.send(projectId, target.uri(), method, headers, body.getBytes(StandardCharsets.UTF_8), TIMEOUT);
+    byte[] bytes = answer.body();
+    boolean truncated = bytes.length > MAX_RESPONSE_BYTES;
+    return new HttpSender.Raw(answer.status(), answer.headers(), truncated ? java.util.Arrays.copyOf(bytes, MAX_RESPONSE_BYTES) : bytes, truncated);
   }
 
   private static List<Header> with(List<Header> headers, Header added) {

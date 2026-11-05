@@ -98,6 +98,7 @@ public final class AccessPolicy {
     if (path.matches("/examples/[^/]+/install")) return Decision.allow();
     if (path.equals("/stubs/unassigned")) return need(p.highestRole(), Role.VIEWER, "see stubs outside projects");
     if (path.equals("/playground") || path.startsWith("/playground/")) return need(p.highestRole(), Role.EDITOR, "use the playground");
+    if (path.equals("/tunnels") || path.startsWith("/tunnels/")) return Decision.allow();
     if (path.equals("/openapi/fetch")) return need(p.highestRole(), Role.EDITOR, "download API descriptions");
 
     Matcher project = PROJECT.matcher(path);

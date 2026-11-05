@@ -3,6 +3,7 @@ package io.mockhub.callout;
 import com.github.tomakehurst.wiremock.http.Request;
 import io.mockhub.playground.PlaygroundException;
 import io.mockhub.playground.TargetGuard;
+import io.mockhub.tunnel.TunnelGateway;
 import java.net.URI;
 import java.util.LinkedHashSet;
 import java.util.Locale;
@@ -25,6 +26,13 @@ public final class CalloutTargets {
   public Target resolve(String url, Request incoming) {
     if (url.isBlank()) throw new CalloutException("The callout has no URL");
     if (url.startsWith("/")) return local(url);
+    if (TunnelGateway.isTunnel(url)) {
+      try {
+        return new Target(URI.create(url), false);
+      } catch (IllegalArgumentException e) {
+        throw new CalloutException("\"" + url + "\" isn't a valid tunnel address, like tunnel://laptop/hooks");
+      }
+    }
     URI uri;
     try {
       uri = URI.create(url.contains("://") ? url : "https://" + url);

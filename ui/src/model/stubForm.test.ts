@@ -262,8 +262,9 @@ describe('validation', () => {
     });
     expect(errors).toHaveLength(4);
     expect(validate({ ...emptyForm(), responseMode: 'proxy', proxyBaseUrl: 'ftp://x' })).toEqual([
-      'Proxy target must start with http:// or https://',
+      'Proxy target must start with http://, https:// or tunnel://',
     ]);
+    expect(validate({ ...emptyForm(), responseMode: 'proxy', proxyBaseUrl: 'tunnel://laptop/api' })).toEqual([]);
   });
 
   it('round-trips a failure rate through stub metadata', () => {

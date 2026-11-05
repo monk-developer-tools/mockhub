@@ -52,6 +52,7 @@ export const GROUPS = [
     description: 'Call back after answering, forward requests and wait for partners.',
     pages: [
       { slug: 'webhooks', title: 'Webhooks & callouts', icon: 'ArrowBendUpRight', description: 'Then call, forward, wait for callout, the callout log and catching third-party webhooks.' },
+      { slug: 'tunnel', title: 'Local tunnel', icon: 'Plugs', description: 'Send proxy stubs and callouts to a service on your own machine through tunnel://name.' },
       { slug: 'connections', title: 'Connections & retries', icon: 'Plug', description: 'OAuth2 tokens and API keys for callouts and proxies, kept encrypted, plus retries with backoff.' },
     ],
   },

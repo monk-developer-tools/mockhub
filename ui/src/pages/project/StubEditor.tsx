@@ -672,8 +672,8 @@ export function StubEditor({ project, moveTargets, stub, isNew, canEdit, onSaved
               <div className="grid two">
                 <label className="field">
                   <span>Forward to</span>
-                  <input type="url" className="mono" placeholder="https://api.example.com" value={form.proxyBaseUrl} onChange={(e) => update({ proxyBaseUrl: e.target.value })} />
-                  <span className="hint">The request path after {project.basePath} is appended.</span>
+                  <input type="text" className="mono" placeholder="https://api.example.com" value={form.proxyBaseUrl} onChange={(e) => update({ proxyBaseUrl: e.target.value })} />
+                  <span className="hint">The request path after {project.basePath} is appended. Use tunnel://name to reach a service on your own machine.</span>
                 </label>
                 <label className="field">
                   <span>Remove prefix <span className="hint">optional, default {project.basePath}</span></span>

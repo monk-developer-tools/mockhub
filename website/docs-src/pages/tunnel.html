@@ -1,0 +1,50 @@
+<p>A tunnel lets a mock reach a service running on your own machine. Proxy stubs and callouts that target <code>tunnel://laptop/path</code> go to MockHub, through the tunnel, to whatever you run on <code>localhost</code>. Webhooks from a shared MockHub reach the code you're debugging, and a proxy stub can pass some calls to your local build.</p>
+
+<h3 id="tunnel-start">Start a tunnel</h3>
+<ol>
+  <li>Create an access token with the editor role: your avatar → <strong>Access tokens</strong> → <strong>New token</strong>. See <a href="#access-tokens">Access tokens</a>.</li>
+  <li>On your machine, with the same <code>mockhub.jar</code> the server runs (Java 17 or later):</li>
+</ol>
+<pre><code>export MOCKHUB_TOKEN=mh_...
+java -jar mockhub.jar tunnel --server https://mockhub.example.com --name laptop --to http://localhost:3000</code></pre>
+<table>
+  <thead><tr><th>Option</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td><code>--server</code></td><td>MockHub's address, or <code>MOCKHUB_URL</code></td></tr>
+    <tr><td><code>--token</code></td><td>Your access token, or <code>MOCKHUB_TOKEN</code>. Prefer the environment variable so the token stays out of shell history.</td></tr>
+    <tr><td><code>--name</code></td><td>The tunnel name: 1 to 40 lowercase letters, digits and dashes. Stubs reach it as <code>tunnel://&lt;name&gt;</code>.</td></tr>
+    <tr><td><code>--to</code></td><td>The local service that answers, such as <code>http://localhost:3000</code></td></tr>
+    <tr><td><code>--workers</code></td><td>Requests handled at the same time, 1 to 20 (default 4)</td></tr>
+  </tbody>
+</table>
+<p>The tunnel prints one line per request, such as <code>POST /hooks -> 204 (12 ms)</code>. Stop it with Ctrl+C. It only makes outgoing calls to MockHub, so it works from behind a firewall or NAT and through nginx, with no port to open.</p>
+
+<h3 id="tunnel-use">Use it in a stub</h3>
+<ul>
+  <li><strong>Proxy</strong>: set the response type to Proxy and <strong>Forward to</strong> to <code>tunnel://laptop/api</code>. A call to <code>/pay/orders/7</code> reaches <code>http://localhost:3000/api/orders/7</code> on your machine, query string included.</li>
+  <li><strong>Then call</strong> and <strong>Wait for callout</strong>: use <code>tunnel://laptop/hooks</code> as the URL. Retries, connections and the Callouts tab work as for any other URL.</li>
+</ul>
+<pre><code>{
+  "request": { "method": "POST", "urlPath": "/charges" },
+  "response": { "status": 201 },
+  "serveEventListeners": [{
+    "name": "mockhub-callout",
+    "parameters": { "method": "POST", "url": "tunnel://laptop/hooks", "body": "{\"event\":\"charge.created\"}" }
+  }]
+}</code></pre>
+
+<h3 id="tunnel-rules">Rules and limits</h3>
+<table>
+  <thead><tr><th>Rule</th><th>Detail</th></tr></thead>
+  <tbody>
+    <tr><td>Who can open one</td><td>An access token from someone with the editor role in a team. Review-only tokens can't. A name belongs to whoever opened it until the tunnel closes; anyone else gets <code>409</code>.</td></tr>
+    <tr><td>Which projects can use it</td><td>Only projects the tunnel owner can edit, and only those the token is scoped to. Others get <code>403</code>, so nobody can send traffic to your machine from a project you can't edit.</td></tr>
+    <tr><td>Size and load</td><td>Requests and answers up to 5 MB each, 20 requests waiting per tunnel, 5 tunnels per user. Each request waits up to 30 seconds.</td></tr>
+    <tr><td>When it's down</td><td>A proxy stub that uses a tunnel nobody runs answers <code>502</code>, with the reason in the <code>X-MockHub-Tunnel-Error</code> header. If the local service can't be reached or takes longer than 28 seconds, the tunnel answers <code>502</code> with the reason in the body. Callouts record the same errors in the Callouts tab.</td></tr>
+    <tr><td>Closing</td><td>When the command stops, the tunnel shows as offline about a minute later and keeps its name for you. Revoking its token, or <strong>Close</strong> in the Tunnels tab, closes it at once, frees the name and stops the command.</td></tr>
+  </tbody>
+</table>
+
+<h3 id="tunnel-list">See your tunnels</h3>
+<p>Your avatar → <strong>Tunnels</strong> lists your tunnels with their status, request and failure counts and traffic, and shows the start command. Admins see everyone's tunnels and their owners.</p>
+<p>The tunnel uses HTTP long polling: the command keeps a few requests open to <code>/__admin/mockhub/tunnel/&lt;name&gt;/next</code> and MockHub answers one when a stub sends something through. If your reverse proxy times out requests in under 30 seconds, raise the limit for that path (for nginx, <code>proxy_read_timeout 60s</code>).</p>

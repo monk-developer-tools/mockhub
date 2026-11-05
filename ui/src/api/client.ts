@@ -2,6 +2,7 @@ import type { GraphqlOperation } from '../model/graphql';
 import type { GrpcCatalog } from '../model/grpc';
 import type { TlsView } from '../model/tls';
 import type { ProxyView } from '../model/proxy';
+import type { TunnelView } from '../model/tunnels';
 import type {
   AccessToken,
   FetchedSpec,
@@ -302,6 +303,8 @@ export const api = {
   createAccessToken: (token: NewAccessToken) =>
     request<AccessToken & { secret: string }>(`${API}/auth/tokens`, { method: 'POST', body: json(token) }),
   revokeAccessToken: (id: string) => request<void>(`${API}/auth/tokens/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+  tunnels: () => request<TunnelView[]>(`${API}/tunnels`),
+  closeTunnel: (name: string) => request<void>(`${API}/tunnels/${encodeURIComponent(name)}`, { method: 'DELETE' }),
   applyChanges: (projectId: string, changes: ProposedChange[]) =>
     request<ApplyResult>(`${API}/projects/${projectId}/ai/apply`, { method: 'POST', body: json({ changes }) }),
 
