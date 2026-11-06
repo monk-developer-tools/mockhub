@@ -28,19 +28,26 @@ export function opsFor(target) {
   return OPS.filter((o) => !o.only || o.only === target);
 }
 
-export const DYNAMIC_VALUES = [
-  { label: 'A field from the JSON body', text: "{{jsonPath request.body '$.id'}}" },
-  { label: 'The request path', text: '{{request.path}}' },
-  { label: 'A query parameter', text: '{{request.query.name}}' },
-  { label: 'A path parameter (from a pattern like /users/:id)', text: '{{pathParams.id}}' },
-  { label: 'A request header', text: '{{request.headers.[X-Request-Id]}}' },
-  { label: 'The whole request body', text: '{{{request.body}}}' },
-  { label: 'Current time', text: '{{now}}' },
-  { label: 'Random UUID', text: "{{randomValue type='UUID'}}" },
-  { label: 'Random number', text: '{{randomInt lower=1 upper=1000}}' },
-  { label: 'Fake full name', text: "{{fake 'Name.fullName'}}" },
-  { label: 'Fake e-mail', text: "{{fake 'Internet.emailAddress'}}" },
-];
+export function stateRows(state) {
+  const counters = Object.entries(state?.counters ?? {}).map(([name, value]) => ({ kind: 'Counter', name, value: String(value) }));
+  const values = Object.entries(state?.values ?? {}).map(([name, value]) => ({ kind: 'Value', name, value }));
+  const lists = Object.entries(state?.lists ?? {}).map(([name, items]) => ({ kind: 'List', name, value: `${items.length} ${items.length === 1 ? 'item' : 'items'}: ${JSON.stringify(items)}` }));
+  return [...counters, ...values, ...lists];
+}
+
+export function searchValues(groups, query) {
+  const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  if (!words.length) return groups;
+  return groups
+    .map((g) => ({
+      ...g,
+      items: g.items.filter((i) => {
+        const text = `${g.name} ${i.label} ${i.expression} ${i.hint ?? ''}`.toLowerCase();
+        return words.every((w) => text.includes(w));
+      }),
+    }))
+    .filter((g) => g.items.length > 0);
+}
 
 export function blankAnswer() {
   return { weight: 1, status: 200, delayMs: 0, headers: { 'Content-Type': 'application/json' }, body: '{"ok": true}', template: false };
@@ -206,6 +213,7 @@ const BY = {
   'forward-error': 'Forward failed',
   'tunnel-error': 'Tunnel failed',
   error: 'Rule failed',
+  validation: 'Refused by a check',
 };
 
 export function outcomeTone(outcome) {

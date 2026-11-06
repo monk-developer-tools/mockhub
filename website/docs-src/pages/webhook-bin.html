@@ -16,14 +16,29 @@
 <p>From a script, the owner reads the view key from <code>viewKey</code> in <code>GET /__public/inspect/{id}/settings</code> and a viewer sends it as <code>X-Bin-Token</code> to <code>GET /__public/inspect/{id}</code>. Every other call with it gets <code>403</code>. A bin is deleted 24 hours after its last request.</p>
 
 <h3 id="bin-dynamic">Dynamic answers</h3>
-<p>Both the default answer and every rule answer can be built from each request. Pick from <strong>Insert a dynamic value</strong>, or write <a href="/docs/templating/">template</a> expressions yourself, and tick <strong>Fill in dynamic values</strong>:</p>
+<p>Both the default answer and every rule answer can be built from each request. <strong>Dynamic value</strong> opens a searchable picker with the same groups as the stub editor: request components, control flow, data manipulation, validation, comparison, string, arithmetic, date and array helpers, JWT, random values, Faker and the bin's own state. Picking one inserts it and ticks <strong>Fill in dynamic values</strong>. You can also write <a href="/docs/templating/">template</a> expressions yourself:</p>
 <pre><code>{
   "order": "{{jsonPath request.body '$.id'}}",
   "currency": "{{request.query.currency}}",
   "path": "{{request.path}}",
   "at": "{{now}}"
 }</code></pre>
+<p>The picker leaves out what a bin can't run: datasets, the stub editor's state helper and <code>hostname</code>. A path variable is <code>{{pathParams.id}}</code>, filled from a rule's path pattern. A validation helper such as <code>{{isEmail (jsonPath request.body '$.email') 'Enter a valid e-mail'}}</code> refuses a bad request with <code>400</code> and <code>{"error": "Enter a valid e-mail", "status": 400}</code>, or with the status you give <code>check</code>.</p>
 <p><strong>Preview</strong> shows the answer built from the latest request the bin received, or from a sample request when there is none yet. Paths are the part under the bin, like <code>/orders</code>. The <em>Dynamic answer</em> starting point gives a rule that does this, with a new <code>X-Request-Id</code> header each time.</p>
+
+<h3 id="bin-state">Saved state</h3>
+<p>A bin can remember things between requests, for a step counter, the last id it was sent or a list of everything it has seen:</p>
+<table>
+  <thead><tr><th>Expression</th><th>What it does</th></tr></thead>
+  <tbody>
+    <tr><td><code>{{counter 'orders'}}</code></td><td>Adds 1 and shows the new count: 1, 2, 3… <code>add=5</code> or <code>add=-1</code> changes the step, <code>add=0</code> only reads, <code>reset=true</code> sets it to 0.</td></tr>
+    <tr><td><code>{{saveValue 'last-order' (jsonPath request.body '$.id')}}</code></td><td>Saves a value and shows nothing.</td></tr>
+    <tr><td><code>{{savedValue 'last-order' default='none'}}</code></td><td>Shows a saved value, or the default.</td></tr>
+    <tr><td><code>{{addToList 'orders' (jsonPath request.body '$.id')}}</code></td><td>Adds to a list that keeps its newest 100 items, and shows nothing.</td></tr>
+    <tr><td><code>{{{savedList 'orders'}}}</code></td><td>The list as JSON; use it with <code>#each</code> or <code>len</code> too.</td></tr>
+  </tbody>
+</table>
+<p>A bin keeps up to 100 counters, values and lists, each value up to 4 KB and 64 KB in all. The state outlives restarts and goes when the bin does. <strong>Saved state</strong> at the bottom of <strong>Rules</strong> shows it, and <strong>Clear</strong> starts again. From a script, <code>GET</code> or <code>DELETE /__public/inspect/{id}/state</code> with the bin token.</p>
 
 <h3 id="bin-rules">Rules</h3>
 <p>Rules answer requests before routing does. The first enabled rule that matches answers; drag rules to change the order, untick one to skip it, or switch <strong>Rules on</strong> off to skip them all. A rule matches a method (any, <code>GET</code>, <code>POST</code>, <code>PUT</code>, <code>PATCH</code>, <code>DELETE</code>, <code>HEAD</code>, <code>OPTIONS</code>, <code>QUERY</code> or <code>TRACE</code>) and all of its conditions:</p>

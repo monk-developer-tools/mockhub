@@ -139,6 +139,7 @@ public final class Bins {
     long seq;
     long oldest = 1;
     final Deque<Captured> tail = new ArrayDeque<>();
+    BinState state = new BinState();
 
     Bin(String id, byte[] tokenHash, Instant created, Settings settings) {
       this.id = id;
@@ -232,6 +233,30 @@ public final class Bins {
       bin.lastUsed = clock.instant();
       save(bin);
     }
+    return true;
+  }
+
+  public Optional<BinState> stateFor(String id) {
+    return Optional.ofNullable(live(id)).map(b -> b.state);
+  }
+
+  public void keepState(String id) {
+    Bin bin = live(id);
+    if (bin == null || !bin.state.takeChanged()) return;
+    synchronized (bin) {
+      saveState(bin);
+    }
+  }
+
+  public Optional<BinState> state(String id, String token) {
+    return Optional.ofNullable(owned(id, token)).map(b -> b.state);
+  }
+
+  public boolean clearState(String id, String token) {
+    Bin bin = owned(id, token);
+    if (bin == null) return false;
+    bin.state.clear();
+    keepState(id);
     return true;
   }
 
@@ -432,6 +457,22 @@ public final class Bins {
     }
   }
 
+  private void saveState(Bin bin) {
+    Path dir = root.resolve(bin.id);
+    try {
+      Files.createDirectories(dir);
+      if (bin.state.isEmpty()) {
+        Files.deleteIfExists(dir.resolve("state.json"));
+        return;
+      }
+      Path tmp = dir.resolve("state.json.tmp");
+      Files.writeString(tmp, Jsons.write(bin.state.toJson()), StandardCharsets.UTF_8);
+      Files.move(tmp, dir.resolve("state.json"), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
   private void load() {
     if (!Files.isDirectory(root)) return;
     try (Stream<Path> dirs = Files.list(root)) {
@@ -448,6 +489,8 @@ public final class Bins {
           bin.lastUsed = Instant.parse(n.path("lastUsed").asText());
           bin.seq = n.path("seq").asLong();
           bin.oldest = Math.max(1, n.path("oldest").asLong(1));
+          Path state = dir.resolve("state.json");
+          if (Files.exists(state)) bin.state = BinState.from(Jsons.MAPPER.readTree(Files.readString(state, StandardCharsets.UTF_8)));
           List<Path> segs = segments(bin);
           if (!segs.isEmpty()) {
             Path newest = segs.get(segs.size() - 1);

@@ -63,11 +63,15 @@ public final class TemplatePlayground {
   }
 
   public Result render(String template, Sample sample) {
+    return render(template, sample, null);
+  }
+
+  public Result render(String template, Sample sample, BinState state) {
     Optional<String> refused = refuse(template, sample);
     if (refused.isPresent()) return Result.failed(refused.get());
     Future<Result> job;
     try {
-      job = workers.submit(() -> RenderBudget.within(timeoutMillis, () -> apply(template, sample)));
+      job = workers.submit(() -> RenderBudget.within(timeoutMillis, () -> apply(template, sample, state)));
     } catch (RejectedExecutionException e) {
       return Result.failed("The playground is busy. Try again in a moment.");
     }
@@ -99,20 +103,20 @@ public final class TemplatePlayground {
     return RenderBudget.within(budgetMillis, () -> apply(template, request));
   }
 
-  private Result apply(String template, Sample sample) {
-    return apply(template, SampleRequest.withCookies(request(sample)), sample.pathParams() == null ? Map.of() : sample.pathParams());
+  private Result apply(String template, Sample sample, BinState state) {
+    return apply(template, SampleRequest.withCookies(request(sample)), sample.pathParams() == null ? Map.of() : sample.pathParams(), state);
   }
 
   private Result apply(String template, Request request) {
-    return apply(template, request, Map.of());
+    return apply(template, request, Map.of(), null);
   }
 
-  private Result apply(String template, Request request, Map<String, String> pathParams) {
+  private Result apply(String template, Request request, Map<String, String> pathParams, BinState state) {
     Map<String, Object> model = new HashMap<>(models.buildModelForRequest(request));
     model.put("pathParams", pathParams);
     Capped out = new Capped();
     try {
-      sandbox.render(template, model, out);
+      sandbox.render(template, model, state, out);
       return Result.ok(out.text());
     } catch (IOException | RuntimeException e) {
       if (causedBy(e, Capped.Full.class)) return Result.ok(out.text() + CUT);

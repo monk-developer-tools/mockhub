@@ -37,6 +37,7 @@ function helpersPage() {
   const groups = dynamicValues('response').flatMap((g) => (g.id === 'request' ? [g, response] : [g]));
   const intro = `<p>These are the helpers behind <strong>Insert dynamic value</strong> in the stub editor. Copy one into a response body, a header or a <a href="#webhooks">webhook</a>. Turn on templating for the response first; the picker does that for you. The <a href="#templating">templating guide</a> explains the syntax.</p>
 <p>In a webhook, <code>request</code> becomes <code>originalRequest</code>, and the <strong>Response components</strong> group is available.</p>
+<p>The free <a href="/docs/webhook-bin/#bin-dynamic">webhook bin</a> offers most of these too, without datasets or the state helper, and adds its own <a href="/docs/webhook-bin/#bin-state">saved state</a>.</p>
 `;
   const sections = groups.map((g) => {
     const note = g.id === 'response' ? '<p>Only in webhooks and wait-for-callout calls.</p>\n' : '';
@@ -360,6 +361,7 @@ const tools = Object.fromEntries(readdirSync(join(website, 'site-src', 'tools'))
 const catalogues = {
   'template-playground': dynamicValues('response').map((g) => ({ name: g.name, items: g.items.map(({ label, expression }) => ({ label, expression })) })),
   'fake-data': GENERATOR_TYPES,
+  'webhook-bin': dynamicValues('bin').map((g) => ({ id: g.id, name: g.name, items: g.items.map(({ label, expression, hint }) => ({ label, expression, ...(hint ? { hint } : {}) })) })),
 };
 const featureContext = { icon, header: siteHeader(icon, ''), footer: siteFooter(icon), examples: exampleProjects(), tools, catalogues };
 for (const page of FEATURES) {

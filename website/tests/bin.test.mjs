@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { base64Size, binLink, contentTypeOf, fileSize, opsFor, percents, prettyBody, withContentType, duplicate, flow, forgetBin, rememberBin, renameBin, routeSummary, parseBinHash, previewRequest, headerLines, mergeRequests, move, outcomeText, outcomeTone, parseHeaderLines, recipe, routingFromForm, snippets, summary, tunnelCommand } from '../assets/js/tools/bin.js';
+import { base64Size, binLink, searchValues, stateRows, contentTypeOf, fileSize, opsFor, percents, prettyBody, withContentType, duplicate, flow, forgetBin, rememberBin, renameBin, routeSummary, parseBinHash, previewRequest, headerLines, mergeRequests, move, outcomeText, outcomeTone, parseHeaderLines, recipe, routingFromForm, snippets, summary, tunnelCommand } from '../assets/js/tools/bin.js';
 
 test('summarises a rule in one line', () => {
   // Given
@@ -312,4 +312,40 @@ test('names the file a rule answers with', () => {
 
   // Then
   assert.equal(line, 'GET any request → 200 with logo.png');
+});
+
+test('finds dynamic values by every word across group, label, expression and hint', () => {
+  // Given
+  const groups = [
+    { id: 'date', name: 'Date operators', items: [{ label: 'Now, formatted', expression: "{{now format='yyyy'}}" }, { label: 'Unix seconds', expression: "{{now format='unix'}}" }] },
+    { id: 'bin-state', name: 'Bin state', items: [{ label: 'Count requests', expression: "{{counter 'orders'}}", hint: 'Adds 1' }] },
+  ];
+
+  // When
+  const dated = searchValues(groups, 'date FORMAT');
+  const counted = searchValues(groups, 'adds');
+  const none = searchValues(groups, 'zzz');
+
+  // Then
+  assert.deepEqual(dated.map((g) => g.items.length), [2]);
+  assert.equal(counted[0].items[0].label, 'Count requests');
+  assert.deepEqual(none, []);
+  assert.equal(searchValues(groups, '  '), groups);
+});
+
+test('lists saved state as counters, then values, then lists', () => {
+  // Given
+  const state = { counters: { orders: 3 }, values: { last: 'o7' }, lists: { ids: ['a'], seen: ['a', 'b'] } };
+
+  // When
+  const rows = stateRows(state);
+
+  // Then
+  assert.deepEqual(rows, [
+    { kind: 'Counter', name: 'orders', value: '3' },
+    { kind: 'Value', name: 'last', value: 'o7' },
+    { kind: 'List', name: 'ids', value: '1 item: ["a"]' },
+    { kind: 'List', name: 'seen', value: '2 items: ["a","b"]' },
+  ]);
+  assert.deepEqual(stateRows({}), []);
 });

@@ -123,6 +123,48 @@ class PublicToolsIntegrationTest {
   }
 
   @Test
+  void aBinKeepsCountersAndSavedValuesAcrossRequestsAndRestarts() {
+    // Given
+    server = MockHubServer.start(data, ON);
+    JsonNode bin = server.api().post("/__public/bins", "").json();
+    String id = bin.get("id").asText();
+    Map<String, String> owner = Map.of("X-Bin-Token", bin.get("token").asText());
+    String rules = """
+        {"rulesEnabled": true, "rules": [
+          {"name": "Check", "method": "POST", "conditions": [{"target": "path", "op": "equals", "value": "/check"}],
+           "answers": [{"status": 200, "template": true, "body": "{{isEmail (jsonPath request.body '$.email') 'Enter a valid e-mail'}}ok"}]},
+          {"name": "Count", "method": "POST", "answers": [{"status": 200, "template": true,
+           "body": "{{counter 'orders'}} {{addToList 'ids' (jsonPath request.body '$.id')}}{{savedValue 'last' default='none'}}{{saveValue 'last' (jsonPath request.body '$.id')}}"}]}]}
+        """;
+    server.api().send("PUT", "/__public/inspect/" + id + "/rules", rules, "application/json", owner);
+    String base = "/__public/bins/" + id;
+    String first = server.api().send("POST", base + "/orders", "{\"id\":\"a\"}", "application/json").body();
+    server.close();
+    server = MockHubServer.start(data, ON);
+    ApiClient api = server.api();
+
+    // When
+    String second = api.send("POST", base + "/orders", "{\"id\":\"b\"}", "application/json").body();
+    ApiClient.Result refused = api.send("POST", base + "/check", "{\"email\":\"nope\"}", "application/json");
+    JsonNode state = api.send("GET", "/__public/inspect/" + id + "/state", null, null, owner).json();
+    int cleared = api.send("DELETE", "/__public/inspect/" + id + "/state", null, null, owner).status();
+    String afterClear = api.send("POST", base + "/orders", "{\"id\":\"c\"}", "application/json").body();
+    int stranger = api.send("GET", "/__public/inspect/" + id + "/state", null, null, Map.of("X-Bin-Token", "nope")).status();
+
+    // Then
+    assertThat(first).isEqualTo("1 none");
+    assertThat(second).isEqualTo("2 a");
+    assertThat(refused.status()).isEqualTo(400);
+    assertThat(refused.body()).contains("Enter a valid e-mail");
+    assertThat(state.at("/counters/orders").asInt()).isEqualTo(2);
+    assertThat(state.at("/values/last").asText()).isEqualTo("b");
+    assertThat(state.at("/lists/ids").toString()).isEqualTo("[\"a\",\"b\"]");
+    assertThat(cleared).isEqualTo(200);
+    assertThat(afterClear).isEqualTo("1 none");
+    assertThat(stranger).isEqualTo(404);
+  }
+
+  @Test
   void aBinRuleSendsAnUploadedFileAndLogsItAsBinary() {
     // Given
     server = MockHubServer.start(data, ON);

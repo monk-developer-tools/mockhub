@@ -49,32 +49,37 @@ final class BinResponder {
   record Answer(int status, Map<String, String> headers, byte[] body, int delayMs, String by, String rule) {}
 
   Answer answer(String binId, Bins.Settings settings, BinMatcher.Call call) {
+    return answer(binId, settings, new BinState(), call);
+  }
+
+  Answer answer(String binId, Bins.Settings settings, BinState state, BinMatcher.Call call) {
     if (settings.rulesEnabled()) {
       Optional<BinRule> rule = BinMatcher.first(settings.rules(), call);
-      if (rule.isPresent()) return fromRule(rule.get(), call);
+      if (rule.isPresent()) return fromRule(rule.get(), state, call);
     }
     BinRouting routing = settings.routing();
     return switch (routing.mode()) {
       case FORWARD -> forward(routing, call);
       case TUNNEL -> tunnel(binId, routing, call);
-      case MOCK -> fallback(settings.reply(), call);
+      case MOCK -> fallback(settings.reply(), state, call);
     };
   }
 
-  private Answer fromRule(BinRule rule, BinMatcher.Call call) {
+  private Answer fromRule(BinRule rule, BinState state, BinMatcher.Call call) {
     BinRule.Answer chosen = pick(rule.answers());
     Map<String, String> headers = new LinkedHashMap<>(chosen.headers());
     String body = chosen.body();
     if (chosen.template()) {
       TemplatePlayground.Sample sample = sample(call).withPathParams(BinMatcher.pathParams(rule, call.path()));
-      TemplatePlayground.Result result = templates.render(body.isEmpty() ? " " : body, sample);
+      TemplatePlayground.Result result = templates.render(body.isEmpty() ? " " : body, sample, state);
+      if (result.status() != null) return refused(result, rule.label());
       if (result.error() != null) {
         return new Answer(500, Map.of("Content-Type", "application/json"), errorJson("The rule's template failed: " + result.error()), 0, "error", rule.label());
       }
       body = result.output();
       for (Map.Entry<String, String> e : chosen.headers().entrySet()) {
         if (!e.getValue().contains("{{")) continue;
-        TemplatePlayground.Result h = templates.render(e.getValue(), sample);
+        TemplatePlayground.Result h = templates.render(e.getValue(), sample, state);
         headers.put(e.getKey(), h.error() == null ? h.output().strip() : e.getValue());
       }
     }
@@ -129,10 +134,11 @@ final class BinResponder {
     }
   }
 
-  private Answer fallback(Bins.Reply reply, BinMatcher.Call call) {
+  private Answer fallback(Bins.Reply reply, BinState state, BinMatcher.Call call) {
     String body = reply.body();
     if (reply.template()) {
-      TemplatePlayground.Result result = templates.render(body.isEmpty() ? " " : body, sample(call));
+      TemplatePlayground.Result result = templates.render(body.isEmpty() ? " " : body, sample(call), state);
+      if (result.status() != null) return refused(result, "");
       if (result.error() != null) {
         return new Answer(500, Map.of("Content-Type", "application/json"), errorJson("The default answer's template failed: " + result.error()), 0, "error", "");
       }
@@ -144,6 +150,11 @@ final class BinResponder {
   private static TemplatePlayground.Sample sample(BinMatcher.Call call) {
     return new TemplatePlayground.Sample(call.method(), call.path() + query(call), call.request().headers(),
         Bins.cut(Optional.ofNullable(call.request().body()).orElse(""), TemplatePlayground.MAX_BODY));
+  }
+
+  private static Answer refused(TemplatePlayground.Result result, String rule) {
+    byte[] body = Jsons.write(Jsons.object().put("error", result.error()).put("status", result.status())).getBytes(StandardCharsets.UTF_8);
+    return new Answer(result.status(), Map.of("Content-Type", "application/json"), body, 0, "validation", rule);
   }
 
   private static Answer failed(int status, String by, String message) {

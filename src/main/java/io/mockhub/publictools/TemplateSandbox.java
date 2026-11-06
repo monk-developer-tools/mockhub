@@ -37,6 +37,7 @@ final class TemplateSandbox {
     for (ConditionalHelpers helper : ConditionalHelpers.values()) hb.registerHelper(helper.name(), helper);
     for (WireMockHelpers helper : WireMockHelpers.values()) hb.registerHelper(helper.name(), helper);
     for (TemplateHelperProviderExtension provider : providers) provider.provideTemplateHelpers().forEach(hb::registerHelper);
+    BinStateHelpers.helpers().forEach(hb::registerHelper);
     List<Map.Entry<String, Helper<?>>> registered = new ArrayList<>(hb.helpers());
     for (Map.Entry<String, Helper<?>> entry : registered) {
       String name = entry.getKey();
@@ -48,8 +49,13 @@ final class TemplateSandbox {
   }
 
   void render(String template, Map<String, Object> model, Writer out) throws IOException {
+    render(template, model, null, out);
+  }
+
+  void render(String template, Map<String, Object> model, BinState state, Writer out) throws IOException {
     try {
       Context context = Context.newBuilder(model).combine("requestCache", RequestCache.getCurrent()).resolver(resolvers).build();
+      if (state != null) context.data(BinStateHelpers.DATA, state);
       handlebars.compileInline(template).apply(context, out);
     } finally {
       RequestCache.onRequestEnd();

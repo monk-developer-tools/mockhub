@@ -1,7 +1,7 @@
 import { $, show, wireCopyButtons } from './common.js';
 import { call, toCurl } from './http.js';
 import {
-  CONTENT_TYPES, DYNAMIC_VALUES, MAX_FILE_BYTES, METHODS, OPS, RECIPES, base64Size, contentTypeOf, fileSize, opsFor, percents, prettyBody, withContentType, TARGETS, binLink, blankAnswer, blankCondition, blankRule, duplicate, flow, headerLines, mergeRequests, move,
+  CONTENT_TYPES, MAX_FILE_BYTES, METHODS, OPS, RECIPES, base64Size, contentTypeOf, fileSize, opsFor, percents, prettyBody, searchValues, stateRows, withContentType, TARGETS, binLink, blankAnswer, blankCondition, blankRule, duplicate, flow, headerLines, mergeRequests, move,
   outcomeText, outcomeTone, parseBinHash, routeSummary, rememberBin, forgetBin, renameBin, parseHeaderLines, previewRequest, recipe, routingFromForm, snippets, summary, tunnelCommand,
 } from './bin.js';
 
@@ -269,6 +269,7 @@ function renderRouteTo() {
 function openDialog(name) {
   const dialog = $(`[data-bin-dialog="${name === 'ai' ? 'rules' : name}"]`);
   if (name === 'bins') renderBins();
+  if ((name === 'rules' || name === 'ai') && !bin.viewOnly) loadState();
   if (!dialog.open) dialog.showModal();
   if (name === 'ai') {
     const box = $('[data-bin-ai]');
@@ -391,6 +392,26 @@ async function saveRules(next, enabled = rulesOn, message = 'Rules saved. New re
   return result;
 }
 
+async function loadState() {
+  const list = $('[data-bin-state-list]');
+  const result = await call(inspect('/state'), { headers: auth(false) });
+  if (result.error) {
+    list.replaceChildren(el('li', { class: 'tool-hint' }, result.error));
+    return;
+  }
+  const rows = stateRows(result.json);
+  $('[data-bin-state-clear]').disabled = rows.length === 0;
+  list.replaceChildren(...(rows.length
+    ? rows.map((r) => el('li', {}, el('span', { class: 'bin-state-kind' }, r.kind), el('code', {}, r.name), el('span', { class: 'bin-state-value' }, r.value)))
+    : [el('li', { class: 'tool-hint' }, 'Nothing saved yet.')]));
+}
+
+async function clearState() {
+  const result = await call(inspect('/state'), { method: 'DELETE', headers: auth(false) });
+  if (!result.error) flashNote('Saved state cleared. Counters start again from 1.');
+  loadState();
+}
+
 function flashNote(message) {
   const note = $('[data-bin-rules-note]');
   clearTimeout(noteTimer);
@@ -483,6 +504,48 @@ function renderConditions() {
   if (!draft.conditions.length) $('[data-rule-conditions]').append(el('li', { class: 'tool-hint' }, 'No conditions: every request with this method matches.'));
 }
 
+const valueGroups = (() => {
+  const source = document.getElementById('tool-catalogue');
+  try {
+    return source ? JSON.parse(source.textContent) : [];
+  } catch {
+    return [];
+  }
+})();
+let valueTarget = null;
+
+function openValues(textarea, picked) {
+  valueTarget = { textarea, picked };
+  $('[data-bin-values-search]').value = '';
+  renderValues();
+  $('[data-bin-values]').showModal();
+  $('[data-bin-values-search]').focus();
+}
+
+function renderValues() {
+  const groups = searchValues(valueGroups, $('[data-bin-values-search]').value);
+  $('[data-bin-values-groups]').replaceChildren(...groups.map((g) => el('button', { type: 'button', class: 'bin-values-jump', onclick: () => {
+    document.getElementById(`bin-values-${g.id}`)?.scrollIntoView({ block: 'start' });
+  } }, g.name)));
+  $('[data-bin-values-list]').replaceChildren(
+    ...groups.map((g) => el('section', { class: 'bin-values-group', id: `bin-values-${g.id}` },
+      el('h4', { class: 'tool-sub' }, g.name),
+      el('ul', {}, ...g.items.map((item) => el('li', {},
+        el('button', { type: 'button', class: 'bin-value', 'data-bin-value': item.expression, onclick: () => pickValue(item.expression) },
+          el('span', { class: 'bin-value-label' }, item.label),
+          el('code', {}, item.expression),
+          item.hint ? el('span', { class: 'tool-hint' }, item.hint) : null)))))),
+    groups.length ? '' : el('p', { class: 'tool-hint' }, 'Nothing matches. Try fewer words.'));
+}
+
+function pickValue(expression) {
+  $('[data-bin-values]').close();
+  if (!valueTarget) return;
+  insertAt(valueTarget.textarea, expression);
+  valueTarget.picked();
+  valueTarget = null;
+}
+
 function insertAt(textarea, text) {
   const start = textarea.selectionStart ?? textarea.value.length;
   const end = textarea.selectionEnd ?? start;
@@ -557,13 +620,10 @@ function answerBody(a, i, headers) {
   }
   const body = el('textarea', { id: `ans-b-${i}`, class: 'tool-input', rows: '5', spellcheck: 'false', 'aria-label': 'Body', value: a.body ?? '', oninput: (e) => { a.body = e.target.value; } });
   const template = el('input', { type: 'checkbox', checked: a.template, onchange: (e) => { a.template = e.target.checked; } });
-  const dynamic = el('select', { class: 'tool-input bin-dynamic', 'aria-label': 'Insert a dynamic value', onchange: (e) => {
-    if (!e.target.value) return;
-    insertAt(body, e.target.value);
+  const dynamic = el('button', { type: 'button', class: 'btn ghost small', 'data-answer-dynamic': '', onclick: () => openValues(body, () => {
     a.template = true;
     template.checked = true;
-    e.target.value = '';
-  } }, el('option', { value: '' }, 'Insert a dynamic value…'), ...DYNAMIC_VALUES.map((d) => el('option', { value: d.text }, d.label)));
+  }) }, 'Dynamic value');
   const pretty = el('button', { type: 'button', class: 'btn ghost small', title: 'Format JSON', 'aria-label': 'Format JSON', 'data-answer-pretty': '', onclick: () => {
     const result = prettyBody(body.value);
     if (result.error) {
@@ -941,12 +1001,14 @@ document.addEventListener('visibilitychange', () => {
 
 renderRecipes();
 renderSignIn();
-$('[data-bin-insert]').replaceChildren(el('option', { value: '' }, 'Insert a dynamic value…'), ...DYNAMIC_VALUES.map((d) => el('option', { value: d.text }, d.label)));
-$('[data-bin-insert]').addEventListener('change', (e) => {
-  if (!e.target.value) return;
-  insertAt($('[data-bin-body]'), e.target.value);
+$('[data-bin-insert]').addEventListener('click', () => openValues($('[data-bin-body]'), () => {
   $('[data-bin-template]').checked = true;
-  e.target.value = '';
+}));
+$('[data-bin-values-search]').addEventListener('input', renderValues);
+$('[data-bin-state-refresh]').addEventListener('click', loadState);
+$('[data-bin-state-clear]').addEventListener('click', clearState);
+$('[data-bin-values]').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) e.currentTarget.close();
 });
 $('[data-bin-preview]').addEventListener('click', () => preview($('[data-bin-body]').value, $('[data-bin-template]').checked, $('[data-bin-preview-out]'), $('[data-bin-preview-note]')));
 

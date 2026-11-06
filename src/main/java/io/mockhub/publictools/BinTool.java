@@ -23,7 +23,7 @@ import java.util.regex.Pattern;
 public final class BinTool implements PublicTool {
   public static final int MAX_REPLY_BODY = 4 * 1024;
   private static final Pattern CAPTURE = Pattern.compile("/bins/([a-z0-9]{12})(/.*)?");
-  private static final Pattern INSPECT = Pattern.compile("/inspect/([a-z0-9]{12})(/requests|/response|/settings|/rules|/routing|/draft)?");
+  private static final Pattern INSPECT = Pattern.compile("/inspect/([a-z0-9]{12})(/requests|/response|/settings|/rules|/routing|/draft|/state)?");
 
   private final Bins bins;
   private final PublicLimits limits;
@@ -87,7 +87,8 @@ public final class BinTool implements PublicTool {
     String rest = request.path().substring(("/bins/" + id).length());
     BinMatcher.Call call = new BinMatcher.Call(request.method(), rest.isEmpty() ? "/" : rest, request);
     long started = millis.getAsLong();
-    BinResponder.Answer answer = responder.answer(id, settings.get(), call);
+    BinResponder.Answer answer = responder.answer(id, settings.get(), bins.stateFor(id).orElseGet(BinState::new), call);
+    bins.keepState(id);
     long took = millis.getAsLong() - started + answer.delayMs();
     String text = Bins.readable(answer.body());
     boolean cut = answer.body().length > Bins.MAX_ANSWER_BODY;
@@ -124,10 +125,16 @@ public final class BinTool implements PublicTool {
     if (what.equals("/settings") && method.equals("GET")) {
       return bins.settings(id, token).map(s -> PublicResponses.json(200, settings(id, token, s))).orElseGet(() -> notYours(id));
     }
+    if (what.equals("/state") && method.equals("GET")) {
+      return bins.state(id, token).map(st -> PublicResponses.json(200, st.toJson())).orElseGet(() -> notYours(id));
+    }
+    if (what.equals("/state") && method.equals("DELETE")) {
+      return bins.clearState(id, token) ? PublicResponses.json(200, Jsons.object().put("cleared", true)) : notYours(id);
+    }
     if (what.equals("/rules") && method.equals("PUT")) return setRules(id, token, request.body());
     if (what.equals("/routing") && method.equals("PUT")) return setRouting(id, token, request.body());
     if (what.equals("/draft") && method.equals("POST")) return draft(id, token, request);
-    return PublicResponses.error(405, "Read a bin with GET, change it with PUT /response, /rules or /routing, or clear it with DELETE");
+    return PublicResponses.error(405, "Read a bin with GET, change it with PUT /response, /rules or /routing, clear it with DELETE, or read and clear its saved values with GET and DELETE /state");
   }
 
   private ResponseDefinition setReply(String id, String token, String body) {

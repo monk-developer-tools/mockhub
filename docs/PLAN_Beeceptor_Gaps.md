@@ -67,14 +67,14 @@ Shipped: QUERY and TRACE; `not_equals`, `not_contains` and `absent` on every tar
 | Weighted answers with a **description** and **percent** shown | Weights, description and % | ✅ |
 | Single vs weighted switch | One answer / Weighted answers switch | ✅ |
 
-### B3 — Dynamic values in the bin
+### B3 — Dynamic values in the bin ✅ done
 | Beeceptor | Ours | Status |
 |---|---|---|
-| Picker grouped into 13 categories: request components, control flow, data manipulation, JWT, stateful, comparison, string, arithmetic, date, array, validation, response components, Faker (300+) | Flat picker with 10 items | 🟡 |
-| Stateful helpers per endpoint (step-counter, data-store, list) | Not in bin templates | ❌ ❔ |
-| `pathParam`, `cookie` | — | ❌ |
+| Picker grouped into 13 categories: request components, control flow, data manipulation, JWT, stateful, comparison, string, arithmetic, date, array, validation, response components, Faker (300+) | Searchable, grouped picker built from the app's catalog | ✅ |
+| Stateful helpers per endpoint (step-counter, data-store, list) | `counter`, `saveValue`/`savedValue`, `addToList`/`savedList`, per bin | ✅ |
+| `pathParam`, `cookie` | `{{pathParams.id}}`, `{{request.cookies.x}}` | ✅ |
 
-Build: a grouped, searchable picker (shared with the app's picker), and per-bin state for the stateful helpers. First check which helpers the bin's template sandbox allows today ❔.
+Shipped: the bin reads `ui/src/model/dynamicValues.json` through `dynamicValues('bin')`, which drops what the sandbox can't run (datasets, the app's state helper, `hostname`, base URL, request id) and adds a **Bin state** group. `BinCatalogTest` renders every item the bin offers. State lives in `state.json` beside `bin.json` (100 names, 4 KB a value, 64 KB in all), with `GET`/`DELETE /state` and a **Saved state** section in Rules. Validation helpers now answer with their own status instead of 500.
 
 ### B4 — Request log parity
 | Beeceptor | Ours | Status |

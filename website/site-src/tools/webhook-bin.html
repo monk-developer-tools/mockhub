@@ -122,6 +122,17 @@
         </form>
       </div>
       <p class="tool-error" data-bin-rules-error hidden></p>
+      <section class="bin-state" aria-labelledby="bin-state-title">
+        <div class="tool-head">
+          <h4 class="tool-sub" id="bin-state-title">Saved state</h4>
+          <span class="bin-state-actions">
+            <button type="button" class="btn ghost small" data-bin-state-refresh>Refresh</button>
+            <button type="button" class="btn ghost small" data-bin-state-clear>Clear</button>
+          </span>
+        </div>
+        <p class="tool-hint">What rule answers keep between requests with the <strong>Bin state</strong> dynamic values: counters, saved values and lists.</p>
+        <ul class="bin-state-list" data-bin-state-list aria-live="polite"></ul>
+      </section>
   </div>
 </dialog>
 
@@ -154,7 +165,7 @@
         </div>
         <div class="bin-body-head">
           <label class="tool-label" for="bin-body">Body, up to 4 KB</label>
-          <select class="tool-input bin-dynamic" aria-label="Insert a dynamic value" data-bin-insert></select>
+          <button type="button" class="btn ghost small" data-bin-insert>Insert a dynamic value</button>
         </div>
         <textarea id="bin-body" class="tool-input" rows="4" spellcheck="false" data-bin-body>{"ok":true}</textarea>
         <label class="bin-check"><input type="checkbox" data-bin-template> Fill in dynamic values ({{…}}) from each request</label>
@@ -233,6 +244,19 @@
     </div>
   </div>
 </dialog>
+
+<dialog class="bin-dialog bin-values" data-bin-values aria-labelledby="bin-values-title">
+  <div class="bin-dialog-head">
+    <h3 id="bin-values-title">Insert a dynamic value</h3>
+    <button type="button" class="btn ghost small" data-bin-close aria-label="Close">Close</button>
+  </div>
+  <div class="bin-dialog-body">
+    <input type="search" class="tool-input" placeholder="Search, like uuid, date format or counter" aria-label="Search dynamic values" spellcheck="false" data-bin-values-search>
+    <nav class="bin-values-groups" aria-label="Groups" data-bin-values-groups></nav>
+    <div class="bin-values-list" data-bin-values-list></div>
+  </div>
+</dialog>
+<!-- catalogue -->
 
 <dialog class="bin-dialog" data-bin-editor aria-labelledby="bin-editor-title">
   <form method="dialog" class="bin-editor" data-bin-editor-form>

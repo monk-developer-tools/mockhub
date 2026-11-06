@@ -67,6 +67,7 @@ class PickerCatalogueIntegrationTest {
   private static List<Entry> entries() throws IOException {
     List<Entry> out = new ArrayList<>();
     for (JsonNode group : Jsons.MAPPER.readTree(Files.readString(CATALOGUE)).get("groups")) {
+      if (group.path("scope").asText("").equals("bin")) continue;
       for (JsonNode item : group.get("items")) {
         out.add(new Entry(group.get("name").asText(), group.path("scope").asText(""), item.get("label").asText(), item.get("expression").asText(), item.path("input").asText("")));
       }

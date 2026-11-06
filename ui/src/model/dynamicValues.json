@@ -42,7 +42,9 @@
         {
           "label": "Path variable",
           "expression": "{{$R.path.id}}",
-          "hint": "With a /orders/{id} path template"
+          "hint": "With a /orders/{id} path template",
+          "bin": "{{pathParams.id}}",
+          "binHint": "With a path pattern like /users/:id in the rule"
         },
         {
           "label": "Query parameter",
@@ -67,11 +69,13 @@
         {
           "label": "Base URL",
           "expression": "{{$R.baseUrl}}",
-          "hint": "Scheme, host and port the caller used"
+          "hint": "Scheme, host and port the caller used",
+          "bin": false
         },
         {
           "label": "Request id",
-          "expression": "{{$R.id}}"
+          "expression": "{{$R.id}}",
+          "bin": false
         },
         {
           "label": "Client IP",
@@ -257,6 +261,54 @@
           "label": "State exists?",
           "expression": "{{#if (state context=$R.path.id property='status')}}yes{{else}}no{{/if}}"
         }
+      ],
+      "bin": false
+    },
+    {
+      "id": "bin-state",
+      "name": "Bin state",
+      "scope": "bin",
+      "items": [
+        {
+          "label": "Count requests",
+          "expression": "{{counter 'orders'}}",
+          "hint": "Adds 1 and shows the new count: 1, 2, 3…"
+        },
+        {
+          "label": "Read a count",
+          "expression": "{{counter 'orders' add=0}}"
+        },
+        {
+          "label": "Reset a count",
+          "expression": "{{counter 'orders' reset=true}}",
+          "hint": "Sets it to 0"
+        },
+        {
+          "label": "Save a value",
+          "expression": "{{saveValue 'last-order' (jsonPath $R.body '$.id')}}",
+          "hint": "Shows nothing; a later request reads it"
+        },
+        {
+          "label": "Read a saved value",
+          "expression": "{{savedValue 'last-order' default='none'}}"
+        },
+        {
+          "label": "Add to a list",
+          "expression": "{{addToList 'orders' (jsonPath $R.body '$.id')}}",
+          "hint": "Keeps the last 100 items"
+        },
+        {
+          "label": "Saved list as JSON",
+          "expression": "{{{savedList 'orders'}}}"
+        },
+        {
+          "label": "Loop over a saved list",
+          "expression": "[{{#each (savedList 'orders')}}\"{{this}}\"{{#unless @last}},{{/unless}}{{/each}}]"
+        },
+        {
+          "label": "Size of a saved list",
+          "expression": "{{len (savedList 'orders')}}"
+        }
       ]
     },
     {
@@ -286,7 +338,8 @@
           "label": "Count matching records",
           "expression": "{{len (dataset 'orders' status='open')}}"
         }
-      ]
+      ],
+      "bin": false
     },
     {
       "id": "compare",
@@ -498,7 +551,8 @@
         },
         {
           "label": "Hostname",
-          "expression": "{{hostname}}"
+          "expression": "{{hostname}}",
+          "bin": false
         }
       ]
     },

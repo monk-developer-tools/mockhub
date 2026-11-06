@@ -5295,10 +5295,132 @@ select.tool-select-small {
   font-style: italic;
 }
 
-.bin-dynamic.tool-input {
-  width: auto;
-  font-size: 13px;
-  padding: 4px 8px;
+.bin-dialog .bin-state {
+  border-top: 1px solid var(--line);
+  margin-top: 16px;
+  padding: 12px 0 0;
+}
+
+.bin-dialog .bin-values-group {
+  padding: 0;
+}
+
+.bin-state-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.bin-state-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bin-state-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  font-size: 14px;
+}
+
+.bin-state-kind {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  min-width: 56px;
+}
+
+.bin-state-value {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+.bin-values .bin-dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bin-values-groups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.bin-values-jump {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+  padding: 3px 10px;
+  cursor: pointer;
+}
+
+.bin-values-jump:hover,
+.bin-values-jump:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.bin-values-list {
+  max-height: min(56vh, 520px);
+  overflow-y: auto;
+  border-top: 1px solid var(--line);
+  padding-top: 4px;
+}
+
+.bin-values-group ul {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+}
+
+.bin-value {
+  display: grid;
+  grid-template-columns: minmax(140px, 1fr) 2fr;
+  gap: 2px 12px;
+  width: 100%;
+  border: 0;
+  border-radius: var(--radius-m);
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  padding: 7px 8px;
+  cursor: pointer;
+}
+
+.bin-value:hover,
+.bin-value:focus-visible {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.bin-value code {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.bin-value .tool-hint {
+  grid-column: 2;
+  font-size: 12px;
+}
+
+@media (max-width: 600px) {
+  .bin-value {
+    grid-template-columns: 1fr;
+  }
+
+  .bin-value .tool-hint {
+    grid-column: 1;
+  }
 }
 
 @media (max-width: 720px) {

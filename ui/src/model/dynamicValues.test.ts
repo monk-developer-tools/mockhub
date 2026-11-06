@@ -36,6 +36,23 @@ describe('dynamic values', () => {
     expect(callout).not.toContain('Validation');
   });
 
+  it('offers a webhook bin only what its sandbox can render, with its own state helpers', () => {
+    // When
+    const groups = dynamicValues('bin');
+    const items = groups.flatMap((g) => g.items);
+
+    // Then
+    expect(groups.map((g) => g.id)).toEqual(expect.arrayContaining(['request', 'validation', 'bin-state', 'faker']));
+    expect(groups.map((g) => g.id)).not.toContain('datasets');
+    expect(groups.map((g) => g.id)).not.toContain('state');
+    expect(groups.map((g) => g.id)).not.toContain('response');
+    expect(items.find((i) => i.label === 'Path variable')).toEqual({ label: 'Path variable', expression: '{{pathParams.id}}', hint: 'With a path pattern like /users/:id in the rule' });
+    expect(items.map((i) => i.label)).not.toContain('Hostname');
+    expect(items.map((i) => i.label)).not.toContain('Base URL');
+    expect(items.every((i) => !('bin' in i))).toBe(true);
+    expect(dynamicValues('response').map((g) => g.id)).not.toContain('bin-state');
+  });
+
   it('fills in the request variable everywhere', () => {
     // When
     const expressions = [...dynamicValues('response'), ...dynamicValues('callout')].flatMap((g) => g.items.map((i) => i.expression));
