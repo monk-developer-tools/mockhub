@@ -8,6 +8,7 @@ public final class PublicLimits {
   public enum Kind {
     ANY(new RateLimit(120, "minute")),
     CREATE(new RateLimit(10, "hour")),
+    NEW_BIN(new RateLimit(100, "hour")),
     WORK(new RateLimit(30, "minute")),
     SEND(new RateLimit(1200, "minute")),
     AI(new RateLimit(10, "hour"));

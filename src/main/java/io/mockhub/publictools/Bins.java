@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.HexFormat;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -36,7 +37,7 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
 public final class Bins {
-  public static final int MAX_BINS = 200;
+  public static final int MAX_BINS = 1000;
   public static final int MAX_STORED_BODY = 64 * 1024;
   public static final int MAX_ANSWER_BODY = 16 * 1024;
   public static final long SEGMENT_BYTES = 10L * 1024 * 1024;
@@ -44,6 +45,7 @@ public final class Bins {
   public static final long MAX_TOTAL_BYTES = 4L * 1024 * 1024 * 1024;
   public static final int PAGE = 100;
   static final int TAIL = 50;
+  static final long TAIL_BYTES = 256 * 1024;
   public static final Duration IDLE = Duration.ofHours(24);
   private static final String ALPHABET = "abcdefghijkmnpqrstuvwxyz23456789";
 
@@ -174,9 +176,8 @@ public final class Bins {
       Captured captured = new Captured(seq, clock.instant(), request.method(), path, request.rawQuery(), withoutProxyHeaders(request.headers()),
           body, request.bodySize(), truncated, event, outcome);
       bin.tail.addFirst(captured);
-      while (bin.tail.size() > TAIL) bin.tail.removeLast();
       append(bin, captured);
-      bin.tail.removeIf(c -> c.seq() < bin.oldest);
+      trimTail(bin.tail, bin.oldest);
       bin.lastUsed = clock.instant();
       return seq;
     }
@@ -280,6 +281,22 @@ public final class Bins {
     Bin bin = live(id);
     if (bin == null || token == null || !MessageDigest.isEqual(bin.tokenHash, hash(token))) return null;
     return bin;
+  }
+
+  static void trimTail(Deque<Captured> tail, long oldest) {
+    tail.removeIf(c -> c.seq() < oldest);
+    long bytes = 0;
+    int kept = 0;
+    for (Iterator<Captured> it = tail.iterator(); it.hasNext(); ) {
+      Captured c = it.next();
+      bytes += weight(c);
+      kept++;
+      if (kept > TAIL || (kept > 1 && bytes > TAIL_BYTES)) it.remove();
+    }
+  }
+
+  private static long weight(Captured c) {
+    return 512L + (c.body() == null ? 0 : c.body().length()) + (c.outcome() == null || c.outcome().body() == null ? 0 : c.outcome().body().length());
   }
 
   private Bin readable(String id, String key) {
@@ -436,6 +453,7 @@ public final class Bins {
             firstSeq(segs.get(0)).ifPresent(first -> bin.oldest = Math.max(bin.oldest, first));
             List<Captured> recent = fromDisk(bin, Long.MAX_VALUE, c -> true, TAIL);
             recent.forEach(bin.tail::addLast);
+            trimTail(bin.tail, bin.oldest);
             if (!recent.isEmpty()) bin.seq = Math.max(bin.seq, recent.get(0).seq());
           }
           if (bin.id.matches("[a-z0-9]{12}")) bins.put(bin.id, bin);

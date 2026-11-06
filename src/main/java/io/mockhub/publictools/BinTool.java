@@ -67,8 +67,11 @@ public final class BinTool implements PublicTool {
   }
 
   private ResponseDefinition create(PublicRequest request) {
-    Optional<Long> wait = limits.take(request.clientIp(), PublicLimits.Kind.CREATE);
-    if (wait.isPresent()) return PublicResponses.tooMany(wait.get(), "new bins");
+    Optional<Long> wait = limits.take(request.clientIp(), PublicLimits.Kind.NEW_BIN);
+    if (wait.isPresent()) {
+      return PublicResponses.refused(wait.get(), "Your address made " + PublicLimits.Kind.NEW_BIN.limit.requests()
+          + " bins in the last hour. Open one of them under My bins, or make a new one in " + PublicResponses.inTime(wait.get()) + ".");
+    }
     return bins.create()
         .map(c -> PublicResponses.json(201, Jsons.object()
             .put("id", c.id())

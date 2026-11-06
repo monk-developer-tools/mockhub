@@ -35,9 +35,18 @@ final class PublicResponses {
   }
 
   static ResponseDefinition tooMany(long retryAfterSeconds, String what) {
+    return refused(retryAfterSeconds, "Too many " + what + " from your address. Try again in " + inTime(retryAfterSeconds) + ".");
+  }
+
+  static ResponseDefinition refused(long retryAfterSeconds, String message) {
     return base(429).withHeader("Content-Type", "application/json").withHeader("Retry-After", String.valueOf(retryAfterSeconds))
-        .withBody(Jsons.write(Jsons.object().put("error", "Too many " + what + " from your address. Try again in " + retryAfterSeconds + " s.")
-            .put("status", 429).put("retryAfter", retryAfterSeconds)))
+        .withBody(Jsons.write(Jsons.object().put("error", message).put("status", 429).put("retryAfter", retryAfterSeconds)))
         .build();
+  }
+
+  static String inTime(long seconds) {
+    if (seconds < 90) return seconds + (seconds == 1 ? " second" : " seconds");
+    long minutes = (seconds + 59) / 60;
+    return minutes + " minutes";
   }
 }

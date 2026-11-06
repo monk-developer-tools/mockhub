@@ -132,16 +132,22 @@ class PublicToolsFilterTest {
   }
 
   @Test
-  void limitsNewBinsPerAddress() {
+  void anAddressCanMakeAHundredBinsAnHourWhateverElseItCreates() {
     // Given
     PublicToolsFilter filter = new PublicToolsFilter(true, limits, tools);
-    for (int i = 0; i < 10; i++) assertThat(stopped(filter.filter(request("POST", "/__public/bins", ""), null)).getStatus()).isEqualTo(201);
+    for (int i = 0; i < 10; i++) filter.filter(request("POST", "/__public/mocks", ""), null);
+    int made = 0;
+    for (int i = 0; i < 100; i++) {
+      if (stopped(filter.filter(request("POST", "/__public/bins", ""), null)).getStatus() == 201) made++;
+    }
 
     // When
     ResponseDefinition response = stopped(filter.filter(request("POST", "/__public/bins", ""), null));
 
     // Then
+    assertThat(made).isEqualTo(100);
     assertThat(response.getStatus()).isEqualTo(429);
+    assertThat(response.getBody()).contains("100 bins in the last hour").contains("My bins").contains("minutes");
   }
 
   @Test

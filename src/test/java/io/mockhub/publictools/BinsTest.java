@@ -81,6 +81,27 @@ class BinsTest {
   }
 
   @Test
+  void keepsOnlyAFewLargeRequestsInMemoryButPagesThroughAllOfThem() {
+    // Given
+    Bins bins = new Bins(data, clock);
+    Bins.Created bin = bins.create().orElseThrow();
+    String large = "{\"pad\":\"" + "x".repeat(60 * 1024) + "\"}";
+
+    // When
+    for (int i = 0; i < 12; i++) bins.record(bin.id(), call(bin.id(), "/big/" + i, large), "/big/" + i, "", ok());
+
+    // Then
+    Bins.Page newest = bins.requests(bin.id(), bin.token(), 0, 0, 0).orElseThrow();
+    assertThat(newest.requests()).hasSize(12);
+    assertThat(newest.requests().get(0).path()).isEqualTo("/big/11");
+    assertThat(newest.requests().get(11).path()).isEqualTo("/big/0");
+    java.util.Deque<Bins.Captured> tail = new java.util.ArrayDeque<>(newest.requests());
+    Bins.trimTail(tail, 1);
+    assertThat(tail).hasSizeLessThan(6).isNotEmpty();
+    assertThat(tail.getFirst().path()).isEqualTo("/big/11");
+  }
+
+  @Test
   void keepsEveryRequestAndPagesThroughOlderOnes() {
     // Given
     Bins bins = new Bins(data, clock);
