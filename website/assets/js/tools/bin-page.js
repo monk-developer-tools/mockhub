@@ -618,7 +618,7 @@ function flashNote(message) {
   }, 8000);
 }
 
-async function preview(text, dynamic, out, note) {
+async function preview(text, dynamic, out, note, apply = null) {
   out.hidden = false;
   if (!dynamic) {
     out.textContent = text || '(empty body)';
@@ -633,9 +633,37 @@ async function preview(text, dynamic, out, note) {
     out.textContent = pretty(result.json.output);
     note.textContent = latest ? `Built from your latest request, ${latest.method} ${latest.path}.` : 'Built from a sample request. Send one to the bin to preview with your own.';
   } else {
-    out.textContent = result.json?.error ?? result.error ?? 'The preview failed.';
+    const error = result.json?.error ?? result.error ?? 'The preview failed.';
+    out.textContent = error;
     note.textContent = 'The template has a problem; requests would get a 500 until it is fixed.';
+    if (apply && settings?.ai) {
+      note.append(' ', el('button', { type: 'button', class: 'btn ghost small', 'data-fix-template': '', onclick: () => fixTemplate(text, error, out, note, apply) }, 'Fix with AI'));
+    }
   }
+}
+
+async function fixTemplate(text, error, out, note, apply) {
+  const signedIn = session.read();
+  if (!signedIn) {
+    note.textContent = 'Sign in under AI in the Rules dialog to fix templates with AI.';
+    return;
+  }
+  note.textContent = 'Asking the AI…';
+  const latest = requests[0];
+  const sample = latest ? `${latest.method} ${latest.path}${latest.query ? `?${latest.query}` : ''}\n${latest.raw ? '' : latest.body ?? ''}` : '';
+  const result = await call(inspect('/draft/fix'), { method: 'POST', headers: { ...auth(true), Authorization: `Bearer ${signedIn.token}` }, body: JSON.stringify({ template: text, error, request: sample }) });
+  if (result.status === 401) {
+    session.write(null);
+    note.textContent = 'Your sign-in has ended. Sign in again under AI.';
+    return;
+  }
+  if (result.error || typeof result.json?.template !== 'string') {
+    note.textContent = result.error ?? 'No template came back. Try again.';
+    return;
+  }
+  apply(result.json.template);
+  await preview(result.json.template, true, out, note, apply);
+  note.prepend('Fixed by AI; check it before saving. ');
 }
 
 function renderRecipes() {
@@ -755,10 +783,10 @@ function insertAt(textarea, text) {
   textarea.focus();
 }
 
-function previewBlock(text, dynamic) {
+function previewBlock(text, dynamic, apply = null) {
   const out = el('pre', { class: 'tool-out tool-wrap', hidden: true });
   const note = el('span', { class: 'tool-hint' });
-  const button = el('button', { type: 'button', class: 'btn ghost small', onclick: () => preview(text(), dynamic(), out, note) }, 'Preview');
+  const button = el('button', { type: 'button', class: 'btn ghost small', onclick: () => preview(text(), dynamic(), out, note, apply) }, 'Preview');
   return el('div', { class: 'bin-preview' }, el('div', { class: 'bin-preview-row' }, button, note), out);
 }
 
@@ -841,7 +869,10 @@ function answerBody(a, i, headers) {
     note,
     upload,
     el('label', { class: 'bin-check' }, template, ' Fill in dynamic values ({{…}}) from each request'),
-    previewBlock(() => a.body, () => a.template)];
+    previewBlock(() => a.body, () => a.template, (fixed) => {
+      a.body = fixed;
+      body.value = fixed;
+    })];
 }
 
 function renderAnswers() {
@@ -1130,14 +1161,41 @@ async function draftWithAi(e) {
     renderSignIn('Your sign-in has ended. Sign in again.');
     return;
   }
-  if (result.error || !result.json?.rule) {
+  const drafted = (result.json?.rules ?? (result.json?.rule ? [result.json.rule] : [])).map(({ id, ...rule }) => ({ ...blankRule(), ...rule }));
+  if (result.error || !drafted.length) {
     note.textContent = result.error ?? 'No rule came back. Try describing it differently.';
+    renderDrafts([], []);
     return;
   }
-  note.textContent = 'Check the draft, then save it.';
-  const rule = result.json.rule;
-  delete rule.id;
-  openEditor({ ...blankRule(), ...rule }, -1);
+  const skipped = result.json.skipped ?? [];
+  if (drafted.length === 1 && !skipped.length) {
+    note.textContent = 'Check the draft, then save it.';
+    renderDrafts([], []);
+    openEditor(drafted[0], -1);
+    return;
+  }
+  note.textContent = `${drafted.length} ${drafted.length === 1 ? 'rule' : 'rules'} drafted. Check each, then add them.`;
+  renderDrafts(drafted, skipped);
+}
+
+function renderDrafts(drafted, skipped) {
+  const box = $('[data-bin-ai-drafts]');
+  box.hidden = !drafted.length && !skipped.length;
+  const add = async (list) => {
+    const result = await saveRules([...rules, ...list], rulesOn, `Added ${list.length === 1 ? `"${list[0].name || 'Rule'}"` : `${list.length} rules`}.`);
+    if (!result.error) renderDrafts(drafted.filter((d) => !list.includes(d)), skipped);
+  };
+  box.replaceChildren(
+    ...drafted.map((rule) => el('div', { class: 'bin-rule', 'data-bin-ai-draft': '' },
+      el('span', { class: 'bin-rule-text' }, el('strong', {}, rule.name || 'Rule'), el('span', { class: 'tool-hint' }, summary(rule))),
+      el('span', { class: 'bin-rule-actions' },
+        el('button', { type: 'button', class: 'btn ghost small', onclick: () => {
+          renderDrafts(drafted.filter((d) => d !== rule), skipped);
+          openEditor(rule, -1);
+        } }, 'Edit'),
+        el('button', { type: 'button', class: 'btn ghost small', 'data-bin-ai-add': '', onclick: () => add([rule]) }, 'Add')))),
+    drafted.length > 1 ? el('div', { class: 'tool-actions-row' }, el('button', { type: 'button', class: 'btn secondary small', 'data-bin-ai-add-all': '', onclick: () => add(drafted) }, `Add all ${drafted.length}`)) : '',
+    ...skipped.map((s) => el('p', { class: 'tool-hint', 'data-bin-ai-skipped': '' }, `Left out: ${s}`)));
 }
 
 function resetLog() {
@@ -1450,7 +1508,9 @@ for (const input of ['[data-crud-path]', '[data-crud-id-field]']) $(input).addEv
 $('[data-bin-values]').addEventListener('click', (e) => {
   if (e.target === e.currentTarget) e.currentTarget.close();
 });
-$('[data-bin-preview]').addEventListener('click', () => preview($('[data-bin-body]').value, $('[data-bin-template]').checked, $('[data-bin-preview-out]'), $('[data-bin-preview-note]')));
+$('[data-bin-preview]').addEventListener('click', () => preview($('[data-bin-body]').value, $('[data-bin-template]').checked, $('[data-bin-preview-out]'), $('[data-bin-preview-note]'), (fixed) => {
+  $('[data-bin-body]').value = fixed;
+}));
 
 function takeLinked() {
   const linked = parseBinHash(location.hash);

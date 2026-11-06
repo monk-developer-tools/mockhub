@@ -122,11 +122,13 @@ Limits: 500 records of 8 KB, 20 collections per bin. `BinRecords` (a `DataStore`
 
 Found while checking: before this, a bin's preflight allowed only `Content-Type, Authorization, X-Bin-Token` and no QUERY or TRACE, and browsers could read only two answer headers. `BinOptions`, `BinGate`, `PUT /options`.
 
-### B8 — AI parity
+### B8 — AI parity ✅ done
 | Beeceptor | Ours | Status |
 |---|---|---|
-| AI chat that makes static, dynamic, CRUD and callout rules, several at once | One rule per draft | 🟡 |
-| **Fix template with AI** when a template fails | — | ❌ (also missing in the app) |
+| AI chat that makes static, dynamic, CRUD and callout rules, several at once | One description drafts up to five rules of every kind; Edit, Add, Add all; rules failing checks are listed as left out | ✅ |
+| **Fix template with AI** when a template fails | *Fix with AI* on a failed preview, in rule answers and the default answer; `POST /draft/fix` | ✅ in the bin; the app is P2 |
+
+Drafts and fixes share the 10-an-hour AI limit and need a sign-in.
 
 ### B9 — Bin API parity ✅ done
 | Beeceptor API v2 | Ours | Status |

@@ -237,7 +237,7 @@ class BinResponderTest {
         """);
 
     // When
-    BinRule rule = drafter.draft("answer 402 when a payment fails");
+    BinRule rule = drafter.draft("answer 402 when a payment fails").rules().get(0);
 
     // Then
     assertThat(rule.name()).isEqualTo("Fail payments");

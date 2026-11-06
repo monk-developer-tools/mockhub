@@ -31,7 +31,7 @@ import java.util.regex.Pattern;
 public final class BinTool implements PublicTool {
   public static final int MAX_REPLY_BODY = 4 * 1024;
   private static final Pattern CAPTURE = Pattern.compile("/bins/([a-z0-9]{12})(/.*)?");
-  private static final Pattern INSPECT = Pattern.compile("/inspect/([a-z0-9]{12})(/requests(?:/\\d{1,12}(?:/share|/parts(?:/\\d{1,3})?)?)?|/response|/settings|/rules(?:/[a-z0-9-]{1,40})?|/state/[a-z]{1,10}/[^/]{1,200}|/routing|/draft|/state|/export|/options|/data)?");
+  private static final Pattern INSPECT = Pattern.compile("/inspect/([a-z0-9]{12})(/requests(?:/\\d{1,12}(?:/share|/parts(?:/\\d{1,3})?)?)?|/response|/settings|/rules(?:/[a-z0-9-]{1,40})?|/state/[a-z]{1,10}/[^/]{1,200}|/routing|/draft(?:/fix)?|/state|/export|/options|/data)?");
   private static final Pattern ONE = Pattern.compile("/requests/(\\d{1,12})(/share)?");
   private static final Pattern PARTS = Pattern.compile("/requests/(\\d{1,12})/parts(?:/(\\d{1,3}))?");
   private static final Pattern RULE = Pattern.compile("/rules/([a-z0-9-]{1,40})");
@@ -235,7 +235,8 @@ public final class BinTool implements PublicTool {
     if (what.equals("/rules") && method.equals("PUT")) return setRules(id, token, request.body());
     if (what.equals("/routing") && method.equals("PUT")) return setRouting(id, token, request.body());
     if (what.equals("/options") && method.equals("PUT")) return setOptions(id, token, request.body());
-    if (what.equals("/draft") && method.equals("POST")) return draft(id, token, request);
+    if (what.equals("/draft") && method.equals("POST")) return withAi(id, token, request, this::draft);
+    if (what.equals("/draft/fix") && method.equals("POST")) return withAi(id, token, request, this::fix);
     return PublicResponses.error(405, "Read a bin with GET, change it with PUT /response, /rules or /routing, clear it with DELETE, read and clear its saved values with GET and DELETE /state, export it with GET /export, change its settings with PUT /options, read and change stored records with /data, or edit one rule at /rules/{ruleId} and one saved entry at /state/{kind}/{name}");
   }
 
@@ -481,16 +482,15 @@ public final class BinTool implements PublicTool {
     }
   }
 
-  private ResponseDefinition draft(String id, String token, PublicRequest request) {
+  private ResponseDefinition withAi(String id, String token, PublicRequest request, Function<JsonNode, ObjectNode> work) {
     if (!bins.verify(id, token)) return notYours(id);
     if (!drafter.available()) return PublicResponses.error(409, "This server has no AI provider set up.");
     Optional<Principal> who = signedIn.apply(request.header("Authorization"));
-    if (who.isEmpty()) return PublicResponses.error(401, "Sign in to MockHub to draft rules with AI.");
+    if (who.isEmpty()) return PublicResponses.error(401, "Sign in to MockHub to use AI in a bin.");
     Optional<Long> wait = limits.take("user:" + who.get().id(), PublicLimits.Kind.AI);
-    if (wait.isPresent()) return PublicResponses.tooMany(wait.get(), "AI drafts");
+    if (wait.isPresent()) return PublicResponses.tooMany(wait.get(), "AI requests");
     try {
-      BinRule rule = drafter.draft(read(request.body()).path("description").asText(""));
-      return PublicResponses.json(200, Jsons.object().set("rule", rule.toJson()));
+      return PublicResponses.json(200, work.apply(read(request.body())));
     } catch (IllegalArgumentException e) {
       return PublicResponses.error(400, e.getMessage());
     } catch (BinDrafter.Unavailable e) {
@@ -498,6 +498,19 @@ public final class BinTool implements PublicTool {
     } catch (RuntimeException e) {
       return PublicResponses.error(502, "The AI provider didn't answer: " + e.getMessage());
     }
+  }
+
+  private ObjectNode draft(JsonNode body) {
+    BinDrafter.Drafted drafted = drafter.draft(body.path("description").asText(""));
+    ObjectNode out = Jsons.object();
+    out.set("rule", drafted.rules().get(0).toJson());
+    out.set("rules", BinRule.toJson(drafted.rules()));
+    drafted.skipped().forEach(out.putArray("skipped")::add);
+    return out;
+  }
+
+  private ObjectNode fix(JsonNode body) {
+    return Jsons.object().put("template", drafter.fix(body.path("template").asText(""), body.path("error").asText(""), body.path("request").asText("")));
   }
 
   private ObjectNode settings(String id, String token, Bins.Settings s) {

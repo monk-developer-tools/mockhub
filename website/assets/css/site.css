@@ -5886,3 +5886,14 @@ select.tool-select-small {
 [data-rule-answer-kind][hidden] {
   display: none;
 }
+
+.bin-ai-drafts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.bin-ai-drafts[hidden] {
+  display: none;
+}

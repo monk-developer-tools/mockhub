@@ -124,7 +124,7 @@
       </div>
       <div class="bin-ai" data-bin-ai hidden>
         <form class="bin-signin" data-bin-signin>
-          <p class="tool-hint">Sign in to MockHub to describe a rule and let AI draft it.</p>
+          <p class="tool-hint">Sign in to MockHub to describe rules and let AI draft them, or to fix a broken template.</p>
           <div class="tool-row">
             <div class="tool-grow">
               <label class="tool-label" for="bin-user">Username</label>
@@ -142,14 +142,15 @@
         </form>
         <form class="bin-describe" data-bin-describe hidden>
           <div class="tool-head">
-            <label class="tool-label" for="bin-ai-text">Describe a rule</label>
+            <label class="tool-label" for="bin-ai-text">Describe one or more rules</label>
             <span class="tool-hint"><span data-bin-signed-in></span> · <button type="button" class="bin-link" data-bin-signout>Sign out</button></span>
           </div>
-          <textarea id="bin-ai-text" class="tool-input" rows="2" maxlength="1000" placeholder="Answer 402 with the payment id when the event is payment.failed" data-bin-ai-text></textarea>
+          <textarea id="bin-ai-text" class="tool-input" rows="2" maxlength="1000" placeholder="Answer 402 with the payment id when the event is payment.failed, and add a CRUD route for /orders" data-bin-ai-text></textarea>
           <div class="tool-actions-row">
             <button type="submit" class="btn secondary" data-bin-ai-go>Draft with AI</button>
-            <span class="tool-hint" data-bin-ai-note aria-live="polite">You check the draft before it's saved.</span>
+            <span class="tool-hint" data-bin-ai-note aria-live="polite">You check each draft before it's saved.</span>
           </div>
+          <div class="bin-ai-drafts" data-bin-ai-drafts hidden></div>
         </form>
       </div>
       <p class="tool-error" data-bin-rules-error hidden></p>
