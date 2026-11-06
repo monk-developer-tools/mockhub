@@ -1,5 +1,6 @@
 package io.mockhub.ext;
 
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.github.tomakehurst.wiremock.extension.Extension;
 import com.github.tomakehurst.wiremock.extension.ExtensionFactory;
 import com.github.tomakehurst.wiremock.extension.WireMockServices;
@@ -69,6 +70,7 @@ import io.mockhub.backup.BackupService;
 import io.mockhub.auth.AccessPolicy;
 import io.mockhub.ai.MockTools;
 import io.mockhub.ai.StagedChanges;
+import io.mockhub.api.Jsons;
 import io.mockhub.api.ApiRouter;
 import io.mockhub.controller.AccessTokenController;
 import io.mockhub.controller.ApiController;
@@ -115,6 +117,7 @@ import io.mockhub.playground.PlaygroundHistory;
 import io.mockhub.playground.PlaygroundService;
 import io.mockhub.playground.TargetGuard;
 import io.mockhub.publictools.BinTool;
+import io.mockhub.publictools.BinTunnelKeys;
 import io.mockhub.publictools.Bins;
 import io.mockhub.publictools.EchoTool;
 import io.mockhub.publictools.FakeTool;
@@ -263,7 +266,9 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     SecretBox secrets = SecretBox.of(config.secretKey, JsonFile.inDataDir(dataDir, "secret.key"));
     TlsService tls = new TlsService(new TlsStore(dataDir, secrets));
     AtomicReference<AuthService> authRef = new AtomicReference<>();
-    TunnelHub tunnels = new TunnelHub((principal, projectId) -> principal.allowsProject(projectId)
+    Bins bins = new Bins(dataDir, clock);
+    BinTunnelKeys binKeys = new BinTunnelKeys(bins);
+    TunnelHub tunnels = new TunnelHub((principal, projectId) -> projectId.startsWith("bin:") ? principal.id().equals(projectId) : principal.allowsProject(projectId)
         && projectsRef.get().find(projectId).map(p -> principal.isAdmin() || principal.canInTeam(p.orgId(), p.teamId(), Role.EDITOR)).orElse(false),
         Executors.newSingleThreadScheduledExecutor(r -> {
           Thread t = new Thread(r, "mockhub-tunnels");
@@ -271,7 +276,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
           return t;
         }), clock);
     accessTokens.onRevoke(tunnels::onTokenRevoked);
-    TunnelServlet tunnelServlet = new TunnelServlet(tunnels, header -> authRef.get().principal(header));
+    TunnelServlet tunnelServlet = new TunnelServlet(tunnels, header -> binKeys.principal(header).or(() -> authRef.get().principal(header)));
     ProxyService proxy = new ProxyService(config.proxyEnabled, IpAllowList.ofText(config.proxyAllow), config.proxyCaKeystore(),
         id -> projectsRef.get().find(id));
     MockHubServerFactory server = new MockHubServerFactory(services.getStores().getBlobStore("grpc"), grpc::fileDescriptors, tls::attach,
@@ -419,17 +424,23 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     McpServer mcpServer = new McpServer(mcpTools, Main.VERSION);
 
     PublicLimits publicLimits = new PublicLimits(rateLimiter);
-    Bins bins = new Bins(clock);
     TemplatePlayground templatePlayground = new TemplatePlayground(List.of(fakeHelpers, valueHelpers, validationHelpers, jwtHelpers), renderWorkers(), 2000);
     if (config.publicTools) orgs.ensureInstant();
     InstantMocks instantMocks = new InstantMocks(dataDir, projects, stubs, crud, () -> teams.ensureDefault(Organization.INSTANT_ID).id(), clock);
     PublicToolsFilter publicTools = new PublicToolsFilter(config.publicTools, publicLimits, List.of(
         new EchoTool(),
-        new BinTool(bins, publicLimits),
+        BinTool.create(bins, publicLimits, templatePlayground, new TargetGuard(false, InetAddress::getAllByName, "MOCKHUB_PUBLIC_TOOLS"), tunnels, tunnels::isOnline,
+            () -> config.publicAi && aiSettings.get().enabled(), (system, user) -> {
+              ArrayNode messages = Jsons.MAPPER.createArrayNode();
+              messages.addObject().put("role", "system").put("content", system);
+              messages.addObject().put("role", "user").put("content", user);
+              return chat.complete(aiSettings.get(), messages, null).message().path("content").asText("");
+            }),
         new FakeTool(new DataGenerator(fakeData), publicLimits),
         new RenderTool(templatePlayground, publicLimits),
         new InstantMockTool(instantMocks, history, publicLimits, importers, new InstantExamples(examples, exampleInstaller))));
     maintenance.scheduleWithFixedDelay(() -> safely(bins::prune), 10, 10, TimeUnit.MINUTES);
+    maintenance.scheduleWithFixedDelay(() -> safely(bins::flush), 5, 5, TimeUnit.MINUTES);
     maintenance.scheduleWithFixedDelay(() -> safely(instantMocks::prune), 5, 60, TimeUnit.MINUTES);
     maintenance.scheduleWithFixedDelay(() -> safely(rateLimiter::prune), 10, 10, TimeUnit.MINUTES);
 

@@ -15,16 +15,30 @@ import io.mockhub.fake.FakeData;
 import io.mockhub.runtime.RateLimiter;
 import io.mockhub.support.MutableClock;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 class PublicToolsFilterTest {
 
   private final MutableClock clock = new MutableClock(Instant.parse("2026-11-04T10:00:00Z"));
   private final PublicLimits limits = new PublicLimits(new RateLimiter(clock));
-  private final Bins bins = new Bins(clock);
-  private final List<PublicTool> tools = List.of(new EchoTool(), new BinTool(bins, limits), new FakeTool(new DataGenerator(new FakeData("en")), limits));
+  @TempDir
+  static Path data;
+  private Bins bins;
+  private List<PublicTool> tools;
+
+  @BeforeEach
+  void setUp() {
+    bins = new Bins(data.resolve(String.valueOf(System.nanoTime())), clock);
+    BinTool binTool = new BinTool(bins, limits, new BinResponder(null, null, null, null, null, bound -> 0, System::currentTimeMillis),
+        new BinDrafter(() -> false, (system, user) -> ""), name -> Optional.empty(), System::currentTimeMillis);
+    tools = List.of(new EchoTool(), binTool, new FakeTool(new DataGenerator(new FakeData("en")), limits));
+  }
 
   private static Request request(String method, String path, String body) {
     ImmutableRequest.Builder b = ImmutableRequest.create()
@@ -147,5 +161,22 @@ class PublicToolsFilterTest {
     assertThat(tooMany.getStatus()).isEqualTo(400);
     assertThat(tooBig.getStatus()).isEqualTo(400);
     assertThat(json(tooBig).get("error").asText()).contains("up to 1000");
+  }
+
+  @Test
+  void webhooksSentToABinNeitherHitNorUseUpTheGeneralLimit() {
+    // Given
+    PublicToolsFilter filter = new PublicToolsFilter(true, limits, tools);
+    String id = json(stopped(filter.filter(request("POST", "/__public/bins", ""), null))).get("id").asText();
+
+    // When
+    int refused = 0;
+    for (int i = 0; i < 300; i++) {
+      if (stopped(filter.filter(request("POST", "/__public/bins/" + id + "/hook", "{}"), null)).getStatus() == 429) refused++;
+    }
+
+    // Then
+    assertThat(refused).isZero();
+    assertThat(stopped(filter.filter(request("GET", "/__public/echo", null), null)).getStatus()).isEqualTo(200);
   }
 }

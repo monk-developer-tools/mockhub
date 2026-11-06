@@ -84,6 +84,92 @@ class PublicToolsIntegrationTest {
   }
 
   @Test
+  void answersBinWebhooksFromRulesAndShowsTheAnswerBesideEachRequest() {
+    // Given
+    server = MockHubServer.start(data, ON);
+    ApiClient api = server.api();
+    JsonNode bin = api.post("/__public/bins", "").json();
+    String id = bin.get("id").asText();
+    Map<String, String> owner = Map.of("X-Bin-Token", bin.get("token").asText());
+    String rules = """
+        {"rulesEnabled": true, "rules": [
+          {"name": "failed payments", "method": "POST",
+           "conditions": [{"target": "json", "key": "$.type", "op": "equals", "value": "payment.failed"}],
+           "answers": [{"status": 402, "delayMs": 300, "body": "{\\"id\\": \\"{{jsonPath request.body '$.id'}}\\"}", "template": true}]}
+        ]}
+        """;
+    ApiClient.Result saved = api.send("PUT", "/__public/inspect/" + id + "/rules", rules, "application/json", owner);
+
+    // When
+    long started = System.currentTimeMillis();
+    ApiClient.Result failed = api.post("/__public/bins/" + id + "/stripe", "{\"type\":\"payment.failed\",\"id\":\"pi_7\"}");
+    long took = System.currentTimeMillis() - started;
+    ApiClient.Result paid = api.post("/__public/bins/" + id + "/stripe", "{\"type\":\"payment.paid\"}");
+    JsonNode listing = api.send("GET", "/__public/inspect/" + id, null, null, owner).json();
+
+    // Then
+    assertThat(saved.status()).isEqualTo(200);
+    assertThat(failed.status()).isEqualTo(402);
+    assertThat(failed.json().get("id").asText()).isEqualTo("pi_7");
+    assertThat(took).isGreaterThanOrEqualTo(300);
+    assertThat(paid.status()).isEqualTo(200);
+    assertThat(listing.get("total").asLong()).isEqualTo(2);
+    assertThat(listing.at("/requests/0/event").asText()).isEqualTo("payment.paid");
+    assertThat(listing.at("/requests/0/outcome/by").asText()).isEqualTo("default");
+    assertThat(listing.at("/requests/1/event").asText()).isEqualTo("payment.failed");
+    assertThat(listing.at("/requests/1/outcome/by").asText()).isEqualTo("rule");
+    assertThat(listing.at("/requests/1/outcome/rule").asText()).isEqualTo("failed payments");
+    assertThat(listing.at("/requests/1/outcome/status").asInt()).isEqualTo(402);
+  }
+
+  @Test
+  void keepsEveryBinRequestAndPagesBackThroughThem() {
+    // Given
+    server = MockHubServer.start(data, ON);
+    ApiClient api = server.api();
+    JsonNode bin = api.post("/__public/bins", "").json();
+    String id = bin.get("id").asText();
+    Map<String, String> owner = Map.of("X-Bin-Token", bin.get("token").asText());
+    for (int i = 1; i <= 130; i++) api.post("/__public/bins/" + id + "/n", "{\"n\":" + i + "}");
+
+    // When
+    JsonNode first = api.send("GET", "/__public/inspect/" + id, null, null, owner).json();
+    JsonNode older = api.send("GET", "/__public/inspect/" + id + "?before=31", null, null, owner).json();
+
+    // Then
+    assertThat(first.get("total").asLong()).isEqualTo(130);
+    assertThat(first.get("requests").size()).isEqualTo(100);
+    assertThat(first.at("/requests/0/seq").asLong()).isEqualTo(130);
+    assertThat(older.get("requests").size()).isEqualTo(30);
+    assertThat(older.at("/requests/29/seq").asLong()).isEqualTo(1);
+  }
+
+  @Test
+  void routesBinWebhooksOnlyToPublicAddressesAndReportsTheSettings() {
+    // Given
+    server = MockHubServer.start(data, ON);
+    ApiClient api = server.api();
+    JsonNode bin = api.post("/__public/bins", "").json();
+    String id = bin.get("id").asText();
+    Map<String, String> owner = Map.of("X-Bin-Token", bin.get("token").asText());
+    api.send("PUT", "/__public/inspect/" + id + "/routing", "{\"mode\":\"forward\",\"target\":\"http://127.0.0.1:9\"}", "application/json", owner);
+
+    // When
+    ApiClient.Result hook = api.post("/__public/bins/" + id + "/hook", "{}");
+    JsonNode settings = api.send("GET", "/__public/inspect/" + id + "/settings", null, null, owner).json();
+    ApiClient.Result draft = api.send("POST", "/__public/inspect/" + id + "/draft", "{\"description\":\"fail every refund\"}", "application/json", owner);
+
+    // Then
+    assertThat(hook.status()).isEqualTo(502);
+    assertThat(hook.body()).contains("private or local");
+    assertThat(settings.at("/routing/mode").asText()).isEqualTo("forward");
+    assertThat(settings.at("/tunnel/name").asText()).isEqualTo("bin-" + id);
+    assertThat(settings.at("/tunnel/online").asBoolean()).isFalse();
+    assertThat(settings.get("ai").asBoolean()).isFalse();
+    assertThat(draft.status()).isEqualTo(409);
+  }
+
+  @Test
   void rendersTemplatesAgainstASampleRequest() {
     // Given
     server = MockHubServer.start(data, ON);

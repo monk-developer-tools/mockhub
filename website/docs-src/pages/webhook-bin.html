@@ -1,0 +1,44 @@
+<p>A webhook bin is a URL that records every request sent to it and shows each one beside the answer it got. It needs no account. Use the free <a href="/tools/webhook-bin/">webhook catcher</a> on the demo, or turn on <code>MOCKHUB_PUBLIC_TOOLS</code> on your own server (see <a href="/docs/config/#public-tools">Public tools</a>).</p>
+
+<h3 id="bin-capture">What a bin keeps</h3>
+<p>Send any method to <code>/__public/bins/{id}</code> or any path under it. The bin keeps every request with its method, path, query, headers, body (up to 64 KB) and the answer it sent back: status, headers, body, how long it took and what produced it. There is no request count limit. A bin holds up to 50 MB in files of 10 MB; past that it drops its oldest file. The list loads 100 requests at a time, and <strong>Load older requests</strong> pages back.</p>
+<p>When a request names its event, the bin shows it as a badge. It reads the <code>X-GitHub-Event</code>, <code>X-Gitlab-Event</code>, <code>X-Event-Key</code>, <code>X-Shopify-Topic</code>, <code>X-Webhook-Event</code> and <code>X-Event-Type</code> headers, then the JSON fields <code>type</code>, <code>event</code>, <code>event_type</code>, <code>eventType</code>, <code>topic</code> and <code>action</code>.</p>
+<p>Only the browser that created the bin holds its token. A bin is deleted 24 hours after its last request.</p>
+
+<h3 id="bin-rules">Rules</h3>
+<p>Rules answer requests before routing does. The first enabled rule that matches answers; drag rules to change the order, untick one to skip it, or switch <strong>Rules on</strong> off to skip them all. A rule matches a method (or any) and all of its conditions:</p>
+<table>
+  <thead><tr><th>Look at</th><th>Name</th><th>Tests</th></tr></thead>
+  <tbody>
+    <tr><td>Path</td><td>none, the path under the bin, like <code>/payments</code></td><td rowspan="5">equals, starts with, contains, matches regex, is present</td></tr>
+    <tr><td>Query parameter</td><td>the parameter</td></tr>
+    <tr><td>Header</td><td>the header, any case</td></tr>
+    <tr><td>Body text</td><td>none</td></tr>
+    <tr><td>JSON field</td><td>a path like <code>$.data.object.status</code> or <code>$.items[0].id</code></td></tr>
+  </tbody>
+</table>
+<p>An answer has a status, a delay up to 15 seconds, headers and a body. Tick <strong>Fill in dynamic values</strong> to render the body and headers as a <a href="/docs/templating/">template</a>, for example <code>{{jsonPath request.body '$.id'}}</code>, <code>{{now}}</code> or <code>{{fake 'Name.fullName'}}</code>. Give a rule up to five answers with weights to make a flaky endpoint: weights 3 and 1 answer the first three times in four.</p>
+<p>The starting points fill the editor with a common rule: fail with 500, answer after 5 seconds, match one event type, echo the body back and fail one in four. A bin holds up to 50 rules of up to 10 conditions each.</p>
+<p>When the server sets <code>MOCKHUB_PUBLIC_AI=true</code> and has an AI provider, <strong>Draft with AI</strong> turns a description such as "answer 402 with the payment id when the event is payment.failed" into a rule. The draft opens in the editor and is saved only when you save it.</p>
+
+<h3 id="bin-routing">Routing</h3>
+<p>Routing decides what answers a request no rule matched.</p>
+<ul>
+  <li><strong>Default answer</strong>: the bin's reply, 200 <code>{"ok":true}</code> unless you change it.</li>
+  <li><strong>Forward</strong>: the request goes on to a target plus an optional path prefix plus the path under the bin, with its query, headers and body, and the target's answer goes back to the sender. You can add headers to every request and every answer, and skip TLS certificate checks. Only public addresses are allowed; the target has 15 seconds and 1 MB.</li>
+  <li><strong>Local tunnel</strong>: the request reaches a service on your machine. Run the command the page shows, which uses the <a href="/docs/tunnel/">MockHub tunnel client</a> with the bin's own key:
+<pre><code>java -jar mockhub.jar tunnel --server https://mockhub.devops-monk.com \
+  --token bin_{id}_{token} --name bin-{id} --to http://localhost:3000</code></pre>
+  The bin's key opens only the tunnel named <code>bin-{id}</code>, and no other key can use a name that starts with <code>bin-</code>. The page shows whether the tunnel is connected.</li>
+</ul>
+<p>When forwarding or the tunnel fails, the sender gets <code>502</code> with a JSON error, and the request shows <em>Forward failed</em> or <em>Tunnel failed</em>.</p>
+
+<h3 id="bin-api">From a script</h3>
+<pre><code>curl -X POST https://mockhub.devops-monk.com/__public/bins
+curl https://mockhub.devops-monk.com/__public/inspect/{id} -H 'X-Bin-Token: {token}'
+curl -X PUT https://mockhub.devops-monk.com/__public/inspect/{id}/rules -H 'X-Bin-Token: {token}' \
+  -H 'Content-Type: application/json' -d '{"rulesEnabled": true, "rules": [{
+    "name": "Failed payments", "method": "POST",
+    "conditions": [{"target": "json", "key": "$.type", "op": "equals", "value": "payment.failed"}],
+    "answers": [{"status": 402, "delayMs": 500, "body": "{\"id\": \"{{jsonPath request.body '"'"'$.id'"'"'}}\"}", "template": true}]}]}'</code></pre>
+<p>Every endpoint is listed under <a href="/docs/config/#public-tools">Public tools</a>.</p>

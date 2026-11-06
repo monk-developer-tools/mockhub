@@ -150,6 +150,20 @@ class TunnelHubTest {
   }
 
   @Test
+  void aBinKeyOpensOnlyItsOwnTunnelAndBinNamesAreKeptForBins() {
+    // Given
+    Principal bin = person("bin:abc234defg56", "bin-abc234defg56", Role.EDITOR);
+
+    // When
+    hub.next("bin-abc234defg56", bin);
+
+    // Then
+    assertThat(hub.isOnline("bin-abc234defg56")).contains(true);
+    assertThatThrownBy(() -> hub.next("laptop", bin)).isInstanceOfSatisfying(TunnelException.class, e -> assertThat(e.status()).isEqualTo(403));
+    assertThatThrownBy(() -> hub.next("bin-zzz234defg56", alex)).isInstanceOfSatisfying(TunnelException.class, e -> assertThat(e.status()).isEqualTo(403));
+  }
+
+  @Test
   void badNamesViewersAndReviewTokensCannotOpenATunnel() {
     // Given
     Principal viewer = person("u3", "vic", Role.VIEWER);

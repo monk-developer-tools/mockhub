@@ -26,6 +26,7 @@ public final class Config {
   public final int historyDays;
   public final int historyMaxMb;
   public final boolean publicTools;
+  public final boolean publicAi;
   public final int maxRecords;
   public final String secretKey;
   public final boolean proxyEnabled;
@@ -52,6 +53,7 @@ public final class Config {
     this.historyDays = Math.max(1, Integer.parseInt(env.getOrDefault("MOCKHUB_HISTORY_DAYS", "7")));
     this.historyMaxMb = Math.max(1, Integer.parseInt(env.getOrDefault("MOCKHUB_HISTORY_MAX_MB", "200")));
     this.publicTools = Boolean.parseBoolean(env.getOrDefault("MOCKHUB_PUBLIC_TOOLS", "false"));
+    this.publicAi = Boolean.parseBoolean(env.getOrDefault("MOCKHUB_PUBLIC_AI", "false"));
     this.maxRecords = Math.max(0, Integer.parseInt(env.getOrDefault("MOCKHUB_MAX_RECORDS", "10000")));
     this.secretKey = env.getOrDefault("MOCKHUB_SECRET_KEY", "");
     this.proxyEnabled = Boolean.parseBoolean(env.getOrDefault("MOCKHUB_PROXY", "false"));

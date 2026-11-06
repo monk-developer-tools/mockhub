@@ -155,6 +155,11 @@ public final class TunnelHub implements TunnelGateway {
     if (name == null || !NAME.matcher(name).matches()) {
       throw new TunnelException(400, "Tunnel names are 1 to 40 lowercase letters, digits and dashes, like laptop or alice-api");
     }
+    boolean bin = principal.id().startsWith("bin:");
+    if (bin && !name.equals("bin-" + principal.id().substring("bin:".length()))) {
+      throw new TunnelException(403, "A bin's key opens only its own tunnel, bin-" + principal.id().substring("bin:".length()));
+    }
+    if (!bin && name.startsWith("bin-")) throw new TunnelException(403, "Tunnel names starting with bin- belong to webhook bins. Pick another name");
     if (principal.reviewOnly() || !principal.highestRole().atLeast(Role.EDITOR)) {
       throw new TunnelException(403, "Opening a tunnel needs the editor role in a team");
     }

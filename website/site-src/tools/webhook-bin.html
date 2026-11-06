@@ -1,6 +1,6 @@
 <div class="tool-card tool-start" data-bin-start>
   <h3>Get a URL that catches webhooks</h3>
-  <p>Point a payment provider, a CI system or your own code at it, then watch each request arrive here.</p>
+  <p>Point a payment provider, a CI system or your own code at it, then watch each request arrive here. Answer with rules, forward to your API or reach a service on your laptop.</p>
   <div class="tool-actions-row">
     <button type="button" class="btn primary" data-bin-create>Create a bin</button>
   </div>
@@ -17,9 +17,98 @@
       </span>
     </div>
     <pre class="tool-out tool-url" data-bin-url></pre>
-    <p class="tool-hint">Send anything to this URL or any path under it. The bin keeps the last 50 requests and is deleted after 24 hours without one. Only this browser holds the key to read it.</p>
-    <div class="tool-head"><h4 class="tool-sub">Try it from a terminal</h4><span class="tool-actions"><button type="button" class="btn secondary small" data-copy="[data-bin-try]">Copy</button></span></div>
-    <pre class="tool-out" data-bin-try></pre>
+    <p class="tool-hint">Send anything to this URL or any path under it. Every request is kept, up to <span data-bin-keeps>50</span> MB per bin, and the bin is deleted after 24 hours without a request. Only this browser holds the key to read it.</p>
+    <div class="tabs tabs-small" role="tablist" aria-label="Send a test request">
+      <button type="button" role="tab" id="bin-tab-curl" aria-controls="bin-code-curl" aria-selected="true">cURL</button>
+      <button type="button" role="tab" id="bin-tab-js" aria-controls="bin-code-js" aria-selected="false" tabindex="-1">JavaScript</button>
+      <button type="button" role="tab" id="bin-tab-python" aria-controls="bin-code-python" aria-selected="false" tabindex="-1">Python</button>
+      <button type="button" role="tab" id="bin-tab-java" aria-controls="bin-code-java" aria-selected="false" tabindex="-1">Java</button>
+    </div>
+    <div class="bin-code" id="bin-code-curl" role="tabpanel" aria-labelledby="bin-tab-curl"><pre class="tool-out" data-bin-code="curl"></pre><button type="button" class="btn secondary small" data-copy="[data-bin-code='curl']">Copy</button></div>
+    <div class="bin-code" id="bin-code-js" role="tabpanel" aria-labelledby="bin-tab-js" hidden><pre class="tool-out" data-bin-code="js"></pre><button type="button" class="btn secondary small" data-copy="[data-bin-code='js']">Copy</button></div>
+    <div class="bin-code" id="bin-code-python" role="tabpanel" aria-labelledby="bin-tab-python" hidden><pre class="tool-out" data-bin-code="python"></pre><button type="button" class="btn secondary small" data-copy="[data-bin-code='python']">Copy</button></div>
+    <div class="bin-code" id="bin-code-java" role="tabpanel" aria-labelledby="bin-tab-java" hidden><pre class="tool-out" data-bin-code="java"></pre><button type="button" class="btn secondary small" data-copy="[data-bin-code='java']">Copy</button></div>
+  </div>
+
+  <div class="tool-grid">
+    <div class="tool-card" role="region" aria-labelledby="bin-rules-title">
+      <div class="tool-head">
+        <h3 id="bin-rules-title">Rules <span class="tool-badge" data-bin-rule-count></span></h3>
+        <label class="bin-switch"><input type="checkbox" data-bin-rules-on checked> <span>Rules on</span></label>
+      </div>
+      <p class="tool-hint">The first rule that matches answers the request. Drag to reorder. When none match, the routing below decides.</p>
+      <ol class="bin-rules" data-bin-rules aria-label="Rules, first match wins"></ol>
+      <p class="tool-hint" data-bin-rules-empty>No rules yet. Start from one of these or write your own.</p>
+      <div class="bin-recipes" data-bin-recipes></div>
+      <div class="tool-actions-row">
+        <button type="button" class="btn secondary" data-bin-rule-new>New rule</button>
+      </div>
+      <form class="bin-ai" data-bin-ai hidden>
+        <label class="tool-label" for="bin-ai-text">Describe a rule</label>
+        <textarea id="bin-ai-text" class="tool-input" rows="2" maxlength="1000" placeholder="Answer 402 with the payment id when the event is payment.failed" data-bin-ai-text></textarea>
+        <div class="tool-actions-row">
+          <button type="submit" class="btn secondary" data-bin-ai-go>Draft with AI</button>
+          <span class="tool-hint" data-bin-ai-note aria-live="polite">You check the draft before it's saved.</span>
+        </div>
+      </form>
+      <p class="tool-error" data-bin-rules-error hidden></p>
+    </div>
+
+    <form class="tool-card" aria-labelledby="bin-routing-title" data-bin-routing>
+      <div class="tool-head">
+        <h3 id="bin-routing-title">Routing</h3>
+        <span class="tool-badge" data-bin-tunnel-state></span>
+      </div>
+      <ol class="bin-flow" data-bin-flow aria-label="Where a request goes"></ol>
+      <fieldset class="bin-modes">
+        <legend class="tool-label">When no rule matches</legend>
+        <label><input type="radio" name="mode" value="mock" checked> <span><strong>Default answer</strong> The bin answers with the reply below.</span></label>
+        <label><input type="radio" name="mode" value="forward"> <span><strong>Forward</strong> Send the request on to a public URL and pass back its answer.</span></label>
+        <label><input type="radio" name="mode" value="tunnel"> <span><strong>Local tunnel</strong> Reach a service running on your machine.</span></label>
+      </fieldset>
+
+      <div class="bin-mode" data-bin-mode="mock">
+        <div class="tool-row">
+          <div>
+            <label class="tool-label" for="bin-status">Status</label>
+            <input id="bin-status" class="tool-input" type="number" min="100" max="599" value="200" data-bin-status>
+          </div>
+          <div class="tool-grow">
+            <label class="tool-label" for="bin-type">Content type</label>
+            <input id="bin-type" class="tool-input" type="text" spellcheck="false" value="application/json" data-bin-type>
+          </div>
+        </div>
+        <label class="tool-label" for="bin-body">Body, up to 4 KB</label>
+        <textarea id="bin-body" class="tool-input" rows="3" spellcheck="false" data-bin-body>{"ok":true}</textarea>
+      </div>
+
+      <div class="bin-mode" data-bin-mode="forward" hidden>
+        <label class="tool-label" for="bin-target">Target</label>
+        <input id="bin-target" class="tool-input" name="target" type="url" spellcheck="false" placeholder="https://api.example.com">
+        <label class="tool-label" for="bin-prefix">Path prefix</label>
+        <input id="bin-prefix" class="tool-input" name="pathPrefix" type="text" spellcheck="false" placeholder="/webhooks">
+        <p class="tool-hint">A request to <code>/payments</code> on the bin goes to the target plus prefix plus <code>/payments</code>. Only public addresses are allowed.</p>
+        <label class="bin-check"><input type="checkbox" name="insecure"> Skip TLS certificate checks</label>
+        <label class="tool-label" for="bin-req-headers">Add to every request</label>
+        <textarea id="bin-req-headers" class="tool-input" name="requestHeaders" rows="2" spellcheck="false" placeholder="Authorization: Bearer test-key"></textarea>
+        <label class="tool-label" for="bin-res-headers">Add to every answer</label>
+        <textarea id="bin-res-headers" class="tool-input" name="responseHeaders" rows="2" spellcheck="false" placeholder="Access-Control-Allow-Origin: *"></textarea>
+      </div>
+
+      <div class="bin-mode" data-bin-mode="tunnel" hidden>
+        <p class="tool-hint">Run this on your machine. It needs Java 17 and <a href="/docs/tunnel/">the MockHub jar</a>. Requests then reach your local service, and its answers go back to the sender.</p>
+        <div class="tool-head"><h4 class="tool-sub">Start the tunnel</h4><span class="tool-actions"><button type="button" class="btn secondary small" data-copy="[data-bin-tunnel-cmd]">Copy</button></span></div>
+        <pre class="tool-out tool-wrap" data-bin-tunnel-cmd></pre>
+        <label class="tool-label" for="bin-tunnel-prefix">Path prefix</label>
+        <input id="bin-tunnel-prefix" class="tool-input" name="tunnelPrefix" type="text" spellcheck="false" placeholder="/api">
+        <p class="tool-hint">The command holds this bin's key. Keep it to yourself.</p>
+      </div>
+
+      <div class="tool-actions-row">
+        <button type="submit" class="btn secondary">Save routing</button>
+        <span class="tool-hint" data-bin-routing-note aria-live="polite"></span>
+      </div>
+    </form>
   </div>
 
   <div class="tool-grid tool-bin">
@@ -34,34 +123,45 @@
       <p class="tool-error" data-bin-error hidden></p>
       <ul class="tool-requests" data-bin-list aria-label="Captured requests"></ul>
       <p class="tool-hint" data-bin-empty>Nothing yet. Send a request to the URL above.</p>
+      <button type="button" class="btn ghost small" data-bin-older hidden>Load older requests</button>
     </div>
     <div class="tool-card">
       <div class="tool-head">
-        <h3>Request details</h3>
+        <h3>Request and answer</h3>
         <span class="tool-actions"><button type="button" class="btn secondary small" data-copy="[data-bin-curl]" data-bin-curl-copy hidden>Copy as cURL</button></span>
       </div>
-      <div data-bin-detail><p class="tool-hint">Pick a request to see its headers and body.</p></div>
+      <div data-bin-detail><p class="tool-hint">Pick a request to see what was sent and what the bin answered.</p></div>
       <pre class="tool-out" data-bin-curl hidden></pre>
     </div>
   </div>
+</div>
 
-  <form class="tool-card" data-bin-reply>
-    <h3>What the bin answers</h3>
+<dialog class="bin-dialog" data-bin-editor aria-labelledby="bin-editor-title">
+  <form method="dialog" class="bin-editor" data-bin-editor-form>
+    <div class="tool-head">
+      <h3 id="bin-editor-title">Rule</h3>
+      <button type="button" class="btn ghost small" data-bin-editor-close aria-label="Close">Close</button>
+    </div>
     <div class="tool-row">
-      <div>
-        <label class="tool-label" for="bin-status">Status</label>
-        <input id="bin-status" class="tool-input" type="number" min="100" max="599" value="200" data-bin-status>
-      </div>
       <div class="tool-grow">
-        <label class="tool-label" for="bin-type">Content type</label>
-        <input id="bin-type" class="tool-input" type="text" spellcheck="false" value="application/json" data-bin-type>
+        <label class="tool-label" for="rule-name">Name</label>
+        <input id="rule-name" class="tool-input" type="text" maxlength="80" placeholder="Failed payments" data-rule-name>
+      </div>
+      <div>
+        <label class="tool-label" for="rule-method">Method</label>
+        <select id="rule-method" class="tool-input" data-rule-method></select>
       </div>
     </div>
-    <label class="tool-label" for="bin-body">Body, up to 4 KB</label>
-    <textarea id="bin-body" class="tool-input" rows="3" spellcheck="false" data-bin-body>{"ok":true}</textarea>
+    <h4 class="tool-sub">When all of these hold</h4>
+    <ol class="bin-conditions" data-rule-conditions></ol>
+    <div class="tool-actions-row"><button type="button" class="btn ghost small" data-rule-add-condition>Add condition</button></div>
+    <h4 class="tool-sub">Answer with</h4>
+    <ol class="bin-answers" data-rule-answers></ol>
+    <div class="tool-actions-row"><button type="button" class="btn ghost small" data-rule-add-answer>Add a weighted answer</button></div>
+    <p class="tool-error" data-rule-error hidden></p>
     <div class="tool-actions-row">
-      <button type="submit" class="btn secondary">Save answer</button>
-      <span class="tool-hint" data-bin-reply-note aria-live="polite"></span>
+      <button type="submit" class="btn primary" value="save" data-rule-save>Save rule</button>
+      <button type="button" class="btn ghost" data-bin-editor-cancel>Cancel</button>
     </div>
   </form>
-</div>
+</dialog>

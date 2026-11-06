@@ -4884,3 +4884,388 @@ select.tool-select-small {
   font-size: 0.9rem;
   color: var(--muted);
 }
+
+.bin-code {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.bin-code[hidden] {
+  display: none;
+}
+
+.bin-code .tool-out {
+  width: 100%;
+}
+
+.tool-bin .tool-request {
+  display: flex;
+}
+
+.tool-bin .tool-request > .jack {
+  flex: 0 0 auto;
+  min-width: 56px;
+  text-align: center;
+}
+
+.tool-bin .tool-request-path {
+  flex: 1;
+  min-width: 0;
+}
+
+.bin-event {
+  font: 12px/1.4 var(--mono);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  border-radius: 6px;
+  padding: 2px 7px;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bin-pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+}
+
+.bin-side {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.bin-side .tool-out {
+  max-height: 360px;
+  overflow: auto;
+}
+
+.bin-switch,
+.bin-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.bin-switch input,
+.bin-check input,
+.bin-rule input[type='checkbox'],
+.bin-modes input {
+  accent-color: var(--accent);
+  width: 16px;
+  height: 16px;
+}
+
+.bin-rules {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bin-rules.off .bin-rule {
+  opacity: 0.55;
+}
+
+.bin-rule {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  padding: 8px 10px;
+  background: var(--bg);
+}
+
+.bin-rule.off .bin-rule-text {
+  opacity: 0.55;
+}
+
+.bin-rule.dragging {
+  opacity: 0.4;
+}
+
+.bin-rule.drop {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.bin-grip {
+  color: var(--muted);
+  cursor: grab;
+  letter-spacing: -3px;
+  user-select: none;
+}
+
+.bin-rule-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.bin-rule-text strong {
+  font-size: 14px;
+}
+
+.bin-rule-text .tool-hint {
+  font-family: var(--mono);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bin-rule-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 2px;
+}
+
+.bin-rule-actions .btn.small {
+  padding: 4px 8px;
+}
+
+.bin-recipes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+}
+
+.bin-recipe {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  font: inherit;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-m);
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+.bin-recipe:hover {
+  border-color: var(--accent);
+}
+
+.bin-recipe strong {
+  font-size: 13.5px;
+}
+
+.bin-recipe span {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.bin-ai {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px solid var(--hair);
+  padding-top: 12px;
+}
+
+.bin-ai[hidden] {
+  display: none;
+}
+
+.bin-flow {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.bin-flow li {
+  background: var(--bg-alt);
+  border-radius: 980px;
+  padding: 4px 12px;
+  color: var(--ink-2);
+}
+
+.bin-flow li + li::before {
+  content: '→';
+  color: var(--muted);
+  margin-right: 8px;
+}
+
+.bin-flow li:last-child {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  font-weight: 600;
+}
+
+.bin-modes {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bin-modes legend {
+  margin-bottom: 6px;
+}
+
+.bin-modes label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+.bin-modes label:has(input:checked) {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+
+.bin-modes input {
+  margin-top: 2px;
+}
+
+.bin-modes span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.bin-modes strong {
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.bin-mode {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bin-mode[hidden] {
+  display: none;
+}
+
+.bin-dialog {
+  width: min(760px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+  background: var(--tile);
+  color: var(--ink);
+  padding: 0;
+}
+
+.bin-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.bin-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px;
+}
+
+.bin-conditions,
+.bin-answers {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bin-condition {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.bin-condition .tool-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.bin-condition select.tool-input {
+  flex: 0 1 160px;
+}
+
+.bin-answer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  padding: 12px;
+}
+
+.bin-answer-remove {
+  justify-content: flex-end;
+}
+
+.bin-body-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.bin-dynamic.tool-input {
+  width: auto;
+  font-size: 13px;
+  padding: 4px 8px;
+}
+
+@media (max-width: 720px) {
+  .bin-pair {
+    grid-template-columns: 1fr;
+  }
+
+  .bin-rule {
+    flex-wrap: wrap;
+  }
+
+  .bin-rule-actions {
+    width: 100%;
+  }
+
+  .bin-condition {
+    flex-wrap: wrap;
+  }
+
+  .bin-condition select.tool-input {
+    flex: 1 1 140px;
+  }
+
+  .bin-event {
+    display: none;
+  }
+}
+
+.btn[hidden] {
+  display: none;
+}

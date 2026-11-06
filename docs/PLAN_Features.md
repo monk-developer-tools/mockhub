@@ -734,6 +734,37 @@ Checklist:
 - [x] Notifications (a per-contract webhook gets a `contract.drift` POST for new findings that aren't marked expected, through the callout address rules; the last failure shows on the tab. E-mail isn't built: MockHub has no mail settings, so it's left out)
 - [x] Tests, docs (unit tests for the checker, schema dialects, JSON Patch, the drift service and the patcher; integration tests for drift, expected marks, import with and without a prefix, the webhook, the AI patch round trip and permissions; Contract drift docs page)
 
+### Phase F14 — Webhook bin with rules and routing
+
+Goal: the free webhook bin does what a hosted webhook console does, in MockHub's own way: rules that answer, routing
+for everything else, AI help, and no cap on how many requests it receives.
+
+- Requests are kept on disk, not counted: a bin receives any number of requests and its list pages through them. Only
+  a size guard per bin (the newest 50 MB are kept) protects the shared demo disk. Bins survive a restart.
+- Sending to a bin has its own generous rate (1,200 a minute per sender), separate from the other public tools.
+- Rules, checked in order, first match answers: method plus conditions on path, query, headers and body (equals,
+  starts with, contains, matches a regex, exists, JSON path); turn each on or off, or all at once; reorder, duplicate,
+  delete. A rule answers with one response or weighted responses, each with a status, delay (up to 15 s), headers
+  and a body that can use MockHub templates (`{{jsonPath request.body '$.id'}}`, fake data, dates).
+- Starting points: fail with a 500, answer after 5 seconds, answer by event type, echo the request.
+- Routing for calls no rule answers: answer with the bin's default reply, forward to a public URL (path prefix,
+  skip TLS checks, headers added to the request and to the answer), or a local tunnel (`mockhub tunnel` with the
+  bin's key). A flow line shows client → bin → rules → target.
+- "Describe a rule" asks the server's AI provider for a rule, shown in the editor before it's saved. Off unless the
+  operator sets `MOCKHUB_PUBLIC_AI=true`, with its own rate limit.
+- Each request shows how it was answered (rule name, default, forwarded, tunnel or an error), the status, time taken
+  and the answer's body beside the request; webhook event types (`event`, `type`, `X-GitHub-Event` and similar) show
+  as a badge. Code samples for cURL, JavaScript, Python and Java.
+
+Checklist:
+- [x] Disk storage, paging, restart, size guard, separate send rate
+- [x] Rules: model, validation, matching, weighted and templated answers, delays
+- [x] Routing: default, forward, tunnel with the bin key
+- [x] AI rule drafts behind `MOCKHUB_PUBLIC_AI`
+- [x] Bin page: rules list and editor, starting points, routing cards and flow, AI box, answers beside requests,
+      event badges, code samples, older pages
+- [x] Tests at unit, integration and system level; docs page, README, tool page copy
+
 ## 3. Order and size
 
 | Phase | Size | Why here |
@@ -754,3 +785,4 @@ Checklist:
 | F11 Routing extras | M | Independent |
 | F12 Local tunnel | M | Needs F4 tokens |
 | F13 Contract drift | L | Needs F3 history |
+| F14 Webhook bin rules and routing | L | Needs F6b tools, F12 tunnel |
