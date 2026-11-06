@@ -26,7 +26,7 @@ import java.util.regex.Pattern;
 public final class BinTool implements PublicTool {
   public static final int MAX_REPLY_BODY = 4 * 1024;
   private static final Pattern CAPTURE = Pattern.compile("/bins/([a-z0-9]{12})(/.*)?");
-  private static final Pattern INSPECT = Pattern.compile("/inspect/([a-z0-9]{12})(/requests(?:/\\d{1,12}(?:/share)?)?|/response|/settings|/rules|/routing|/draft|/state|/export|/options)?");
+  private static final Pattern INSPECT = Pattern.compile("/inspect/([a-z0-9]{12})(/requests(?:/\\d{1,12}(?:/share)?)?|/response|/settings|/rules|/routing|/draft|/state|/export|/options|/data)?");
   private static final Pattern ONE = Pattern.compile("/requests/(\\d{1,12})(/share)?");
 
   private final Bins bins;
@@ -38,6 +38,7 @@ public final class BinTool implements PublicTool {
   private final LongSupplier millis;
   private final BinGate gate;
   private final BinScheduler scheduler;
+  private final BinCrud records;
 
   BinTool(Bins bins, PublicLimits limits, BinResponder responder, BinDrafter drafter, Function<String, Optional<Boolean>> tunnelOnline,
       Function<String, Optional<Principal>> signedIn, LongSupplier millis) {
@@ -47,6 +48,7 @@ public final class BinTool implements PublicTool {
   BinTool(Bins bins, PublicLimits limits, BinResponder responder, BinDrafter drafter, Function<String, Optional<Boolean>> tunnelOnline,
       Function<String, Optional<Principal>> signedIn, LongSupplier millis, BinScheduler scheduler) {
     this.scheduler = scheduler;
+    this.records = new BinCrud(bins.records());
     this.bins = bins;
     this.limits = limits;
     this.responder = responder;
@@ -60,7 +62,7 @@ public final class BinTool implements PublicTool {
   public static BinTool create(Bins bins, PublicLimits limits, TemplatePlayground templates, TargetGuard guard, TunnelGateway tunnels,
       Function<String, Optional<Boolean>> tunnelOnline, Function<String, Optional<Principal>> signedIn, BooleanSupplier aiOn, BinDrafter.Llm llm) {
     BinResponder responder = new BinResponder(templates, new JdkHttpSender(), new JdkHttpSender(true), guard, tunnels,
-        bound -> ThreadLocalRandom.current().nextInt(bound), System::currentTimeMillis);
+        bound -> ThreadLocalRandom.current().nextInt(bound), System::currentTimeMillis, bins.records());
     return new BinTool(bins, limits, responder, new BinDrafter(aiOn, llm), tunnelOnline, signedIn, System::currentTimeMillis);
   }
 
@@ -178,12 +180,13 @@ public final class BinTool implements PublicTool {
     Matcher one = ONE.matcher(what);
     boolean single = one.matches();
     boolean sharing = single && one.group(2) != null;
-    boolean reading = method.equals("GET") && (what.equals("/requests") || what.equals("/export") || (single && !sharing));
+    boolean reading = method.equals("GET") && (what.equals("/requests") || what.equals("/export") || what.equals("/data") || (single && !sharing));
     if (!reading && bins.viewOnly(id, token)) {
       return PublicResponses.error(403, "This is a view-only link. Only the bin's owner can change it.");
     }
     if (single) return single(id, token, Long.parseLong(one.group(1)), sharing, method);
     if (what.equals("/export") && method.equals("GET")) return export(id, token, request);
+    if (what.equals("/data")) return data(id, token, method, request);
     if (part == null && method.equals("DELETE")) {
       return bins.clear(id, token) ? PublicResponses.json(200, Jsons.object().put("cleared", true)) : notYours(id);
     }
@@ -216,7 +219,49 @@ public final class BinTool implements PublicTool {
     if (what.equals("/routing") && method.equals("PUT")) return setRouting(id, token, request.body());
     if (what.equals("/options") && method.equals("PUT")) return setOptions(id, token, request.body());
     if (what.equals("/draft") && method.equals("POST")) return draft(id, token, request);
-    return PublicResponses.error(405, "Read a bin with GET, change it with PUT /response, /rules or /routing, clear it with DELETE, read and clear its saved values with GET and DELETE /state, export it with GET /export, or change its settings with PUT /options");
+    return PublicResponses.error(405, "Read a bin with GET, change it with PUT /response, /rules or /routing, clear it with DELETE, read and clear its saved values with GET and DELETE /state, export it with GET /export, change its settings with PUT /options, or read and change stored records with /data");
+  }
+
+  private ResponseDefinition data(String id, String token, String method, PublicRequest request) {
+    if (method.equals("GET")) return bins.reads(id, token) ? PublicResponses.json(200, collections(id)) : notYours(id);
+    if (!bins.verify(id, token)) return notYours(id);
+    BinRecords store = bins.records();
+    if (method.equals("DELETE")) {
+      String name = request.firstQuery("collection");
+      if (name == null || name.isBlank()) store.clearProject(id);
+      else store.clear(id, name.replaceAll("^/+", ""));
+      return PublicResponses.json(200, collections(id));
+    }
+    if (method.equals("PUT")) {
+      try {
+        JsonNode node = read(request.body());
+        BinCrudRoute route = BinCrudRoute.from(node.path("route"));
+        Map<String, Map<String, ObjectNode>> before = store.snapshot(id);
+        store.clear(id, route.resource().name());
+        try {
+          int seeded = records.seed(id, route, node.path("records"));
+          return PublicResponses.json(200, collections(id).put("seeded", seeded));
+        } catch (IllegalArgumentException e) {
+          store.restore(id, before);
+          throw e;
+        }
+      } catch (IllegalArgumentException e) {
+        return PublicResponses.error(400, e.getMessage());
+      }
+    }
+    return PublicResponses.error(405, "Read stored records with GET, replace a collection with PUT or clear them with DELETE");
+  }
+
+  private ObjectNode collections(String id) {
+    ObjectNode out = Jsons.object().put("id", id);
+    out.putObject("limits").put("records", BinRecords.MAX_RECORDS).put("recordBytes", BinRecords.MAX_RECORD_BYTES).put("collections", BinRecords.MAX_RESOURCES);
+    var list = out.putArray("collections");
+    bins.records().snapshot(id).forEach((name, recs) -> {
+      ObjectNode c = list.addObject().put("name", name).put("path", "/" + name).put("count", recs.size());
+      var items = c.putArray("records");
+      recs.values().forEach(items::add);
+    });
+    return out;
   }
 
   private ResponseDefinition single(String id, String token, long seq, boolean sharing, String method) {

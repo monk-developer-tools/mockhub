@@ -5846,3 +5846,43 @@ select.tool-select-small {
   line-height: 1.5;
   border-radius: var(--radius-m);
 }
+
+.bin-crud-routes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bin-crud-routes code {
+  overflow-wrap: anywhere;
+}
+
+.bin-data-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bin-data-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.bin-data-records {
+  max-height: 240px;
+  overflow: auto;
+  margin-top: 6px;
+}
+
+[data-crud][hidden],
+[data-rule-answer-kind][hidden] {
+  display: none;
+}

@@ -164,6 +164,17 @@
         <p class="tool-hint">What rule answers keep between requests with the <strong>Bin state</strong> dynamic values: counters, saved values and lists.</p>
         <ul class="bin-state-list" data-bin-state-list aria-live="polite"></ul>
       </section>
+      <section class="bin-state" aria-labelledby="bin-data-title">
+        <div class="tool-head">
+          <h4 class="tool-sub" id="bin-data-title">Stored records</h4>
+          <span class="bin-state-actions">
+            <button type="button" class="btn ghost small" data-bin-data-refresh>Refresh</button>
+            <button type="button" class="btn ghost small" data-bin-data-clear>Clear all</button>
+          </span>
+        </div>
+        <p class="tool-hint">What CRUD routes have stored. Requests change them; Clear starts a collection empty again.</p>
+        <ul class="bin-data-list" data-bin-data-list aria-live="polite"></ul>
+      </section>
   </div>
 </dialog>
 
@@ -343,8 +354,35 @@
         <select id="rule-method" class="tool-input" data-rule-method></select>
       </div>
     </div>
+    <div class="bin-mode" role="radiogroup" aria-label="Rule kind">
+      <label class="bin-check"><input type="radio" name="rule-kind" value="answer" data-rule-kind> Answer requests that match</label>
+      <label class="bin-check"><input type="radio" name="rule-kind" value="crud" data-rule-kind> CRUD route: store records and answer list, get, create, update and delete</label>
+    </div>
     <label class="tool-label" for="rule-description">Description <span class="tool-hint">(optional)</span></label>
     <textarea id="rule-description" class="tool-input bin-prose" rows="2" maxlength="500" placeholder="What this rule is for, so others know when it answers" data-rule-description></textarea>
+    <div class="bin-callout" data-crud hidden>
+      <div class="tool-row">
+        <div class="tool-grow">
+          <label class="tool-label" for="crud-path">Collection path</label>
+          <input id="crud-path" class="tool-input" type="text" spellcheck="false" maxlength="200" placeholder="/users" data-crud-path>
+        </div>
+        <div>
+          <label class="tool-label" for="crud-id-field">Id field</label>
+          <input id="crud-id-field" class="tool-input bin-short" type="text" spellcheck="false" maxlength="60" placeholder="id" data-crud-id-field>
+        </div>
+        <div>
+          <label class="tool-label" for="crud-id-type">New ids</label>
+          <select id="crud-id-type" class="tool-input" data-crud-id-type>
+            <option value="number">1, 2, 3…</option>
+            <option value="uuid">UUID</option>
+            <option value="short">Short id</option>
+          </select>
+        </div>
+      </div>
+      <ul class="tool-hint bin-crud-routes" data-crud-routes></ul>
+      <p class="tool-hint">A list takes filters like <code>?role=admin</code> or <code>?age[gte]=18</code>, <code>_sort</code> and <code>_order</code>, and <code>limit</code> and <code>offset</code> or <code>page</code> and <code>size</code>, and says the total in <code>X-Total-Count</code>. A bin stores up to 500 records of up to 8 KB, in up to 20 collections.</p>
+    </div>
+    <div data-rule-answer-kind>
     <h4 class="tool-sub">When all of these hold</h4>
     <ol class="bin-conditions" data-rule-conditions></ol>
     <div class="tool-actions-row"><button type="button" class="btn ghost small" data-rule-add-condition>Add condition</button></div>
@@ -411,6 +449,7 @@
     </div>
     <ol class="bin-answers" data-rule-answers></ol>
     <div class="tool-actions-row"><button type="button" class="btn ghost small" data-rule-add-answer>Add an answer</button></div>
+    </div>
     </div>
     <p class="tool-error" data-rule-error hidden></p>
     <div class="tool-actions-row">

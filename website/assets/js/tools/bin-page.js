@@ -1,6 +1,7 @@
 import { $, show, wireCopyButtons } from './common.js';
 import { call, toCurl } from './http.js';
 import {
+  blankCrud, checkCrud, crudRoutes, normalCrudPath,
   AUTH_TYPES, CALLOUT_METHODS, blankCallout, calloutLost, calloutText, calloutTone, checkCallout,
   CONTENT_TYPES, MAX_FILE_BYTES, METHODS, OPS, RECIPES, base64Size, contentTypeOf, fileSize, opsFor, percents, prettyBody, searchValues, stateRows, withContentType, TARGETS, binLink, blankAnswer, blankCondition, blankRule, duplicate, flow, headerLines, mergeRequests, move,
   outcomeText, outcomeTone, parseBinHash, parseShareHash, filterQuery, optionsFromForm, optionsSummary, filtered, multipartParts, requestBytes, ruleFromRequest, shareLink, routeSummary, rememberBin, forgetBin, renameBin, parseHeaderLines, previewRequest, recipe, routingFromForm, snippets, summary, tunnelCommand,
@@ -25,6 +26,7 @@ let rulesOn = true;
 let editing = null;
 let draft = null;
 let stashedCallout = null;
+let stashedCrud = null;
 let polled = false;
 let noteTimer = null;
 let filter = { q: '', method: '', status: '' };
@@ -233,7 +235,7 @@ function detailView(r, shared = false) {
     headerList(r.headers),
     ...requestBody(r), cut);
   const o = r.outcome;
-  const ruleLink = o && !shared && !bin?.viewOnly && ['rule', 'validation', 'error', 'callout', 'callout-error'].includes(o.by) && o.rule
+  const ruleLink = o && !shared && !bin?.viewOnly && ['rule', 'validation', 'error', 'callout', 'callout-error', 'crud'].includes(o.by) && o.rule
     ? el('button', { type: 'button', class: 'bin-link', 'data-open-rule': o.rule, onclick: () => openRuleNamed(o.rule) }, `Open rule "${o.rule}"`)
     : null;
   const answered = o
@@ -434,7 +436,10 @@ function renderRouteTo() {
 function openDialog(name) {
   const dialog = $(`[data-bin-dialog="${name === 'ai' ? 'rules' : name}"]`);
   if (name === 'bins') renderBins();
-  if ((name === 'rules' || name === 'ai') && !bin.viewOnly) loadState();
+  if ((name === 'rules' || name === 'ai') && !bin.viewOnly) {
+    loadState();
+    loadData();
+  }
   if (!dialog.open) dialog.showModal();
   if (name === 'ai') {
     const box = $('[data-bin-ai]');
@@ -571,6 +576,32 @@ async function loadState() {
     : [el('li', { class: 'tool-hint' }, 'Nothing saved yet.')]));
 }
 
+async function loadData() {
+  const list = $('[data-bin-data-list]');
+  const result = await call(inspect('/data'), { headers: auth(false) });
+  if (result.error) {
+    list.replaceChildren(el('li', { class: 'tool-hint' }, result.error));
+    return;
+  }
+  const collections = result.json.collections ?? [];
+  $('[data-bin-data-clear]').disabled = collections.length === 0;
+  list.replaceChildren(...(collections.length
+    ? collections.map((c) => el('li', { 'data-bin-collection': c.path },
+      el('div', { class: 'bin-data-head' },
+        el('code', {}, c.path),
+        el('span', { class: 'tool-badge' }, `${c.count} ${c.count === 1 ? 'record' : 'records'}`),
+        bin.viewOnly ? null : el('button', { type: 'button', class: 'btn ghost small', onclick: () => clearData(c.name) }, 'Clear')),
+      el('pre', { class: 'tool-out tool-wrap bin-data-records' }, JSON.stringify(c.records.slice(-20), null, 2)),
+      c.count > 20 ? el('p', { class: 'tool-hint' }, `Showing the newest 20 of ${c.count}. GET ${c.path} lists them all.`) : null))
+    : [el('li', { class: 'tool-hint' }, 'No records yet. Add a CRUD route and POST to it.')]));
+}
+
+async function clearData(name) {
+  const result = await call(inspect(`/data${name ? `?collection=${encodeURIComponent(name)}` : ''}`), { method: 'DELETE', headers: auth(false) });
+  if (!result.error) flashNote(name ? `Cleared /${name}.` : 'Cleared every stored record.');
+  loadData();
+}
+
 async function clearState() {
   const result = await call(inspect('/state'), { method: 'DELETE', headers: auth(false) });
   if (!result.error) flashNote('Saved state cleared. Counters start again from 1.');
@@ -641,8 +672,10 @@ function openEditor(rule, index) {
   $('[data-rule-method]').replaceChildren(...options(METHODS, draft.method ?? 'ANY'));
   show($('[data-rule-error]'), '');
   stashedCallout = null;
+  stashedCrud = null;
   renderConditions();
   fillCallout();
+  fillCrud();
   renderAnswers();
   $('[data-bin-editor]').showModal();
 }
@@ -915,8 +948,62 @@ function setCalloutMode(mode) {
   renderAnswers();
 }
 
+function fillCrud() {
+  const kind = draft.crud ? 'crud' : 'answer';
+  for (const radio of document.querySelectorAll('[data-rule-kind]')) radio.checked = radio.value === kind;
+  const c = draft.crud ?? stashedCrud ?? blankCrud();
+  $('[data-crud-path]').value = c.path ?? '';
+  $('[data-crud-id-field]').value = c.idField ?? 'id';
+  $('[data-crud-id-type]').value = c.idType ?? 'number';
+  renderCrudParts();
+}
+
+function readCrud() {
+  if (!draft.crud) return;
+  draft.crud = { path: normalCrudPath($('[data-crud-path]').value), idField: $('[data-crud-id-field]').value.trim() || 'id', idType: $('[data-crud-id-type]').value };
+}
+
+function renderCrudParts() {
+  const crud = Boolean(draft?.crud);
+  $('[data-crud]').hidden = !crud;
+  $('[data-rule-answer-kind]').hidden = crud;
+  if (crud) {
+    const shown = { path: $('[data-crud-path]').value, idField: $('[data-crud-id-field]').value };
+    $('[data-crud-routes]').replaceChildren(...crudRoutes(shown).map(([m, p, what]) => el('li', {}, el('span', { class: `jack ${m.toLowerCase()}` }, m), ' ', el('code', {}, p), ` ${what}`)));
+  }
+}
+
+function setRuleKind(kind) {
+  if (kind === 'crud') {
+    readCallout();
+    if (draft.callout) stashedCallout = draft.callout;
+    delete draft.callout;
+    draft.crud = stashedCrud ?? blankCrud();
+    draft.method = 'ANY';
+    $('[data-rule-method]').value = 'ANY';
+  } else {
+    readCrud();
+    stashedCrud = draft.crud;
+    delete draft.crud;
+    if (!draft.answers.length) draft.answers.push(blankAnswer());
+    fillCallout();
+    renderAnswers();
+  }
+  fillCrud();
+}
+
 async function saveDraft(e) {
   e.preventDefault();
+  readCrud();
+  const crudError = checkCrud(draft.crud);
+  if (crudError) {
+    show($('[data-rule-error]'), crudError);
+    return;
+  }
+  if (draft.crud) {
+    delete draft.callout;
+    draft.answers = [];
+  }
   readCallout();
   const calloutError = checkCallout(draft.callout);
   if (calloutError) {
@@ -1356,6 +1443,10 @@ $('[data-bin-insert]').addEventListener('click', () => openValues($('[data-bin-b
 $('[data-bin-values-search]').addEventListener('input', renderValues);
 $('[data-bin-state-refresh]').addEventListener('click', loadState);
 $('[data-bin-state-clear]').addEventListener('click', clearState);
+$('[data-bin-data-refresh]').addEventListener('click', loadData);
+$('[data-bin-data-clear]').addEventListener('click', () => clearData(''));
+for (const radio of document.querySelectorAll('[data-rule-kind]')) radio.addEventListener('change', (e) => setRuleKind(e.target.value));
+for (const input of ['[data-crud-path]', '[data-crud-id-field]']) $(input).addEventListener('input', renderCrudParts);
 $('[data-bin-values]').addEventListener('click', (e) => {
   if (e.target === e.currentTarget) e.currentTarget.close();
 });

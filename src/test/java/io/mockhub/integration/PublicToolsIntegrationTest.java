@@ -245,6 +245,52 @@ class PublicToolsIntegrationTest {
     assertThat(later.at("/requests/0/callout/waitMs").asLong()).isBetween(100L, 200L);
   }
 
+  @Test
+  void aBinCrudRouteStoresRecordsThatTheOwnerCanSeedReadAndClear() {
+    // Given
+    server = MockHubServer.start(data, ON);
+    ApiClient api = server.api();
+    JsonNode bin = api.post("/__public/bins", "").json();
+    String id = bin.get("id").asText();
+    Map<String, String> owner = Map.of("X-Bin-Token", bin.get("token").asText());
+    String inspect = "/__public/inspect/" + id;
+    String base = "/__public/bins/" + id;
+    ApiClient.Result saved = api.send("PUT", inspect + "/rules",
+        "{\"rules\": [{\"name\": \"Users\", \"crud\": {\"path\": \"/users\", \"idType\": \"number\"}}]}", "application/json", owner);
+    ApiClient.Result seeded = api.send("PUT", inspect + "/data",
+        "{\"route\": {\"path\": \"/users\"}, \"records\": [{\"name\": \"Ada\"}, {\"name\": \"Bob\"}]}", "application/json", owner);
+    String viewKey = api.send("GET", inspect + "/settings", null, null, owner).json().get("viewKey").asText();
+    server.close();
+    server = MockHubServer.start(data, ON);
+    api = server.api();
+
+    // When
+    ApiClient.Result created = api.post(base + "/users", "{\"name\":\"Cy\"}");
+    ApiClient.Result listed = api.send("GET", base + "/users?_sort=name&_order=desc", null, null);
+    JsonNode viewed = api.send("GET", inspect + "/data", null, null, Map.of("X-Bin-Token", viewKey)).json();
+    int viewerClears = api.send("DELETE", inspect + "/data", null, null, Map.of("X-Bin-Token", viewKey)).status();
+    JsonNode cleared = api.send("DELETE", inspect + "/data?collection=users", null, null, owner).json();
+    ApiClient.Result empty = api.send("GET", base + "/users", null, null);
+    JsonNode log = api.send("GET", inspect, null, null, owner).json();
+
+    // Then
+    assertThat(saved.status()).isEqualTo(200);
+    assertThat(saved.json().at("/rules/0/crud/path").asText()).isEqualTo("/users");
+    assertThat(seeded.json().get("seeded").asInt()).isEqualTo(2);
+    assertThat(created.status()).isEqualTo(201);
+    assertThat(created.json().get("id").asInt()).isEqualTo(3);
+    assertThat(created.header("Location")).isEqualTo(base + "/users/3");
+    assertThat(listed.header("X-Total-Count")).isEqualTo("3");
+    assertThat(listed.json().get(0).get("name").asText()).isEqualTo("Cy");
+    assertThat(viewed.at("/collections/0/name").asText()).isEqualTo("users");
+    assertThat(viewed.at("/collections/0/count").asInt()).isEqualTo(3);
+    assertThat(viewerClears).isEqualTo(403);
+    assertThat(cleared.get("collections").size()).isZero();
+    assertThat(empty.body()).isEqualTo("[ ]");
+    assertThat(log.at("/requests/0/outcome/by").asText()).isEqualTo("crud");
+    assertThat(log.at("/requests/0/outcome/rule").asText()).isEqualTo("Users");
+  }
+
   private static String headerOf(JsonNode headers, String name) {
     for (var it = headers.fields(); it.hasNext(); ) {
       var e = it.next();

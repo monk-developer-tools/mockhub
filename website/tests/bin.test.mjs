@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { blankCallout, calloutLost, calloutText, calloutTone, checkCallout, outcomeText as outcomeLine, base64Size, binLink, filterQuery, optionsFromForm, optionsSummary, filtered, multipartParts, parseShareHash, requestBytes, ruleFromRequest, searchValues, shareLink, stateRows, contentTypeOf, fileSize, opsFor, percents, prettyBody, withContentType, duplicate, flow, forgetBin, rememberBin, renameBin, routeSummary, parseBinHash, previewRequest, headerLines, mergeRequests, move, outcomeText, outcomeTone, parseHeaderLines, recipe, routingFromForm, snippets, summary, tunnelCommand } from '../assets/js/tools/bin.js';
+import { blankCrud, checkCrud, crudRoutes, normalCrudPath, blankCallout, calloutLost, calloutText, calloutTone, checkCallout, outcomeText as outcomeLine, base64Size, binLink, filterQuery, optionsFromForm, optionsSummary, filtered, multipartParts, parseShareHash, requestBytes, ruleFromRequest, searchValues, shareLink, stateRows, contentTypeOf, fileSize, opsFor, percents, prettyBody, withContentType, duplicate, flow, forgetBin, rememberBin, renameBin, routeSummary, parseBinHash, previewRequest, headerLines, mergeRequests, move, outcomeText, outcomeTone, parseHeaderLines, recipe, routingFromForm, snippets, summary, tunnelCommand } from '../assets/js/tools/bin.js';
 
 test('summarises a rule in one line', () => {
   // Given
@@ -515,4 +515,35 @@ test('describes a callout on a request: sent, waiting, failed or lost to a resta
   assert.deepEqual(tones, ['ok', '', 'bad', 'bad', 'warn']);
   assert.equal(calloutLost(waiting, at, now), false);
   assert.equal(outcomeLine({ by: 'callout-error', rule: 'Relay', status: 502, millis: 9 }), '502 · Callout failed: Relay · 9 ms');
+});
+
+test('describes a CRUD route and the routes it answers', () => {
+  // Given
+  const rule = recipe('crud');
+  const orders = { path: 'API/v1/orders/', idField: 'orderId', idType: 'short' };
+
+  // When
+  const line = summary(rule);
+  const routes = crudRoutes(orders).map(([m, p]) => `${m} ${p}`);
+
+  // Then
+  assert.equal(line, 'CRUD /users by id');
+  assert.deepEqual(rule.answers, []);
+  assert.deepEqual(blankCrud(), { path: '/users', idField: 'id', idType: 'number' });
+  assert.equal(normalCrudPath(orders.path), '/api/v1/orders');
+  assert.deepEqual(routes, ['GET /api/v1/orders', 'POST /api/v1/orders', 'GET /api/v1/orders/:orderId', 'PUT /api/v1/orders/:orderId', 'PATCH /api/v1/orders/:orderId', 'DELETE /api/v1/orders/:orderId']);
+});
+
+test('refuses CRUD routes the server would refuse', () => {
+  // Given
+  const ok = blankCrud();
+
+  // When
+  const errors = [checkCrud(ok), checkCrud(undefined), checkCrud({ ...ok, path: 'users' }), checkCrud({ ...ok, path: '/us ers' }), checkCrud({ ...ok, path: '/' }), checkCrud({ ...ok, idField: 'a.b' })];
+
+  // Then
+  assert.deepEqual(errors, ['', '', '',
+    "A CRUD route's path is lowercase letters, digits and dashes, like /users or /api/v1/orders",
+    "A CRUD route's path is lowercase letters, digits and dashes, like /users or /api/v1/orders",
+    'The id field must be a plain field name, e.g. id']);
 });

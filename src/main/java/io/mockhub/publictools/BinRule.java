@@ -19,7 +19,7 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 public record BinRule(String id, String name, String description, boolean enabled, String method, List<Condition> conditions, List<Answer> answers,
-    Optional<BinCallout> callout) {
+    Optional<BinCallout> callout, Optional<BinCrudRoute> crud) {
   public static final int MAX_RULES = 50;
   public static final int MAX_CONDITIONS = 10;
   public static final int MAX_ANSWERS = 5;
@@ -104,13 +104,24 @@ public record BinRule(String id, String name, String description, boolean enable
     if (cs.size() > MAX_CONDITIONS) throw new IllegalArgumentException("A rule has up to " + MAX_CONDITIONS + " conditions");
     for (JsonNode c : cs) conditions.add(condition(c));
     Optional<BinCallout> callout = callout(node.path("callout"));
-    boolean waits = callout.isPresent() && !callout.get().async();
+    Optional<BinCrudRoute> crud = crud(node.path("crud"));
+    if (crud.isPresent() && callout.isPresent()) throw new IllegalArgumentException("A CRUD route answers from its records, so it can't also call out");
+    boolean waits = crud.isPresent() || callout.isPresent() && !callout.get().async();
     List<Answer> answers = new ArrayList<>();
     JsonNode as = waits ? Jsons.MAPPER.createArrayNode() : node.path("answers");
     if (as.isEmpty() && !waits) throw new IllegalArgumentException("Give the rule an answer");
     if (as.size() > MAX_ANSWERS) throw new IllegalArgumentException("A rule has up to " + MAX_ANSWERS + " weighted answers");
     for (JsonNode a : as) answers.add(answer(a, as.size() > 1));
-    return new BinRule(id, name, description, node.path("enabled").asBoolean(true), method, List.copyOf(conditions), List.copyOf(answers), callout);
+    return new BinRule(id, name, description, node.path("enabled").asBoolean(true), method, List.copyOf(conditions), List.copyOf(answers), callout, crud);
+  }
+
+  private static Optional<BinCrudRoute> crud(JsonNode node) {
+    if (node.isMissingNode() || node.isNull()) return Optional.empty();
+    try {
+      return Optional.of(BinCrudRoute.from(node));
+    } catch (IllegalArgumentException e) {
+      throw new IllegalArgumentException("CRUD route: " + e.getMessage());
+    }
   }
 
   private static Optional<BinCallout> callout(JsonNode node) {
@@ -196,6 +207,7 @@ public record BinRule(String id, String name, String description, boolean enable
       new TreeMap<>(a.headers()).forEach(h::put);
     }
     callout.ifPresent(c -> out.set("callout", c.toJson()));
+    crud.ifPresent(c -> out.set("crud", c.toJson()));
     return out;
   }
 

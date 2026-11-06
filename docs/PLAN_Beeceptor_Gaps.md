@@ -103,8 +103,14 @@ Shipped: `BinLogFilter`, `BinHar`, `Bins.delete/one/shareKey/export`, raw bytes 
 
 Not the app's callout code: that is tied to WireMock serve events and project connections. `BinCallout`, `BinCaller` (same guard as forward), `BinScheduler` (20 waiting per bin, 500 in all), `callouts.ndjson` for async results. New `MOCKHUB_BIN_ALLOW_PRIVATE` (default off) so self-hosters, and the end-to-end test, can call private addresses.
 
-### B6 — CRUD routes in the bin
-Beeceptor "New CRUD Route": an entity path and an id field give GET list, GET one, POST, PUT, PATCH and DELETE, with stored records and a data view. ❌
+### B6 — CRUD routes in the bin ✅ done
+| Beeceptor (CRUD route) | Ours | Status |
+|---|---|---|
+| Entity path and id field | `crud: {path, idField, idType}` on a rule; ids 1, 2, 3…, UUID or short | ✅ |
+| GET list, GET one, POST, PUT, PATCH, DELETE | Same, plus filters, sort, paging and `X-Total-Count` (the app's `CrudService`) | ✅ |
+| Stored records and a data view | Per bin, kept across restarts, deleted with the bin; *Stored records* in the Rules dialog; `GET/PUT/DELETE /data` | ✅ |
+
+Limits: 500 records of 8 KB, 20 collections per bin. `BinRecords` (a `DataStore` in the bin's folder), `BinCrudRoute`, `BinCrud`.
 
 ### B7 — Bin settings ✅ done
 | Beeceptor (endpoint settings) | Ours | Status |

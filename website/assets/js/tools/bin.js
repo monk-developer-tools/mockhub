@@ -112,6 +112,7 @@ export const RECIPES = [
   { id: 'echo', label: 'Echo the body back', hint: 'Answer with what was sent.' },
   { id: 'flaky', label: 'Fail one in four', hint: 'Weighted answers, 75% / 25%.' },
   { id: 'callback', label: 'Accept, then call back', hint: 'Answer 202, call your URL 2 s later.' },
+  { id: 'crud', label: 'CRUD users', hint: 'Store users; list, get, create, update, delete.' },
 ];
 
 export function recipe(id, event = 'payment.failed') {
@@ -152,6 +153,8 @@ export function recipe(id, event = 'payment.failed') {
         conditions: [],
         answers: [{ ...blankAnswer(), weight: 3 }, { ...blankAnswer(), weight: 1, status: 503, body: '{"error": "Try again"}' }],
       };
+    case 'crud':
+      return { ...blankRule(), name: 'Users', method: 'ANY', conditions: [], answers: [], crud: blankCrud() };
     case 'callback':
       return {
         ...blankRule(),
@@ -259,7 +262,39 @@ export function calloutTone(c, at = '', now = Date.now()) {
   return c.status >= 400 ? 'warn' : 'ok';
 }
 
+export function blankCrud() {
+  return { path: '/users', idField: 'id', idType: 'number' };
+}
+
+export function normalCrudPath(path) {
+  let p = String(path ?? '').trim().toLowerCase();
+  if (p && !p.startsWith('/')) p = `/${p}`;
+  while (p.length > 1 && p.endsWith('/')) p = p.slice(0, -1);
+  return p;
+}
+
+export function checkCrud(c) {
+  if (!c) return '';
+  if (!/^\/[a-z0-9][a-z0-9-]*(\/[a-z0-9][a-z0-9-]*){0,4}$/.test(normalCrudPath(c.path))) return "A CRUD route's path is lowercase letters, digits and dashes, like /users or /api/v1/orders";
+  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(String(c.idField ?? 'id').trim() || 'id')) return 'The id field must be a plain field name, e.g. id';
+  return '';
+}
+
+export function crudRoutes(c) {
+  const path = normalCrudPath(c?.path) || '/users';
+  const one = `${path}/:${String(c?.idField ?? '').trim() || 'id'}`;
+  return [
+    ['GET', path, 'list, with filters, sort and paging'],
+    ['POST', path, 'create, 201 with Location'],
+    ['GET', one, 'read one'],
+    ['PUT', one, 'replace'],
+    ['PATCH', one, 'merge fields'],
+    ['DELETE', one, 'delete, 204'],
+  ];
+}
+
 export function summary(rule) {
+  if (rule.crud) return `CRUD ${normalCrudPath(rule.crud.path)} by ${rule.crud.idField || 'id'}`;
   const when = rule.conditions?.length ? rule.conditions.map(describeCondition).join(' and ') : 'any request';
   const method = rule.method === 'ANY' ? '' : `${rule.method} `;
   if (rule.callout && rule.callout.mode !== 'async') return `${method}${when} → ${calloutSummary(rule.callout)}`;
@@ -315,6 +350,7 @@ const BY = {
   limit: 'Rate limited',
   validation: 'Refused by a check',
   callout: 'Callout',
+  crud: 'CRUD',
   'callout-error': 'Callout failed',
 };
 

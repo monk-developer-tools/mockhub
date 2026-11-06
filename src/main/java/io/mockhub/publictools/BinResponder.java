@@ -1,6 +1,7 @@
 package io.mockhub.publictools;
 
 import io.mockhub.api.Jsons;
+import io.mockhub.data.DataStore;
 import io.mockhub.playground.Header;
 import io.mockhub.playground.HttpSender;
 import io.mockhub.playground.PlaygroundException;
@@ -35,9 +36,16 @@ final class BinResponder {
   private final IntUnaryOperator dice;
   private final LongSupplier clock;
   private final BinCaller caller;
+  private final BinCrud crud;
 
   BinResponder(TemplatePlayground templates, HttpSender secure, HttpSender insecure, TargetGuard guard, TunnelGateway tunnels,
       IntUnaryOperator dice, LongSupplier clock) {
+    this(templates, secure, insecure, guard, tunnels, dice, clock, new BinRecords(Optional.empty()));
+  }
+
+  BinResponder(TemplatePlayground templates, HttpSender secure, HttpSender insecure, TargetGuard guard, TunnelGateway tunnels,
+      IntUnaryOperator dice, LongSupplier clock, DataStore records) {
+    this.crud = new BinCrud(records);
     this.templates = templates;
     this.secure = secure;
     this.insecure = insecure;
@@ -71,6 +79,10 @@ final class BinResponder {
   Answer answer(String binId, Bins.Settings settings, BinState state, BinMatcher.Call call) {
     if (settings.rulesEnabled()) {
       Optional<BinRule> rule = BinMatcher.first(settings.rules(), call);
+      if (rule.isPresent() && rule.get().crud().isPresent()) {
+        BinCrudRoute route = rule.get().crud().get();
+        return crud.answer(binId, route, route.hit(call.path()).orElseThrow(), call, rule.get().label());
+      }
       if (rule.isPresent()) return fromRule(rule.get(), state, call);
     }
     BinRouting routing = settings.routing();

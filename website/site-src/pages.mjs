@@ -919,6 +919,7 @@ PAGES.push(
       ['Can I make the bin answer an error?', 'Yes. Add a rule that matches a path, header, query parameter or JSON field and answers with any status, headers, body and a delay up to 15 seconds. Weighted answers make a flaky endpoint, and dynamic values copy fields from the request.'],
       ['Can it pass requests on to my API?', 'Yes. Forward sends each request that no rule answers to a public URL and shows its answer. Local tunnel reaches a service on your machine through the MockHub jar.'],
       ['Can the bin call another URL?', 'Yes. A rule can call a URL and answer with its response, or answer at once and call the URL in the background up to 60 seconds later, with a templated body and bearer, Basic or header auth. Each request shows the call\'s status or error.'],
+      ['Can a bin act as a small REST API?', 'Yes. A CRUD route rule stores records for a path such as /users and answers list, get, create, replace, patch and delete, with filters, sorting and paging. Records stay with the bin, up to 500 of them.'],
       ['Can MockHub send webhooks too?', 'Yes. Besides bin callouts, a stub in the app can call another URL after it answers, with a delay and a templated body. See the webhook mocking page.'],
     ],
     related: ['webhook-mocking', 'tools/http-echo', 'tools/curl-to-stub'],

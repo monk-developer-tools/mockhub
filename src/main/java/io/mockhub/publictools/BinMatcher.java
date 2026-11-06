@@ -30,6 +30,7 @@ final class BinMatcher {
     for (BinRule rule : rules) {
       if (!rule.enabled()) continue;
       if (!rule.method().equals("ANY") && !rule.method().equals(call.method())) continue;
+      if (rule.crud().isPresent() && rule.crud().get().hit(call.path()).isEmpty()) continue;
       boolean all = true;
       for (BinRule.Condition c : rule.conditions()) {
         if ((c.target() == BinRule.Target.JSON || c.target() == BinRule.Target.GRAPHQL) && !parsed[0]) {

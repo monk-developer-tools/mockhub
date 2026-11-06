@@ -67,6 +67,7 @@ public final class Bins {
   private final SecureRandom random = new SecureRandom();
 
   private final long segmentBytes;
+  private final BinRecords records;
 
   public Bins(Path dataDir, Clock clock) {
     this(dataDir, clock, SEGMENT_BYTES);
@@ -76,6 +77,7 @@ public final class Bins {
     this.root = dataDir.resolve("mockhub").resolve("bins");
     this.clock = clock;
     this.segmentBytes = segmentBytes;
+    this.records = new BinRecords(Optional.of(root));
     load();
   }
 
@@ -467,8 +469,17 @@ public final class Bins {
     return "v" + HexFormat.of().formatHex(hash("view|" + Base64.getEncoder().encodeToString(tokenHash))).substring(0, 31);
   }
 
+  BinRecords records() {
+    return records;
+  }
+
+  public boolean reads(String id, String key) {
+    return readable(id, key) != null;
+  }
+
   private void remove(Bin bin) {
     bins.remove(bin.id, bin);
+    records.forget(bin.id);
     Path dir = root.resolve(bin.id);
     try (Stream<Path> files = Files.exists(dir) ? Files.walk(dir) : Stream.empty()) {
       files.sorted(Comparator.reverseOrder()).forEach(Bins::delete);
