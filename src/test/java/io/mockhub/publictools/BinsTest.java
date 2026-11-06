@@ -55,6 +55,32 @@ class BinsTest {
   }
 
   @Test
+  void aViewKeyReadsRequestsButCannotChangeTheBinAndSurvivesARestart() {
+    // Given
+    Bins bins = new Bins(data, clock);
+    Bins.Created bin = bins.create().orElseThrow();
+    Bins.Created other = bins.create().orElseThrow();
+    send(bins, bin.id(), 2);
+    String view = bins.viewKey(bin.id(), bin.token()).orElseThrow();
+
+    // When
+    bins.flush();
+    Bins restarted = new Bins(data, clock);
+
+    // Then
+    assertThat(view).hasSize(32).isNotEqualTo(bin.token()).matches("[a-z0-9]{32}");
+    assertThat(restarted.viewKey(bin.id(), bin.token())).contains(view);
+    assertThat(restarted.requests(bin.id(), view, 0, 0, 0).orElseThrow().requests()).hasSize(2);
+    assertThat(restarted.viewOnly(bin.id(), view)).isTrue();
+    assertThat(restarted.viewOnly(bin.id(), bin.token())).isFalse();
+    assertThat(restarted.viewOnly(other.id(), view)).isFalse();
+    assertThat(restarted.settings(bin.id(), view)).isEmpty();
+    assertThat(restarted.update(bin.id(), view, s -> s)).isFalse();
+    assertThat(restarted.clear(bin.id(), view)).isFalse();
+    assertThat(restarted.viewKey(bin.id(), view)).isEmpty();
+  }
+
+  @Test
   void keepsEveryRequestAndPagesThroughOlderOnes() {
     // Given
     Bins bins = new Bins(data, clock);

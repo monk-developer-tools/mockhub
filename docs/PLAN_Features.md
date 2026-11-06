@@ -761,6 +761,7 @@ Checklist:
 - [x] Rules: model, validation, matching, weighted and templated answers, delays
 - [x] Routing: default, forward, tunnel with the bin key
 - [x] AI rule drafts for signed-in users only
+- [x] View-only share link: requests and answers, no settings, every change refused
 - [x] Bin page: rules list and editor, starting points, routing cards and flow, AI box, answers beside requests,
       event badges, code samples, older pages
 - [x] Tests at unit, integration and system level; docs page, README, tool page copy

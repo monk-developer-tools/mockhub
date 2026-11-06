@@ -913,7 +913,8 @@ PAGES.push(
     ],
     faq: [
       ['How long is a bin kept?', 'Until 24 hours after its last request. There is no request count limit: it keeps every request, with bodies up to 64 KB, until the bin holds 50 MB, then drops the oldest.'],
-      ['Who can see my requests?', 'Only someone with the bin\'s token, which is kept in this browser. Anyone with the URL can send to the bin, so don\'t share it with real secrets inside.'],
+      ['Who can see my requests?', 'Only someone with the bin\'s token, which is kept in this browser, or a view-only link you share. Anyone with the URL can send to the bin, so don\'t share it with real secrets inside.'],
+      ['How do I share a bin with my team?', 'Copy view-only link. Whoever opens it sees each request and its answer live, but can\'t change rules or routing, or clear the bin. Copy private link gives full control, so keep that one to yourself.'],
       ['Can I make the bin answer an error?', 'Yes. Add a rule that matches a path, header, query parameter or JSON field and answers with any status, headers, body and a delay up to 15 seconds. Weighted answers make a flaky endpoint, and dynamic values copy fields from the request.'],
       ['Can it pass requests on to my API?', 'Yes. Forward sends each request that no rule answers to a public URL and shows its answer. Local tunnel reaches a service on your machine through the MockHub jar.'],
       ['Can MockHub send webhooks too?', 'Yes. A stub can call another URL after it answers, with a delay and a templated body. See the webhook mocking page.'],

@@ -147,6 +147,34 @@ class PublicToolsIntegrationTest {
   }
 
   @Test
+  void aViewOnlyLinkShowsRequestsButCannotChangeTheBin() {
+    // Given
+    server = MockHubServer.start(data, ON);
+    ApiClient api = server.api();
+    JsonNode bin = api.post("/__public/bins", "").json();
+    String id = bin.get("id").asText();
+    Map<String, String> owner = Map.of("X-Bin-Token", bin.get("token").asText());
+    String key = api.send("GET", "/__public/inspect/" + id + "/settings", null, null, owner).json().get("viewKey").asText();
+    Map<String, String> viewer = Map.of("X-Bin-Token", key);
+    api.post("/__public/bins/" + id + "/orders", "{\"id\":\"ord_5\"}");
+
+    // When
+    ApiClient.Result seen = api.send("GET", "/__public/inspect/" + id, null, null, viewer);
+    ApiClient.Result settings = api.send("GET", "/__public/inspect/" + id + "/settings", null, null, viewer);
+    ApiClient.Result rules = api.send("PUT", "/__public/inspect/" + id + "/rules", "{\"rules\": []}", "application/json", viewer);
+    ApiClient.Result cleared = api.send("DELETE", "/__public/inspect/" + id, null, null, viewer);
+
+    // Then
+    assertThat(seen.status()).isEqualTo(200);
+    assertThat(seen.json().at("/requests/0/path").asText()).isEqualTo("/orders");
+    assertThat(settings.status()).isEqualTo(403);
+    assertThat(rules.status()).isEqualTo(403);
+    assertThat(rules.json().get("error").asText()).contains("view-only");
+    assertThat(cleared.status()).isEqualTo(403);
+    assertThat(api.send("GET", "/__public/inspect/" + id, null, null, owner).json().get("requests")).hasSize(1);
+  }
+
+  @Test
   void keepsEveryBinRequestAndPagesBackThroughThem() {
     // Given
     server = MockHubServer.start(data, ON);

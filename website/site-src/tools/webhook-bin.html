@@ -10,16 +10,19 @@
 <div data-bin-live hidden>
   <div class="tool-card">
     <div class="tool-head">
-      <h3>Your bin</h3>
+      <h3 data-bin-title>Your bin</h3>
       <span class="tool-actions">
         <button type="button" class="btn secondary small" data-copy="[data-bin-url]">Copy URL</button>
-        <button type="button" class="btn secondary small" data-copy="[data-bin-link]" title="A private link that opens this bin, with its key, in any browser">Copy private link</button>
+        <button type="button" class="btn secondary small" data-copy="[data-bin-view-link]" data-bin-view-copy data-owner hidden title="A link that shows this bin's requests and answers but can't change anything">Copy view-only link</button>
+        <button type="button" class="btn secondary small" data-copy="[data-bin-link]" data-owner title="A private link that opens this bin, with its key, in any browser">Copy private link</button>
         <button type="button" class="btn ghost small" data-bin-forget>New bin</button>
       </span>
     </div>
     <pre class="tool-out tool-url" data-bin-url></pre>
     <pre class="bin-link" data-bin-link hidden></pre>
-    <p class="tool-hint">Send anything to this URL or any path under it. Every request is kept, up to <span data-bin-keeps>50</span> MB per bin, and the bin is deleted after 24 hours without a request. Only this browser holds the key to read it; use <strong>Copy private link</strong> to open it somewhere else or keep it safe.</p>
+    <pre class="bin-link" data-bin-view-link hidden></pre>
+    <p class="bin-notice" data-viewer>You're viewing someone's bin. You see each request and the answer it got; only the owner can change rules, routing or clear it.</p>
+    <p class="tool-hint" data-owner>Send anything to this URL or any path under it. Every request is kept, up to <span data-bin-keeps>50</span> MB per bin, and the bin is deleted after 24 hours without a request. Only this browser holds the key to read it. Share <strong>Copy view-only link</strong> with people who should watch it; <strong>Copy private link</strong> gives full control.</p>
     <div class="tabs tabs-small" role="tablist" aria-label="Send a test request">
       <button type="button" role="tab" id="bin-tab-curl" aria-controls="bin-code-curl" aria-selected="true">cURL</button>
       <button type="button" role="tab" id="bin-tab-js" aria-controls="bin-code-js" aria-selected="false" tabindex="-1">JavaScript</button>
@@ -32,7 +35,7 @@
     <div class="bin-code" id="bin-code-java" role="tabpanel" aria-labelledby="bin-tab-java" hidden><pre class="tool-out" data-bin-code="java"></pre><button type="button" class="btn secondary small" data-copy="[data-bin-code='java']">Copy</button></div>
   </div>
 
-  <div class="tool-grid">
+  <div class="tool-grid" data-owner>
     <div class="tool-card" role="region" aria-labelledby="bin-rules-title">
       <div class="tool-head">
         <h3 id="bin-rules-title">Rules <span class="tool-badge" data-bin-rule-count></span></h3>
@@ -152,7 +155,7 @@
         <h3>Requests <span class="tool-badge" data-bin-count>0</span></h3>
         <span class="tool-actions">
           <span class="tool-live" data-bin-polling aria-live="polite">Waiting for requests…</span>
-          <button type="button" class="btn ghost small" data-bin-clear>Clear</button>
+          <button type="button" class="btn ghost small" data-bin-clear data-owner>Clear</button>
         </span>
       </div>
       <p class="tool-error" data-bin-error hidden></p>

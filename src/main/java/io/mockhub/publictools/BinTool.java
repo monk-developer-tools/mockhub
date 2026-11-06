@@ -102,10 +102,14 @@ public final class BinTool implements PublicTool {
     String token = Optional.ofNullable(request.header("X-Bin-Token")).orElse(request.firstQuery("token"));
     String method = request.method();
     String what = part == null ? "/requests" : part;
+    boolean reading = what.equals("/requests") && method.equals("GET");
+    if (!reading && bins.viewOnly(id, token)) {
+      return PublicResponses.error(403, "This is a view-only link. Only the bin's owner can change it.");
+    }
     if (part == null && method.equals("DELETE")) {
       return bins.clear(id, token) ? PublicResponses.json(200, Jsons.object().put("cleared", true)) : notYours(id);
     }
-    if (what.equals("/requests") && method.equals("GET")) {
+    if (reading) {
       long after = parseLong(request.firstQuery("after"));
       long before = parseLong(request.firstQuery("before"));
       int limit = (int) parseLong(request.firstQuery("limit"));
@@ -116,7 +120,7 @@ public final class BinTool implements PublicTool {
     }
     if (what.equals("/response") && method.equals("PUT")) return setReply(id, token, request.body());
     if (what.equals("/settings") && method.equals("GET")) {
-      return bins.settings(id, token).map(s -> PublicResponses.json(200, settings(id, s))).orElseGet(() -> notYours(id));
+      return bins.settings(id, token).map(s -> PublicResponses.json(200, settings(id, token, s))).orElseGet(() -> notYours(id));
     }
     if (what.equals("/rules") && method.equals("PUT")) return setRules(id, token, request.body());
     if (what.equals("/routing") && method.equals("PUT")) return setRouting(id, token, request.body());
@@ -146,7 +150,7 @@ public final class BinTool implements PublicTool {
       List<BinRule> rules = BinRule.listFrom(node.path("rules"));
       boolean enabled = node.path("rulesEnabled").asBoolean(true);
       if (!bins.update(id, token, s -> s.withRules(enabled, rules))) return notYours(id);
-      return bins.settings(id, token).map(s -> PublicResponses.json(200, settings(id, s))).orElseGet(() -> notYours(id));
+      return bins.settings(id, token).map(s -> PublicResponses.json(200, settings(id, token, s))).orElseGet(() -> notYours(id));
     } catch (IllegalArgumentException e) {
       return PublicResponses.error(400, e.getMessage());
     }
@@ -156,7 +160,7 @@ public final class BinTool implements PublicTool {
     try {
       BinRouting routing = BinRouting.from(read(body));
       if (!bins.update(id, token, s -> s.withRouting(routing))) return notYours(id);
-      return bins.settings(id, token).map(s -> PublicResponses.json(200, settings(id, s))).orElseGet(() -> notYours(id));
+      return bins.settings(id, token).map(s -> PublicResponses.json(200, settings(id, token, s))).orElseGet(() -> notYours(id));
     } catch (IllegalArgumentException e) {
       return PublicResponses.error(400, e.getMessage());
     }
@@ -181,13 +185,14 @@ public final class BinTool implements PublicTool {
     }
   }
 
-  private ObjectNode settings(String id, Bins.Settings s) {
+  private ObjectNode settings(String id, String token, Bins.Settings s) {
     ObjectNode out = Jsons.object().put("id", id);
     out.set("reply", reply(s.reply()));
     out.put("rulesEnabled", s.rulesEnabled());
     out.set("rules", BinRule.toJson(s.rules()));
     out.set("routing", s.routing().toJson());
     out.put("ai", drafter.available());
+    bins.viewKey(id, token).ifPresent(k -> out.put("viewKey", k));
     String name = BinResponder.tunnelName(id);
     out.putObject("tunnel").put("name", name).put("online", tunnelOnline.apply(name).orElse(false));
     out.putObject("limits").put("rules", BinRule.MAX_RULES).put("delayMs", BinRule.MAX_DELAY_MS).put("keepsMb", Bins.SEGMENTS * Bins.SEGMENT_BYTES / (1024 * 1024));

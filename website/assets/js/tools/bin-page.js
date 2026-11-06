@@ -216,6 +216,8 @@ function applySettings(value) {
   settings = value;
   rules = value.rules ?? [];
   rulesOn = value.rulesEnabled !== false;
+  $('[data-bin-view-copy]').hidden = !value.viewKey;
+  $('[data-bin-view-link]').textContent = value.viewKey ? binLink(location.origin, location.pathname, bin.id, value.viewKey, true) : '';
   $('[data-bin-keeps]').textContent = String(value.limits?.keepsMb ?? 50);
   $('[data-bin-ai]').hidden = !value.ai;
   const form = $('[data-bin-routing]');
@@ -556,6 +558,10 @@ function open(value) {
   polled = false;
   $('[data-bin-start]').hidden = true;
   $('[data-bin-live]').hidden = false;
+  $('[data-bin-live]').toggleAttribute('data-view-only', Boolean(bin.viewOnly));
+  $('[data-bin-title]').textContent = bin.viewOnly ? 'Shared bin, view only' : 'Your bin';
+  $('[data-bin-forget]').textContent = bin.viewOnly ? 'Leave' : 'New bin';
+  $('[data-bin-view-copy]').hidden = true;
   $('[data-bin-url]').textContent = binUrl();
   $('[data-bin-link]').textContent = binLink(location.origin, location.pathname, bin.id, bin.token);
   const code = snippets(binUrl());
@@ -566,17 +572,32 @@ function open(value) {
   setCount(0);
   renderList();
   renderDetail();
-  loadSettings();
   poll();
+  if (bin.viewOnly) return;
+  loadSettings();
   refreshTunnel();
 }
 
-function forget(message) {
+function stop() {
   clearTimeout(timer);
   clearTimeout(settingsTimer);
   clearTimeout(settingsRetry);
   bin = null;
-  store.write(null);
+}
+
+function forget(message) {
+  const viewing = bin?.viewOnly;
+  stop();
+  if (viewing) {
+    history.replaceState(null, '', location.pathname + location.search);
+    const own = store.read();
+    if (own?.id && own?.token) {
+      open(own);
+      return;
+    }
+  } else {
+    store.write(null);
+  }
   $('[data-bin-live]').hidden = true;
   $('[data-bin-start]').hidden = false;
   show($('[data-bin-create-error]'), message ?? '');
@@ -656,19 +677,23 @@ $('[data-bin-preview]').addEventListener('click', () => preview($('[data-bin-bod
 
 function takeLinked() {
   const linked = parseBinHash(location.hash);
-  if (linked) history.replaceState(null, '', location.pathname + location.search);
+  if (linked && !linked.viewOnly) history.replaceState(null, '', location.pathname + location.search);
   return linked;
+}
+
+function openLinked(linked) {
+  if (!linked.viewOnly) store.write({ id: linked.id, token: linked.token });
+  open(linked.viewOnly ? linked : { id: linked.id, token: linked.token });
 }
 
 window.addEventListener('hashchange', () => {
   const linked = takeLinked();
   if (!linked) return;
-  forget();
-  store.write(linked);
-  open(linked);
+  stop();
+  openLinked(linked);
 });
 const fromLink = takeLinked();
-if (fromLink) store.write(fromLink);
 const saved = store.read();
-if (saved?.id && saved?.token) open(saved);
+if (fromLink) openLinked(fromLink);
+else if (saved?.id && saved?.token) open(saved);
 wireCopyButtons();

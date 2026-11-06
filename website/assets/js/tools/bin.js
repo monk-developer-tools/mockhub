@@ -220,11 +220,11 @@ export function previewRequest(captured) {
   return { method: r.method, url: `${r.path || '/'}${r.query ? `?${r.query}` : ''}`, headers: r.headers ?? {}, body: r.body ?? '' };
 }
 
-export function binLink(origin, pathname, id, token) {
-  return `${origin}${pathname}#bin=${id}.${token}`;
+export function binLink(origin, pathname, id, key, viewOnly = false) {
+  return `${origin}${pathname}#${viewOnly ? 'view' : 'bin'}=${id}.${key}`;
 }
 
 export function parseBinHash(hash) {
-  const m = /^#bin=([a-z0-9]{12})\.([a-z0-9]{32})$/.exec(hash ?? '');
-  return m ? { id: m[1], token: m[2] } : null;
+  const m = /^#(bin|view)=([a-z0-9]{12})\.([a-z0-9]{32})$/.exec(hash ?? '');
+  return m ? { id: m[2], token: m[3], viewOnly: m[1] === 'view' } : null;
 }

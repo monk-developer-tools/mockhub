@@ -134,7 +134,7 @@ test('a bin link carries the bin key and reads back', () => {
 
   // Then
   assert.equal(link, `https://demo.test/tools/webhook-bin/#bin=abcdefghijk2.${'a'.repeat(32)}`);
-  assert.deepEqual(parsed, { id: 'abcdefghijk2', token: 'a'.repeat(32) });
+  assert.deepEqual(parsed, { id: 'abcdefghijk2', token: 'a'.repeat(32), viewOnly: false });
   assert.equal(parseBinHash('#bin=short.key'), null);
   assert.equal(parseBinHash(''), null);
 });
@@ -164,4 +164,16 @@ test('the dynamic starting point fills its answer from the request', () => {
   assert.equal(answer.template, true);
   assert.ok(answer.body.includes("{{jsonPath request.body '$.id'}}"));
   assert.equal(answer.headers['X-Request-Id'], "{{randomValue type='UUID'}}");
+});
+
+test('a view-only link reads back as view-only', () => {
+  // Given
+  const link = binLink('https://demo.test', '/tools/webhook-bin/', 'abcdefghijk2', `v${'b'.repeat(31)}`, true);
+
+  // When
+  const parsed = parseBinHash(new URL(link).hash);
+
+  // Then
+  assert.equal(link, `https://demo.test/tools/webhook-bin/#view=abcdefghijk2.v${'b'.repeat(31)}`);
+  assert.deepEqual(parsed, { id: 'abcdefghijk2', token: `v${'b'.repeat(31)}`, viewOnly: true });
 });

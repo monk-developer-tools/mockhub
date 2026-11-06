@@ -5330,3 +5330,4 @@ select.tool-select-small {
   flex-wrap: wrap;
   gap: 10px;
 }
+[data-bin-live][data-view-only] [data-owner],[data-bin-live]:not([data-view-only]) [data-viewer]{display:none!important}

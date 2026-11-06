@@ -24,6 +24,7 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Deque;
+import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -186,8 +187,8 @@ public final class Bins {
     if (bin != null) bin.lastUsed = clock.instant();
   }
 
-  public Optional<Page> requests(String id, String token, long after, long before, int limit) {
-    Bin bin = owned(id, token);
+  public Optional<Page> requests(String id, String key, long after, long before, int limit) {
+    Bin bin = readable(id, key);
     if (bin == null) return Optional.empty();
     int size = Math.max(1, Math.min(limit <= 0 ? PAGE : limit, PAGE));
     Predicate<Captured> wanted = before > 0 ? c -> c.seq() < before : c -> c.seq() > after;
@@ -204,6 +205,15 @@ public final class Bins {
       }
       return Optional.of(new Page(List.copyOf(out), bin.seq, bin.oldest));
     }
+  }
+
+  public Optional<String> viewKey(String id, String token) {
+    return Optional.ofNullable(owned(id, token)).map(b -> viewKeyOf(b.tokenHash));
+  }
+
+  public boolean viewOnly(String id, String key) {
+    Bin bin = live(id);
+    return bin != null && key != null && MessageDigest.isEqual(viewKeyOf(bin.tokenHash).getBytes(StandardCharsets.UTF_8), key.getBytes(StandardCharsets.UTF_8));
   }
 
   public Optional<Settings> settings(String id, String token) {
@@ -270,6 +280,16 @@ public final class Bins {
     Bin bin = live(id);
     if (bin == null || token == null || !MessageDigest.isEqual(bin.tokenHash, hash(token))) return null;
     return bin;
+  }
+
+  private Bin readable(String id, String key) {
+    Bin owner = owned(id, key);
+    if (owner != null) return owner;
+    return viewOnly(id, key) ? live(id) : null;
+  }
+
+  private static String viewKeyOf(byte[] tokenHash) {
+    return "v" + HexFormat.of().formatHex(hash("view|" + Base64.getEncoder().encodeToString(tokenHash))).substring(0, 31);
   }
 
   private void remove(Bin bin) {
