@@ -15,6 +15,7 @@ let requests = [];
 let selected = null;
 let timer = null;
 let settingsTimer = null;
+let settingsRetry = null;
 let oldestKept = 1;
 let settings = null;
 let rules = [];
@@ -240,9 +241,20 @@ function renderTunnel(tunnel) {
   badge.className = `tool-badge ${tunnel?.online ? 'ok' : 'warn'}`;
 }
 
-async function loadSettings() {
+async function loadSettings(attempt = 0) {
+  clearTimeout(settingsRetry);
+  if (!bin) return;
   const result = await call(inspect('/settings'), { headers: auth() });
-  if (result.json && !result.error) applySettings(result.json);
+  if (!bin) return;
+  if (result.json && !result.error) {
+    show($('[data-bin-rules-error]'), '');
+    applySettings(result.json);
+    return;
+  }
+  if (result.status === 404) return;
+  show($('[data-bin-rules-error]'), `${result.error ?? 'The bin settings could not be loaded.'} Retrying…`);
+  const wait = (result.json?.retryAfter ? result.json.retryAfter * 1000 : 0) || Math.min(30000, 2000 * 2 ** attempt);
+  settingsRetry = setTimeout(() => loadSettings(attempt + 1), wait);
 }
 
 async function refreshTunnel() {
@@ -517,6 +529,7 @@ function open(value) {
 function forget(message) {
   clearTimeout(timer);
   clearTimeout(settingsTimer);
+  clearTimeout(settingsRetry);
   bin = null;
   store.write(null);
   $('[data-bin-live]').hidden = true;

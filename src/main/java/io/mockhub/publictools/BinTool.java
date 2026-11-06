@@ -62,8 +62,8 @@ public final class BinTool implements PublicTool {
     return Optional.empty();
   }
 
-  static boolean isCapture(String path) {
-    return CAPTURE.matcher(path).matches();
+  static boolean usesBinRate(String path) {
+    return CAPTURE.matcher(path).matches() || INSPECT.matcher(path).matches();
   }
 
   private ResponseDefinition create(PublicRequest request) {

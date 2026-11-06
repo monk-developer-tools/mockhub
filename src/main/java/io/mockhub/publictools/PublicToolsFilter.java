@@ -34,7 +34,7 @@ public final class PublicToolsFilter implements StubRequestFilterV2 {
       return RequestFilterAction.stopWith(PublicResponses.preflight());
     }
     PublicRequest publicRequest = PublicRequest.from(request);
-    PublicLimits.Kind kind = BinTool.isCapture(publicRequest.path()) ? PublicLimits.Kind.SEND : PublicLimits.Kind.ANY;
+    PublicLimits.Kind kind = BinTool.usesBinRate(publicRequest.path()) ? PublicLimits.Kind.SEND : PublicLimits.Kind.ANY;
     Optional<Long> wait = limits.take(ClientAddress.of(request), kind);
     if (wait.isPresent()) return RequestFilterAction.stopWith(PublicResponses.tooMany(wait.get(), "requests"));
     for (PublicTool tool : tools) {

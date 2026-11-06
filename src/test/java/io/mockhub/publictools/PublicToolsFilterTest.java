@@ -164,6 +164,23 @@ class PublicToolsFilterTest {
   }
 
   @Test
+  void aBinOwnerWatchingTheirBinIsNotHeldToTheGeneralLimit() {
+    // Given
+    PublicToolsFilter filter = new PublicToolsFilter(true, limits, tools);
+    String id = json(stopped(filter.filter(request("POST", "/__public/bins", ""), null))).get("id").asText();
+
+    // When
+    int refused = 0;
+    for (int i = 0; i < 300; i++) {
+      if (stopped(filter.filter(request("GET", "/__public/inspect/" + id + "?after=0", null), null)).getStatus() == 429) refused++;
+    }
+
+    // Then
+    assertThat(refused).isZero();
+    assertThat(stopped(filter.filter(request("GET", "/__public/echo", null), null)).getStatus()).isEqualTo(200);
+  }
+
+  @Test
   void webhooksSentToABinNeitherHitNorUseUpTheGeneralLimit() {
     // Given
     PublicToolsFilter filter = new PublicToolsFilter(true, limits, tools);
