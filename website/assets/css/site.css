@@ -5295,6 +5295,77 @@ select.tool-select-small {
   font-style: italic;
 }
 
+.tool-bin .tool-head {
+  flex-wrap: wrap;
+}
+
+.tool-bin .tool-actions {
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.bin-filter {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 8px;
+  margin: 4px 0 10px;
+}
+
+.bin-filter .tool-input {
+  font-size: 14px;
+  padding: 6px 10px;
+}
+
+.bin-export.tool-input {
+  width: auto;
+  font-size: 13px;
+  padding: 4px 8px;
+}
+
+.bin-detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.bin-body-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.bin-parts {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.bin-part-value {
+  overflow-wrap: anywhere;
+}
+
+.bin-shared {
+  margin-bottom: 16px;
+}
+
+@media (max-width: 600px) {
+  .bin-filter {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .bin-filter input {
+    grid-column: 1 / -1;
+  }
+}
+
 .bin-dialog .bin-state {
   border-top: 1px solid var(--line);
   margin-top: 16px;

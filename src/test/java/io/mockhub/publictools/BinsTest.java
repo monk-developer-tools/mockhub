@@ -225,4 +225,93 @@ class BinsTest {
     // When / Then
     assertThat(bins.create()).isEmpty();
   }
+
+  @Test
+  void deletingOneRequestHidesItEverywhereAndSurvivesARestart() {
+    // Given
+    Bins bins = new Bins(data, clock);
+    Bins.Created bin = bins.create().orElseThrow();
+    send(bins, bin.id(), 120);
+
+    // When
+    boolean recent = bins.delete(bin.id(), bin.token(), 119);
+    boolean old = bins.delete(bin.id(), bin.token(), 3);
+    boolean twice = bins.delete(bin.id(), bin.token(), 3);
+    boolean stranger = bins.delete(bin.id(), "nope", 5);
+    Bins restarted = new Bins(data, clock);
+
+    // Then
+    assertThat(recent).isTrue();
+    assertThat(old).isTrue();
+    assertThat(twice).isFalse();
+    assertThat(stranger).isFalse();
+    Bins.Page newest = restarted.requests(bin.id(), bin.token(), 0, 0, 0).orElseThrow();
+    assertThat(newest.deleted()).isEqualTo(2);
+    assertThat(newest.requests()).extracting(Bins.Captured::seq).doesNotContain(119L).startsWith(120L, 118L);
+    Bins.Page older = restarted.requests(bin.id(), bin.token(), 0, newest.requests().get(newest.requests().size() - 1).seq(), 0).orElseThrow();
+    assertThat(older.requests()).extracting(Bins.Captured::seq).doesNotContain(3L).contains(4L, 2L);
+    assertThat(restarted.one(bin.id(), bin.token(), 3)).isEmpty();
+  }
+
+  @Test
+  void filtersByMethodStatusAndTextAcrossMemoryAndDisk() {
+    // Given
+    Bins bins = new Bins(data, clock);
+    Bins.Created bin = bins.create().orElseThrow();
+    Bins.Outcome failed = new Bins.Outcome("rule", "Fail payments", 402, 1, Map.of(), "{}", false);
+    bins.record(bin.id(), call(bin.id(), "/pay", "{\"type\":\"payment.failed\"}"), "/pay", "payment.failed", failed);
+    send(bins, bin.id(), 80);
+    bins.record(bin.id(), new PublicRequest("PUT", "/bins/" + bin.id() + "/orders/7", "", Map.of(), Map.of("X-Tenant", "acme"), "", 0, "203.0.113.9"), "/orders/7", "", ok());
+
+    // When
+    List<Bins.Captured> fails = bins.requests(bin.id(), bin.token(), 0, 0, 0, BinLogFilter.of(null, "4xx", null)).orElseThrow().requests();
+    List<Bins.Captured> byText = bins.requests(bin.id(), bin.token(), 0, 0, 0, BinLogFilter.of(null, null, "PAYMENT.failed")).orElseThrow().requests();
+    List<Bins.Captured> byRule = bins.requests(bin.id(), bin.token(), 0, 0, 0, BinLogFilter.of(null, "402", "fail payments")).orElseThrow().requests();
+    List<Bins.Captured> puts = bins.requests(bin.id(), bin.token(), 0, 0, 0, BinLogFilter.of("put", "2xx", "acme")).orElseThrow().requests();
+
+    // Then
+    assertThat(fails).extracting(Bins.Captured::path).containsExactly("/pay");
+    assertThat(byText).extracting(Bins.Captured::path).containsExactly("/pay");
+    assertThat(byRule).hasSize(1);
+    assertThat(puts).extracting(Bins.Captured::path).containsExactly("/orders/7");
+    org.assertj.core.api.Assertions.assertThatThrownBy(() -> BinLogFilter.of(null, "teapot", null)).hasMessageContaining("like 404");
+  }
+
+  @Test
+  void aShareKeyOpensOneRequestAndNothingElse() {
+    // Given
+    Bins bins = new Bins(data, clock);
+    Bins.Created bin = bins.create().orElseThrow();
+    send(bins, bin.id(), 3);
+
+    // When
+    String key = bins.shareKey(bin.id(), bin.token(), 2).orElseThrow();
+
+    // Then
+    assertThat(bins.one(bin.id(), key, 2)).hasValueSatisfying(c -> assertThat(c.path()).isEqualTo("/n/1"));
+    assertThat(bins.one(bin.id(), key, 3)).isEmpty();
+    assertThat(bins.requests(bin.id(), key, 0, 0, 0)).isEmpty();
+    assertThat(bins.shareKey(bin.id(), key, 2)).isEmpty();
+    assertThat(bins.shareKey(bin.id(), bin.token(), 99)).isEmpty();
+    assertThat(bins.one(bin.id(), bin.token(), 3)).isPresent();
+  }
+
+  @Test
+  void keepsTheBytesOfABodyThatIsNotText() {
+    // Given
+    Bins bins = new Bins(data, clock);
+    Bins.Created bin = bins.create().orElseThrow();
+    byte[] png = {(byte) 0x89, 'P', 'N', 'G', 0, (byte) 0xff};
+    PublicRequest upload = new PublicRequest("POST", "/bins/" + bin.id() + "/up", "", Map.of(), Map.of("Content-Type", "image/png"), "\uFFFDPNG", png.length, "203.0.113.9", png);
+
+    // When
+    bins.record(bin.id(), upload, "/up", "", ok());
+    bins.record(bin.id(), call(bin.id(), "/text", "{\"a\":1}"), "/text", "", ok());
+    Bins restarted = new Bins(data, clock);
+
+    // Then
+    List<Bins.Captured> seen = restarted.requests(bin.id(), bin.token(), 0, 0, 0).orElseThrow().requests();
+    assertThat(java.util.Base64.getDecoder().decode(seen.get(1).raw())).containsExactly(png);
+    assertThat(seen.get(0).raw()).isEmpty();
+  }
 }

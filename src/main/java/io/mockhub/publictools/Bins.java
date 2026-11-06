@@ -23,10 +23,12 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Deque;
+import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -34,6 +36,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
@@ -47,6 +50,8 @@ public final class Bins {
   public static final int SEGMENTS = 5;
   public static final long MAX_TOTAL_BYTES = 4L * 1024 * 1024 * 1024;
   public static final int PAGE = 100;
+  public static final int MAX_DELETED = 10_000;
+  public static final int MAX_EXPORT = 1000;
   static final int TAIL = 50;
   static final long TAIL_BYTES = 256 * 1024;
   public static final Duration IDLE = Duration.ofHours(24);
@@ -109,10 +114,11 @@ public final class Bins {
   }
 
   public record Captured(long seq, Instant at, String method, String path, String query, Map<String, String> headers, String body,
-      int size, boolean truncated, String event, Outcome outcome) {
+      String raw, int size, boolean truncated, String event, Outcome outcome) {
     ObjectNode toJson() {
       ObjectNode item = Jsons.object().put("seq", seq).put("at", at.toString()).put("method", method).put("path", path)
           .put("query", query).put("body", body).put("size", size).put("truncated", truncated).put("event", event);
+      if (!raw.isEmpty()) item.put("raw", raw);
       ObjectNode h = item.putObject("headers");
       headers.forEach(h::put);
       if (outcome != null) item.set("outcome", outcome.toJson());
@@ -123,12 +129,12 @@ public final class Bins {
       Map<String, String> h = new LinkedHashMap<>();
       n.path("headers").fields().forEachRemaining(e -> h.put(e.getKey(), e.getValue().asText()));
       return new Captured(n.path("seq").asLong(), Instant.parse(n.path("at").asText()), n.path("method").asText(), n.path("path").asText(),
-          n.path("query").asText(""), h, n.path("body").asText(""), n.path("size").asInt(), n.path("truncated").asBoolean(),
+          n.path("query").asText(""), h, n.path("body").asText(""), n.path("raw").asText(""), n.path("size").asInt(), n.path("truncated").asBoolean(),
           n.path("event").asText(""), n.has("outcome") ? Outcome.from(n.path("outcome")) : null);
     }
   }
 
-  public record Page(List<Captured> requests, long total, long oldestKept) {}
+  public record Page(List<Captured> requests, long total, long oldestKept, long deleted) {}
 
   static final class Bin {
     final String id;
@@ -139,6 +145,7 @@ public final class Bins {
     long seq;
     long oldest = 1;
     final Deque<Captured> tail = new ArrayDeque<>();
+    final Set<Long> deleted = new HashSet<>();
     BinState state = new BinState();
 
     Bin(String id, byte[] tokenHash, Instant created, Settings settings) {
@@ -175,10 +182,11 @@ public final class Bins {
     String body = request.body() == null ? "" : request.body();
     boolean truncated = body.getBytes(StandardCharsets.UTF_8).length > MAX_STORED_BODY;
     if (truncated) body = cut(body, MAX_STORED_BODY);
+    String raw = rawOf(request.raw());
     synchronized (bin) {
       long seq = ++bin.seq;
       Captured captured = new Captured(seq, clock.instant(), request.method(), path, request.rawQuery(), withoutProxyHeaders(request.headers()),
-          body, request.bodySize(), truncated, event, outcome);
+          body, raw, request.bodySize(), truncated, event, outcome);
       bin.tail.addFirst(captured);
       append(bin, captured);
       trimTail(bin.tail, bin.oldest);
@@ -193,22 +201,88 @@ public final class Bins {
   }
 
   public Optional<Page> requests(String id, String key, long after, long before, int limit) {
+    return requests(id, key, after, before, limit, c -> true);
+  }
+
+  public Optional<Page> requests(String id, String key, long after, long before, int limit, Predicate<Captured> filter) {
     Bin bin = readable(id, key);
     if (bin == null) return Optional.empty();
     int size = Math.max(1, Math.min(limit <= 0 ? PAGE : limit, PAGE));
-    Predicate<Captured> wanted = before > 0 ? c -> c.seq() < before : c -> c.seq() > after;
+    Predicate<Captured> range = before > 0 ? c -> c.seq() < before : c -> c.seq() > after;
     synchronized (bin) {
-      List<Captured> out = new ArrayList<>();
-      for (Captured c : bin.tail) {
-        if (out.size() >= size) break;
-        if (wanted.test(c)) out.add(c);
-      }
-      long tailOldest = bin.tail.isEmpty() ? bin.seq + 1 : bin.tail.getLast().seq();
-      boolean more = out.size() < size && tailOldest > bin.oldest && (before > 0 || after < tailOldest - 1);
-      if (more) {
-        for (Captured c : fromDisk(bin, tailOldest, wanted, size - out.size())) out.add(c);
-      }
-      return Optional.of(new Page(List.copyOf(out), bin.seq, bin.oldest));
+      return Optional.of(new Page(newest(bin, range.and(filter), size, before > 0 ? 0 : after), bin.seq, bin.oldest, deletedSince(bin)));
+    }
+  }
+
+  public Optional<List<Captured>> export(String id, String key, Predicate<Captured> filter, int limit) {
+    Bin bin = readable(id, key);
+    if (bin == null) return Optional.empty();
+    synchronized (bin) {
+      return Optional.of(newest(bin, filter, limit, 0));
+    }
+  }
+
+  public Optional<Captured> one(String id, String key, long seq) {
+    Bin bin = live(id);
+    if (bin == null || key == null) return Optional.empty();
+    boolean allowed = readable(id, key) != null || MessageDigest.isEqual(shareKeyOf(bin.tokenHash, seq).getBytes(StandardCharsets.UTF_8), key.getBytes(StandardCharsets.UTF_8));
+    if (!allowed) return Optional.empty();
+    synchronized (bin) {
+      return newest(bin, c -> c.seq() == seq, 1, 0).stream().findFirst();
+    }
+  }
+
+  public Optional<String> shareKey(String id, String token, long seq) {
+    Bin bin = owned(id, token);
+    if (bin == null) return Optional.empty();
+    synchronized (bin) {
+      if (newest(bin, c -> c.seq() == seq, 1, 0).isEmpty()) return Optional.empty();
+    }
+    return Optional.of(shareKeyOf(bin.tokenHash, seq));
+  }
+
+  public boolean delete(String id, String token, long seq) {
+    Bin bin = owned(id, token);
+    if (bin == null) return false;
+    synchronized (bin) {
+      if (seq < bin.oldest || seq > bin.seq || bin.deleted.contains(seq)) return false;
+      if (bin.deleted.size() >= MAX_DELETED) return false;
+      bin.deleted.add(seq);
+      bin.tail.removeIf(c -> c.seq() == seq);
+      save(bin);
+      return true;
+    }
+  }
+
+  private List<Captured> newest(Bin bin, Predicate<Captured> wanted, int size, long after) {
+    Predicate<Captured> kept = wanted.and(c -> !bin.deleted.contains(c.seq()));
+    List<Captured> out = new ArrayList<>();
+    for (Captured c : bin.tail) {
+      if (out.size() >= size) break;
+      if (kept.test(c)) out.add(c);
+    }
+    long tailOldest = bin.tail.isEmpty() ? bin.seq + 1 : bin.tail.getLast().seq();
+    if (out.size() < size && tailOldest > bin.oldest && after < tailOldest - 1) {
+      out.addAll(fromDisk(bin, tailOldest, kept, size - out.size()));
+    }
+    return List.copyOf(out);
+  }
+
+  private static long deletedSince(Bin bin) {
+    return bin.deleted.stream().filter(s -> s >= bin.oldest).count();
+  }
+
+  private static String shareKeyOf(byte[] tokenHash, long seq) {
+    return "s" + HexFormat.of().formatHex(hash("share|" + Base64.getEncoder().encodeToString(tokenHash) + "|" + seq)).substring(0, 31);
+  }
+
+  static String rawOf(byte[] body) {
+    if (body == null || body.length == 0) return "";
+    try {
+      StandardCharsets.UTF_8.newDecoder().onMalformedInput(CodingErrorAction.REPORT).onUnmappableCharacter(CodingErrorAction.REPORT).decode(ByteBuffer.wrap(body));
+      return "";
+    } catch (CharacterCodingException e) {
+      return Base64.getEncoder().encodeToString(body.length > MAX_STORED_BODY ? Arrays.copyOf(body, MAX_STORED_BODY) : body);
     }
   }
 
@@ -444,6 +518,7 @@ public final class Bins {
     Settings s = bin.settings;
     out.putObject("reply").put("status", s.reply().status()).put("contentType", s.reply().contentType()).put("body", s.reply().body()).put("template", s.reply().template());
     out.put("rulesEnabled", s.rulesEnabled());
+    bin.deleted.stream().sorted().forEach(out.withArray("deleted")::add);
     out.set("rules", BinRule.toJson(s.rules()));
     out.set("routing", s.routing().toJson());
     Path dir = root.resolve(bin.id);
@@ -489,6 +564,7 @@ public final class Bins {
           bin.lastUsed = Instant.parse(n.path("lastUsed").asText());
           bin.seq = n.path("seq").asLong();
           bin.oldest = Math.max(1, n.path("oldest").asLong(1));
+          n.path("deleted").forEach(d -> bin.deleted.add(d.asLong()));
           Path state = dir.resolve("state.json");
           if (Files.exists(state)) bin.state = BinState.from(Jsons.MAPPER.readTree(Files.readString(state, StandardCharsets.UTF_8)));
           List<Path> segs = segments(bin);

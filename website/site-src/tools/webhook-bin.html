@@ -7,6 +7,17 @@
   <p class="tool-error" data-bin-create-error hidden></p>
 </div>
 
+<div class="tool-card bin-shared" data-bin-shared hidden>
+  <div class="tool-head">
+    <h3>Shared request</h3>
+    <span class="tool-actions"><button type="button" class="btn secondary small" data-copy="[data-bin-shared-curl]">Copy as cURL</button></span>
+  </div>
+  <p class="tool-hint" data-bin-shared-note></p>
+  <p class="tool-error" data-bin-shared-error hidden></p>
+  <div data-bin-shared-detail></div>
+  <pre class="tool-out" data-bin-shared-curl hidden></pre>
+</div>
+
 <div data-bin-live hidden>
   <div class="tool-card bin-console">
     <div class="bin-console-row">
@@ -57,10 +68,27 @@
         <span class="tool-actions">
           <span class="tool-live" data-bin-polling aria-live="polite">Waiting for requests…</span>
           <button type="button" class="btn ghost small" data-bin-sample-again data-owner>Send test</button>
+          <select class="tool-input bin-export" aria-label="Export the log as HAR or JSON" data-bin-export>
+            <option value="">Export</option>
+            <option value="har" title="Opens in browser dev tools and most HTTP tools">HAR</option>
+            <option value="json">JSON</option>
+          </select>
           <button type="button" class="btn ghost small" data-bin-clear data-owner>Clear</button>
         </span>
       </div>
+      <form class="bin-filter" data-bin-filter role="search" aria-label="Filter requests">
+        <input class="tool-input" type="search" name="q" placeholder="Search path, body, headers, event or rule" aria-label="Search requests" spellcheck="false">
+        <select class="tool-input" name="method" aria-label="Method">
+          <option value="">Any method</option>
+          <option>GET</option><option>POST</option><option>PUT</option><option>PATCH</option><option>DELETE</option><option>HEAD</option><option>OPTIONS</option><option>QUERY</option><option>TRACE</option>
+        </select>
+        <select class="tool-input" name="status" aria-label="Answer status">
+          <option value="">Any status</option>
+          <option value="2xx">2xx</option><option value="3xx">3xx</option><option value="4xx">4xx</option><option value="5xx">5xx</option>
+        </select>
+      </form>
       <p class="tool-error" data-bin-error hidden></p>
+      <p class="tool-hint" data-bin-no-match hidden>No requests match. Older requests are searched too.</p>
       <ul class="tool-requests" data-bin-list aria-label="Captured requests"></ul>
       <button type="button" class="btn ghost small" data-bin-older hidden>Load older requests</button>
     </div>
@@ -69,6 +97,8 @@
         <h3>Request and answer</h3>
         <span class="tool-actions"><button type="button" class="btn secondary small" data-copy="[data-bin-curl]" data-bin-curl-copy hidden>Copy as cURL</button></span>
       </div>
+      <div class="bin-detail-actions" data-bin-detail-actions hidden></div>
+      <p class="bin-saved" data-bin-detail-note aria-live="polite" hidden></p>
       <div data-bin-detail><p class="tool-hint">Pick a request to see what was sent and what the bin answered.</p></div>
       <pre class="tool-out" data-bin-curl hidden></pre>
     </div>

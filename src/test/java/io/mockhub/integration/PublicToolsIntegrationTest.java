@@ -123,6 +123,54 @@ class PublicToolsIntegrationTest {
   }
 
   @Test
+  void aBinsLogFiltersSharesDeletesAndExportsRequests() {
+    // Given
+    server = MockHubServer.start(data, ON);
+    ApiClient api = server.api();
+    JsonNode bin = api.post("/__public/bins", "").json();
+    String id = bin.get("id").asText();
+    Map<String, String> owner = Map.of("X-Bin-Token", bin.get("token").asText());
+    String inspect = "/__public/inspect/" + id;
+    api.send("POST", "/__public/bins/" + id + "/pay", "{\"type\":\"payment.failed\"}", "application/json");
+    api.send("PUT", "/__public/bins/" + id + "/orders/7", "{\"id\":7}", "application/json");
+    api.send("POST", "/__public/bins/" + id + "/pay", "{\"type\":\"payment.paid\"}", "application/json");
+    String view = api.send("GET", inspect + "/settings", null, null, owner).json().get("viewKey").asText();
+
+    // When
+    JsonNode filtered = api.send("GET", inspect + "?method=POST&q=failed", null, null, owner).json();
+    String key = api.send("GET", inspect + "/requests/2/share", null, null, owner).json().get("key").asText();
+    JsonNode shared = api.send("GET", inspect + "/requests/2", null, null, Map.of("X-Bin-Token", key)).json();
+    int sharedOther = api.send("GET", inspect + "/requests/1", null, null, Map.of("X-Bin-Token", key)).status();
+    int viewerDelete = api.send("DELETE", inspect + "/requests/1", null, null, Map.of("X-Bin-Token", view)).status();
+    int viewerShare = api.send("GET", inspect + "/requests/1/share", null, null, Map.of("X-Bin-Token", view)).status();
+    int deleted = api.send("DELETE", inspect + "/requests/1", null, null, owner).status();
+    JsonNode after = api.send("GET", inspect, null, null, owner).json();
+    JsonNode har = api.send("GET", inspect + "/export", null, null, Map.of("X-Bin-Token", view)).json();
+    JsonNode json = api.send("GET", inspect + "/export?format=json&method=PUT", null, null, owner).json();
+    int badFilter = api.send("GET", inspect + "?status=teapot", null, null, owner).status();
+
+    // Then
+    assertThat(filtered.get("requests")).hasSize(1);
+    assertThat(filtered.at("/requests/0/seq").asLong()).isEqualTo(1);
+    assertThat(shared.get("path").asText()).isEqualTo("/orders/7");
+    assertThat(shared.get("bin").asText()).isEqualTo(id);
+    assertThat(sharedOther).isEqualTo(404);
+    assertThat(viewerDelete).isEqualTo(403);
+    assertThat(viewerShare).isEqualTo(403);
+    assertThat(deleted).isEqualTo(200);
+    assertThat(after.get("requests")).hasSize(2);
+    assertThat(after.get("deleted").asInt()).isEqualTo(1);
+    assertThat(har.at("/log/version").asText()).isEqualTo("1.2");
+    assertThat(har.at("/log/entries")).hasSize(2);
+    assertThat(har.at("/log/entries/1/request/url").asText()).endsWith("/__public/bins/" + id + "/orders/7");
+    assertThat(har.at("/log/entries/1/request/postData/text").asText()).isEqualTo("{\"id\":7}");
+    assertThat(har.at("/log/entries/1/response/status").asInt()).isEqualTo(200);
+    assertThat(json.get("exported").asInt()).isEqualTo(1);
+    assertThat(json.at("/requests/0/method").asText()).isEqualTo("PUT");
+    assertThat(badFilter).isEqualTo(400);
+  }
+
+  @Test
   void aBinKeepsCountersAndSavedValuesAcrossRequestsAndRestarts() {
     // Given
     server = MockHubServer.start(data, ON);

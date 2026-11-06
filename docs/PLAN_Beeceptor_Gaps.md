@@ -76,18 +76,20 @@ Shipped: QUERY and TRACE; `not_equals`, `not_contains` and `absent` on every tar
 
 Shipped: the bin reads `ui/src/model/dynamicValues.json` through `dynamicValues('bin')`, which drops what the sandbox can't run (datasets, the app's state helper, `hostname`, base URL, request id) and adds a **Bin state** group. `BinCatalogTest` renders every item the bin offers. State lives in `state.json` beside `bin.json` (100 names, 4 KB a value, 64 KB in all), with `GET`/`DELETE /state` and a **Saved state** section in Rules. Validation helpers now answer with their own status instead of 500.
 
-### B4 — Request log parity
+### B4 — Request log parity ✅ done
 | Beeceptor | Ours | Status |
 |---|---|---|
-| Pretty-print toggle per body | Always formatted | 🟡 |
-| Copy body | — | ❌ |
+| Pretty-print toggle per body | Raw / Pretty per body | ✅ |
+| Copy body | Copy body on both sides | ✅ |
 | Copy as cURL | ✅ | ✅ |
-| **Share one request and its response** as a permanent link | Whole-bin view link only | ❌ |
-| "A rule matched" icon that opens the rule | Rule name as text | 🟡 |
-| Make a rule from a captured request | — | ❌ |
-| Search and filter by path, method, status, event | — | ❌ |
-| Delete one request; download a multipart file from a request | Clear all only | ❌ |
-| Export the log (JSON or HAR) | — | ❌ |
+| **Share one request and its response** as a permanent link | Per-request share key; works while the bin lives | ✅ |
+| "A rule matched" icon that opens the rule | Open rule beside the answer | ✅ |
+| Make a rule from a captured request | Make a rule from it | ✅ |
+| Search and filter by path, method, status, event | Text, method and status filters, server side, disk included | ✅ |
+| Delete one request; download a multipart file from a request | Delete one; multipart files and binary bodies kept as bytes and downloadable | ✅ |
+| Export the log (JSON or HAR) | HAR 1.2 or JSON, newest 1,000 matching | ✅ |
+
+Shipped: `BinLogFilter`, `BinHar`, `Bins.delete/one/shareKey/export`, raw bytes for bodies that aren't UTF-8 (`raw`, base64, up to 64 KB), deleted sequence numbers kept in `bin.json`.
 
 ### B5 — Callout rules in the bin
 Beeceptor "New Callout Rule": either wait for the target (synchronous) or answer at once with a mock and call out in the background (asynchronous). It has a method that can be "same as original", a target, the original or a custom (templated) payload, authentication, and a minimum and maximum trigger delay. We only have forward at routing level. ❌

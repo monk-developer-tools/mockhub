@@ -17,13 +17,15 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.LongSupplier;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class BinTool implements PublicTool {
   public static final int MAX_REPLY_BODY = 4 * 1024;
   private static final Pattern CAPTURE = Pattern.compile("/bins/([a-z0-9]{12})(/.*)?");
-  private static final Pattern INSPECT = Pattern.compile("/inspect/([a-z0-9]{12})(/requests|/response|/settings|/rules|/routing|/draft|/state)?");
+  private static final Pattern INSPECT = Pattern.compile("/inspect/([a-z0-9]{12})(/requests(?:/\\d{1,12}(?:/share)?)?|/response|/settings|/rules|/routing|/draft|/state|/export)?");
+  private static final Pattern ONE = Pattern.compile("/requests/(\\d{1,12})(/share)?");
 
   private final Bins bins;
   private final PublicLimits limits;
@@ -105,10 +107,15 @@ public final class BinTool implements PublicTool {
     String token = Optional.ofNullable(request.header("X-Bin-Token")).orElse(request.firstQuery("token"));
     String method = request.method();
     String what = part == null ? "/requests" : part;
-    boolean reading = what.equals("/requests") && method.equals("GET");
+    Matcher one = ONE.matcher(what);
+    boolean single = one.matches();
+    boolean sharing = single && one.group(2) != null;
+    boolean reading = method.equals("GET") && (what.equals("/requests") || what.equals("/export") || (single && !sharing));
     if (!reading && bins.viewOnly(id, token)) {
       return PublicResponses.error(403, "This is a view-only link. Only the bin's owner can change it.");
     }
+    if (single) return single(id, token, Long.parseLong(one.group(1)), sharing, method);
+    if (what.equals("/export") && method.equals("GET")) return export(id, token, request);
     if (part == null && method.equals("DELETE")) {
       return bins.clear(id, token) ? PublicResponses.json(200, Jsons.object().put("cleared", true)) : notYours(id);
     }
@@ -116,7 +123,13 @@ public final class BinTool implements PublicTool {
       long after = parseLong(request.firstQuery("after"));
       long before = parseLong(request.firstQuery("before"));
       int limit = (int) parseLong(request.firstQuery("limit"));
-      return bins.requests(id, token, after, before, limit).map(page -> PublicResponses.json(200, listing(id, page))).orElseGet(() -> notYours(id));
+      Predicate<Bins.Captured> filter;
+      try {
+        filter = BinLogFilter.of(request);
+      } catch (IllegalArgumentException e) {
+        return PublicResponses.error(400, e.getMessage());
+      }
+      return bins.requests(id, token, after, before, limit, filter).map(page -> PublicResponses.json(200, listing(id, page))).orElseGet(() -> notYours(id));
     }
     if (what.equals("/response") && method.equals("GET")) {
       return bins.settings(id, token).map(s -> PublicResponses.json(200, reply(s.reply()))).orElseGet(() -> notYours(id));
@@ -134,7 +147,48 @@ public final class BinTool implements PublicTool {
     if (what.equals("/rules") && method.equals("PUT")) return setRules(id, token, request.body());
     if (what.equals("/routing") && method.equals("PUT")) return setRouting(id, token, request.body());
     if (what.equals("/draft") && method.equals("POST")) return draft(id, token, request);
-    return PublicResponses.error(405, "Read a bin with GET, change it with PUT /response, /rules or /routing, clear it with DELETE, or read and clear its saved values with GET and DELETE /state");
+    return PublicResponses.error(405, "Read a bin with GET, change it with PUT /response, /rules or /routing, clear it with DELETE, read and clear its saved values with GET and DELETE /state, or export it with GET /export");
+  }
+
+  private ResponseDefinition single(String id, String token, long seq, boolean sharing, String method) {
+    if (sharing && method.equals("GET")) {
+      return bins.shareKey(id, token, seq).map(key -> PublicResponses.json(200, Jsons.object().put("key", key))).orElseGet(() -> missing(id, seq));
+    }
+    if (sharing) return PublicResponses.error(405, "Get a request's share key with GET");
+    if (method.equals("GET")) {
+      return bins.one(id, token, seq).map(c -> {
+        ObjectNode out = c.toJson().put("bin", id);
+        bins.expires(id).ifPresent(e -> out.put("expiresAt", e.toString()));
+        return PublicResponses.json(200, out);
+      }).orElseGet(() -> missing(id, seq));
+    }
+    if (method.equals("DELETE")) {
+      return bins.delete(id, token, seq) ? PublicResponses.json(200, Jsons.object().put("deleted", seq)) : missing(id, seq);
+    }
+    return PublicResponses.error(405, "Read one request with GET or delete it with DELETE");
+  }
+
+  private ResponseDefinition export(String id, String token, PublicRequest request) {
+    Predicate<Bins.Captured> filter;
+    try {
+      filter = BinLogFilter.of(request);
+    } catch (IllegalArgumentException e) {
+      return PublicResponses.error(400, e.getMessage());
+    }
+    boolean har = !"json".equals(request.firstQuery("format"));
+    return bins.export(id, token, filter, Bins.MAX_EXPORT).map(list -> PublicResponses.json(200, har
+        ? BinHar.of(binUrl(request, id), list)
+        : Jsons.object().put("id", id).put("exported", list.size()).set("requests", Bins.listing(list)))).orElseGet(() -> notYours(id));
+  }
+
+  private static String binUrl(PublicRequest request, String id) {
+    String host = Optional.ofNullable(request.header("Host")).orElse("localhost");
+    String proto = Optional.ofNullable(request.header("X-Forwarded-Proto")).orElse("http");
+    return proto + "://" + host + PublicRequest.PREFIX + "/bins/" + id;
+  }
+
+  private static ResponseDefinition missing(String id, long seq) {
+    return PublicResponses.error(404, "No request " + seq + " in bin " + id + " for that key. It may have been deleted, or the bin expired.");
   }
 
   private ResponseDefinition setReply(String id, String token, String body) {
@@ -209,7 +263,7 @@ public final class BinTool implements PublicTool {
   }
 
   private ObjectNode listing(String id, Bins.Page page) {
-    ObjectNode out = Jsons.object().put("id", id).put("total", page.total()).put("oldestKept", page.oldestKept());
+    ObjectNode out = Jsons.object().put("id", id).put("total", page.total()).put("oldestKept", page.oldestKept()).put("deleted", page.deleted());
     bins.expires(id).ifPresent(e -> out.put("expiresAt", e.toString()));
     out.set("requests", Bins.listing(page.requests()));
     return out;

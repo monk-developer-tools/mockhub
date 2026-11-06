@@ -2,7 +2,7 @@ import { $, show, wireCopyButtons } from './common.js';
 import { call, toCurl } from './http.js';
 import {
   CONTENT_TYPES, MAX_FILE_BYTES, METHODS, OPS, RECIPES, base64Size, contentTypeOf, fileSize, opsFor, percents, prettyBody, searchValues, stateRows, withContentType, TARGETS, binLink, blankAnswer, blankCondition, blankRule, duplicate, flow, headerLines, mergeRequests, move,
-  outcomeText, outcomeTone, parseBinHash, routeSummary, rememberBin, forgetBin, renameBin, parseHeaderLines, previewRequest, recipe, routingFromForm, snippets, summary, tunnelCommand,
+  outcomeText, outcomeTone, parseBinHash, parseShareHash, filterQuery, filtered, multipartParts, requestBytes, ruleFromRequest, shareLink, routeSummary, rememberBin, forgetBin, renameBin, parseHeaderLines, previewRequest, recipe, routingFromForm, snippets, summary, tunnelCommand,
 } from './bin.js';
 
 const KEY = 'mockhub-bin';
@@ -25,6 +25,11 @@ let editing = null;
 let draft = null;
 let polled = false;
 let noteTimer = null;
+let filter = { q: '', method: '', status: '' };
+let deletedCount = 0;
+let noOlder = false;
+let generation = 0;
+const plain = { request: false, answer: false };
 
 const store = {
   read() {
@@ -145,44 +150,169 @@ function renderList() {
     });
     return el('li', {}, button);
   }));
-  $('[data-bin-empty]').hidden = requests.length > 0;
-  $('[data-bin-log]').hidden = requests.length === 0;
+  const narrowed = filtered(filter);
+  $('[data-bin-empty]').hidden = requests.length > 0 || narrowed;
+  $('[data-bin-log]').hidden = requests.length === 0 && !narrowed;
+  $('[data-bin-no-match]').hidden = !(narrowed && requests.length === 0);
   const oldestShown = requests.length ? requests[requests.length - 1].seq : 0;
-  $('[data-bin-older]').hidden = !requests.length || oldestShown <= oldestKept;
+  $('[data-bin-older]').hidden = !requests.length || oldestShown <= oldestKept || noOlder;
 }
 
 function setCount(total) {
-  $('[data-bin-count]').textContent = String(Math.max(0, total - oldestKept + 1));
+  $('[data-bin-count]').textContent = filtered(filter)
+    ? `${requests.length} found`
+    : String(Math.max(0, total - oldestKept + 1 - deletedCount));
 }
 
-function renderDetail() {
-  const r = requests.find((x) => x.seq === selected);
-  const box = $('[data-bin-detail]');
-  const curl = $('[data-bin-curl]');
-  $('[data-bin-curl-copy]').hidden = !r;
-  if (!r) {
-    box.replaceChildren(el('p', { class: 'tool-hint' }, 'Pick a request to see what was sent and what the bin answered.'));
-    curl.hidden = true;
-    return;
+function download(name, data, type) {
+  const url = URL.createObjectURL(new Blob([data], { type: type || 'application/octet-stream' }));
+  const link = el('a', { href: url, download: name });
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function headerOf(headers, name) {
+  const key = Object.keys(headers ?? {}).find((k) => k.toLowerCase() === name.toLowerCase());
+  return key ? headers[key] : '';
+}
+
+function bodyBlock(side, text, extra = []) {
+  const shown = text ? (plain[side] ? text : pretty(text)) : '(empty body)';
+  const toggle = text && pretty(text) !== text
+    ? el('button', { type: 'button', class: 'btn ghost small', 'data-body-toggle': side, onclick: () => {
+      plain[side] = !plain[side];
+      renderDetail();
+    } }, plain[side] ? 'Pretty' : 'Raw')
+    : null;
+  const copy = text ? el('button', { type: 'button', class: 'btn ghost small', 'data-body-copy': side, onclick: async (e) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      e.currentTarget.textContent = 'Copied';
+    } catch {
+      e.currentTarget.textContent = 'Copy failed';
+    }
+  } }, 'Copy body') : null;
+  return [
+    el('div', { class: 'bin-body-bar' }, el('span', { class: 'tool-label' }, 'Body'), el('span', { class: 'bin-body-tools' }, toggle, copy, ...extra)),
+    el('pre', { class: 'tool-out tool-wrap', 'data-body': side }, shown)];
+}
+
+function requestBody(r) {
+  const type = headerOf(r.headers, 'Content-Type');
+  const bytes = r.raw || /^multipart\//i.test(type) ? requestBytes(r) : null;
+  const parts = bytes ? multipartParts(bytes, type) : [];
+  if (parts.length) {
+    return [
+      el('span', { class: 'tool-label' }, `Multipart body, ${parts.length} ${parts.length === 1 ? 'part' : 'parts'}`),
+      el('ul', { class: 'bin-parts' }, ...parts.map((part) => el('li', {},
+        el('code', {}, part.name || '(no name)'),
+        part.filename
+          ? el('span', {}, ` ${part.filename} · ${part.bytes.length} bytes `, el('button', { type: 'button', class: 'btn ghost small', 'data-part-download': part.filename, onclick: () => download(part.filename, part.bytes, part.type) }, 'Download'))
+          : el('span', { class: 'bin-part-value' }, ` = ${new TextDecoder().decode(part.bytes).slice(0, 200)}`))))];
   }
+  if (r.raw) {
+    return [el('div', { class: 'bin-body-bar' },
+      el('span', { class: 'tool-label' }, `Binary body, ${bytes.length} bytes`),
+      el('button', { type: 'button', class: 'btn ghost small', 'data-body-download': '', onclick: () => download(`request-${r.seq}.bin`, bytes, type) }, 'Download'))];
+  }
+  return bodyBlock('request', r.body);
+}
+
+function detailView(r, shared = false) {
   const cut = r.truncated ? el('p', { class: 'tool-hint' }, `The body was ${r.size} bytes; the first 64 KB are kept.`) : null;
   const sent = el('div', { class: 'bin-side' },
     el('h4', { class: 'tool-sub' }, 'Request'),
     el('p', { class: 'tool-request-line' }, el('span', { class: `jack ${r.method.toLowerCase()}` }, r.method), ` ${r.path}${r.query ? `?${r.query}` : ''}`),
     el('p', { class: 'tool-hint' }, new Date(r.at).toLocaleString(), r.event ? ' · event ' : '', r.event ? el('span', { class: 'bin-event' }, r.event) : null),
     headerList(r.headers),
-    el('pre', { class: 'tool-out tool-wrap' }, r.body ? pretty(r.body) : '(empty body)'), cut);
+    ...requestBody(r), cut);
   const o = r.outcome;
+  const ruleLink = o && !shared && !bin?.viewOnly && (o.by === 'rule' || o.by === 'validation' || o.by === 'error') && o.rule
+    ? el('button', { type: 'button', class: 'bin-link', 'data-open-rule': o.rule, onclick: () => openRuleNamed(o.rule) }, `Open rule "${o.rule}"`)
+    : null;
   const answered = o
     ? el('div', { class: 'bin-side' },
       el('h4', { class: 'tool-sub' }, 'Answer'),
-      el('p', {}, el('span', { class: `tool-badge ${outcomeTone(o)}` }, outcomeText(o))),
+      el('p', {}, el('span', { class: `tool-badge ${outcomeTone(o)}` }, outcomeText(o)), ruleLink ? ' ' : null, ruleLink),
       headerList(o.headers),
-      el('pre', { class: 'tool-out tool-wrap' }, o.body ? pretty(o.body) : '(empty body)'),
+      ...bodyBlock('answer', o.body),
       o.truncated ? el('p', { class: 'tool-hint' }, 'The answer was longer; the first 16 KB are shown.') : null)
     : el('div', { class: 'bin-side' }, el('h4', { class: 'tool-sub' }, 'Answer'), el('p', { class: 'tool-hint' }, 'Not recorded for this request.'));
-  box.replaceChildren(el('div', { class: 'bin-pair' }, sent, answered));
-  curl.textContent = toCurl({ method: r.method, url: `${binUrl()}${r.path === '/' ? '' : r.path}${r.query ? `?${r.query}` : ''}`, headers: r.headers, body: r.body });
+  return el('div', { class: 'bin-pair' }, sent, answered);
+}
+
+function curlFor(r, id) {
+  return toCurl({ method: r.method, url: `${location.origin}/__public/bins/${id}${r.path === '/' ? '' : r.path}${r.query ? `?${r.query}` : ''}`, headers: r.headers, body: r.raw ? undefined : r.body });
+}
+
+function renderDetail() {
+  const r = requests.find((x) => x.seq === selected);
+  const box = $('[data-bin-detail]');
+  const curl = $('[data-bin-curl]');
+  const actions = $('[data-bin-detail-actions]');
+  $('[data-bin-curl-copy]').hidden = !r;
+  if (!r) {
+    box.replaceChildren(el('p', { class: 'tool-hint' }, 'Pick a request to see what was sent and what the bin answered.'));
+    curl.hidden = true;
+    actions.hidden = true;
+    return;
+  }
+  actions.hidden = Boolean(bin.viewOnly);
+  actions.replaceChildren(
+    el('button', { type: 'button', class: 'btn ghost small', 'data-request-share': '', onclick: () => shareRequest(r) }, 'Share this request'),
+    el('button', { type: 'button', class: 'btn ghost small', 'data-request-rule': '', onclick: () => {
+      openDialog('rules');
+      openEditor(ruleFromRequest(r), -1);
+    } }, 'Make a rule from it'),
+    el('button', { type: 'button', class: 'btn ghost small', 'data-request-delete': '', onclick: () => deleteRequest(r) }, 'Delete'));
+  box.replaceChildren(detailView(r));
+  curl.textContent = curlFor(r, bin.id);
+}
+
+function detailNote(text) {
+  const note = $('[data-bin-detail-note]');
+  note.textContent = text;
+  note.hidden = !text;
+}
+
+async function shareRequest(r) {
+  const result = await call(inspect(`/requests/${r.seq}/share`), { headers: auth() });
+  if (result.error) {
+    detailNote(result.error);
+    return;
+  }
+  const link = shareLink(location.origin, location.pathname, bin.id, r.seq, result.json.key);
+  const say = (copied) => detailNote(`${copied ? 'Link copied' : 'Link'}: ${link} . Anyone with it sees this request and its answer, nothing else, while the bin lives.`);
+  say(false);
+  navigator.clipboard?.writeText(link).then(() => say(true), () => {});
+}
+
+async function deleteRequest(r) {
+  const result = await call(inspect(`/requests/${r.seq}`), { method: 'DELETE', headers: auth() });
+  if (result.error) {
+    detailNote(result.error);
+    return;
+  }
+  const index = requests.findIndex((x) => x.seq === r.seq);
+  requests = requests.filter((x) => x.seq !== r.seq);
+  deletedCount += 1;
+  selected = requests[Math.min(index, requests.length - 1)]?.seq ?? null;
+  detailNote(`Deleted request ${r.method} ${r.path}.`);
+  renderList();
+  renderDetail();
+  setCount(after);
+}
+
+function openRuleNamed(label) {
+  const index = rules.findIndex((rule) => (rule.name || `${rule.method} rule`) === label);
+  openDialog('rules');
+  if (index < 0) {
+    flashNote(`The rule "${label}" was renamed or deleted since this request.`);
+    return;
+  }
+  openEditor(structuredClone(rules[index]), index);
 }
 
 async function poll() {
@@ -192,8 +322,9 @@ async function poll() {
     timer = setTimeout(poll, POLL_MS);
     return;
   }
-  const result = await call(`${inspect()}?after=${after}`, { headers: auth() });
-  if (!bin) return;
+  const asked = generation;
+  const result = await call(`${inspect()}?after=${after}${filterQuery(filter)}`, { headers: auth() });
+  if (!bin || asked !== generation) return;
   polled = true;
   if (result.status === 404) {
     forget(bin.viewOnly ? 'The shared bin has expired.' : 'That bin expired after 24 hours without a request, so it was removed from My bins.');
@@ -202,9 +333,10 @@ async function poll() {
   show($('[data-bin-error]'), result.error);
   if (result.json) {
     oldestKept = result.json.oldestKept ?? 1;
+    deletedCount = result.json.deleted ?? 0;
     const fresh = result.json.requests ?? [];
     if (fresh.length) {
-      const gap = after > 0 && fresh[fresh.length - 1].seq > after + 1;
+      const gap = after > 0 && fresh.length >= 100;
       requests = gap ? fresh : mergeRequests(requests, fresh);
       after = Math.max(after, ...fresh.map((r) => r.seq));
       if (selected === null) selected = requests[0].seq;
@@ -223,11 +355,15 @@ async function loadOlder() {
   if (!before) return;
   const button = $('[data-bin-older]');
   button.disabled = true;
-  const result = await call(`${inspect()}?before=${before}`, { headers: auth() });
+  const asked = generation;
+  const result = await call(`${inspect()}?before=${before}${filterQuery(filter)}`, { headers: auth() });
   button.disabled = false;
+  if (asked !== generation) return;
   show($('[data-bin-error]'), result.error);
   if (!result.json) return;
+  noOlder = (result.json.requests ?? []).length === 0;
   requests = mergeRequests(requests, result.json.requests ?? []);
+  setCount(result.json.total ?? 0);
   oldestKept = result.json.oldestKept ?? oldestKept;
   renderList();
 }
@@ -775,11 +911,61 @@ async function draftWithAi(e) {
   openEditor({ ...blankRule(), ...rule }, -1);
 }
 
-function open(value) {
-  bin = value;
+function resetLog() {
+  generation += 1;
   after = 0;
   requests = [];
   selected = null;
+  noOlder = false;
+  detailNote('');
+}
+
+function readFilter() {
+  const form = $('[data-bin-filter]');
+  filter = { q: form.elements.q.value, method: form.elements.method.value, status: form.elements.status.value };
+  resetLog();
+  renderList();
+  renderDetail();
+  setCount(0);
+  poll();
+}
+
+async function exportLog(format) {
+  const result = await call(`${inspect('/export')}?format=${format}${filterQuery(filter)}`, { headers: auth() });
+  if (result.error) {
+    show($('[data-bin-error]'), result.error);
+    return;
+  }
+  download(`bin-${bin.id}.${format}`, JSON.stringify(result.json, null, 2), 'application/json');
+  const count = format === 'har' ? result.json.log.entries.length : result.json.exported;
+  flashConsole(`Exported ${count} ${count === 1 ? 'request' : 'requests'}${count >= 1000 ? ', the newest 1,000' : ''} as ${format.toUpperCase()}.`);
+}
+
+async function showShared(link) {
+  stop();
+  $('[data-bin-start]').hidden = true;
+  $('[data-bin-live]').hidden = true;
+  $('[data-bin-shared]').hidden = false;
+  const result = await call(`/__public/inspect/${link.id}/requests/${link.seq}`, { headers: { 'X-Bin-Token': link.key } });
+  show($('[data-bin-shared-error]'), result.error);
+  if (result.error) {
+    $('[data-bin-shared-detail]').replaceChildren();
+    $('[data-bin-shared-note]').textContent = '';
+    return;
+  }
+  const r = result.json;
+  $('[data-bin-shared-note]').textContent = `Request ${r.seq} from webhook bin ${r.bin}. This link shows only this request and its answer, and works until the bin expires${r.expiresAt ? `, ${new Date(r.expiresAt).toLocaleString()} unless it gets more requests` : ''}.`;
+  $('[data-bin-shared-detail]').replaceChildren(detailView(r, true));
+  $('[data-bin-shared-curl]').textContent = curlFor(r, r.bin);
+}
+
+function open(value) {
+  bin = value;
+  $('[data-bin-shared]').hidden = true;
+  filter = { q: '', method: '', status: '' };
+  $('[data-bin-filter]').reset();
+  resetLog();
+  deletedCount = 0;
   oldestKept = 1;
   polled = false;
   $('[data-bin-start]').hidden = true;
@@ -952,6 +1138,21 @@ $('[data-bin-clear]').addEventListener('click', async () => {
 });
 
 $('[data-bin-older]').addEventListener('click', loadOlder);
+let filterTimer = null;
+$('[data-bin-filter]').addEventListener('input', (e) => {
+  clearTimeout(filterTimer);
+  filterTimer = setTimeout(readFilter, e.target.name === 'q' ? 350 : 0);
+});
+$('[data-bin-filter]').addEventListener('submit', (e) => {
+  e.preventDefault();
+  clearTimeout(filterTimer);
+  readFilter();
+});
+$('[data-bin-export]').addEventListener('change', (e) => {
+  const format = e.target.value;
+  e.target.value = '';
+  if (format) exportLog(format);
+});
 document.querySelectorAll('[data-bin-open]').forEach((b) => b.addEventListener('click', () => openDialog(b.dataset.binOpen)));
 document.querySelectorAll('[data-bin-close]').forEach((b) => b.addEventListener('click', () => closeDialog(b.closest('dialog'))));
 document.querySelectorAll('[data-bin-dialog]').forEach((d) => {
@@ -1024,6 +1225,11 @@ function openLinked(linked) {
 }
 
 window.addEventListener('hashchange', () => {
+  const shared = parseShareHash(location.hash);
+  if (shared) {
+    showShared(shared);
+    return;
+  }
   const linked = takeLinked();
   if (!linked) return;
   stop();
@@ -1032,7 +1238,9 @@ window.addEventListener('hashchange', () => {
 const fromLink = takeLinked();
 const current = store.read();
 const known = savedBins.read();
-if (fromLink) openLinked(fromLink);
+const sharedLink = parseShareHash(location.hash);
+if (sharedLink) showShared(sharedLink);
+else if (fromLink) openLinked(fromLink);
 else if (current?.id && current?.token) open(current);
 else if (known.length) open(known.at(-1));
 wireCopyButtons();

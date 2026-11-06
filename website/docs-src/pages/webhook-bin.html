@@ -2,6 +2,17 @@
 
 <h3 id="bin-capture">What a bin keeps</h3>
 <p>Send any method to <code>/__public/bins/{id}</code> or any path under it. The bin keeps every request with its method, path, query, headers, body (up to 64 KB) and the answer it sent back: status, headers, body, how long it took and what produced it. There is no request count limit. A bin holds up to 50 MB in files of 10 MB; past that it drops its oldest file. The list loads 100 requests at a time, and <strong>Load older requests</strong> pages back.</p>
+<h3 id="bin-log">Working with the log</h3>
+<ul>
+  <li><strong>Search and filter</strong>: the box above the list finds text in the path, query, headers, body, event and rule name; the menus narrow to one method or a status class such as <code>4xx</code>. Older requests on disk are searched too.</li>
+  <li><strong>Raw</strong> and <strong>Pretty</strong> switch a JSON body between how it arrived and indented; <strong>Copy body</strong> copies it as it arrived.</li>
+  <li><strong>Multipart and binary bodies</strong>: a <code>multipart/form-data</code> request lists its fields and files, and each file has <strong>Download</strong>, byte for byte. Any other body that isn't text is kept as bytes and can be downloaded whole.</li>
+  <li><strong>Open rule</strong> beside an answer opens the rule that gave it.</li>
+  <li><strong>Make a rule from it</strong> opens a new rule that matches the request's method and path (and its event) and answers with what it got.</li>
+  <li><strong>Share this request</strong> copies a link that shows that one request and its answer, nothing else of the bin, while the bin lives. Keys differ per request.</li>
+  <li><strong>Delete</strong> removes one request; <strong>Clear</strong> removes them all.</li>
+  <li><strong>Export</strong> saves the newest 1,000 requests that match the filter as <a href="https://w3c.github.io/web-performance/specs/HAR/Overview.html">HAR</a>, which browser dev tools and most HTTP tools open, or as JSON.</li>
+</ul>
 <p>When a request names its event, the bin shows it as a badge. It reads the <code>X-GitHub-Event</code>, <code>X-Gitlab-Event</code>, <code>X-Event-Key</code>, <code>X-Shopify-Topic</code>, <code>X-Webhook-Event</code> and <code>X-Event-Type</code> headers, then the JSON fields <code>type</code>, <code>event</code>, <code>event_type</code>, <code>eventType</code>, <code>topic</code> and <code>action</code>.</p>
 <h3 id="bin-many">Several bins</h3>
 <p><strong>New bin</strong> creates another bin and keeps the ones you have. <strong>My bins</strong> lists every bin this browser created or opened with its private link, newest first, with its URL, where its requests go and how many it keeps. Click a name to rename it, <strong>Open</strong> to switch to it, or <strong>Remove</strong> to drop it from the list; the bin itself stays until it expires. The list lives in this browser only, so keep a bin's private link to open it elsewhere. A bin that has expired is removed from the list on its own.</p>
@@ -13,7 +24,13 @@
   <li><strong>View-only link</strong>: opens the bin's requests and the answers they got, live, in any browser. It can't change rules, routing or the default answer, can't clear the bin and doesn't show the settings, so forward headers and the tunnel key stay private. Opening it doesn't replace the viewer's own bin; <strong>Leave</strong> goes back to it.</li>
   <li><strong>Private link</strong>: the token itself. Whoever has it controls the bin as you do; keep it to yourself.</li>
 </ul>
-<p>From a script, the owner reads the view key from <code>viewKey</code> in <code>GET /__public/inspect/{id}/settings</code> and a viewer sends it as <code>X-Bin-Token</code> to <code>GET /__public/inspect/{id}</code>. Every other call with it gets <code>403</code>. A bin is deleted 24 hours after its last request.</p>
+<p>From a script:</p>
+<pre><code>curl '…/__public/inspect/{id}?q=failed&amp;method=POST&amp;status=4xx' -H 'X-Bin-Token: {token}'
+curl …/__public/inspect/{id}/requests/{seq} -H 'X-Bin-Token: {token}'
+curl -X DELETE …/__public/inspect/{id}/requests/{seq} -H 'X-Bin-Token: {token}'
+curl …/__public/inspect/{id}/requests/{seq}/share -H 'X-Bin-Token: {token}'
+curl '…/__public/inspect/{id}/export?format=har' -H 'X-Bin-Token: {token}'</code></pre>
+<p>A request's share key, sent as <code>X-Bin-Token</code>, reads only <code>/requests/{seq}</code>. The owner reads the view key from <code>viewKey</code> in <code>GET /__public/inspect/{id}/settings</code> and a viewer sends it as <code>X-Bin-Token</code> to <code>GET /__public/inspect/{id}</code>. Every other call with it gets <code>403</code>. A bin is deleted 24 hours after its last request.</p>
 
 <h3 id="bin-dynamic">Dynamic answers</h3>
 <p>Both the default answer and every rule answer can be built from each request. <strong>Dynamic value</strong> opens a searchable picker with the same groups as the stub editor: request components, control flow, data manipulation, validation, comparison, string, arithmetic, date and array helpers, JWT, random values, Faker and the bin's own state. Picking one inserts it and ticks <strong>Fill in dynamic values</strong>. You can also write <a href="/docs/templating/">template</a> expressions yourself:</p>

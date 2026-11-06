@@ -301,6 +301,83 @@ export function parseBinHash(hash) {
   return m ? { id: m[2], token: m[3], viewOnly: m[1] === 'view' } : null;
 }
 
+export function parseShareHash(hash) {
+  const m = /^#request=([a-z0-9]{12})\.(\d{1,12})\.(s[a-f0-9]{31})$/.exec(hash ?? '');
+  return m ? { id: m[1], seq: Number(m[2]), key: m[3] } : null;
+}
+
+export function shareLink(origin, pathname, id, seq, key) {
+  return `${origin}${pathname}#request=${id}.${seq}.${key}`;
+}
+
+export function filterQuery(filter = {}) {
+  const params = new URLSearchParams();
+  for (const name of ['q', 'method', 'status']) {
+    const value = (filter[name] ?? '').trim();
+    if (value) params.set(name, value);
+  }
+  const text = params.toString();
+  return text ? `&${text}` : '';
+}
+
+export function filtered(filter = {}) {
+  return filterQuery(filter) !== '';
+}
+
+export function ruleFromRequest(r) {
+  const answer = r.outcome && !r.outcome.by?.endsWith('error')
+    ? { ...blankAnswer(), status: r.outcome.status, headers: { ...(r.outcome.headers ?? {}) }, body: r.outcome.body ?? '' }
+    : blankAnswer();
+  delete answer.headers['Content-Length'];
+  delete answer.headers['X-MockHub-Bin'];
+  const conditions = [{ target: 'path', key: '', op: 'equals', value: r.path || '/' }];
+  if (r.event) conditions.push({ target: 'body', key: '', op: 'contains', value: r.event });
+  return { ...blankRule(), name: `${r.method} ${r.path}`.slice(0, 80), method: r.method, conditions, answers: [answer] };
+}
+
+export function requestBytes(r) {
+  if (r.raw) return Uint8Array.from(atob(r.raw), (c) => c.charCodeAt(0));
+  return new TextEncoder().encode(r.body ?? '');
+}
+
+function indexOf(bytes, needle, from) {
+  outer: for (let i = from; i <= bytes.length - needle.length; i += 1) {
+    for (let j = 0; j < needle.length; j += 1) if (bytes[i + j] !== needle[j]) continue outer;
+    return i;
+  }
+  return -1;
+}
+
+export function multipartParts(bytes, contentType) {
+  const boundary = /boundary="?([^";]+)"?/i.exec(contentType ?? '')?.[1];
+  if (!/^multipart\//i.test(contentType ?? '') || !boundary) return [];
+  const enc = new TextEncoder();
+  const dec = new TextDecoder();
+  const marker = enc.encode(`--${boundary}`);
+  const blank = enc.encode('\r\n\r\n');
+  const parts = [];
+  let at = indexOf(bytes, marker, 0);
+  while (at >= 0) {
+    const start = at + marker.length;
+    if (bytes[start] === 45 && bytes[start + 1] === 45) break;
+    const next = indexOf(bytes, marker, start);
+    if (next < 0) break;
+    const headEnd = indexOf(bytes, blank, start);
+    if (headEnd < 0 || headEnd > next) break;
+    const head = dec.decode(bytes.subarray(start, headEnd));
+    const disposition = /content-disposition:([^\r\n]*)/i.exec(head)?.[1] ?? '';
+    const end = bytes[next - 2] === 13 && bytes[next - 1] === 10 ? next - 2 : next;
+    parts.push({
+      name: /\bname="([^"]*)"/i.exec(disposition)?.[1] ?? '',
+      filename: /filename="([^"]*)"/i.exec(disposition)?.[1] ?? '',
+      type: /content-type:\s*([^\r\n]*)/i.exec(head)?.[1]?.trim() ?? '',
+      bytes: bytes.subarray(headEnd + blank.length, end),
+    });
+    at = next;
+  }
+  return parts;
+}
+
 export const MAX_SAVED_BINS = 50;
 
 export function rememberBin(list, entry, now = Date.now()) {

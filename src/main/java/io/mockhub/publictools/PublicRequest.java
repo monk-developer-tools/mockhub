@@ -13,7 +13,12 @@ import java.util.Locale;
 import java.util.Map;
 
 public record PublicRequest(String method, String path, String rawQuery, Map<String, List<String>> query,
-    Map<String, String> headers, String body, int bodySize, String clientIp) {
+    Map<String, String> headers, String body, int bodySize, String clientIp, byte[] raw) {
+
+  public PublicRequest(String method, String path, String rawQuery, Map<String, List<String>> query,
+      Map<String, String> headers, String body, int bodySize, String clientIp) {
+    this(method, path, rawQuery, query, headers, body, bodySize, clientIp, body == null ? new byte[0] : body.getBytes(StandardCharsets.UTF_8));
+  }
 
   public static final String PREFIX = "/__public";
 
@@ -29,7 +34,7 @@ public record PublicRequest(String method, String path, String rawQuery, Map<Str
     for (HttpHeader h : request.getHeaders().all()) headers.put(h.key(), String.join(", ", h.values()));
     byte[] body = request.getBody();
     return new PublicRequest(request.getMethod().getName().toUpperCase(Locale.ROOT), path, rawQuery,
-        parseQuery(rawQuery), headers, request.getBodyAsString(), body == null ? 0 : body.length, ClientAddress.of(request));
+        parseQuery(rawQuery), headers, request.getBodyAsString(), body == null ? 0 : body.length, ClientAddress.of(request), body == null ? new byte[0] : body);
   }
 
   static Map<String, List<String>> parseQuery(String raw) {

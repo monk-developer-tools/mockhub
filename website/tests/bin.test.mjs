@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { base64Size, binLink, searchValues, stateRows, contentTypeOf, fileSize, opsFor, percents, prettyBody, withContentType, duplicate, flow, forgetBin, rememberBin, renameBin, routeSummary, parseBinHash, previewRequest, headerLines, mergeRequests, move, outcomeText, outcomeTone, parseHeaderLines, recipe, routingFromForm, snippets, summary, tunnelCommand } from '../assets/js/tools/bin.js';
+import { base64Size, binLink, filterQuery, filtered, multipartParts, parseShareHash, requestBytes, ruleFromRequest, searchValues, shareLink, stateRows, contentTypeOf, fileSize, opsFor, percents, prettyBody, withContentType, duplicate, flow, forgetBin, rememberBin, renameBin, routeSummary, parseBinHash, previewRequest, headerLines, mergeRequests, move, outcomeText, outcomeTone, parseHeaderLines, recipe, routingFromForm, snippets, summary, tunnelCommand } from '../assets/js/tools/bin.js';
 
 test('summarises a rule in one line', () => {
   // Given
@@ -348,4 +348,71 @@ test('lists saved state as counters, then values, then lists', () => {
     { kind: 'List', name: 'seen', value: '2 items: ["a","b"]' },
   ]);
   assert.deepEqual(stateRows({}), []);
+});
+
+test('reads a shared request link and builds one', () => {
+  // Given
+  const key = `s${'a'.repeat(31)}`;
+
+  // When
+  const link = shareLink('https://mockhub.example', '/tools/webhook-bin/', 'abcdefghijkm', 42, key);
+  const parsed = parseShareHash(link.slice(link.indexOf('#')));
+
+  // Then
+  assert.equal(link, `https://mockhub.example/tools/webhook-bin/#request=abcdefghijkm.42.${key}`);
+  assert.deepEqual(parsed, { id: 'abcdefghijkm', seq: 42, key });
+  assert.equal(parseShareHash('#request=abcdefghijkm.42.nope'), null);
+});
+
+test('builds the log query only from filters that are set', () => {
+  // Given
+  const filter = { q: ' payment failed ', method: 'POST', status: '' };
+
+  // When
+  const query = filterQuery(filter);
+
+  // Then
+  assert.equal(query, '&q=payment+failed&method=POST');
+  assert.equal(filterQuery({}), '');
+  assert.equal(filtered({ status: '4xx' }), true);
+  assert.equal(filtered({ q: '  ' }), false);
+});
+
+test('turns a captured request into a rule that answers it the same way again', () => {
+  // Given
+  const captured = { method: 'POST', path: '/pay', event: 'payment.failed', outcome: { by: 'forward', status: 402, headers: { 'Content-Type': 'application/json', 'Content-Length': '9', 'X-MockHub-Bin': 'x' }, body: '{"no":1}' } };
+
+  // When
+  const rule = ruleFromRequest(captured);
+
+  // Then
+  assert.equal(rule.name, 'POST /pay');
+  assert.equal(rule.method, 'POST');
+  assert.deepEqual(rule.conditions, [{ target: 'path', key: '', op: 'equals', value: '/pay' }, { target: 'body', key: '', op: 'contains', value: 'payment.failed' }]);
+  assert.equal(rule.answers[0].status, 402);
+  assert.deepEqual(rule.answers[0].headers, { 'Content-Type': 'application/json' });
+  assert.equal(ruleFromRequest({ method: 'GET', path: '/x', outcome: { by: 'forward-error', status: 502 } }).answers[0].status, 200);
+});
+
+test('splits a multipart body into its fields and files, bytes intact', () => {
+  // Given
+  const enc = new TextEncoder();
+  const file = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x00, 0xff]);
+  const body = new Uint8Array([
+    ...enc.encode('--XyZ\r\nContent-Disposition: form-data; name="title"\r\n\r\nHello\r\n'),
+    ...enc.encode('--XyZ\r\nContent-Disposition: form-data; name="logo"; filename="logo.png"\r\nContent-Type: image/png\r\n\r\n'),
+    ...file,
+    ...enc.encode('\r\n--XyZ--\r\n'),
+  ]);
+  const raw = { raw: Buffer.from(body).toString('base64') };
+
+  // When
+  const parts = multipartParts(requestBytes(raw), 'multipart/form-data; boundary=XyZ');
+
+  // Then
+  assert.equal(parts.length, 2);
+  assert.deepEqual({ name: parts[0].name, filename: parts[0].filename, text: new TextDecoder().decode(parts[0].bytes) }, { name: 'title', filename: '', text: 'Hello' });
+  assert.deepEqual({ name: parts[1].name, filename: parts[1].filename, type: parts[1].type }, { name: 'logo', filename: 'logo.png', type: 'image/png' });
+  assert.deepEqual([...parts[1].bytes], [...file]);
+  assert.deepEqual(multipartParts(requestBytes({ body: 'x' }), 'application/json'), []);
 });
