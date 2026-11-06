@@ -55,7 +55,7 @@ public record BinOptions(boolean cors, Optional<RateLimit> rateLimit, Optional<R
     if (n.isMissingNode() || n.isNull()) return Optional.empty();
     String name = n.path("name").asText("").trim();
     String value = n.path("value").asText("");
-    if (!name.matches("[A-Za-z0-9!#$%&'*+.^_`|~-]{1,100}")) throw new IllegalArgumentException("Name the required header with letters, digits and dashes, like X-Api-Key");
+    if (!name.matches(PublicResponses.TOKEN)) throw new IllegalArgumentException("Name the required header with letters, digits and dashes, like X-Api-Key");
     if (value.isEmpty() || value.length() > 500) throw new IllegalArgumentException("Give the required header a value of 1 to 500 characters");
     return Optional.of(new RequiredHeader(name, value));
   }

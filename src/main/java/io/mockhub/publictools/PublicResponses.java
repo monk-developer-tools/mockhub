@@ -7,6 +7,7 @@ import io.mockhub.api.Jsons;
 
 final class PublicResponses {
   static final String ALLOW_HEADERS = "Content-Type, Authorization, X-Bin-Token";
+  static final String TOKEN = "[A-Za-z0-9!#$%&'*+.^_`|~-]{1,100}";
 
   private PublicResponses() {}
 

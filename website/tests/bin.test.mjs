@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { base64Size, binLink, filterQuery, optionsFromForm, optionsSummary, filtered, multipartParts, parseShareHash, requestBytes, ruleFromRequest, searchValues, shareLink, stateRows, contentTypeOf, fileSize, opsFor, percents, prettyBody, withContentType, duplicate, flow, forgetBin, rememberBin, renameBin, routeSummary, parseBinHash, previewRequest, headerLines, mergeRequests, move, outcomeText, outcomeTone, parseHeaderLines, recipe, routingFromForm, snippets, summary, tunnelCommand } from '../assets/js/tools/bin.js';
+import { blankCallout, calloutLost, calloutText, calloutTone, checkCallout, outcomeText as outcomeLine, base64Size, binLink, filterQuery, optionsFromForm, optionsSummary, filtered, multipartParts, parseShareHash, requestBytes, ruleFromRequest, searchValues, shareLink, stateRows, contentTypeOf, fileSize, opsFor, percents, prettyBody, withContentType, duplicate, flow, forgetBin, rememberBin, renameBin, routeSummary, parseBinHash, previewRequest, headerLines, mergeRequests, move, outcomeText, outcomeTone, parseHeaderLines, recipe, routingFromForm, snippets, summary, tunnelCommand } from '../assets/js/tools/bin.js';
 
 test('summarises a rule in one line', () => {
   // Given
@@ -442,4 +442,77 @@ test('summarises the settings that change how the bin answers', () => {
   // Then
   assert.equal(line, 'needs X-Api-Key · 5 a minute · +300 ms · no CORS');
   assert.equal(optionsSummary({ cors: true, latencyMs: 0, rateLimit: null, requiredHeader: null }), '');
+});
+
+test('summarises callout rules: waiting for the target, or answering and calling later', () => {
+  // Given
+  const later = recipe('callback');
+  const waits = { method: 'ANY', conditions: [{ target: 'path', key: '', op: 'template', value: '/orders/:id' }], answers: [],
+    callout: { ...blankCallout('sync'), method: 'PUT', url: 'https://api.example.com/orders/{{pathParams.id}}' } };
+  const range = { ...later, callout: { ...later.callout, minDelayMs: 1000, maxDelayMs: 3500 } };
+
+  // When
+  const lines = [summary(later), summary(waits), summary(range)];
+
+  // Then
+  assert.deepEqual(lines, [
+    'POST any request → 202, then calls POST example.com after 2 s',
+    'path matches pattern /orders/:id → waits for PUT api.example.com',
+    'POST any request → 202, then calls POST example.com after 1 s–3.5 s',
+  ]);
+});
+
+test('refuses callouts the server would refuse', () => {
+  // Given
+  const ok = { ...blankCallout('async'), url: 'https://hooks.example.com/{{request.path}}', minDelayMs: 0, maxDelayMs: 60000 };
+
+  // When
+  const errors = [
+    checkCallout(ok),
+    checkCallout(undefined),
+    checkCallout({ ...ok, url: '' }),
+    checkCallout({ ...ok, url: 'ftp://x' }),
+    checkCallout({ ...ok, minDelayMs: 5000, maxDelayMs: 1000 }),
+    checkCallout({ ...ok, maxDelayMs: 60001 }),
+    checkCallout({ ...ok, auth: { type: 'bearer', value: ' ' } }),
+    checkCallout({ ...ok, auth: { type: 'basic', name: 'a:b', value: 'x' } }),
+    checkCallout({ ...ok, auth: { type: 'header', name: 'X-Key', value: '' } }),
+  ];
+
+  // Then
+  assert.deepEqual(errors, [
+    '',
+    '',
+    'Give the callout a URL, like https://api.example.com/hook',
+    'The callout URL starts with http:// or https://',
+    "The longest wait can't be shorter than the shortest",
+    'A callout waits up to 60 seconds before it is sent',
+    'Give the callout a bearer token',
+    'Give the callout a user name without a colon',
+    "Give the callout's auth header a name and a value",
+  ]);
+});
+
+test('describes a callout on a request: sent, waiting, failed or lost to a restart', () => {
+  // Given
+  const at = '2026-11-06T10:00:00.000Z';
+  const now = Date.parse(at) + 5000;
+  const sent = { mode: 'sync', state: 'sent', method: 'PUT', url: 'https://api.example.com/orders/o7', status: 201, millis: 42, waitMs: 0 };
+  const waiting = { mode: 'async', state: 'scheduled', method: 'POST', url: 'https://hooks.example.com/notify', waitMs: 1500 };
+  const failed = { mode: 'async', state: 'failed', method: 'POST', url: 'https://hooks.example.com/notify', error: 'hooks.example.com failed: timed out', waitMs: 0 };
+
+  // When
+  const lines = [calloutText(sent, at, now), calloutText(waiting, at, now), calloutText(failed, at, now), calloutText(waiting, at, now + 120000)];
+  const tones = [calloutTone(sent, at, now), calloutTone(waiting, at, now), calloutTone(failed, at, now), calloutTone(waiting, at, now + 120000), calloutTone({ ...sent, status: 404 }, at, now)];
+
+  // Then
+  assert.deepEqual(lines, [
+    'Callout PUT https://api.example.com/orders/o7 → 201 in 42 ms',
+    'Background callout POST https://hooks.example.com/notify · sends 1.5 s after the answer',
+    'Background callout POST https://hooks.example.com/notify failed: hooks.example.com failed: timed out',
+    'Background callout POST https://hooks.example.com/notify was not sent; the server restarted before it was due',
+  ]);
+  assert.deepEqual(tones, ['ok', '', 'bad', 'bad', 'warn']);
+  assert.equal(calloutLost(waiting, at, now), false);
+  assert.equal(outcomeLine({ by: 'callout-error', rule: 'Relay', status: 502, millis: 9 }), '502 · Callout failed: Relay · 9 ms');
 });

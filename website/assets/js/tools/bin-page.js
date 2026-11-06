@@ -1,6 +1,7 @@
 import { $, show, wireCopyButtons } from './common.js';
 import { call, toCurl } from './http.js';
 import {
+  AUTH_TYPES, CALLOUT_METHODS, blankCallout, calloutLost, calloutText, calloutTone, checkCallout,
   CONTENT_TYPES, MAX_FILE_BYTES, METHODS, OPS, RECIPES, base64Size, contentTypeOf, fileSize, opsFor, percents, prettyBody, searchValues, stateRows, withContentType, TARGETS, binLink, blankAnswer, blankCondition, blankRule, duplicate, flow, headerLines, mergeRequests, move,
   outcomeText, outcomeTone, parseBinHash, parseShareHash, filterQuery, optionsFromForm, optionsSummary, filtered, multipartParts, requestBytes, ruleFromRequest, shareLink, routeSummary, rememberBin, forgetBin, renameBin, parseHeaderLines, previewRequest, recipe, routingFromForm, snippets, summary, tunnelCommand,
 } from './bin.js';
@@ -23,6 +24,7 @@ let rules = [];
 let rulesOn = true;
 let editing = null;
 let draft = null;
+let stashedCallout = null;
 let polled = false;
 let noteTimer = null;
 let filter = { q: '', method: '', status: '' };
@@ -142,6 +144,8 @@ function renderList() {
       el('span', { class: 'tool-request-path' }, r.path + (r.query ? `?${r.query}` : '')),
       r.event ? el('span', { class: 'bin-event', title: 'Event' }, r.event) : null,
       r.outcome ? el('span', { class: `tool-badge ${tone}`, title: outcomeText(r.outcome) }, String(r.outcome.status)) : null,
+      r.callout ? el('span', { class: `tool-badge ${calloutTone(r.callout, r.at)}`, title: calloutText(r.callout, r.at), 'data-request-callout-mark': '' },
+        `↗ ${r.callout.state === 'sent' ? r.callout.status : r.callout.state === 'scheduled' && !calloutLost(r.callout, r.at) ? '…' : '✕'}`) : null,
       el('span', { class: 'tool-request-time' }, time(r.at)));
     button.addEventListener('click', () => {
       selected = r.seq;
@@ -229,18 +233,28 @@ function detailView(r, shared = false) {
     headerList(r.headers),
     ...requestBody(r), cut);
   const o = r.outcome;
-  const ruleLink = o && !shared && !bin?.viewOnly && (o.by === 'rule' || o.by === 'validation' || o.by === 'error') && o.rule
+  const ruleLink = o && !shared && !bin?.viewOnly && ['rule', 'validation', 'error', 'callout', 'callout-error'].includes(o.by) && o.rule
     ? el('button', { type: 'button', class: 'bin-link', 'data-open-rule': o.rule, onclick: () => openRuleNamed(o.rule) }, `Open rule "${o.rule}"`)
     : null;
   const answered = o
     ? el('div', { class: 'bin-side' },
       el('h4', { class: 'tool-sub' }, 'Answer'),
       el('p', {}, el('span', { class: `tool-badge ${outcomeTone(o)}` }, outcomeText(o)), ruleLink ? ' ' : null, ruleLink),
+      ...calloutBlock(r),
       headerList(o.headers),
       ...bodyBlock('answer', o.body),
       o.truncated ? el('p', { class: 'tool-hint' }, 'The answer was longer; the first 16 KB are shown.') : null)
     : el('div', { class: 'bin-side' }, el('h4', { class: 'tool-sub' }, 'Answer'), el('p', { class: 'tool-hint' }, 'Not recorded for this request.'));
   return el('div', { class: 'bin-pair' }, sent, answered);
+}
+
+function calloutBlock(r) {
+  const c = r.callout;
+  if (!c) return [];
+  const reply = c.mode === 'async' && c.response
+    ? [el('span', { class: 'tool-label' }, 'Callout response'), el('pre', { class: 'tool-out tool-wrap', 'data-callout-response': '' }, pretty(c.response))]
+    : [];
+  return [el('p', { 'data-request-callout': '' }, el('span', { class: `tool-badge ${calloutTone(c, r.at)}` }, calloutText(c, r.at))), ...reply];
 }
 
 function curlFor(r, id) {
@@ -345,9 +359,22 @@ async function poll() {
     requests = requests.filter((r) => r.seq >= oldestKept);
     setCount(result.json.total ?? 0);
     renderList();
+    await refreshCallouts(asked);
   }
   $('[data-bin-polling]').textContent = result.error ? 'Retrying…' : 'Listening for requests';
   timer = setTimeout(poll, result.status === 429 ? POLL_MS * 5 : POLL_MS);
+}
+
+async function refreshCallouts(asked) {
+  const waiting = requests.filter((r) => r.callout?.state === 'scheduled' && !calloutLost(r.callout, r.at)).slice(0, 5);
+  if (!waiting.length) return;
+  const fetched = await Promise.all(waiting.map((r) => call(inspect(`/requests/${r.seq}`), { headers: auth() })));
+  if (!bin || asked !== generation) return;
+  const done = fetched.map((res) => res.json).filter((r) => r?.callout && r.callout.state !== 'scheduled');
+  if (!done.length) return;
+  requests = mergeRequests(requests, done);
+  renderList();
+  if (done.some((r) => r.seq === selected)) renderDetail();
 }
 
 async function loadOlder() {
@@ -613,7 +640,9 @@ function openEditor(rule, index) {
   $('[data-rule-description]').value = draft.description ?? '';
   $('[data-rule-method]').replaceChildren(...options(METHODS, draft.method ?? 'ANY'));
   show($('[data-rule-error]'), '');
+  stashedCallout = null;
   renderConditions();
+  fillCallout();
   renderAnswers();
   $('[data-bin-editor]').showModal();
 }
@@ -811,8 +840,89 @@ function renderAnswers() {
   renderAnswerMode();
 }
 
+function calloutMode() {
+  return draft.callout ? (draft.callout.mode === 'async' ? 'async' : 'sync') : 'none';
+}
+
+function fillCallout() {
+  const mode = calloutMode();
+  for (const radio of document.querySelectorAll('[data-callout-mode]')) radio.checked = radio.value === mode;
+  const c = draft.callout ?? blankCallout();
+  $('[data-callout-method]').replaceChildren(...options(CALLOUT_METHODS, c.method ?? 'same'));
+  $('[data-callout-url]').value = c.url ?? '';
+  for (const radio of document.querySelectorAll('[data-callout-payload]')) radio.checked = radio.value === (c.payload ?? 'original');
+  $('[data-callout-body]').value = c.body ?? '';
+  $('[data-callout-headers]').value = headerLines(c.headers);
+  $('[data-callout-auth]').replaceChildren(...options(AUTH_TYPES, c.auth?.type ?? 'none'));
+  $('#callout-auth-name').value = c.auth?.name ?? '';
+  $('#callout-auth-value').value = c.auth?.value ?? '';
+  $('[data-callout-min]').value = c.minDelayMs ?? 0;
+  $('[data-callout-max]').value = c.maxDelayMs ?? 0;
+  renderCalloutParts();
+}
+
+function readCallout() {
+  if (!draft.callout) return;
+  const kind = $('[data-callout-auth]').value;
+  draft.callout = {
+    mode: draft.callout.mode,
+    method: $('[data-callout-method]').value,
+    url: $('[data-callout-url]').value.trim(),
+    payload: document.querySelector('[data-callout-payload]:checked')?.value ?? 'original',
+    body: $('[data-callout-body]').value,
+    headers: parseHeaderLines($('[data-callout-headers]').value),
+    auth: { type: kind, name: kind === 'bearer' || kind === 'none' ? '' : $('#callout-auth-name').value.trim(), value: kind === 'none' ? '' : $('#callout-auth-value').value },
+    minDelayMs: draft.callout.mode === 'async' ? Number($('[data-callout-min]').value || 0) : 0,
+    maxDelayMs: draft.callout.mode === 'async' ? Number($('[data-callout-max]').value || 0) : 0,
+  };
+}
+
+const AUTH_FIELDS = {
+  bearer: [null, 'Token'],
+  basic: ['User', 'Password'],
+  header: ['Header', 'Value'],
+};
+
+function renderCalloutParts() {
+  const mode = document.querySelector('[data-callout-mode]:checked')?.value ?? 'none';
+  $('[data-callout]').hidden = mode === 'none';
+  $('[data-rule-answer-section]').hidden = mode === 'sync';
+  $('[data-callout-wait]').hidden = mode !== 'async';
+  $('[data-callout-custom]').hidden = (document.querySelector('[data-callout-payload]:checked')?.value ?? 'original') !== 'custom';
+  const fields = AUTH_FIELDS[$('[data-callout-auth]').value];
+  $('[data-callout-auth-name]').hidden = !fields?.[0];
+  $('[data-callout-auth-value]').hidden = !fields;
+  if (fields) {
+    $('[data-callout-auth-name-label]').textContent = fields[0] ?? '';
+    $('[data-callout-auth-value-label]').textContent = fields[1];
+  }
+  $('[data-callout-hint]').textContent = mode === 'sync'
+    ? 'The bin waits up to 15 seconds and answers with the URL\'s status, headers and body. If the call fails, the sender gets a 502. Use {{…}} in the URL, body and headers. Private and local addresses are refused.'
+    : 'The sender gets the answer below at once. The call goes out after a random wait between the two times, and its result shows on the request in the log. Use {{…}} in the URL, body and headers. Private and local addresses are refused.';
+}
+
+function setCalloutMode(mode) {
+  readCallout();
+  if (mode === 'none') {
+    if (draft.callout) stashedCallout = draft.callout;
+    delete draft.callout;
+  } else {
+    draft.callout = { ...(draft.callout ?? stashedCallout ?? blankCallout()), mode };
+    if (mode === 'async' && !draft.answers.length) draft.answers.push(blankAnswer());
+  }
+  if (mode !== 'sync' && !draft.answers.length) draft.answers.push(blankAnswer());
+  fillCallout();
+  renderAnswers();
+}
+
 async function saveDraft(e) {
   e.preventDefault();
+  readCallout();
+  const calloutError = checkCallout(draft.callout);
+  if (calloutError) {
+    show($('[data-rule-error]'), calloutError);
+    return;
+  }
   draft.name = $('[data-rule-name]').value.trim();
   draft.description = $('[data-rule-description]').value.trim();
   draft.method = $('[data-rule-method]').value;
@@ -1211,6 +1321,11 @@ $('[data-rule-add-answer]').addEventListener('click', () => {
   renderAnswers();
 });
 for (const radio of document.querySelectorAll('[data-rule-mode]')) radio.addEventListener('change', (e) => setAnswerMode(e.target.value));
+for (const radio of document.querySelectorAll('[data-callout-mode]')) radio.addEventListener('change', (e) => setCalloutMode(e.target.value));
+for (const radio of document.querySelectorAll('[data-callout-payload]')) radio.addEventListener('change', renderCalloutParts);
+$('[data-callout-auth]').addEventListener('change', renderCalloutParts);
+$('[data-callout-url-value]').addEventListener('click', () => openValues($('[data-callout-url]'), () => {}));
+$('[data-callout-body-value]').addEventListener('click', () => openValues($('[data-callout-body]'), () => {}));
 $('[data-bin-editor-form]').addEventListener('submit', saveDraft);
 $('[data-bin-editor-close]').addEventListener('click', closeEditor);
 $('[data-bin-editor-cancel]').addEventListener('click', closeEditor);

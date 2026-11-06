@@ -5817,3 +5817,32 @@ select.tool-select-small {
 .bin-prose.tool-input {
   font-family: inherit;
 }
+
+.bin-callout {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.bin-callout[hidden],
+.bin-callout [hidden],
+[data-rule-answer-section][hidden] {
+  display: none;
+}
+
+.bin-callout .tool-row > div {
+  min-width: 0;
+}
+
+[data-request-callout] .tool-badge {
+  display: inline-block;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+  border-radius: var(--radius-m);
+}

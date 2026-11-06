@@ -429,7 +429,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     InstantMocks instantMocks = new InstantMocks(dataDir, projects, stubs, crud, () -> teams.ensureDefault(Organization.INSTANT_ID).id(), clock);
     PublicToolsFilter publicTools = new PublicToolsFilter(config.publicTools, publicLimits, List.of(
         new EchoTool(),
-        BinTool.create(bins, publicLimits, templatePlayground, new TargetGuard(false, InetAddress::getAllByName, "MOCKHUB_PUBLIC_TOOLS"), tunnels, tunnels::isOnline,
+        BinTool.create(bins, publicLimits, templatePlayground, new TargetGuard(config.binAllowPrivate, InetAddress::getAllByName, "MOCKHUB_BIN_ALLOW_PRIVATE"), tunnels, tunnels::isOnline,
             header -> Optional.ofNullable(authRef.get()).filter(AuthService::enabled).flatMap(a -> a.principal(header)).filter(p -> !p.anonymous()),
             () -> aiSettings.get().enabled(), (system, user) -> {
               ArrayNode messages = Jsons.MAPPER.createArrayNode();

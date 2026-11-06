@@ -37,6 +37,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
@@ -52,9 +53,12 @@ public final class Bins {
   public static final int PAGE = 100;
   public static final int MAX_DELETED = 10_000;
   public static final int MAX_EXPORT = 1000;
+  public static final int MAX_CALLOUTS = 1000;
+  public static final int MAX_CALLOUT_BODY = 4 * 1024;
   static final int TAIL = 50;
   static final long TAIL_BYTES = 256 * 1024;
   public static final Duration IDLE = Duration.ofHours(24);
+  private static final String CALLOUTS = "callouts.ndjson";
   private static final String ALPHABET = "abcdefghijkmnpqrstuvwxyz23456789";
 
   private final Map<String, Bin> bins = new ConcurrentHashMap<>();
@@ -117,8 +121,32 @@ public final class Bins {
     }
   }
 
+  public record Callout(String mode, String state, String method, String url, int status, long millis, long waitMs, String error, String response) {
+    static Callout scheduled(String method, String url, long waitMs) {
+      return new Callout("async", "scheduled", method, url, 0, 0, waitMs, "", "");
+    }
+
+    Callout failed(String why) {
+      return new Callout(mode, "failed", method, url, status, millis, waitMs, why, response);
+    }
+
+    ObjectNode toJson() {
+      return Jsons.object().put("mode", mode).put("state", state).put("method", method).put("url", url).put("status", status)
+          .put("millis", millis).put("waitMs", waitMs).put("error", error).put("response", response);
+    }
+
+    static Callout from(JsonNode n) {
+      return new Callout(n.path("mode").asText("sync"), n.path("state").asText("sent"), n.path("method").asText(""), n.path("url").asText(""),
+          n.path("status").asInt(), n.path("millis").asLong(), n.path("waitMs").asLong(), n.path("error").asText(""), n.path("response").asText(""));
+    }
+  }
+
   public record Captured(long seq, Instant at, String method, String path, String query, Map<String, String> headers, String body,
-      String raw, int size, boolean truncated, String event, Outcome outcome) {
+      String raw, int size, boolean truncated, String event, Outcome outcome, Callout callout) {
+    Captured withCallout(Callout c) {
+      return new Captured(seq, at, method, path, query, headers, body, raw, size, truncated, event, outcome, c);
+    }
+
     ObjectNode toJson() {
       ObjectNode item = Jsons.object().put("seq", seq).put("at", at.toString()).put("method", method).put("path", path)
           .put("query", query).put("body", body).put("size", size).put("truncated", truncated).put("event", event);
@@ -126,6 +154,7 @@ public final class Bins {
       ObjectNode h = item.putObject("headers");
       headers.forEach(h::put);
       if (outcome != null) item.set("outcome", outcome.toJson());
+      if (callout != null) item.set("callout", callout.toJson());
       return item;
     }
 
@@ -134,7 +163,7 @@ public final class Bins {
       n.path("headers").fields().forEachRemaining(e -> h.put(e.getKey(), e.getValue().asText()));
       return new Captured(n.path("seq").asLong(), Instant.parse(n.path("at").asText()), n.path("method").asText(), n.path("path").asText(),
           n.path("query").asText(""), h, n.path("body").asText(""), n.path("raw").asText(""), n.path("size").asInt(), n.path("truncated").asBoolean(),
-          n.path("event").asText(""), n.has("outcome") ? Outcome.from(n.path("outcome")) : null);
+          n.path("event").asText(""), n.has("outcome") ? Outcome.from(n.path("outcome")) : null, n.has("callout") ? Callout.from(n.path("callout")) : null);
     }
   }
 
@@ -150,6 +179,7 @@ public final class Bins {
     long oldest = 1;
     final Deque<Captured> tail = new ArrayDeque<>();
     final Set<Long> deleted = new HashSet<>();
+    final TreeMap<Long, Callout> callouts = new TreeMap<>();
     BinState state = new BinState();
 
     Bin(String id, byte[] tokenHash, Instant created, Settings settings) {
@@ -181,6 +211,10 @@ public final class Bins {
   }
 
   public long record(String id, PublicRequest request, String path, String event, Outcome outcome) {
+    return record(id, request, path, event, outcome, null);
+  }
+
+  public long record(String id, PublicRequest request, String path, String event, Outcome outcome, Callout callout) {
     Bin bin = live(id);
     if (bin == null) return 0;
     String body = request.body() == null ? "" : request.body();
@@ -190,12 +224,23 @@ public final class Bins {
     synchronized (bin) {
       long seq = ++bin.seq;
       Captured captured = new Captured(seq, clock.instant(), request.method(), path, request.rawQuery(), withoutProxyHeaders(request.headers()),
-          body, raw, request.bodySize(), truncated, event, outcome);
+          body, raw, request.bodySize(), truncated, event, outcome, callout);
       bin.tail.addFirst(captured);
       append(bin, captured);
       trimTail(bin.tail, bin.oldest);
       bin.lastUsed = clock.instant();
       return seq;
+    }
+  }
+
+  public void calloutDone(String id, long seq, Callout callout) {
+    Bin bin = live(id);
+    if (bin == null) return;
+    synchronized (bin) {
+      if (seq < bin.oldest || seq > bin.seq) return;
+      bin.callouts.put(seq, callout);
+      while (bin.callouts.size() > MAX_CALLOUTS) bin.callouts.pollFirstEntry();
+      appendCallout(bin, seq, callout);
     }
   }
 
@@ -269,7 +314,12 @@ public final class Bins {
     if (out.size() < size && tailOldest > bin.oldest && after < tailOldest - 1) {
       out.addAll(fromDisk(bin, tailOldest, kept, size - out.size()));
     }
-    return List.copyOf(out);
+    return out.stream().map(c -> withFinishedCallout(bin, c)).toList();
+  }
+
+  private static Captured withFinishedCallout(Bin bin, Captured c) {
+    Callout done = bin.callouts.get(c.seq());
+    return done == null ? c : c.withCallout(done);
   }
 
   private static long deletedSince(Bin bin) {
@@ -343,7 +393,9 @@ public final class Bins {
     if (bin == null) return false;
     synchronized (bin) {
       bin.tail.clear();
+      bin.callouts.clear();
       segments(bin).forEach(Bins::delete);
+      delete(root.resolve(bin.id).resolve(CALLOUTS));
       bin.oldest = bin.seq + 1;
       save(bin);
     }
@@ -446,6 +498,43 @@ public final class Bins {
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     }
+  }
+
+  private void appendCallout(Bin bin, long seq, Callout callout) {
+    Path dir = root.resolve(bin.id);
+    try {
+      Files.createDirectories(dir);
+      Path file = dir.resolve(CALLOUTS);
+      if (Files.exists(file) && Files.size(file) > segmentBytes) {
+        StringBuilder kept = new StringBuilder();
+        bin.callouts.forEach((s, c) -> kept.append(calloutLine(s, c)));
+        Files.writeString(file, kept.toString(), StandardCharsets.UTF_8);
+        return;
+      }
+      Files.writeString(file, calloutLine(seq, callout), StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
+  private static String calloutLine(long seq, Callout callout) {
+    ObjectNode line = Jsons.object().put("seq", seq);
+    line.set("callout", callout.toJson());
+    return line + "\n";
+  }
+
+  private static void loadCallouts(Bin bin, Path file) throws IOException {
+    if (!Files.exists(file)) return;
+    try (BufferedReader reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
+      String line;
+      while ((line = reader.readLine()) != null) {
+        if (line.isBlank()) continue;
+        JsonNode n = Jsons.MAPPER.readTree(line);
+        long seq = n.path("seq").asLong();
+        if (seq >= bin.oldest && seq <= bin.seq) bin.callouts.put(seq, Callout.from(n.path("callout")));
+      }
+    }
+    while (bin.callouts.size() > MAX_CALLOUTS) bin.callouts.pollFirstEntry();
   }
 
   private List<Captured> fromDisk(Bin bin, long below, Predicate<Captured> wanted, int limit) {
@@ -584,6 +673,7 @@ public final class Bins {
             trimTail(bin.tail, bin.oldest);
             if (!recent.isEmpty()) bin.seq = Math.max(bin.seq, recent.get(0).seq());
           }
+          loadCallouts(bin, dir.resolve(CALLOUTS));
           if (bin.id.matches("[a-z0-9]{12}")) bins.put(bin.id, bin);
         } catch (IOException | RuntimeException e) {
           continue;

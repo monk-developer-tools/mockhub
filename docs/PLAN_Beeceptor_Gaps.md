@@ -91,8 +91,17 @@ Shipped: the bin reads `ui/src/model/dynamicValues.json` through `dynamicValues(
 
 Shipped: `BinLogFilter`, `BinHar`, `Bins.delete/one/shareKey/export`, raw bytes for bodies that aren't UTF-8 (`raw`, base64, up to 64 KB), deleted sequence numbers kept in `bin.json`.
 
-### B5 — Callout rules in the bin
-Beeceptor "New Callout Rule": either wait for the target (synchronous) or answer at once with a mock and call out in the background (asynchronous). It has a method that can be "same as original", a target, the original or a custom (templated) payload, authentication, and a minimum and maximum trigger delay. We only have forward at routing level. ❌
+### B5 — Callout rules in the bin ✅ done
+| Beeceptor (callout rule) | Ours | Status |
+|---|---|---|
+| Synchronous: wait for the target, answer with its response | `mode: sync`, 15 s, 1 MB; failure is 502 *Callout failed* | ✅ |
+| Asynchronous: mock answer now, call in the background | `mode: async`, random wait between min and max, up to 60 s | ✅ |
+| Method "same as original" or a chosen one | `method: same` or GET, POST, PUT, PATCH, DELETE (and the rest by API) | ✅ |
+| Original or custom templated payload | `payload: original` or `custom`; URL, body and headers take `{{…}}` | ✅ |
+| Authentication | Bearer, Basic, custom header | ✅ |
+| Result per request | `callout` on each logged request: state, status, time, error, async response | ✅ |
+
+Not the app's callout code: that is tied to WireMock serve events and project connections. `BinCallout`, `BinCaller` (same guard as forward), `BinScheduler` (20 waiting per bin, 500 in all), `callouts.ndjson` for async results. New `MOCKHUB_BIN_ALLOW_PRIVATE` (default off) so self-hosters, and the end-to-end test, can call private addresses.
 
 ### B6 — CRUD routes in the bin
 Beeceptor "New CRUD Route": an entity path and an id field give GET list, GET one, POST, PUT, PATCH and DELETE, with stored records and a data view. ❌

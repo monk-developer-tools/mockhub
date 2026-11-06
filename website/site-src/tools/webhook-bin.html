@@ -348,6 +348,62 @@
     <h4 class="tool-sub">When all of these hold</h4>
     <ol class="bin-conditions" data-rule-conditions></ol>
     <div class="tool-actions-row"><button type="button" class="btn ghost small" data-rule-add-condition>Add condition</button></div>
+    <h4 class="tool-sub">Call out</h4>
+    <div class="bin-mode" role="radiogroup" aria-label="Call out">
+      <label class="bin-check"><input type="radio" name="callout-mode" value="none" data-callout-mode> Don't call out</label>
+      <label class="bin-check"><input type="radio" name="callout-mode" value="sync" data-callout-mode> Call a URL, wait, and answer with its response</label>
+      <label class="bin-check"><input type="radio" name="callout-mode" value="async" data-callout-mode> Answer at once, then call a URL in the background</label>
+    </div>
+    <div class="bin-callout" data-callout hidden>
+      <div class="tool-row">
+        <div>
+          <label class="tool-label" for="callout-method">Method</label>
+          <select id="callout-method" class="tool-input" data-callout-method></select>
+        </div>
+        <div class="tool-grow">
+          <label class="tool-label" for="callout-url">URL</label>
+          <input id="callout-url" class="tool-input" type="url" spellcheck="false" maxlength="2000" placeholder="https://api.example.com/orders/{{pathParams.id}}" data-callout-url>
+        </div>
+      </div>
+      <div class="tool-actions-row"><button type="button" class="btn ghost small" data-callout-url-value>Dynamic value in the URL</button></div>
+      <span class="tool-label">Send</span>
+      <div class="bin-mode" role="radiogroup" aria-label="Payload">
+        <label class="bin-check"><input type="radio" name="callout-payload" value="original" data-callout-payload> The request's own body</label>
+        <label class="bin-check"><input type="radio" name="callout-payload" value="custom" data-callout-payload> A body written here</label>
+      </div>
+      <div data-callout-custom hidden>
+        <div class="bin-body-head"><label class="tool-label" for="callout-body">Body</label><span class="bin-body-tools"><button type="button" class="btn ghost small" data-callout-body-value>Dynamic value</button></span></div>
+        <textarea id="callout-body" class="tool-input" rows="4" spellcheck="false" placeholder='{"order": "{{jsonPath request.body &apos;$.id&apos;}}"}' data-callout-body></textarea>
+      </div>
+      <label class="tool-label" for="callout-headers">Headers, one per line</label>
+      <textarea id="callout-headers" class="tool-input" rows="2" spellcheck="false" placeholder="X-Source: mockhub" data-callout-headers></textarea>
+      <div class="tool-row">
+        <div>
+          <label class="tool-label" for="callout-auth">Auth</label>
+          <select id="callout-auth" class="tool-input" data-callout-auth></select>
+        </div>
+        <div class="tool-grow" data-callout-auth-name hidden>
+          <label class="tool-label" for="callout-auth-name" data-callout-auth-name-label>Name</label>
+          <input id="callout-auth-name" class="tool-input" type="text" spellcheck="false" autocomplete="off" maxlength="200">
+        </div>
+        <div class="tool-grow" data-callout-auth-value hidden>
+          <label class="tool-label" for="callout-auth-value" data-callout-auth-value-label>Value</label>
+          <input id="callout-auth-value" class="tool-input" type="password" spellcheck="false" autocomplete="off" maxlength="1000">
+        </div>
+      </div>
+      <div class="tool-row" data-callout-wait hidden>
+        <div>
+          <label class="tool-label" for="callout-min">Wait at least, ms</label>
+          <input id="callout-min" class="tool-input" type="number" min="0" max="60000" step="100" data-callout-min>
+        </div>
+        <div>
+          <label class="tool-label" for="callout-max">At most, ms</label>
+          <input id="callout-max" class="tool-input" type="number" min="0" max="60000" step="100" data-callout-max>
+        </div>
+      </div>
+      <p class="tool-hint" data-callout-hint></p>
+    </div>
+    <div data-rule-answer-section>
     <h4 class="tool-sub">Answer with</h4>
     <div class="bin-mode" role="radiogroup" aria-label="Answers">
       <label class="bin-check"><input type="radio" name="answer-mode" value="single" data-rule-mode> One answer</label>
@@ -355,6 +411,7 @@
     </div>
     <ol class="bin-answers" data-rule-answers></ol>
     <div class="tool-actions-row"><button type="button" class="btn ghost small" data-rule-add-answer>Add an answer</button></div>
+    </div>
     <p class="tool-error" data-rule-error hidden></p>
     <div class="tool-actions-row">
       <button type="submit" class="btn primary" value="save" data-rule-save>Save rule</button>

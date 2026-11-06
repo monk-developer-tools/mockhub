@@ -37,9 +37,16 @@ public final class BinTool implements PublicTool {
   private final Function<String, Optional<Principal>> signedIn;
   private final LongSupplier millis;
   private final BinGate gate;
+  private final BinScheduler scheduler;
 
   BinTool(Bins bins, PublicLimits limits, BinResponder responder, BinDrafter drafter, Function<String, Optional<Boolean>> tunnelOnline,
       Function<String, Optional<Principal>> signedIn, LongSupplier millis) {
+    this(bins, limits, responder, drafter, tunnelOnline, signedIn, millis, BinScheduler.pooled(4));
+  }
+
+  BinTool(Bins bins, PublicLimits limits, BinResponder responder, BinDrafter drafter, Function<String, Optional<Boolean>> tunnelOnline,
+      Function<String, Optional<Principal>> signedIn, LongSupplier millis, BinScheduler scheduler) {
+    this.scheduler = scheduler;
     this.bins = bins;
     this.limits = limits;
     this.responder = responder;
@@ -112,13 +119,32 @@ public final class BinTool implements PublicTool {
     String text = Bins.readable(answer.body());
     boolean cut = answer.body().length > Bins.MAX_ANSWER_BODY;
     Map<String, String> shown = new LinkedHashMap<>(answer.headers());
-    bins.record(id, request, call.path(), BinMatcher.eventOf(request, call.json()),
-        new Bins.Outcome(answer.by(), answer.rule(), answer.status(), took, shown, cut ? Bins.cut(text, Bins.MAX_ANSWER_BODY) : text, cut));
+    long seq = bins.record(id, request, call.path(), BinMatcher.eventOf(request, call.json()),
+        new Bins.Outcome(answer.by(), answer.rule(), answer.status(), took, shown, cut ? Bins.cut(text, Bins.MAX_ANSWER_BODY) : text, cut),
+        answer.callout().map(BinResponder.Followup::shown).orElse(null));
+    answer.callout().ifPresent(f -> schedule(id, seq, f));
     ResponseDefinitionBuilder out = PublicResponses.forBin(answer.status(), options.cors()).withHeader("X-MockHub-Bin", id);
-    answer.headers().forEach(out::withHeader);
+    answer.headers().forEach((name, value) -> {
+      if (!setByBin(name, options.cors())) out.withHeader(name, value);
+    });
     if (answer.headers().keySet().stream().noneMatch(k -> k.equalsIgnoreCase("Cache-Control"))) out.withHeader("Cache-Control", "no-store");
     if (delay > 0) out.withFixedDelay(delay);
     return out.withBody(answer.body()).build();
+  }
+
+  private static boolean setByBin(String name, boolean cors) {
+    String lower = name.toLowerCase(Locale.ROOT);
+    return lower.equals("x-mockhub-bin") || lower.equals("x-robots-tag")
+        || cors && (lower.equals("access-control-allow-origin") || lower.equals("access-control-expose-headers"));
+  }
+
+  private void schedule(String id, long seq, BinResponder.Followup followup) {
+    if (followup.pending().isEmpty() || seq == 0) return;
+    BinCaller.Prepared prepared = followup.pending().get();
+    boolean queued = scheduler.later(id, followup.waitMs(), () -> bins.calloutDone(id, seq, responder.callLater(prepared, followup.waitMs())));
+    if (!queued) {
+      bins.calloutDone(id, seq, followup.shown().failed("Too many callouts are waiting; this bin can have " + BinScheduler.MAX_PER_BIN + " at a time."));
+    }
   }
 
   private Optional<BinResponder.Answer> gated(String id, BinOptions options, PublicRequest request) {
@@ -312,7 +338,7 @@ public final class BinTool implements PublicTool {
     bins.viewKey(id, token).ifPresent(k -> out.put("viewKey", k));
     String name = BinResponder.tunnelName(id);
     out.putObject("tunnel").put("name", name).put("online", tunnelOnline.apply(name).orElse(false));
-    out.putObject("limits").put("rules", BinRule.MAX_RULES).put("delayMs", BinRule.MAX_DELAY_MS).put("keepsMb", Bins.SEGMENTS * Bins.SEGMENT_BYTES / (1024 * 1024));
+    out.putObject("limits").put("rules", BinRule.MAX_RULES).put("delayMs", BinRule.MAX_DELAY_MS).put("calloutWaitMs", BinCallout.MAX_TRIGGER_MS).put("keepsMb", Bins.SEGMENTS * Bins.SEGMENT_BYTES / (1024 * 1024));
     return out;
   }
 

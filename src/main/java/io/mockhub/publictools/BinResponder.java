@@ -34,6 +34,7 @@ final class BinResponder {
   private final TunnelGateway tunnels;
   private final IntUnaryOperator dice;
   private final LongSupplier clock;
+  private final BinCaller caller;
 
   BinResponder(TemplatePlayground templates, HttpSender secure, HttpSender insecure, TargetGuard guard, TunnelGateway tunnels,
       IntUnaryOperator dice, LongSupplier clock) {
@@ -44,9 +45,24 @@ final class BinResponder {
     this.tunnels = tunnels;
     this.dice = dice;
     this.clock = clock;
+    this.caller = new BinCaller(templates, secure, guard, clock);
   }
 
-  record Answer(int status, Map<String, String> headers, byte[] body, int delayMs, String by, String rule) {}
+  record Followup(Bins.Callout shown, Optional<BinCaller.Prepared> pending, long waitMs) {}
+
+  record Answer(int status, Map<String, String> headers, byte[] body, int delayMs, String by, String rule, Optional<Followup> callout) {
+    Answer(int status, Map<String, String> headers, byte[] body, int delayMs, String by, String rule) {
+      this(status, headers, body, delayMs, by, rule, Optional.empty());
+    }
+
+    Answer withCallout(Followup followup) {
+      return new Answer(status, headers, body, delayMs, by, rule, Optional.of(followup));
+    }
+  }
+
+  Bins.Callout callLater(BinCaller.Prepared prepared, long waitMs) {
+    return caller.send(prepared, true, waitMs).shown();
+  }
 
   Answer answer(String binId, Bins.Settings settings, BinMatcher.Call call) {
     return answer(binId, settings, new BinState(), call);
@@ -66,6 +82,48 @@ final class BinResponder {
   }
 
   private Answer fromRule(BinRule rule, BinState state, BinMatcher.Call call) {
+    if (rule.callout().isEmpty()) return mocked(rule, state, call);
+    BinCallout spec = rule.callout().get();
+    TemplatePlayground.Sample sample = sample(call).withPathParams(BinMatcher.pathParams(rule, call.path()));
+    if (!spec.async()) return calledOut(rule, spec, sample, state, call);
+    Answer mock = mocked(rule, state, call);
+    if (!mock.by().equals("rule")) return mock;
+    long wait = spec.minDelayMs() + (spec.maxDelayMs() > spec.minDelayMs() ? dice.applyAsInt(spec.maxDelayMs() - spec.minDelayMs() + 1) : 0);
+    try {
+      BinCaller.Prepared prepared = caller.prepare(spec, sample, state, call);
+      return mock.withCallout(new Followup(Bins.Callout.scheduled(prepared.method(), prepared.shownUrl(), wait), Optional.of(prepared), wait));
+    } catch (BinCaller.Unprepared e) {
+      return mock.withCallout(new Followup(Bins.Callout.scheduled(methodOf(spec, call), spec.url(), wait).failed(e.getMessage()), Optional.empty(), wait));
+    }
+  }
+
+  private Answer calledOut(BinRule rule, BinCallout spec, TemplatePlayground.Sample sample, BinState state, BinMatcher.Call call) {
+    BinCaller.Prepared prepared;
+    try {
+      prepared = caller.prepare(spec, sample, state, call);
+    } catch (BinCaller.Unprepared e) {
+      Bins.Callout shown = new Bins.Callout("sync", "failed", methodOf(spec, call), spec.url(), 0, 0, 0, e.getMessage(), "");
+      return new Answer(502, Map.of("Content-Type", "application/json"), errorJson(e.getMessage()), 0, "callout-error", rule.label())
+          .withCallout(new Followup(shown, Optional.empty(), 0));
+    }
+    BinCaller.Sent sent = caller.send(prepared, false, 0);
+    Followup followup = new Followup(sent.shown(), Optional.empty(), 0);
+    if (!sent.ok()) {
+      return new Answer(502, Map.of("Content-Type", "application/json"), errorJson("The callout failed: " + sent.shown().error()), 0, "callout-error", rule.label())
+          .withCallout(followup);
+    }
+    Map<String, String> headers = new LinkedHashMap<>();
+    sent.headers().forEach((k, v) -> {
+      if (!HOP.contains(k.toLowerCase(Locale.ROOT))) headers.put(k, v);
+    });
+    return new Answer(sent.status(), headers, sent.body(), 0, "callout", rule.label()).withCallout(followup);
+  }
+
+  private static String methodOf(BinCallout spec, BinMatcher.Call call) {
+    return spec.method().equals(BinCallout.SAME) ? call.method() : spec.method();
+  }
+
+  private Answer mocked(BinRule rule, BinState state, BinMatcher.Call call) {
     BinRule.Answer chosen = pick(rule.answers());
     Map<String, String> headers = new LinkedHashMap<>(chosen.headers());
     String body = chosen.body();

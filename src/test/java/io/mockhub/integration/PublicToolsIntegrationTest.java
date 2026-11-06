@@ -180,6 +180,80 @@ class PublicToolsIntegrationTest {
   }
 
   @Test
+  void aBinRuleCallsOutAndWaitsOrAnswersAtOnceAndCallsOutLater() throws Exception {
+    // Given
+    server = MockHubServer.start(data, Map.of("MOCKHUB_PUBLIC_TOOLS", "true", "MOCKHUB_BIN_ALLOW_PRIVATE", "true"));
+    ApiClient api = server.api();
+    JsonNode caller = api.post("/__public/bins", "").json();
+    JsonNode target = api.post("/__public/bins", "").json();
+    String id = caller.get("id").asText();
+    Map<String, String> owner = Map.of("X-Bin-Token", caller.get("token").asText());
+    Map<String, String> targetOwner = Map.of("X-Bin-Token", target.get("token").asText());
+    String targetUrl = server.baseUrl() + "/__public/bins/" + target.get("id").asText();
+    api.send("PUT", "/__public/inspect/" + target.get("id").asText() + "/response", "{\"status\": 201, \"contentType\": \"application/json\", \"body\": \"{\\\"stored\\\":true}\"}",
+        "application/json", targetOwner);
+    String rules = """
+        {"rules": [
+          {"name": "Relay", "conditions": [{"target": "path", "op": "equals", "value": "/sync"}],
+           "callout": {"mode": "sync", "method": "PUT", "url": "%1$s/orders/{{jsonPath request.body '$.id'}}", "payload": "custom",
+                       "body": "{\\"relayed\\": \\"{{jsonPath request.body '$.id'}}\\"}", "auth": {"type": "bearer", "value": "tok_1"}}},
+          {"name": "Ack", "conditions": [{"target": "path", "op": "equals", "value": "/async"}],
+           "answers": [{"status": 202, "body": "{\\"queued\\":true}"}],
+           "callout": {"mode": "async", "url": "%1$s/notify", "payload": "original", "auth": {"type": "header", "name": "X-Key", "value": "k9"},
+                       "minDelayMs": 100, "maxDelayMs": 200}}
+        ]}
+        """.formatted(targetUrl);
+    ApiClient.Result saved = api.send("PUT", "/__public/inspect/" + id + "/rules", rules, "application/json", owner);
+
+    // When
+    ApiClient.Result waited = api.post("/__public/bins/" + id + "/sync", "{\"id\":\"o7\"}");
+    ApiClient.Result acked = api.post("/__public/bins/" + id + "/async", "{\"n\":1}");
+    JsonNode right = api.send("GET", "/__public/inspect/" + id, null, null, owner).json();
+    JsonNode reached = Jsons.MAPPER.createObjectNode();
+    for (int i = 0; i < 50 && reached.path("total").asLong() < 2; i++) {
+      Thread.sleep(100);
+      reached = api.send("GET", "/__public/inspect/" + target.get("id").asText(), null, null, targetOwner).json();
+    }
+    JsonNode later = right;
+    for (int i = 0; i < 50 && later.at("/requests/0/callout/state").asText().equals("scheduled"); i++) {
+      Thread.sleep(100);
+      later = api.send("GET", "/__public/inspect/" + id, null, null, owner).json();
+    }
+
+    // Then
+    assertThat(saved.status()).isEqualTo(200);
+    assertThat(saved.json().at("/rules/0/callout/auth/type").asText()).isEqualTo("bearer");
+    assertThat(waited.status()).isEqualTo(201);
+    assertThat(waited.body()).isEqualTo("{\"stored\":true}");
+    assertThat(waited.header("X-MockHub-Bin")).isEqualTo(id);
+    assertThat(acked.status()).isEqualTo(202);
+    assertThat(right.at("/requests/0/callout/state").asText()).isEqualTo("scheduled");
+    assertThat(right.at("/requests/1/outcome/by").asText()).isEqualTo("callout");
+    assertThat(right.at("/requests/1/callout/state").asText()).isEqualTo("sent");
+    assertThat(right.at("/requests/1/callout/status").asInt()).isEqualTo(201);
+    assertThat(right.at("/requests/1/callout/url").asText()).isEqualTo(targetUrl + "/orders/o7");
+    assertThat(reached.get("total").asLong()).isEqualTo(2);
+    assertThat(reached.at("/requests/0/path").asText()).isEqualTo("/notify");
+    assertThat(reached.at("/requests/0/body").asText()).isEqualTo("{\"n\":1}");
+    assertThat(headerOf(reached.at("/requests/0/headers"), "X-Key")).isEqualTo("k9");
+    assertThat(reached.at("/requests/1/method").asText()).isEqualTo("PUT");
+    assertThat(reached.at("/requests/1/path").asText()).isEqualTo("/orders/o7");
+    assertThat(reached.at("/requests/1/body").asText()).isEqualTo("{\"relayed\": \"o7\"}");
+    assertThat(headerOf(reached.at("/requests/1/headers"), "Authorization")).isEqualTo("Bearer tok_1");
+    assertThat(later.at("/requests/0/callout/state").asText()).isEqualTo("sent");
+    assertThat(later.at("/requests/0/callout/status").asInt()).isEqualTo(201);
+    assertThat(later.at("/requests/0/callout/waitMs").asLong()).isBetween(100L, 200L);
+  }
+
+  private static String headerOf(JsonNode headers, String name) {
+    for (var it = headers.fields(); it.hasNext(); ) {
+      var e = it.next();
+      if (e.getKey().equalsIgnoreCase(name)) return e.getValue().asText();
+    }
+    return null;
+  }
+
+  @Test
   void aBinsLogFiltersSharesDeletesAndExportsRequests() {
     // Given
     server = MockHubServer.start(data, ON);

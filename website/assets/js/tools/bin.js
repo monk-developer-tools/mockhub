@@ -111,6 +111,7 @@ export const RECIPES = [
   { id: 'event', label: 'Answer one event type', hint: 'Match a field like $.type.' },
   { id: 'echo', label: 'Echo the body back', hint: 'Answer with what was sent.' },
   { id: 'flaky', label: 'Fail one in four', hint: 'Weighted answers, 75% / 25%.' },
+  { id: 'callback', label: 'Accept, then call back', hint: 'Answer 202, call your URL 2 s later.' },
 ];
 
 export function recipe(id, event = 'payment.failed') {
@@ -151,6 +152,23 @@ export function recipe(id, event = 'payment.failed') {
         conditions: [],
         answers: [{ ...blankAnswer(), weight: 3 }, { ...blankAnswer(), weight: 1, status: 503, body: '{"error": "Try again"}' }],
       };
+    case 'callback':
+      return {
+        ...blankRule(),
+        name: 'Accept, then call back',
+        method: 'POST',
+        conditions: [],
+        answers: [{ ...blankAnswer(), status: 202, headers: json, body: '{"status": "accepted"}' }],
+        callout: {
+          ...blankCallout('async'),
+          method: 'POST',
+          url: 'https://example.com/callback',
+          payload: 'custom',
+          body: '{\n  "id": "{{jsonPath request.body \'$.id\'}}",\n  "status": "completed",\n  "at": "{{now}}"\n}',
+          minDelayMs: 2000,
+          maxDelayMs: 2000,
+        },
+      };
     default:
       return blankRule();
   }
@@ -163,14 +181,94 @@ function describeCondition(c) {
   return op.valueless ? `${subject} ${op.label}` : `${subject} ${op.label} ${c.value}`;
 }
 
+export const CALLOUT_METHODS = [
+  { value: 'same', label: 'Same as the request' },
+  ...['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].map((m) => ({ value: m, label: m })),
+];
+
+export const AUTH_TYPES = [
+  { value: 'none', label: 'No auth' },
+  { value: 'bearer', label: 'Bearer token' },
+  { value: 'basic', label: 'Basic, user and password' },
+  { value: 'header', label: 'Custom header' },
+];
+
+export const MAX_CALLOUT_WAIT_MS = 60000;
+
+export function blankCallout(mode = 'sync') {
+  return { mode, method: 'same', url: '', payload: 'original', body: '', headers: {}, auth: { type: 'none', name: '', value: '' }, minDelayMs: 0, maxDelayMs: 0 };
+}
+
+export function checkCallout(c) {
+  if (!c) return '';
+  const url = String(c.url ?? '').trim();
+  if (!url) return 'Give the callout a URL, like https://api.example.com/hook';
+  if (!/^https?:\/\//i.test(url)) return 'The callout URL starts with http:// or https://';
+  if (c.mode === 'async') {
+    const min = Number(c.minDelayMs ?? 0);
+    const max = Number(c.maxDelayMs ?? 0);
+    if (!Number.isInteger(min) || !Number.isInteger(max) || min < 0 || max > MAX_CALLOUT_WAIT_MS) return 'A callout waits up to 60 seconds before it is sent';
+    if (max < min) return "The longest wait can't be shorter than the shortest";
+  }
+  const auth = c.auth ?? {};
+  if (auth.type === 'bearer' && !String(auth.value ?? '').trim()) return 'Give the callout a bearer token';
+  if (auth.type === 'basic' && (!String(auth.name ?? '').trim() || String(auth.name).includes(':'))) return 'Give the callout a user name without a colon';
+  if (auth.type === 'header' && (!String(auth.name ?? '').trim() || !String(auth.value ?? ''))) return "Give the callout's auth header a name and a value";
+  return '';
+}
+
+function seconds(ms) {
+  return `${Math.round(ms / 100) / 10} s`;
+}
+
+function calloutTarget(c) {
+  const method = c.method === 'same' || !c.method ? '' : `${c.method} `;
+  const url = String(c.url ?? '');
+  const host = url.includes('{{') ? url.replace(/^https?:\/\//i, '').split('/')[0] : hostOf(url);
+  return `${method}${host}`;
+}
+
+export function calloutSummary(c) {
+  if (!c) return '';
+  if (c.mode !== 'async') return `waits for ${calloutTarget(c)}`;
+  const min = Number(c.minDelayMs ?? 0);
+  const max = Number(c.maxDelayMs ?? 0);
+  const when = max <= 0 ? '' : min === max ? ` after ${seconds(min)}` : ` after ${seconds(min)}–${seconds(max)}`;
+  return `then calls ${calloutTarget(c)}${when}`;
+}
+
+export const CALLOUT_GRACE_MS = 60000;
+
+export function calloutLost(c, at, now = Date.now()) {
+  return Boolean(c && c.state === 'scheduled' && at && now - Date.parse(at) > (c.waitMs ?? 0) + CALLOUT_GRACE_MS);
+}
+
+export function calloutText(c, at = '', now = Date.now()) {
+  if (!c) return '';
+  const what = `${c.mode === 'async' ? 'Background callout' : 'Callout'} ${c.method} ${c.url}`;
+  if (calloutLost(c, at, now)) return `${what} was not sent; the server restarted before it was due`;
+  if (c.state === 'scheduled') return `${what} · sends ${seconds(c.waitMs ?? 0)} after the answer`;
+  if (c.state === 'failed') return `${what} failed: ${c.error}`;
+  return `${what} → ${c.status} in ${c.millis} ms${c.mode === 'async' && c.waitMs ? `, ${seconds(c.waitMs)} after the answer` : ''}`;
+}
+
+export function calloutTone(c, at = '', now = Date.now()) {
+  if (calloutLost(c, at, now)) return 'bad';
+  if (!c || c.state === 'scheduled') return '';
+  if (c.state === 'failed' || c.status >= 500) return 'bad';
+  return c.status >= 400 ? 'warn' : 'ok';
+}
+
 export function summary(rule) {
   const when = rule.conditions?.length ? rule.conditions.map(describeCondition).join(' and ') : 'any request';
   const method = rule.method === 'ANY' ? '' : `${rule.method} `;
+  if (rule.callout && rule.callout.mode !== 'async') return `${method}${when} → ${calloutSummary(rule.callout)}`;
   const answers = rule.answers ?? [];
   const shares = percents(answers);
   const then = answers.length > 1 ? answers.map((a, i) => `${a.status} (${shares[i]}%)`).join(' or ') : `${answers[0]?.status ?? 200}${answers[0]?.fileName ? ` with ${answers[0].fileName}` : ''}`;
   const delay = answers.some((a) => a.delayMs > 0) ? ` after ${Math.max(...answers.map((a) => a.delayMs)) / 1000}s` : '';
-  return `${method}${when} → ${then}${delay}`;
+  const later = rule.callout ? `, ${calloutSummary(rule.callout)}` : '';
+  return `${method}${when} → ${then}${delay}${later}`;
 }
 
 export function move(list, from, to) {
@@ -216,6 +314,8 @@ const BY = {
   auth: 'Missing required header',
   limit: 'Rate limited',
   validation: 'Refused by a check',
+  callout: 'Callout',
+  'callout-error': 'Callout failed',
 };
 
 export function outcomeTone(outcome) {
