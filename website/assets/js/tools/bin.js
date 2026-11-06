@@ -1,4 +1,4 @@
-export const METHODS = ['ANY', 'GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'];
+export const METHODS = ['ANY', 'GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS', 'QUERY', 'TRACE'];
 
 export const TARGETS = [
   { value: 'path', label: 'Path', keyed: false },
@@ -6,20 +6,33 @@ export const TARGETS = [
   { value: 'header', label: 'Header', keyed: true, placeholder: 'X-Event-Type' },
   { value: 'body', label: 'Body text', keyed: false },
   { value: 'json', label: 'JSON field', keyed: true, placeholder: '$.type' },
+  { value: 'form', label: 'Form field', keyed: true, placeholder: 'status' },
+  { value: 'xml', label: 'XML field', keyed: true, placeholder: '//order/id' },
+  { value: 'soap_action', label: 'SOAP action', keyed: false },
+  { value: 'graphql', label: 'GraphQL operation', keyed: false },
 ];
 
 export const OPS = [
   { value: 'equals', label: 'equals' },
+  { value: 'not_equals', label: "doesn't equal" },
   { value: 'starts_with', label: 'starts with' },
   { value: 'contains', label: 'contains' },
+  { value: 'not_contains', label: "doesn't contain" },
   { value: 'matches', label: 'matches regex' },
-  { value: 'exists', label: 'is present' },
+  { value: 'template', label: 'matches pattern', only: 'path', placeholder: '/users/:id' },
+  { value: 'exists', label: 'is present', valueless: true },
+  { value: 'absent', label: 'is absent', valueless: true },
 ];
+
+export function opsFor(target) {
+  return OPS.filter((o) => !o.only || o.only === target);
+}
 
 export const DYNAMIC_VALUES = [
   { label: 'A field from the JSON body', text: "{{jsonPath request.body '$.id'}}" },
   { label: 'The request path', text: '{{request.path}}' },
   { label: 'A query parameter', text: '{{request.query.name}}' },
+  { label: 'A path parameter (from a pattern like /users/:id)', text: '{{pathParams.id}}' },
   { label: 'A request header', text: '{{request.headers.[X-Request-Id]}}' },
   { label: 'The whole request body', text: '{{{request.body}}}' },
   { label: 'Current time', text: '{{now}}' },
@@ -97,7 +110,7 @@ function describeCondition(c) {
   const target = TARGETS.find((t) => t.value === c.target) ?? TARGETS[0];
   const op = OPS.find((o) => o.value === c.op) ?? OPS[0];
   const subject = target.keyed ? `${c.target === 'json' ? '' : `${target.label.toLowerCase()} `}${c.key}` : target.label.toLowerCase();
-  return c.op === 'exists' ? `${subject} ${op.label}` : `${subject} ${op.label} ${c.value}`;
+  return op.valueless ? `${subject} ${op.label}` : `${subject} ${op.label} ${c.value}`;
 }
 
 export function summary(rule) {

@@ -65,6 +65,104 @@ class BinRulesTest {
     assertThat(BinMatcher.holds(new BinRule.Condition(BinRule.Target.HEADER, "X-Missing", BinRule.Op.EXISTS, ""), c, c.json())).isFalse();
   }
 
+  private static boolean holds(BinMatcher.Call c, BinRule.Target target, String key, BinRule.Op op, String value) {
+    return BinMatcher.holds(new BinRule.Condition(target, key, op, value), c, c.json());
+  }
+
+  @Test
+  void negativeTestsTreatAMissingValueAsNotEqualAndNotContaining() {
+    // Given
+    BinMatcher.Call c = call("POST", "/orders/42", Map.of("X-Event", "order.created"), "{\"status\":\"paid\",\"note\":null}");
+
+    // When / Then
+    assertThat(holds(c, BinRule.Target.HEADER, "X-Event", BinRule.Op.NOT_EQUALS, "order.deleted")).isTrue();
+    assertThat(holds(c, BinRule.Target.HEADER, "X-Event", BinRule.Op.NOT_EQUALS, "order.created")).isFalse();
+    assertThat(holds(c, BinRule.Target.PATH, "", BinRule.Op.NOT_CONTAINS, "/refunds")).isTrue();
+    assertThat(holds(c, BinRule.Target.PATH, "", BinRule.Op.NOT_CONTAINS, "/orders")).isFalse();
+    assertThat(holds(c, BinRule.Target.QUERY, "missing", BinRule.Op.NOT_EQUALS, "x")).isTrue();
+    assertThat(holds(c, BinRule.Target.QUERY, "missing", BinRule.Op.ABSENT, "")).isTrue();
+    assertThat(holds(c, BinRule.Target.JSON, "$.note", BinRule.Op.ABSENT, "")).isTrue();
+    assertThat(holds(c, BinRule.Target.JSON, "$.status", BinRule.Op.ABSENT, "")).isFalse();
+  }
+
+  @Test
+  void aPathPatternMatchesEachParameterAndHandsItToTemplates() {
+    // Given
+    BinRule rule = rule("""
+        {"method": "GET", "conditions": [{"target": "path", "op": "template", "value": "/users/:id/orders/{orderId}"}], "answers": [{"status": 200}]}
+        """);
+
+    // When
+    boolean hit = BinMatcher.first(List.of(rule), call("GET", "/users/7/orders/ord_9", Map.of(), "")).isPresent();
+    boolean tooLong = BinMatcher.first(List.of(rule), call("GET", "/users/7/orders/ord_9/items", Map.of(), "")).isPresent();
+    boolean empty = BinMatcher.first(List.of(rule), call("GET", "/users//orders/ord_9", Map.of(), "")).isPresent();
+    Map<String, String> params = BinMatcher.pathParams(rule, "/users/7/orders/ord_9/");
+
+    // Then
+    assertThat(hit).isTrue();
+    assertThat(tooLong).isFalse();
+    assertThat(empty).isFalse();
+    assertThat(params).containsExactly(Map.entry("id", "7"), Map.entry("orderId", "ord_9"));
+  }
+
+  @Test
+  void readsFormFieldsXmlSoapActionsAndGraphqlOperations() {
+    // Given
+    BinMatcher.Call form = call("POST", "/hook", Map.of("Content-Type", "application/x-www-form-urlencoded"), "status=paid&amount=42%2E00&name=Ana+Lee");
+    BinMatcher.Call xml = call("POST", "/soap", Map.of("Content-Type", "text/xml", "SOAPAction", "\"urn:Pay\""),
+        "<Envelope><Body><Pay><order><id>ord_5</id></order></Pay></Body></Envelope>");
+    BinMatcher.Call soap12 = call("POST", "/soap", Map.of("Content-Type", "application/soap+xml; charset=utf-8; action=\"urn:Refund\""), "<Envelope/>");
+    BinMatcher.Call named = call("POST", "/graphql", Map.of(), "{\"query\":\"query GetOrder($id: ID!) { order(id: $id) { id } }\"}");
+    BinMatcher.Call byName = call("POST", "/graphql", Map.of(), "{\"operationName\":\"CancelOrder\",\"query\":\"mutation CancelOrder { cancel }\"}");
+    BinMatcher.Call anonymous = call("POST", "/graphql", Map.of(), "{\"query\":\"{ products { id } }\"}");
+
+    // When / Then
+    assertThat(holds(form, BinRule.Target.FORM, "amount", BinRule.Op.EQUALS, "42.00")).isTrue();
+    assertThat(holds(form, BinRule.Target.FORM, "name", BinRule.Op.EQUALS, "Ana Lee")).isTrue();
+    assertThat(holds(form, BinRule.Target.FORM, "missing", BinRule.Op.ABSENT, "")).isTrue();
+    assertThat(holds(xml, BinRule.Target.XML, "//order/id", BinRule.Op.EQUALS, "ord_5")).isTrue();
+    assertThat(holds(xml, BinRule.Target.XML, "/Envelope/Body/Pay/order/id", BinRule.Op.STARTS_WITH, "ord_")).isTrue();
+    assertThat(holds(xml, BinRule.Target.SOAP_ACTION, "", BinRule.Op.EQUALS, "urn:Pay")).isTrue();
+    assertThat(holds(soap12, BinRule.Target.SOAP_ACTION, "", BinRule.Op.EQUALS, "urn:Refund")).isTrue();
+    assertThat(holds(named, BinRule.Target.GRAPHQL, "", BinRule.Op.EQUALS, "GetOrder")).isTrue();
+    assertThat(holds(byName, BinRule.Target.GRAPHQL, "", BinRule.Op.EQUALS, "CancelOrder")).isTrue();
+    assertThat(holds(anonymous, BinRule.Target.GRAPHQL, "", BinRule.Op.EQUALS, "products")).isTrue();
+    assertThat(holds(form, BinRule.Target.XML, "//id", BinRule.Op.EXISTS, "")).isFalse();
+  }
+
+  @Test
+  void anXmlBodyCantReachOutsideTheRequest() {
+    // Given
+    BinMatcher.Call c = call("POST", "/soap", Map.of(), "<!DOCTYPE x [<!ENTITY e SYSTEM \"file:///etc/passwd\">]><x>&e;</x>");
+
+    // When
+    boolean seen = holds(c, BinRule.Target.XML, "/x", BinRule.Op.CONTAINS, "root");
+
+    // Then
+    assertThat(seen).isFalse();
+  }
+
+  @Test
+  void acceptsTheNewMethodsAndRefusesPatternsAnywhereButThePath() {
+    // Given
+    String query = "{\"method\": \"QUERY\", \"answers\": [{\"status\": 200}]}";
+
+    // When
+    BinRule rule = rule(query);
+
+    // Then
+    assertThat(rule.method()).isEqualTo("QUERY");
+    assertThat(rule("{\"method\": \"TRACE\", \"answers\": [{\"status\": 200}]}").method()).isEqualTo("TRACE");
+    assertThatThrownBy(() -> rule("{\"conditions\": [{\"target\": \"header\", \"key\": \"X\", \"op\": \"template\", \"value\": \"/a/:b\"}], \"answers\": [{\"status\": 200}]}"))
+        .hasMessageContaining("Only the path");
+    assertThatThrownBy(() -> rule("{\"conditions\": [{\"target\": \"path\", \"op\": \"template\", \"value\": \"/a/:b-c\"}], \"answers\": [{\"status\": 200}]}"))
+        .hasMessageContaining("letters, digits");
+    assertThatThrownBy(() -> rule("{\"conditions\": [{\"target\": \"xml\", \"key\": \"//[\", \"op\": \"exists\"}], \"answers\": [{\"status\": 200}]}"))
+        .hasMessageContaining("XPath");
+    assertThat(rule("{\"conditions\": [{\"target\": \"soap-action\", \"op\": \"absent\", \"value\": \"ignored\"}], \"answers\": [{\"status\": 200}]}")
+        .conditions().get(0)).isEqualTo(new BinRule.Condition(BinRule.Target.SOAP_ACTION, "", BinRule.Op.ABSENT, ""));
+  }
+
   @Test
   void aSlowPatternGivesUpInsteadOfHangingTheServer() {
     // Given

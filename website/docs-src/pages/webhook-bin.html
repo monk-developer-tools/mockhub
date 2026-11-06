@@ -26,17 +26,23 @@
 <p><strong>Preview</strong> shows the answer built from the latest request the bin received, or from a sample request when there is none yet. Paths are the part under the bin, like <code>/orders</code>. The <em>Dynamic answer</em> starting point gives a rule that does this, with a new <code>X-Request-Id</code> header each time.</p>
 
 <h3 id="bin-rules">Rules</h3>
-<p>Rules answer requests before routing does. The first enabled rule that matches answers; drag rules to change the order, untick one to skip it, or switch <strong>Rules on</strong> off to skip them all. A rule matches a method (or any) and all of its conditions:</p>
+<p>Rules answer requests before routing does. The first enabled rule that matches answers; drag rules to change the order, untick one to skip it, or switch <strong>Rules on</strong> off to skip them all. A rule matches a method (any, <code>GET</code>, <code>POST</code>, <code>PUT</code>, <code>PATCH</code>, <code>DELETE</code>, <code>HEAD</code>, <code>OPTIONS</code>, <code>QUERY</code> or <code>TRACE</code>) and all of its conditions:</p>
 <table>
-  <thead><tr><th>Look at</th><th>Name</th><th>Tests</th></tr></thead>
+  <thead><tr><th>Look at</th><th>Name</th></tr></thead>
   <tbody>
-    <tr><td>Path</td><td>none, the path under the bin, like <code>/payments</code></td><td rowspan="5">equals, starts with, contains, matches regex, is present</td></tr>
+    <tr><td>Path</td><td>none, the path under the bin, like <code>/payments</code></td></tr>
     <tr><td>Query parameter</td><td>the parameter</td></tr>
     <tr><td>Header</td><td>the header, any case</td></tr>
     <tr><td>Body text</td><td>none</td></tr>
     <tr><td>JSON field</td><td>a path like <code>$.data.object.status</code> or <code>$.items[0].id</code></td></tr>
+    <tr><td>Form field</td><td>a field of an <code>application/x-www-form-urlencoded</code> body</td></tr>
+    <tr><td>XML field</td><td>an XPath like <code>//order/id</code>; the body can't load DTDs or outside files</td></tr>
+    <tr><td>SOAP action</td><td>none; read from the <code>SOAPAction</code> header or the <code>action</code> part of <code>Content-Type</code></td></tr>
+    <tr><td>GraphQL operation</td><td>none; the <code>operationName</code>, else the named operation, else the first field of the query</td></tr>
   </tbody>
 </table>
+<p>Each condition tests the value with <em>equals</em>, <em>doesn't equal</em>, <em>starts with</em>, <em>contains</em>, <em>doesn't contain</em>, <em>matches regex</em>, <em>is present</em> or <em>is absent</em>. A missing value counts as not equal and not containing, so <code>header X-Env doesn't equal prod</code> also matches a request without the header.</p>
+<p>The path can also <em>match a pattern</em> such as <code>/users/:id</code> or <code>/orders/{orderId}/items</code>. Each parameter matches one non-empty segment, and the answer reads it as <code>{{pathParams.id}}</code> when <strong>Fill in dynamic values</strong> is ticked.</p>
 <p>An answer has a status, a delay up to 15 seconds, headers and a body. Tick <strong>Fill in dynamic values</strong> to render the body and headers as a <a href="/docs/templating/">template</a>, for example <code>{{jsonPath request.body '$.id'}}</code>, <code>{{now}}</code> or <code>{{fake 'Name.fullName'}}</code>. Give a rule up to five answers with weights to make a flaky endpoint: weights 3 and 1 answer the first three times in four.</p>
 <p>The starting points fill the editor with a common rule: fail with 500, answer after 5 seconds, match one event type, echo the body back and fail one in four. A bin holds up to 50 rules of up to 10 conditions each.</p>
 <p>When the server has an <a href="/docs/ai/">AI provider</a>, <strong>AI</strong> in the top bar, or <strong>Draft with AI</strong> under the rules, turns a description such as "answer 402 with the payment id when the event is payment.failed" into a rule. It needs a MockHub sign-in: anonymous visitors don't get AI drafts. Each user gets 10 drafts an hour. The draft opens in the editor and is saved only when you save it.</p>

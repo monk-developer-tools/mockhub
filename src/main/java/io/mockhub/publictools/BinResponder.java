@@ -66,7 +66,7 @@ final class BinResponder {
     Map<String, String> headers = new LinkedHashMap<>(chosen.headers());
     String body = chosen.body();
     if (chosen.template()) {
-      TemplatePlayground.Sample sample = sample(call);
+      TemplatePlayground.Sample sample = sample(call).withPathParams(BinMatcher.pathParams(rule, call.path()));
       TemplatePlayground.Result result = templates.render(body.isEmpty() ? " " : body, sample);
       if (result.error() != null) {
         return new Answer(500, Map.of("Content-Type", "application/json"), errorJson("The rule's template failed: " + result.error()), 0, "error", rule.label());

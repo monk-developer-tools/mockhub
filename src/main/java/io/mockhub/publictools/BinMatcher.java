@@ -2,7 +2,9 @@ package io.mockhub.publictools;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import io.mockhub.api.Jsons;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
@@ -30,7 +32,7 @@ final class BinMatcher {
       if (!rule.method().equals("ANY") && !rule.method().equals(call.method())) continue;
       boolean all = true;
       for (BinRule.Condition c : rule.conditions()) {
-        if (c.target() == BinRule.Target.JSON && !parsed[0]) {
+        if ((c.target() == BinRule.Target.JSON || c.target() == BinRule.Target.GRAPHQL) && !parsed[0]) {
           json[0] = call.json();
           parsed[0] = true;
         }
@@ -51,17 +53,30 @@ final class BinMatcher {
       case HEADER -> Optional.ofNullable(call.request().header(c.key()));
       case BODY -> Optional.ofNullable(call.request().body()).filter(b -> !b.isEmpty());
       case JSON -> read(json, c.key());
+      case FORM -> BinReads.form(call.request(), c.key());
+      case XML -> BinReads.xml(call.request().body(), c.key());
+      case SOAP_ACTION -> BinReads.soapAction(call.request());
+      case GRAPHQL -> BinReads.graphqlOperation(call.request(), json);
     };
-    if (c.op() == BinRule.Op.EXISTS) return actual.isPresent();
-    if (actual.isEmpty()) return false;
-    String value = actual.get();
     return switch (c.op()) {
-      case EQUALS -> value.equals(c.value());
-      case STARTS_WITH -> value.startsWith(c.value());
-      case CONTAINS -> value.contains(c.value());
-      case MATCHES -> matches(c.value(), value);
-      case EXISTS -> true;
+      case EXISTS -> actual.isPresent();
+      case ABSENT -> actual.isEmpty();
+      case NOT_EQUALS -> actual.map(v -> !v.equals(c.value())).orElse(true);
+      case NOT_CONTAINS -> actual.map(v -> !v.contains(c.value())).orElse(true);
+      case EQUALS -> actual.map(v -> v.equals(c.value())).orElse(false);
+      case STARTS_WITH -> actual.map(v -> v.startsWith(c.value())).orElse(false);
+      case CONTAINS -> actual.map(v -> v.contains(c.value())).orElse(false);
+      case MATCHES -> actual.map(v -> matches(c.value(), v)).orElse(false);
+      case TEMPLATE -> actual.flatMap(v -> BinPathTemplate.match(c.value(), v)).isPresent();
     };
+  }
+
+  static Map<String, String> pathParams(BinRule rule, String path) {
+    Map<String, String> out = new LinkedHashMap<>();
+    for (BinRule.Condition c : rule.conditions()) {
+      if (c.op() == BinRule.Op.TEMPLATE) BinPathTemplate.match(c.value(), path).ifPresent(out::putAll);
+    }
+    return out;
   }
 
   static boolean matches(String regex, String value) {

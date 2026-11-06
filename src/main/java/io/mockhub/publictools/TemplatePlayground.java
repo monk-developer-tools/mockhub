@@ -29,7 +29,7 @@ public final class TemplatePlayground {
   public static final int MAX_OUTPUT = 256 * 1024;
   static final String CUT = "\n… cut at 256 KB";
   private static final Pattern PARTIAL = Pattern.compile("\\{\\{~?\\s*(>|#\\s*\\*)");
-  private static final Set<String> METHODS = Set.of("GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS");
+  private static final Set<String> METHODS = Set.of("GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "QUERY", "TRACE");
 
   private final TemplateSandbox sandbox;
   private final TemplateEngine models = new TemplateEngine(Map.of(), 1L, Set.of(), true, List.of());
@@ -42,7 +42,15 @@ public final class TemplatePlayground {
     this.timeoutMillis = timeoutMillis;
   }
 
-  public record Sample(String method, String url, Map<String, String> headers, String body) {}
+  public record Sample(String method, String url, Map<String, String> headers, String body, Map<String, String> pathParams) {
+    public Sample(String method, String url, Map<String, String> headers, String body) {
+      this(method, url, headers, body, Map.of());
+    }
+
+    public Sample withPathParams(Map<String, String> params) {
+      return new Sample(method, url, headers, body, Map.copyOf(params));
+    }
+  }
 
   public record Result(String output, Integer status, String error) {
     static Result ok(String output) {
@@ -92,11 +100,16 @@ public final class TemplatePlayground {
   }
 
   private Result apply(String template, Sample sample) {
-    return apply(template, SampleRequest.withCookies(request(sample)));
+    return apply(template, SampleRequest.withCookies(request(sample)), sample.pathParams() == null ? Map.of() : sample.pathParams());
   }
 
   private Result apply(String template, Request request) {
+    return apply(template, request, Map.of());
+  }
+
+  private Result apply(String template, Request request, Map<String, String> pathParams) {
     Map<String, Object> model = new HashMap<>(models.buildModelForRequest(request));
+    model.put("pathParams", pathParams);
     Capped out = new Capped();
     try {
       sandbox.render(template, model, out);

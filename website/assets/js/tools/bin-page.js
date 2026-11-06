@@ -1,7 +1,7 @@
 import { $, show, wireCopyButtons } from './common.js';
 import { call, toCurl } from './http.js';
 import {
-  DYNAMIC_VALUES, METHODS, OPS, RECIPES, TARGETS, binLink, blankAnswer, blankCondition, blankRule, duplicate, flow, headerLines, mergeRequests, move,
+  DYNAMIC_VALUES, METHODS, OPS, RECIPES, opsFor, TARGETS, binLink, blankAnswer, blankCondition, blankRule, duplicate, flow, headerLines, mergeRequests, move,
   outcomeText, outcomeTone, parseBinHash, routeSummary, rememberBin, forgetBin, renameBin, parseHeaderLines, previewRequest, recipe, routingFromForm, snippets, summary, tunnelCommand,
 } from './bin.js';
 
@@ -466,11 +466,16 @@ function closeEditor() {
 function renderConditions() {
   $('[data-rule-conditions]').replaceChildren(...draft.conditions.map((c, i) => {
     const target = TARGETS.find((t) => t.value === c.target) ?? TARGETS[0];
+    const op = OPS.find((o) => o.value === c.op) ?? OPS[0];
     return el('li', { class: 'bin-condition' },
-      el('select', { class: 'tool-input', 'aria-label': 'Look at', onchange: (e) => { c.target = e.target.value; renderConditions(); } }, ...options(TARGETS, c.target)),
+      el('select', { class: 'tool-input', 'aria-label': 'Look at', onchange: (e) => {
+        c.target = e.target.value;
+        if (!opsFor(c.target).some((o) => o.value === c.op)) c.op = 'equals';
+        renderConditions();
+      } }, ...options(TARGETS, c.target)),
       target.keyed ? el('input', { class: 'tool-input', type: 'text', spellcheck: 'false', 'aria-label': 'Name', placeholder: target.placeholder, value: c.key ?? '', oninput: (e) => { c.key = e.target.value; } }) : null,
-      el('select', { class: 'tool-input', 'aria-label': 'Test', onchange: (e) => { c.op = e.target.value; renderConditions(); } }, ...options(OPS, c.op)),
-      c.op === 'exists' ? null : el('input', { class: 'tool-input', type: 'text', spellcheck: 'false', 'aria-label': 'Value', value: c.value ?? '', oninput: (e) => { c.value = e.target.value; } }),
+      el('select', { class: 'tool-input', 'aria-label': 'Test', onchange: (e) => { c.op = e.target.value; renderConditions(); } }, ...options(opsFor(c.target), c.op)),
+      op.valueless ? null : el('input', { class: 'tool-input', type: 'text', spellcheck: 'false', 'aria-label': 'Value', placeholder: op.placeholder ?? '', value: c.value ?? '', oninput: (e) => { c.value = e.target.value; } }),
       el('button', { type: 'button', class: 'btn ghost small', 'aria-label': 'Remove condition', onclick: () => { draft.conditions.splice(i, 1); renderConditions(); } }, 'Remove'));
   }));
   if (!draft.conditions.length) $('[data-rule-conditions]').append(el('li', { class: 'tool-hint' }, 'No conditions: every request with this method matches.'));

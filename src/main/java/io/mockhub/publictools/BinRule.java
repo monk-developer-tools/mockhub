@@ -22,33 +22,37 @@ public record BinRule(String id, String name, boolean enabled, String method, Li
   public static final int MAX_DELAY_MS = 15_000;
   public static final int MAX_BODY = 16 * 1024;
   public static final int MAX_HEADERS = 20;
-  static final Set<String> METHODS = Set.of("ANY", "GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS");
+  static final Set<String> METHODS = Set.of("ANY", "GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "QUERY", "TRACE");
 
   public enum Target {
-    PATH, QUERY, HEADER, BODY, JSON;
+    PATH, QUERY, HEADER, BODY, JSON, FORM, XML, SOAP_ACTION, GRAPHQL;
 
     static Target of(String value) {
       try {
-        return valueOf(value.toUpperCase(Locale.ROOT));
+        return valueOf(value.toUpperCase(Locale.ROOT).replace('-', '_'));
       } catch (IllegalArgumentException e) {
-        throw new IllegalArgumentException("A condition checks path, query, header, body or json, not " + value);
+        throw new IllegalArgumentException("A condition checks path, query, header, body, json, form, xml, soap_action or graphql, not " + value);
       }
     }
 
     boolean needsKey() {
-      return this == QUERY || this == HEADER || this == JSON;
+      return this == QUERY || this == HEADER || this == JSON || this == FORM || this == XML;
     }
   }
 
   public enum Op {
-    EQUALS, STARTS_WITH, CONTAINS, MATCHES, EXISTS;
+    EQUALS, NOT_EQUALS, STARTS_WITH, CONTAINS, NOT_CONTAINS, MATCHES, TEMPLATE, EXISTS, ABSENT;
 
     static Op of(String value) {
       try {
         return valueOf(value.toUpperCase(Locale.ROOT).replace('-', '_'));
       } catch (IllegalArgumentException e) {
-        throw new IllegalArgumentException("A condition uses equals, starts_with, contains, matches or exists, not " + value);
+        throw new IllegalArgumentException("A condition uses equals, not_equals, starts_with, contains, not_contains, matches, template, exists or absent, not " + value);
       }
+    }
+
+    boolean needsValue() {
+      return this != EXISTS && this != ABSENT;
     }
   }
 
@@ -95,12 +99,21 @@ public record BinRule(String id, String name, boolean enabled, String method, Li
     Target target = Target.of(text(c, "target", "path"));
     String key = text(c, "key", "").trim();
     if (target.needsKey() && key.isEmpty()) {
-      throw new IllegalArgumentException(target == Target.JSON ? "A JSON condition needs a path like $.event" : "A " + target.name().toLowerCase(Locale.ROOT) + " condition needs a name");
+      throw new IllegalArgumentException(switch (target) {
+        case JSON -> "A JSON condition needs a path like $.event";
+        case XML -> "An XML condition needs an XPath like /order/id";
+        default -> "A " + target.name().toLowerCase(Locale.ROOT) + " condition needs a name";
+      });
     }
     if (target == Target.JSON && !key.startsWith("$")) throw new IllegalArgumentException("JSON paths start with $, like $.event");
+    if (target == Target.XML) BinReads.checkXPath(key);
     Op op = Op.of(text(c, "op", "equals"));
-    String value = text(c, "value", "");
+    String value = op.needsValue() ? text(c, "value", "") : "";
     if (value.length() > 1000) throw new IllegalArgumentException("Keep condition values under 1000 characters");
+    if (op == Op.TEMPLATE) {
+      if (target != Target.PATH) throw new IllegalArgumentException("Only the path can match a pattern like /users/:id");
+      BinPathTemplate.check(value);
+    }
     if (op == Op.MATCHES) {
       try {
         Pattern.compile(value);

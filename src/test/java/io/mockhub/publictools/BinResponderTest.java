@@ -61,6 +61,23 @@ class BinResponderTest {
   }
 
   @Test
+  void aPathPatternsParametersFillTheAnswer() throws Exception {
+    // Given
+    Bins.Settings settings = withRules("""
+        [{"name": "One user", "method": "QUERY", "conditions": [{"target": "path", "op": "template", "value": "/users/:id"}],
+          "answers": [{"status": 200, "template": true, "headers": {"X-User": "{{pathParams.id}}"}, "body": "{\\"user\\": \\"{{pathParams.id}}\\"}"}]}]
+        """);
+
+    // When
+    BinResponder.Answer answer = responder("93.184.216.34").answer("abcdefghijkm", settings, call("QUERY", "/users/u_42", ""));
+
+    // Then
+    assertThat(answer.by()).isEqualTo("rule");
+    assertThat(new String(answer.body(), StandardCharsets.UTF_8)).isEqualTo("{\"user\": \"u_42\"}");
+    assertThat(answer.headers()).containsEntry("X-User", "u_42");
+  }
+
+  @Test
   void aMatchingRuleAnswersWithATemplatedBodyAndItsDelay() throws Exception {
     // Given
     Bins.Settings settings = withRules("""

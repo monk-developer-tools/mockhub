@@ -123,6 +123,47 @@ class PublicToolsIntegrationTest {
   }
 
   @Test
+  void binRulesMatchNewMethodsPathPatternsFormsAndSoapActions() {
+    // Given
+    server = MockHubServer.start(data, ON);
+    ApiClient api = server.api();
+    JsonNode bin = api.post("/__public/bins", "").json();
+    String id = bin.get("id").asText();
+    Map<String, String> owner = Map.of("X-Bin-Token", bin.get("token").asText());
+    String rules = """
+        {"rulesEnabled": true, "rules": [
+          {"name": "Search", "method": "QUERY", "conditions": [{"target": "path", "op": "template", "value": "/shops/:shop/search"}],
+           "answers": [{"status": 200, "template": true, "body": "{{pathParams.shop}}"}]},
+          {"name": "Trace", "method": "TRACE", "answers": [{"status": 204}]},
+          {"name": "Paid form", "method": "POST", "conditions": [{"target": "form", "key": "status", "op": "equals", "value": "paid"}],
+           "answers": [{"status": 202}]},
+          {"name": "Refund", "method": "POST", "conditions": [{"target": "soap_action", "op": "equals", "value": "urn:Refund"},
+                                                              {"target": "xml", "key": "//amount", "op": "not_equals", "value": "0"}],
+           "answers": [{"status": 200, "body": "<ok/>"}]}]}
+        """;
+    ApiClient.Result saved = api.send("PUT", "/__public/inspect/" + id + "/rules", rules, "application/json", owner);
+    String base = "/__public/bins/" + id;
+
+    // When
+    ApiClient.Result query = api.send("QUERY", base + "/shops/berlin/search", "{\"q\":\"tea\"}", "application/json");
+    ApiClient.Result trace = api.send("TRACE", base + "/anything", null, null);
+    ApiClient.Result form = api.send("POST", base + "/hook", "status=paid&id=7", "application/x-www-form-urlencoded");
+    ApiClient.Result soap = api.send("POST", base + "/soap", "<Envelope><Body><Refund><amount>12</amount></Refund></Body></Envelope>", "text/xml",
+        Map.of("SOAPAction", "\"urn:Refund\""));
+    JsonNode log = api.send("GET", "/__public/inspect/" + id, null, null, owner).json();
+
+    // Then
+    assertThat(saved.status()).isEqualTo(200);
+    assertThat(query.status()).isEqualTo(200);
+    assertThat(query.body()).isEqualTo("berlin");
+    assertThat(trace.status()).isEqualTo(204);
+    assertThat(form.status()).isEqualTo(202);
+    assertThat(soap.body()).isEqualTo("<ok/>");
+    assertThat(log.at("/requests/3/method").asText()).isEqualTo("QUERY");
+    assertThat(log.at("/requests/3/outcome/rule").asText()).isEqualTo("Search");
+  }
+
+  @Test
   void aBinsDefaultAnswerCanBeBuiltFromEachRequest() {
     // Given
     server = MockHubServer.start(data, ON);

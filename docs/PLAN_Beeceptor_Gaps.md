@@ -41,19 +41,21 @@ The signed-in MockHub app already covers almost all of Beeceptor's platform. The
 
 ## 2. Webhook bin gaps (free tool vs Beeceptor endpoint console)
 
-### B1 — Request matching parity
+### B1 — Request matching parity ✅ done
 | Beeceptor | Ours | Status |
 |---|---|---|
-| Methods GET, POST, PUT, PATCH, DELETE, **QUERY**, OPTIONS, **TRACE**, Any | No QUERY, no TRACE (we have HEAD) | ❌ |
-| Path: exactly, starts with, contains, **doesn't contain**, **matches template `/users/:id`**, regex | No "doesn't contain", no path template | ❌ |
-| Query parameter: equals, **not equals**, contains, **doesn't contain**, regex, **is absent**, is present | No not-equals, doesn't-contain or absent | ❌ |
-| Body parameter (JSON, XML **or form data**): equals, not equals, contains, doesn't contain, **is null**, **is not null** | JSON path only, no form or XML fields, no null tests | 🟡 |
+| Methods GET, POST, PUT, PATCH, DELETE, **QUERY**, OPTIONS, **TRACE**, Any | Added | ✅ |
+| Path: exactly, starts with, contains, **doesn't contain**, **matches template `/users/:id`**, regex | Added | ✅ |
+| Query parameter: equals, **not equals**, contains, **doesn't contain**, regex, **is absent**, is present | Added | ✅ |
+| Body parameter (JSON, XML **or form data**): equals, not equals, contains, doesn't contain, **is null**, **is not null** | Added | ✅ |
 | Body contains, body regex | ✅ | ✅ |
 | Header regex | ✅ (and more ops) | ✅ |
-| **SOAP action matches** | — | ❌ |
-| **GraphQL query (operation) matches** | — | ❌ |
+| **SOAP action matches** | Added | ✅ |
+| **GraphQL query (operation) matches** | Added | ✅ |
 
 Build: add `QUERY`/`TRACE`, negative operators (`not_equals`, `not_contains`, `absent`) for every target, `is_null`/`not_null` for body fields, a `template` path operator that also fills `pathParam`, `form` and `xml` (XPath) targets, `soap_action` and `graphql_operation` targets.
+
+Shipped: QUERY and TRACE; `not_equals`, `not_contains` and `absent` on every target (a missing value counts as not equal); `template` on the path with `{{pathParams.x}}`; `form`, `xml` (hardened XPath), `soap_action` and `graphql` targets. A JSON field that is `null` counts as absent, which covers Beeceptor's is null / is not null.
 
 ### B2 — Response editor parity
 | Beeceptor | Ours | Status |

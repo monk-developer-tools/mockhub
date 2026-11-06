@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { binLink, duplicate, flow, forgetBin, rememberBin, renameBin, routeSummary, parseBinHash, previewRequest, headerLines, mergeRequests, move, outcomeText, outcomeTone, parseHeaderLines, recipe, routingFromForm, snippets, summary, tunnelCommand } from '../assets/js/tools/bin.js';
+import { binLink, opsFor, duplicate, flow, forgetBin, rememberBin, renameBin, routeSummary, parseBinHash, previewRequest, headerLines, mergeRequests, move, outcomeText, outcomeTone, parseHeaderLines, recipe, routingFromForm, snippets, summary, tunnelCommand } from '../assets/js/tools/bin.js';
 
 test('summarises a rule in one line', () => {
   // Given
@@ -215,4 +215,38 @@ test('renames a bin but never to an empty name', () => {
   assert.equal(renamed[0].name, 'Stripe staging');
   assert.equal(blank[0].name, 'Stripe staging');
   assert.equal(renameBin(list, 'aaaaaaaaaaa1', 'x'.repeat(60))[0].name.length, 40);
+});
+
+test('summarises the new operators, leaving out the value where none is needed', () => {
+  // Given
+  const rule = {
+    method: 'QUERY',
+    conditions: [
+      { target: 'path', op: 'template', value: '/users/:id' },
+      { target: 'header', key: 'X-Debug', op: 'absent', value: '' },
+      { target: 'form', key: 'status', op: 'not_equals', value: 'draft' },
+      { target: 'soap_action', op: 'not_contains', value: 'Delete' },
+    ],
+    answers: [{ status: 200, delayMs: 0, weight: 1 }],
+  };
+
+  // When
+  const line = summary(rule);
+
+  // Then
+  assert.equal(line, "QUERY path matches pattern /users/:id and header X-Debug is absent and form field status doesn't equal draft and soap action doesn't contain Delete → 200");
+});
+
+test('offers a path pattern only when the rule looks at the path', () => {
+  // Given
+  const pattern = (target) => opsFor(target).some((o) => o.value === 'template');
+
+  // When
+  const onPath = pattern('path');
+  const onHeader = pattern('header');
+
+  // Then
+  assert.equal(onPath, true);
+  assert.equal(onHeader, false);
+  assert.ok(opsFor('xml').some((o) => o.value === 'absent'));
 });
