@@ -57,7 +57,7 @@ final class BinResponder {
     return switch (routing.mode()) {
       case FORWARD -> forward(routing, call);
       case TUNNEL -> tunnel(binId, routing, call);
-      case MOCK -> fallback(settings.reply());
+      case MOCK -> fallback(settings.reply(), call);
     };
   }
 
@@ -66,8 +66,7 @@ final class BinResponder {
     Map<String, String> headers = new LinkedHashMap<>(chosen.headers());
     String body = chosen.body();
     if (chosen.template()) {
-      TemplatePlayground.Sample sample = new TemplatePlayground.Sample(call.method(), call.path() + query(call), call.request().headers(),
-          Bins.cut(Optional.ofNullable(call.request().body()).orElse(""), TemplatePlayground.MAX_BODY));
+      TemplatePlayground.Sample sample = sample(call);
       TemplatePlayground.Result result = templates.render(body.isEmpty() ? " " : body, sample);
       if (result.error() != null) {
         return new Answer(500, Map.of("Content-Type", "application/json"), errorJson("The rule's template failed: " + result.error()), 0, "error", rule.label());
@@ -127,8 +126,21 @@ final class BinResponder {
     }
   }
 
-  private static Answer fallback(Bins.Reply reply) {
-    return new Answer(reply.status(), Map.of("Content-Type", reply.contentType()), reply.body().getBytes(StandardCharsets.UTF_8), 0, "default", "");
+  private Answer fallback(Bins.Reply reply, BinMatcher.Call call) {
+    String body = reply.body();
+    if (reply.template()) {
+      TemplatePlayground.Result result = templates.render(body.isEmpty() ? " " : body, sample(call));
+      if (result.error() != null) {
+        return new Answer(500, Map.of("Content-Type", "application/json"), errorJson("The default answer's template failed: " + result.error()), 0, "error", "");
+      }
+      body = result.output();
+    }
+    return new Answer(reply.status(), Map.of("Content-Type", reply.contentType()), body.getBytes(StandardCharsets.UTF_8), 0, "default", "");
+  }
+
+  private static TemplatePlayground.Sample sample(BinMatcher.Call call) {
+    return new TemplatePlayground.Sample(call.method(), call.path() + query(call), call.request().headers(),
+        Bins.cut(Optional.ofNullable(call.request().body()).orElse(""), TemplatePlayground.MAX_BODY));
   }
 
   private static Answer failed(int status, String by, String message) {

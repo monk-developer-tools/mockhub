@@ -3,7 +3,17 @@
 <h3 id="bin-capture">What a bin keeps</h3>
 <p>Send any method to <code>/__public/bins/{id}</code> or any path under it. The bin keeps every request with its method, path, query, headers, body (up to 64 KB) and the answer it sent back: status, headers, body, how long it took and what produced it. There is no request count limit. A bin holds up to 50 MB in files of 10 MB; past that it drops its oldest file. The list loads 100 requests at a time, and <strong>Load older requests</strong> pages back.</p>
 <p>When a request names its event, the bin shows it as a badge. It reads the <code>X-GitHub-Event</code>, <code>X-Gitlab-Event</code>, <code>X-Event-Key</code>, <code>X-Shopify-Topic</code>, <code>X-Webhook-Event</code> and <code>X-Event-Type</code> headers, then the JSON fields <code>type</code>, <code>event</code>, <code>event_type</code>, <code>eventType</code>, <code>topic</code> and <code>action</code>.</p>
-<p>Only the browser that created the bin holds its token. A bin is deleted 24 hours after its last request.</p>
+<p>Only the browser that created the bin holds its token. <strong>Copy private link</strong> gives a link with the token in it that opens the bin in any browser; keep it to yourself. A bin is deleted 24 hours after its last request.</p>
+
+<h3 id="bin-dynamic">Dynamic answers</h3>
+<p>Both the default answer and every rule answer can be built from each request. Pick from <strong>Insert a dynamic value</strong>, or write <a href="/docs/templating/">template</a> expressions yourself, and tick <strong>Fill in dynamic values</strong>:</p>
+<pre><code>{
+  "order": "{{jsonPath request.body '$.id'}}",
+  "currency": "{{request.query.currency}}",
+  "path": "{{request.path}}",
+  "at": "{{now}}"
+}</code></pre>
+<p><strong>Preview</strong> shows the answer built from the latest request the bin received, or from a sample request when there is none yet. Paths are the part under the bin, like <code>/orders</code>. The <em>Dynamic answer</em> starting point gives a rule that does this, with a new <code>X-Request-Id</code> header each time.</p>
 
 <h3 id="bin-rules">Rules</h3>
 <p>Rules answer requests before routing does. The first enabled rule that matches answers; drag rules to change the order, untick one to skip it, or switch <strong>Rules on</strong> off to skip them all. A rule matches a method (or any) and all of its conditions:</p>

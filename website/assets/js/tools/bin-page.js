@@ -1,8 +1,8 @@
 import { $, show, wireCopyButtons } from './common.js';
 import { call, toCurl } from './http.js';
 import {
-  DYNAMIC_VALUES, METHODS, OPS, RECIPES, TARGETS, blankAnswer, blankCondition, blankRule, duplicate, flow, headerLines, mergeRequests, move,
-  outcomeText, outcomeTone, parseHeaderLines, recipe, routingFromForm, snippets, summary, tunnelCommand,
+  DYNAMIC_VALUES, METHODS, OPS, RECIPES, TARGETS, binLink, blankAnswer, blankCondition, blankRule, duplicate, flow, headerLines, mergeRequests, move,
+  outcomeText, outcomeTone, parseBinHash, parseHeaderLines, previewRequest, recipe, routingFromForm, snippets, summary, tunnelCommand,
 } from './bin.js';
 
 const KEY = 'mockhub-bin';
@@ -23,6 +23,7 @@ let rulesOn = true;
 let editing = null;
 let draft = null;
 let polled = false;
+let noteTimer = null;
 
 const store = {
   read() {
@@ -229,6 +230,7 @@ function applySettings(value) {
   $('[data-bin-status]').value = value.reply?.status ?? 200;
   $('[data-bin-type]').value = value.reply?.contentType ?? 'application/json';
   $('[data-bin-body]').value = value.reply?.body ?? '';
+  $('[data-bin-template]').checked = Boolean(value.reply?.template);
   renderTunnel(value.tunnel);
   renderRules();
   renderMode();
@@ -273,6 +275,7 @@ function renderRules() {
   $('[data-bin-rules-empty]').hidden = rules.length > 0;
   const list = $('[data-bin-rules]');
   list.classList.toggle('off', !rulesOn);
+  $('[data-bin-rules-off]').hidden = rulesOn || rules.length === 0;
   list.replaceChildren(...rules.map((rule, i) => {
     const item = el('li', { class: `bin-rule${rule.enabled === false ? ' off' : ''}`, draggable: 'true', 'data-index': String(i) },
       el('span', { class: 'bin-grip', 'aria-hidden': 'true' }, '⋮⋮'),
@@ -308,11 +311,44 @@ function renderRules() {
   renderFlow();
 }
 
-async function saveRules(next, enabled = rulesOn) {
+async function saveRules(next, enabled = rulesOn, message = 'Rules saved. New requests use them.') {
   const result = await call(inspect('/rules'), { method: 'PUT', headers: auth(true), body: JSON.stringify({ rulesEnabled: enabled, rules: next }) });
   show($('[data-bin-rules-error]'), result.error);
-  if (result.json && !result.error) applySettings(result.json);
+  if (result.json && !result.error) {
+    applySettings(result.json);
+    flashNote(message);
+  }
   return result;
+}
+
+function flashNote(message) {
+  const note = $('[data-bin-rules-note]');
+  clearTimeout(noteTimer);
+  note.textContent = message;
+  note.hidden = false;
+  noteTimer = setTimeout(() => {
+    note.hidden = true;
+  }, 8000);
+}
+
+async function preview(text, dynamic, out, note) {
+  out.hidden = false;
+  if (!dynamic) {
+    out.textContent = text || '(empty body)';
+    note.textContent = 'Sent exactly as written. Tick "Fill in dynamic values" to use {{…}}.';
+    return;
+  }
+  const latest = requests[0];
+  note.textContent = 'Building…';
+  const result = await call('/__public/render', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ template: text || ' ', request: previewRequest(latest) }) });
+  if (result.json?.output !== undefined && !result.json?.error) {
+    out.textContent = pretty(result.json.output);
+    note.textContent = latest ? `Built from your latest request, ${latest.method} ${latest.path}.` : 'Built from a sample request. Send one to the bin to preview with your own.';
+  } else {
+    out.textContent = result.json?.error ?? result.error ?? 'The preview failed.';
+    note.textContent = 'The template has a problem; requests would get a 500 until it is fixed.';
+  }
 }
 
 function renderRecipes() {
@@ -380,6 +416,13 @@ function insertAt(textarea, text) {
   textarea.focus();
 }
 
+function previewBlock(text, dynamic) {
+  const out = el('pre', { class: 'tool-out tool-wrap', hidden: true });
+  const note = el('span', { class: 'tool-hint' });
+  const button = el('button', { type: 'button', class: 'btn ghost small', onclick: () => preview(text(), dynamic(), out, note) }, 'Preview');
+  return el('div', { class: 'bin-preview' }, el('div', { class: 'bin-preview-row' }, button, note), out);
+}
+
 function renderAnswers() {
   const weighted = draft.answers.length > 1;
   $('[data-rule-answers]').replaceChildren(...draft.answers.map((a, i) => {
@@ -402,7 +445,8 @@ function renderAnswers() {
       el('textarea', { id: `ans-h-${i}`, class: 'tool-input', rows: '2', spellcheck: 'false', value: headerLines(a.headers), oninput: (e) => { a.headers = parseHeaderLines(e.target.value); } }),
       el('div', { class: 'bin-body-head' }, el('span', { class: 'tool-label' }, 'Body'), dynamic),
       body,
-      el('label', { class: 'bin-check' }, template, ' Fill in dynamic values ({{…}}) from each request'));
+      el('label', { class: 'bin-check' }, template, ' Fill in dynamic values ({{…}}) from each request'),
+      previewBlock(() => a.body, () => a.template));
   }));
 }
 
@@ -413,7 +457,7 @@ async function saveDraft(e) {
   const next = editing < 0 ? [...rules, draft] : rules.map((r, i) => (i === editing ? draft : r));
   const button = $('[data-rule-save]');
   button.disabled = true;
-  const result = await saveRules(next);
+  const result = await saveRules(next, rulesOn, `Saved "${draft.name || 'Rule'}". ${rulesOn ? 'It answers new requests that match.' : 'Rules are off; tick Rules on to use it.'}`);
   button.disabled = false;
   if (result.error) {
     show($('[data-rule-error]'), result.error);
@@ -437,7 +481,7 @@ async function saveRouting(e) {
   });
   const note = $('[data-bin-routing-note]');
   if (mode === 'mock') {
-    const reply = JSON.stringify({ status: Number($('[data-bin-status]').value), contentType: $('[data-bin-type]').value, body: $('[data-bin-body]').value });
+    const reply = JSON.stringify({ status: Number($('[data-bin-status]').value), contentType: $('[data-bin-type]').value, body: $('[data-bin-body]').value, template: $('[data-bin-template]').checked });
     const saved = await call(inspect('/response'), { method: 'PUT', headers: auth(true), body: reply });
     if (saved.error) {
       note.textContent = saved.error;
@@ -513,6 +557,7 @@ function open(value) {
   $('[data-bin-start]').hidden = true;
   $('[data-bin-live]').hidden = false;
   $('[data-bin-url]').textContent = binUrl();
+  $('[data-bin-link]').textContent = binLink(location.origin, location.pathname, bin.id, bin.token);
   const code = snippets(binUrl());
   document.querySelectorAll('[data-bin-code]').forEach((pre) => {
     pre.textContent = code[pre.dataset.binCode];
@@ -565,7 +610,7 @@ $('[data-bin-clear]').addEventListener('click', async () => {
 });
 
 $('[data-bin-older]').addEventListener('click', loadOlder);
-$('[data-bin-rules-on]').addEventListener('change', (e) => saveRules(rules, e.target.checked));
+$('[data-bin-rules-on]').addEventListener('change', (e) => saveRules(rules, e.target.checked, e.target.checked ? 'Rules are on.' : 'Rules are off. Every request goes to the routing.'));
 $('[data-bin-rule-new]').addEventListener('click', () => openEditor(blankRule(), -1));
 $('[data-rule-add-condition]').addEventListener('click', () => {
   if (draft.conditions.length >= 10) return;
@@ -600,6 +645,30 @@ document.addEventListener('visibilitychange', () => {
 
 renderRecipes();
 renderSignIn();
+$('[data-bin-insert]').replaceChildren(el('option', { value: '' }, 'Insert a dynamic value…'), ...DYNAMIC_VALUES.map((d) => el('option', { value: d.text }, d.label)));
+$('[data-bin-insert]').addEventListener('change', (e) => {
+  if (!e.target.value) return;
+  insertAt($('[data-bin-body]'), e.target.value);
+  $('[data-bin-template]').checked = true;
+  e.target.value = '';
+});
+$('[data-bin-preview]').addEventListener('click', () => preview($('[data-bin-body]').value, $('[data-bin-template]').checked, $('[data-bin-preview-out]'), $('[data-bin-preview-note]')));
+
+function takeLinked() {
+  const linked = parseBinHash(location.hash);
+  if (linked) history.replaceState(null, '', location.pathname + location.search);
+  return linked;
+}
+
+window.addEventListener('hashchange', () => {
+  const linked = takeLinked();
+  if (!linked) return;
+  forget();
+  store.write(linked);
+  open(linked);
+});
+const fromLink = takeLinked();
+if (fromLink) store.write(fromLink);
 const saved = store.read();
 if (saved?.id && saved?.token) open(saved);
 wireCopyButtons();

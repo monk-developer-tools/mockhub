@@ -66,8 +66,8 @@ public final class Bins {
 
   public record Created(String id, String token) {}
 
-  public record Reply(int status, String contentType, String body) {
-    static final Reply DEFAULT = new Reply(200, "application/json", "{\"ok\":true}");
+  public record Reply(int status, String contentType, String body, boolean template) {
+    static final Reply DEFAULT = new Reply(200, "application/json", "{\"ok\":true}", false);
   }
 
   public record Settings(Reply reply, boolean rulesEnabled, List<BinRule> rules, BinRouting routing) {
@@ -377,7 +377,7 @@ public final class Bins {
     ObjectNode out = Jsons.object().put("id", bin.id).put("tokenHash", Base64.getEncoder().encodeToString(bin.tokenHash))
         .put("created", bin.created.toString()).put("lastUsed", bin.lastUsed.toString()).put("seq", bin.seq).put("oldest", bin.oldest);
     Settings s = bin.settings;
-    out.putObject("reply").put("status", s.reply().status()).put("contentType", s.reply().contentType()).put("body", s.reply().body());
+    out.putObject("reply").put("status", s.reply().status()).put("contentType", s.reply().contentType()).put("body", s.reply().body()).put("template", s.reply().template());
     out.put("rulesEnabled", s.rulesEnabled());
     out.set("rules", BinRule.toJson(s.rules()));
     out.set("routing", s.routing().toJson());
@@ -401,7 +401,7 @@ public final class Bins {
         try {
           JsonNode n = Jsons.MAPPER.readTree(Files.readString(file, StandardCharsets.UTF_8));
           JsonNode r = n.path("reply");
-          Settings settings = new Settings(new Reply(r.path("status").asInt(200), r.path("contentType").asText("application/json"), r.path("body").asText("")),
+          Settings settings = new Settings(new Reply(r.path("status").asInt(200), r.path("contentType").asText("application/json"), r.path("body").asText(""), r.path("template").asBoolean(false)),
               n.path("rulesEnabled").asBoolean(true), BinRule.listFrom(n.path("rules")),
               n.has("routing") ? BinRouting.from(n.path("routing")) : BinRouting.DEFAULT);
           Bin bin = new Bin(n.path("id").asText(), Base64.getDecoder().decode(n.path("tokenHash").asText()), Instant.parse(n.path("created").asText()), settings);

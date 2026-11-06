@@ -136,7 +136,7 @@ public final class BinTool implements PublicTool {
     String text = node.path("body").asText("");
     if (text.length() > MAX_REPLY_BODY) return PublicResponses.error(400, "Keep the answer under 4 KB");
     String type = node.path("contentType").asText("application/json");
-    Bins.Reply reply = new Bins.Reply(status, type.isBlank() ? "text/plain" : type, text);
+    Bins.Reply reply = new Bins.Reply(status, type.isBlank() ? "text/plain" : type, text, node.path("template").asBoolean(false));
     return bins.update(id, token, s -> s.withReply(reply)) ? PublicResponses.json(200, reply(reply)) : notYours(id);
   }
 
@@ -202,7 +202,7 @@ public final class BinTool implements PublicTool {
   }
 
   private static ObjectNode reply(Bins.Reply r) {
-    return Jsons.object().put("status", r.status()).put("contentType", r.contentType()).put("body", r.body());
+    return Jsons.object().put("status", r.status()).put("contentType", r.contentType()).put("body", r.body()).put("template", r.template());
   }
 
   private static JsonNode read(String body) {

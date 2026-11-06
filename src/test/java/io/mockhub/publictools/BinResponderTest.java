@@ -154,7 +154,7 @@ class BinResponderTest {
   void turningRulesOffFallsBackToTheDefaultAnswer() throws Exception {
     // Given
     Bins.Settings settings = withRules("[{\"answers\": [{\"status\": 500}]}]").withRules(false, withRules("[{\"answers\": [{\"status\": 500}]}]").rules())
-        .withReply(new Bins.Reply(202, "text/plain", "thanks"));
+        .withReply(new Bins.Reply(202, "text/plain", "thanks", false));
 
     // When
     BinResponder.Answer answer = responder("93.184.216.34").answer("abcdefghijkm", settings, call("GET", "/", ""));
@@ -163,6 +163,32 @@ class BinResponderTest {
     assertThat(answer.status()).isEqualTo(202);
     assertThat(answer.by()).isEqualTo("default");
     assertThat(new String(answer.body(), StandardCharsets.UTF_8)).isEqualTo("thanks");
+  }
+
+  @Test
+  void aDefaultAnswerCanFillInValuesFromEachRequest() throws Exception {
+    // Given
+    Bins.Settings settings = Bins.Settings.DEFAULT.withReply(new Bins.Reply(201, "application/json", "{\"got\": \"{{jsonPath request.body '$.id'}}\", \"path\": \"{{request.path}}\"}", true));
+
+    // When
+    BinResponder.Answer answer = responder("93.184.216.34").answer("abcdefghijkm", settings, call("POST", "/orders", "{\"id\": \"ord_7\"}"));
+
+    // Then
+    assertThat(answer.status()).isEqualTo(201);
+    assertThat(answer.by()).isEqualTo("default");
+    assertThat(new String(answer.body(), StandardCharsets.UTF_8)).isEqualTo("{\"got\": \"ord_7\", \"path\": \"/orders\"}");
+  }
+
+  @Test
+  void aDefaultAnswerWithoutDynamicValuesIsSentAsWritten() throws Exception {
+    // Given
+    Bins.Settings settings = Bins.Settings.DEFAULT.withReply(new Bins.Reply(200, "text/plain", "{{request.path}}", false));
+
+    // When
+    BinResponder.Answer answer = responder("93.184.216.34").answer("abcdefghijkm", settings, call("POST", "/orders", "{}"));
+
+    // Then
+    assertThat(new String(answer.body(), StandardCharsets.UTF_8)).isEqualTo("{{request.path}}");
   }
 
   @Test

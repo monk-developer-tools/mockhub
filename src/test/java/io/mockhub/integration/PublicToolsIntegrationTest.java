@@ -123,6 +123,30 @@ class PublicToolsIntegrationTest {
   }
 
   @Test
+  void aBinsDefaultAnswerCanBeBuiltFromEachRequest() {
+    // Given
+    server = MockHubServer.start(data, ON);
+    ApiClient api = server.api();
+    JsonNode bin = api.post("/__public/bins", "").json();
+    String id = bin.get("id").asText();
+    Map<String, String> owner = Map.of("X-Bin-Token", bin.get("token").asText());
+    String reply = "{\"status\": 202, \"contentType\": \"application/json\", \"template\": true, "
+        + "\"body\": \"{\\\"order\\\": \\\"{{jsonPath request.body '$.id'}}\\\", \\\"currency\\\": \\\"{{request.query.currency}}\\\"}\"}";
+    ApiClient.Result saved = api.send("PUT", "/__public/inspect/" + id + "/response", reply, "application/json", owner);
+
+    // When
+    ApiClient.Result hook = api.post("/__public/bins/" + id + "/orders?currency=EUR", "{\"id\":\"ord_3\"}");
+    JsonNode settings = api.send("GET", "/__public/inspect/" + id + "/settings", null, null, owner).json();
+
+    // Then
+    assertThat(saved.status()).isEqualTo(200);
+    assertThat(hook.status()).isEqualTo(202);
+    assertThat(hook.json().get("order").asText()).isEqualTo("ord_3");
+    assertThat(hook.json().get("currency").asText()).isEqualTo("EUR");
+    assertThat(settings.at("/reply/template").asBoolean()).isTrue();
+  }
+
+  @Test
   void keepsEveryBinRequestAndPagesBackThroughThem() {
     // Given
     server = MockHubServer.start(data, ON);

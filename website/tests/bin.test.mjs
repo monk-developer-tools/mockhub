@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { duplicate, flow, headerLines, mergeRequests, move, outcomeText, outcomeTone, parseHeaderLines, recipe, routingFromForm, snippets, summary, tunnelCommand } from '../assets/js/tools/bin.js';
+import { binLink, duplicate, flow, parseBinHash, previewRequest, headerLines, mergeRequests, move, outcomeText, outcomeTone, parseHeaderLines, recipe, routingFromForm, snippets, summary, tunnelCommand } from '../assets/js/tools/bin.js';
 
 test('summarises a rule in one line', () => {
   // Given
@@ -123,4 +123,45 @@ test('builds routing from the form and code samples for the bin URL', () => {
   assert.deepEqual(Object.keys(code), ['curl', 'js', 'python', 'java']);
   assert.ok(Object.values(code).every((c) => c.includes('https://demo.test/__public/bins/abc/payments')));
   assert.equal(tunnelCommand('https://demo.test', 'abc', 'tok'), 'java -jar mockhub.jar tunnel --server https://demo.test --token bin_abc_tok --name bin-abc --to http://localhost:3000');
+});
+
+test('a bin link carries the bin key and reads back', () => {
+  // Given
+  const link = binLink('https://demo.test', '/tools/webhook-bin/', 'abcdefghijk2', 'a'.repeat(32));
+
+  // When
+  const parsed = parseBinHash(new URL(link).hash);
+
+  // Then
+  assert.equal(link, `https://demo.test/tools/webhook-bin/#bin=abcdefghijk2.${'a'.repeat(32)}`);
+  assert.deepEqual(parsed, { id: 'abcdefghijk2', token: 'a'.repeat(32) });
+  assert.equal(parseBinHash('#bin=short.key'), null);
+  assert.equal(parseBinHash(''), null);
+});
+
+test('previews against the latest request, or a sample when there is none', () => {
+  // Given
+  const latest = { method: 'PUT', path: '/hooks', query: 'a=1', headers: { 'X-Event': 'push' }, body: '{"id": 9}' };
+
+  // When
+  const fromLatest = previewRequest(latest);
+  const fromSample = previewRequest(null);
+
+  // Then
+  assert.deepEqual(fromLatest, { method: 'PUT', url: '/hooks?a=1', headers: { 'X-Event': 'push' }, body: '{"id": 9}' });
+  assert.equal(fromSample.url, '/orders?currency=EUR');
+  assert.ok(fromSample.body.includes('ord_1'));
+});
+
+test('the dynamic starting point fills its answer from the request', () => {
+  // Given
+  const rule = recipe('dynamic');
+
+  // When
+  const answer = rule.answers[0];
+
+  // Then
+  assert.equal(answer.template, true);
+  assert.ok(answer.body.includes("{{jsonPath request.body '$.id'}}"));
+  assert.equal(answer.headers['X-Request-Id'], "{{randomValue type='UUID'}}");
 });

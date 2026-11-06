@@ -42,6 +42,7 @@ export function blankRule() {
 }
 
 export const RECIPES = [
+  { id: 'dynamic', label: 'Dynamic answer', hint: 'Fill the answer from each request.' },
   { id: 'fail', label: 'Fail every request with 500', hint: 'See how the sender retries.' },
   { id: 'slow', label: 'Answer after 5 seconds', hint: 'Check the sender\'s timeout.' },
   { id: 'event', label: 'Answer one event type', hint: 'Match a field like $.type.' },
@@ -52,6 +53,20 @@ export const RECIPES = [
 export function recipe(id, event = 'payment.failed') {
   const json = { 'Content-Type': 'application/json' };
   switch (id) {
+    case 'dynamic':
+      return {
+        ...blankRule(),
+        name: 'Dynamic answer',
+        method: 'ANY',
+        conditions: [],
+        answers: [{
+          ...blankAnswer(),
+          status: 201,
+          headers: { 'Content-Type': 'application/json', 'X-Request-Id': "{{randomValue type='UUID'}}" },
+          body: '{\n  "received": "{{jsonPath request.body \'$.id\'}}",\n  "path": "{{request.path}}",\n  "method": "{{request.method}}",\n  "at": "{{now}}"\n}',
+          template: true,
+        }],
+      };
     case 'fail':
       return { ...blankRule(), name: 'Fail with 500', method: 'ANY', conditions: [], answers: [{ ...blankAnswer(), status: 500, body: '{"error": "Something broke on purpose"}' }] };
     case 'slow':
@@ -196,4 +211,20 @@ export function routingFromForm(form) {
     requestHeaders: parseHeaderLines(form.requestHeaders),
     responseHeaders: parseHeaderLines(form.responseHeaders),
   };
+}
+
+const SAMPLE = { method: 'POST', path: '/orders', query: 'currency=EUR', headers: { 'Content-Type': 'application/json' }, body: '{"id": "ord_1", "type": "order.created"}' };
+
+export function previewRequest(captured) {
+  const r = captured ?? SAMPLE;
+  return { method: r.method, url: `${r.path || '/'}${r.query ? `?${r.query}` : ''}`, headers: r.headers ?? {}, body: r.body ?? '' };
+}
+
+export function binLink(origin, pathname, id, token) {
+  return `${origin}${pathname}#bin=${id}.${token}`;
+}
+
+export function parseBinHash(hash) {
+  const m = /^#bin=([a-z0-9]{12})\.([a-z0-9]{32})$/.exec(hash ?? '');
+  return m ? { id: m[1], token: m[2] } : null;
 }

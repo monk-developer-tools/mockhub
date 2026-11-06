@@ -13,11 +13,13 @@
       <h3>Your bin</h3>
       <span class="tool-actions">
         <button type="button" class="btn secondary small" data-copy="[data-bin-url]">Copy URL</button>
+        <button type="button" class="btn secondary small" data-copy="[data-bin-link]" title="A private link that opens this bin, with its key, in any browser">Copy private link</button>
         <button type="button" class="btn ghost small" data-bin-forget>New bin</button>
       </span>
     </div>
     <pre class="tool-out tool-url" data-bin-url></pre>
-    <p class="tool-hint">Send anything to this URL or any path under it. Every request is kept, up to <span data-bin-keeps>50</span> MB per bin, and the bin is deleted after 24 hours without a request. Only this browser holds the key to read it.</p>
+    <pre class="bin-link" data-bin-link hidden></pre>
+    <p class="tool-hint">Send anything to this URL or any path under it. Every request is kept, up to <span data-bin-keeps>50</span> MB per bin, and the bin is deleted after 24 hours without a request. Only this browser holds the key to read it; use <strong>Copy private link</strong> to open it somewhere else or keep it safe.</p>
     <div class="tabs tabs-small" role="tablist" aria-label="Send a test request">
       <button type="button" role="tab" id="bin-tab-curl" aria-controls="bin-code-curl" aria-selected="true">cURL</button>
       <button type="button" role="tab" id="bin-tab-js" aria-controls="bin-code-js" aria-selected="false" tabindex="-1">JavaScript</button>
@@ -36,7 +38,9 @@
         <h3 id="bin-rules-title">Rules <span class="tool-badge" data-bin-rule-count></span></h3>
         <label class="bin-switch"><input type="checkbox" data-bin-rules-on checked> <span>Rules on</span></label>
       </div>
-      <p class="tool-hint">The first rule that matches answers the request. Drag to reorder. When none match, the routing below decides.</p>
+      <p class="tool-hint" data-bin-rules-hint>The first rule that matches answers the request. Drag to reorder. When none match, the routing below decides.</p>
+      <p class="bin-notice" data-bin-rules-off hidden>Rules are off, so every request goes to the routing on the right. Tick <strong>Rules on</strong> to use them.</p>
+      <p class="bin-saved" data-bin-rules-note aria-live="polite" hidden></p>
       <ol class="bin-rules" data-bin-rules aria-label="Rules, first match wins"></ol>
       <p class="tool-hint" data-bin-rules-empty>No rules yet. Start from one of these or write your own.</p>
       <div class="bin-recipes" data-bin-recipes></div>
@@ -100,8 +104,17 @@
             <input id="bin-type" class="tool-input" type="text" spellcheck="false" value="application/json" data-bin-type>
           </div>
         </div>
-        <label class="tool-label" for="bin-body">Body, up to 4 KB</label>
-        <textarea id="bin-body" class="tool-input" rows="3" spellcheck="false" data-bin-body>{"ok":true}</textarea>
+        <div class="bin-body-head">
+          <label class="tool-label" for="bin-body">Body, up to 4 KB</label>
+          <select class="tool-input bin-dynamic" aria-label="Insert a dynamic value" data-bin-insert></select>
+        </div>
+        <textarea id="bin-body" class="tool-input" rows="4" spellcheck="false" data-bin-body>{"ok":true}</textarea>
+        <label class="bin-check"><input type="checkbox" data-bin-template> Fill in dynamic values ({{…}}) from each request</label>
+        <div class="bin-preview-row">
+          <button type="button" class="btn ghost small" data-bin-preview>Preview</button>
+          <span class="tool-hint" data-bin-preview-note></span>
+        </div>
+        <pre class="tool-out tool-wrap" data-bin-preview-out hidden></pre>
       </div>
 
       <div class="bin-mode" data-bin-mode="forward" hidden>

@@ -5290,3 +5290,43 @@ select.tool-select-small {
   padding: 0;
   cursor: pointer;
 }
+
+.bin-link[hidden] {
+  display: none;
+}
+
+.bin-notice,
+.bin-saved {
+  font-size: 13.5px;
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.bin-notice {
+  color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 10%, transparent);
+}
+
+.bin-saved {
+  color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 10%, transparent);
+}
+
+.bin-notice[hidden],
+.bin-saved[hidden],
+.tool-out[hidden] {
+  display: none;
+}
+
+.bin-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bin-preview-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
