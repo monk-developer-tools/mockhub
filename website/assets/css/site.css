@@ -5476,3 +5476,72 @@ select.tool-select-small {
 .bin-share-item .tool-hint {
   margin: 4px 0 8px;
 }
+.bin-saved-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bin-saved-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+}
+
+.bin-saved-item.current {
+  border-color: var(--accent);
+}
+
+.bin-saved-item.expired {
+  opacity: 0.6;
+}
+
+.bin-saved-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1 1 320px;
+}
+
+.bin-saved-name {
+  font: inherit;
+  font-weight: 600;
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 2px 6px;
+  margin-left: -7px;
+  max-width: 100%;
+}
+
+.bin-saved-name:hover,
+.bin-saved-name:focus {
+  border-color: var(--line);
+}
+
+.bin-saved-url {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.bin-saved-summary {
+  margin: 0;
+}
+
+.bin-saved-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}

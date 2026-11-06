@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { binLink, duplicate, flow, routeSummary, parseBinHash, previewRequest, headerLines, mergeRequests, move, outcomeText, outcomeTone, parseHeaderLines, recipe, routingFromForm, snippets, summary, tunnelCommand } from '../assets/js/tools/bin.js';
+import { binLink, duplicate, flow, forgetBin, rememberBin, renameBin, routeSummary, parseBinHash, previewRequest, headerLines, mergeRequests, move, outcomeText, outcomeTone, parseHeaderLines, recipe, routingFromForm, snippets, summary, tunnelCommand } from '../assets/js/tools/bin.js';
 
 test('summarises a rule in one line', () => {
   // Given
@@ -187,4 +187,32 @@ test('sums up where a request goes in one line', () => {
 
   // Then
   assert.deepEqual(lines, ['2 rules, then api.example.com/hooks', 'your machine (tunnel connected)', 'default answer', '1 rule, then your machine (tunnel not connected)']);
+});
+
+test('remembers each bin once with a name of its own', () => {
+  // Given
+  const first = rememberBin([], { id: 'aaaaaaaaaaa1', token: 't1' }, 1);
+  const two = rememberBin(first, { id: 'bbbbbbbbbbb2', token: 't2' }, 2);
+
+  // When
+  const again = rememberBin(two, { id: 'aaaaaaaaaaa1', token: 't1' }, 3);
+  const afterRemoval = rememberBin(forgetBin(again, 'aaaaaaaaaaa1'), { id: 'ccccccccccc3', token: 't3' }, 4);
+
+  // Then
+  assert.deepEqual(again.map((b) => b.name), ['Bin 1', 'Bin 2']);
+  assert.deepEqual(afterRemoval.map((b) => [b.id, b.name]), [['bbbbbbbbbbb2', 'Bin 2'], ['ccccccccccc3', 'Bin 3']]);
+});
+
+test('renames a bin but never to an empty name', () => {
+  // Given
+  const list = rememberBin([], { id: 'aaaaaaaaaaa1', token: 't1' }, 1);
+
+  // When
+  const renamed = renameBin(list, 'aaaaaaaaaaa1', '  Stripe staging  ');
+  const blank = renameBin(renamed, 'aaaaaaaaaaa1', '   ');
+
+  // Then
+  assert.equal(renamed[0].name, 'Stripe staging');
+  assert.equal(blank[0].name, 'Stripe staging');
+  assert.equal(renameBin(list, 'aaaaaaaaaaa1', 'x'.repeat(60))[0].name.length, 40);
 });

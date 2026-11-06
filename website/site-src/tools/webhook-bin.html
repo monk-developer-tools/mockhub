@@ -20,7 +20,9 @@
         <button type="button" class="btn secondary small" data-owner data-bin-open="rules">Rules <span class="tool-badge" data-bin-rule-count></span></button>
         <button type="button" class="btn secondary small" data-owner data-bin-open="routing">Routing</button>
         <button type="button" class="btn secondary small" data-owner data-bin-open="share">Share</button>
-        <button type="button" class="btn ghost small" data-bin-forget>New bin</button>
+        <button type="button" class="btn secondary small" data-owner data-bin-open="bins">My bins <span class="tool-badge" data-bin-saved-count></span></button>
+        <button type="button" class="btn ghost small" data-owner data-bin-new>New bin</button>
+        <button type="button" class="btn ghost small" data-viewer data-bin-forget>Leave</button>
       </div>
     </div>
     <p class="bin-notice" data-viewer>You're viewing someone's bin. You see each request and the answer it got; only the owner can change rules, routing or clear it.</p>
@@ -191,6 +193,21 @@
       <button type="submit" class="btn primary">Save routing</button>
     </div>
   </form>
+</dialog>
+
+<dialog class="bin-dialog" data-bin-dialog="bins" aria-labelledby="bin-bins-title">
+  <div class="bin-dialog-head">
+    <h3 id="bin-bins-title">My bins</h3>
+    <button type="button" class="btn ghost small" data-bin-close aria-label="Close">Close</button>
+  </div>
+  <div class="bin-dialog-body">
+    <p class="tool-hint">Every bin you create or open with its private link is kept here, in this browser only. Click a name to rename it.</p>
+    <ul class="bin-saved-list" data-bin-saved-list aria-label="Your bins"></ul>
+  </div>
+  <div class="bin-dialog-foot">
+    <span class="tool-hint" data-bin-saved-note aria-live="polite"></span>
+    <button type="button" class="btn primary" data-bin-new>New bin</button>
+  </div>
 </dialog>
 
 <dialog class="bin-dialog" data-bin-dialog="share" aria-labelledby="bin-share-title">

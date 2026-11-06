@@ -2,10 +2,11 @@ import { $, show, wireCopyButtons } from './common.js';
 import { call, toCurl } from './http.js';
 import {
   DYNAMIC_VALUES, METHODS, OPS, RECIPES, TARGETS, binLink, blankAnswer, blankCondition, blankRule, duplicate, flow, headerLines, mergeRequests, move,
-  outcomeText, outcomeTone, parseBinHash, routeSummary, parseHeaderLines, previewRequest, recipe, routingFromForm, snippets, summary, tunnelCommand,
+  outcomeText, outcomeTone, parseBinHash, routeSummary, rememberBin, forgetBin, renameBin, parseHeaderLines, previewRequest, recipe, routingFromForm, snippets, summary, tunnelCommand,
 } from './bin.js';
 
 const KEY = 'mockhub-bin';
+const LIST_KEY = 'mockhub-bins';
 const SESSION_KEY = 'mockhub-bin-session';
 const POLL_MS = 2000;
 const SETTINGS_MS = 10000;
@@ -37,6 +38,24 @@ const store = {
     try {
       if (value) localStorage.setItem(KEY, JSON.stringify(value));
       else localStorage.removeItem(KEY);
+    } catch (e) {
+      return;
+    }
+  },
+};
+
+const savedBins = {
+  read() {
+    try {
+      const list = JSON.parse(localStorage.getItem(LIST_KEY) ?? '[]');
+      return Array.isArray(list) ? list.filter((b) => b?.id && b?.token) : [];
+    } catch (e) {
+      return [];
+    }
+  },
+  write(list) {
+    try {
+      localStorage.setItem(LIST_KEY, JSON.stringify(list));
     } catch (e) {
       return;
     }
@@ -177,7 +196,7 @@ async function poll() {
   if (!bin) return;
   polled = true;
   if (result.status === 404) {
-    forget('This bin has expired. Create a new one.');
+    forget(bin.viewOnly ? 'The shared bin has expired.' : 'That bin expired after 24 hours without a request, so it was removed from My bins.');
     return;
   }
   show($('[data-bin-error]'), result.error);
@@ -249,6 +268,7 @@ function renderRouteTo() {
 
 function openDialog(name) {
   const dialog = $(`[data-bin-dialog="${name === 'ai' ? 'rules' : name}"]`);
+  if (name === 'bins') renderBins();
   if (!dialog.open) dialog.showModal();
   if (name === 'ai') {
     const box = $('[data-bin-ai]');
@@ -610,8 +630,11 @@ function open(value) {
   $('[data-bin-start]').hidden = true;
   $('[data-bin-live]').hidden = false;
   $('[data-bin-live]').toggleAttribute('data-view-only', Boolean(bin.viewOnly));
-  $('[data-bin-title]').textContent = bin.viewOnly ? 'Shared bin, view only' : 'Your bin';
-  $('[data-bin-forget]').textContent = bin.viewOnly ? 'Leave' : 'New bin';
+  if (!bin.viewOnly) {
+    store.write({ id: bin.id, token: bin.token });
+    savedBins.write(rememberBin(savedBins.read(), bin));
+  }
+  renderTitle();
   $('[data-bin-view-copy]').hidden = true;
   $('[data-bin-url]').textContent = binUrl();
   $('[data-bin-share-url]').textContent = binUrl();
@@ -634,6 +657,103 @@ function open(value) {
   refreshTunnel();
 }
 
+function renderTitle() {
+  const list = savedBins.read();
+  const mine = bin && !bin.viewOnly ? list.find((b) => b.id === bin.id) : null;
+  $('[data-bin-title]').textContent = bin?.viewOnly ? 'Shared bin, view only' : mine?.name ?? 'Your bin';
+  $('[data-bin-saved-count]').textContent = list.length > 1 ? String(list.length) : '';
+}
+
+async function describeBin(entry) {
+  const headers = { 'X-Bin-Token': entry.token };
+  const [set, page] = await Promise.all([
+    call(`/__public/inspect/${entry.id}/settings`, { headers }),
+    call(`/__public/inspect/${entry.id}?limit=1`, { headers }),
+  ]);
+  if (set.status === 404) return { expired: true, text: 'Expired: no request for 24 hours.' };
+  if (!set.json || set.error) return { text: set.error ?? 'Could not load.' };
+  const rules = set.json.rules ?? [];
+  const active = rules.filter((r) => r.enabled !== false).length;
+  const where = routeSummary(set.json.routing ?? { mode: 'mock' }, set.json.rulesEnabled !== false, active, set.json.tunnel?.online);
+  const total = page.json ? Math.max(0, (page.json.total ?? 0) - (page.json.oldestKept ?? 1) + 1) : 0;
+  const off = rules.length && (set.json.rulesEnabled === false || !active) ? ` (${rules.length} rule${rules.length === 1 ? '' : 's'} off)` : '';
+  return { text: `Goes to ${where}${off} · ${total} request${total === 1 ? '' : 's'} kept` };
+}
+
+function renderBins() {
+  const list = savedBins.read().slice().reverse();
+  $('[data-bin-saved-list]').replaceChildren(...list.map((entry) => {
+    const current = bin && !bin.viewOnly && bin.id === entry.id;
+    const summary = el('span', { class: 'tool-hint bin-saved-summary' }, 'Loading…');
+    const name = el('input', {
+      class: 'bin-saved-name', type: 'text', maxlength: '40', value: entry.name, 'aria-label': `Name of ${entry.name}`,
+      onchange: (e) => {
+        savedBins.write(renameBin(savedBins.read(), entry.id, e.target.value));
+        e.target.value = savedBins.read().find((b) => b.id === entry.id)?.name ?? entry.name;
+        renderTitle();
+      },
+    });
+    const row = el('li', { class: `bin-saved-item${current ? ' current' : ''}` },
+      el('div', { class: 'bin-saved-main' },
+        name,
+        el('code', { class: 'bin-saved-url' }, `${location.origin}/__public/bins/${entry.id}`),
+        summary),
+      el('div', { class: 'bin-saved-actions' },
+        current ? el('span', { class: 'tool-badge ok' }, 'Current') : el('button', { type: 'button', class: 'btn secondary small', onclick: () => switchTo(entry) }, 'Open'),
+        el('button', { type: 'button', class: 'btn ghost small', onclick: () => removeBin(entry), title: 'Remove from this list. The bin itself stays until it expires.' }, 'Remove')));
+    describeBin(entry).then((d) => {
+      summary.textContent = d.text;
+      row.classList.toggle('expired', Boolean(d.expired));
+    });
+    return row;
+  }));
+  $('[data-bin-saved-note]').textContent = list.length ? `${list.length} bin${list.length === 1 ? '' : 's'} in this browser` : '';
+}
+
+function switchTo(entry) {
+  history.replaceState(null, '', location.pathname + location.search);
+  stop();
+  $('[data-bin-dialog="bins"]').close();
+  open({ id: entry.id, token: entry.token });
+  flashConsole(`Switched to ${entry.name}.`);
+}
+
+function removeBin(entry) {
+  const list = forgetBin(savedBins.read(), entry.id);
+  savedBins.write(list);
+  if (bin && !bin.viewOnly && bin.id === entry.id) {
+    stop();
+    const next = list.at(-1);
+    if (next) open({ id: next.id, token: next.token });
+    else {
+      store.write(null);
+      $('[data-bin-dialog="bins"]').close();
+      $('[data-bin-live]').hidden = true;
+      $('[data-bin-start]').hidden = false;
+      return;
+    }
+  }
+  renderTitle();
+  renderBins();
+}
+
+async function createBin(button) {
+  button.disabled = true;
+  const result = await call('/__public/bins', { method: 'POST' });
+  button.disabled = false;
+  if (result.error || !result.json?.id) {
+    const message = result.error ?? 'The bin could not be created.';
+    show($('[data-bin-create-error]'), message);
+    if (bin) flashConsole(message);
+    return;
+  }
+  history.replaceState(null, '', location.pathname + location.search);
+  stop();
+  document.querySelectorAll('[data-bin-dialog]').forEach((d) => d.open && d.close());
+  open({ id: result.json.id, token: result.json.token });
+  flashConsole(`Created ${savedBins.read().at(-1)?.name ?? 'a new bin'}. Your other bins are under My bins.`);
+}
+
 function stop() {
   clearTimeout(timer);
   clearTimeout(settingsTimer);
@@ -642,36 +762,26 @@ function stop() {
 }
 
 function forget(message) {
-  const viewing = bin?.viewOnly;
+  const leaving = bin;
   stop();
-  if (viewing) {
-    history.replaceState(null, '', location.pathname + location.search);
-    const own = store.read();
-    if (own?.id && own?.token) {
-      open(own);
-      return;
-    }
-  } else {
-    store.write(null);
+  history.replaceState(null, '', location.pathname + location.search);
+  if (leaving && !leaving.viewOnly) savedBins.write(forgetBin(savedBins.read(), leaving.id));
+  const list = savedBins.read();
+  const own = store.read();
+  const next = list.find((b) => b.id === own?.id) ?? list.at(-1);
+  if (next) {
+    open({ id: next.id, token: next.token });
+    if (message) flashConsole(message);
+    return;
   }
+  store.write(null);
   $('[data-bin-live]').hidden = true;
   $('[data-bin-start]').hidden = false;
   show($('[data-bin-create-error]'), message ?? '');
 }
 
-$('[data-bin-create]').addEventListener('click', async (e) => {
-  e.target.disabled = true;
-  const result = await call('/__public/bins', { method: 'POST' });
-  e.target.disabled = false;
-  if (result.error || !result.json?.id) {
-    show($('[data-bin-create-error]'), result.error ?? 'The bin could not be created.');
-    return;
-  }
-  const created = { id: result.json.id, token: result.json.token };
-  store.write(created);
-  open(created);
-});
-
+$('[data-bin-create]').addEventListener('click', (e) => createBin(e.currentTarget));
+document.querySelectorAll('[data-bin-new]').forEach((b) => b.addEventListener('click', () => createBin(b)));
 $('[data-bin-forget]').addEventListener('click', () => forget());
 
 $('[data-bin-clear]').addEventListener('click', async () => {
@@ -762,7 +872,9 @@ window.addEventListener('hashchange', () => {
   openLinked(linked);
 });
 const fromLink = takeLinked();
-const saved = store.read();
+const current = store.read();
+const known = savedBins.read();
 if (fromLink) openLinked(fromLink);
-else if (saved?.id && saved?.token) open(saved);
+else if (current?.id && current?.token) open(current);
+else if (known.length) open(known.at(-1));
 wireCopyButtons();

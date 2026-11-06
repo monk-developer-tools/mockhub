@@ -235,3 +235,23 @@ export function parseBinHash(hash) {
   const m = /^#(bin|view)=([a-z0-9]{12})\.([a-z0-9]{32})$/.exec(hash ?? '');
   return m ? { id: m[2], token: m[3], viewOnly: m[1] === 'view' } : null;
 }
+
+export const MAX_SAVED_BINS = 50;
+
+export function rememberBin(list, entry, now = Date.now()) {
+  const known = list.find((b) => b.id === entry.id);
+  if (known) return list.map((b) => (b.id === entry.id ? { ...b, token: entry.token } : b));
+  const taken = list.map((b) => /^Bin (\d+)$/.exec(b.name ?? '')).filter(Boolean).map((m) => Number(m[1]));
+  const name = `Bin ${taken.length ? Math.max(...taken) + 1 : list.length + 1}`;
+  return [...list, { id: entry.id, token: entry.token, name, added: now }].slice(-MAX_SAVED_BINS);
+}
+
+export function forgetBin(list, id) {
+  return list.filter((b) => b.id !== id);
+}
+
+export function renameBin(list, id, name) {
+  const clean = (name ?? '').trim().slice(0, 40);
+  if (!clean) return list;
+  return list.map((b) => (b.id === id ? { ...b, name: clean } : b));
+}
