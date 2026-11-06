@@ -46,6 +46,49 @@ export function blankAnswer() {
   return { weight: 1, status: 200, delayMs: 0, headers: { 'Content-Type': 'application/json' }, body: '{"ok": true}', template: false };
 }
 
+export const CONTENT_TYPES = [
+  { value: 'application/json', label: 'JSON' },
+  { value: 'application/xml', label: 'XML' },
+  { value: 'text/html', label: 'HTML' },
+  { value: 'text/javascript', label: 'JavaScript' },
+  { value: 'text/csv', label: 'CSV' },
+  { value: 'text/plain', label: 'Plain text' },
+];
+
+export const MAX_FILE_BYTES = 16 * 1024;
+
+export function contentTypeOf(headers = {}) {
+  const key = Object.keys(headers).find((k) => k.toLowerCase() === 'content-type');
+  return key ? headers[key] : '';
+}
+
+export function withContentType(headers = {}, type) {
+  const out = Object.fromEntries(Object.entries(headers).filter(([k]) => k.toLowerCase() !== 'content-type'));
+  return type ? { 'Content-Type': type, ...out } : out;
+}
+
+export function prettyBody(text) {
+  try {
+    return { text: JSON.stringify(JSON.parse(text), null, 2) };
+  } catch {
+    return { error: text.includes('{{') ? 'Only plain JSON can be formatted; this body has dynamic values.' : "The body isn't valid JSON." };
+  }
+}
+
+export function percents(answers) {
+  const total = answers.reduce((sum, a) => sum + (Number(a.weight) > 0 ? Number(a.weight) : 0), 0);
+  return answers.map((a) => (total > 0 && Number(a.weight) > 0 ? Math.round((Number(a.weight) * 100) / total) : 0));
+}
+
+export function fileSize(bytes) {
+  return bytes < 1024 ? `${bytes} B` : `${(bytes / 1024).toFixed(1)} KB`;
+}
+
+export function base64Size(text) {
+  const clean = (text ?? '').replace(/=+$/, '');
+  return Math.floor((clean.length * 3) / 4);
+}
+
 export function blankCondition() {
   return { target: 'path', key: '', op: 'starts_with', value: '/' };
 }
@@ -117,7 +160,8 @@ export function summary(rule) {
   const when = rule.conditions?.length ? rule.conditions.map(describeCondition).join(' and ') : 'any request';
   const method = rule.method === 'ANY' ? '' : `${rule.method} `;
   const answers = rule.answers ?? [];
-  const then = answers.length > 1 ? answers.map((a) => `${a.status} (${a.weight})`).join(' or ') : String(answers[0]?.status ?? 200);
+  const shares = percents(answers);
+  const then = answers.length > 1 ? answers.map((a, i) => `${a.status} (${shares[i]}%)`).join(' or ') : `${answers[0]?.status ?? 200}${answers[0]?.fileName ? ` with ${answers[0].fileName}` : ''}`;
   const delay = answers.some((a) => a.delayMs > 0) ? ` after ${Math.max(...answers.map((a) => a.delayMs)) / 1000}s` : '';
   return `${method}${when} → ${then}${delay}`;
 }

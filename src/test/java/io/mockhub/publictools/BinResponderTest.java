@@ -78,6 +78,23 @@ class BinResponderTest {
   }
 
   @Test
+  void aFileAnswerSendsItsBytesWithATypeFromItsName() throws Exception {
+    // Given
+    Bins.Settings settings = withRules("""
+        [{"answers": [{"status": 200, "body": "iVBORw==", "fileName": "logo.png"}]}]
+        """);
+
+    // When
+    BinResponder.Answer answer = responder("93.184.216.34").answer("abcdefghijkm", settings, call("GET", "/logo", ""));
+
+    // Then
+    assertThat(answer.body()).containsExactly((byte) 0x89, 'P', 'N', 'G');
+    assertThat(answer.headers()).containsEntry("Content-Type", "image/png");
+    assertThat(BinResponder.fileType("report.CSV")).isEqualTo("text/csv");
+    assertThat(BinResponder.fileType("blob")).isEqualTo("application/octet-stream");
+  }
+
+  @Test
   void aMatchingRuleAnswersWithATemplatedBodyAndItsDelay() throws Exception {
     // Given
     Bins.Settings settings = withRules("""

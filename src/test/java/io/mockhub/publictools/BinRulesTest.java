@@ -206,8 +206,8 @@ class BinRulesTest {
     // Given
     BinRule original = rule("""
         {"id": "r1", "name": "Slow", "method": "POST", "conditions": [{"target": "header", "key": "X-Retry", "op": "exists"}],
-         "answers": [{"weight": 3, "status": 200, "delayMs": 5000, "headers": {"X-A": "1"}, "body": "ok", "template": true},
-                     {"weight": 1, "status": 503, "body": "down"}]}
+         "description": "Retries get a slow answer", "answers": [{"weight": 3, "status": 200, "delayMs": 5000, "headers": {"X-A": "1"}, "body": "ok", "template": true, "description": "Usually fine"},
+                     {"weight": 1, "status": 503, "body": "AAEC", "fileName": "down.bin"}]}
         """);
 
     // When
@@ -215,5 +215,26 @@ class BinRulesTest {
 
     // Then
     assertThat(copy).isEqualTo(original);
+  }
+
+  @Test
+  void aFileAnswerKeepsItsBytesAndRefusesWhatCantBeSent() {
+    // Given
+    String png = java.util.Base64.getEncoder().encodeToString(new byte[] {(byte) 0x89, 'P', 'N', 'G'});
+
+    // When
+    BinRule rule = rule("{\"description\": \" Logo \", \"answers\": [{\"body\": \"" + png + "\", \"fileName\": \"logo.png\", \"description\": \"The logo\"}]}");
+
+    // Then
+    assertThat(rule.description()).isEqualTo("Logo");
+    assertThat(rule.answers().get(0).file()).isTrue();
+    assertThat(rule.answers().get(0).bytes()).containsExactly((byte) 0x89, 'P', 'N', 'G');
+    assertThat(rule.answers().get(0).description()).isEqualTo("The logo");
+    assertThatThrownBy(() -> rule("{\"answers\": [{\"body\": \"not base64!\", \"fileName\": \"a.bin\"}]}")).hasMessageContaining("base64");
+    assertThatThrownBy(() -> rule("{\"answers\": [{\"body\": \"AAEC\", \"fileName\": \"a.bin\", \"template\": true}]}")).hasMessageContaining("dynamic values");
+    assertThatThrownBy(() -> rule("{\"answers\": [{\"body\": \"AAEC\", \"fileName\": \"../a.bin\"}]}")).hasMessageContaining("plain name");
+    String big = java.util.Base64.getEncoder().encodeToString(new byte[BinRule.MAX_BODY + 1]);
+    assertThatThrownBy(() -> rule("{\"answers\": [{\"body\": \"" + big + "\", \"fileName\": \"a.bin\"}]}")).hasMessageContaining("16 KB");
+    assertThatThrownBy(() -> rule("{\"description\": \"" + "x".repeat(501) + "\", \"answers\": [{}]}")).hasMessageContaining("description");
   }
 }

@@ -57,15 +57,15 @@ Build: add `QUERY`/`TRACE`, negative operators (`not_equals`, `not_contains`, `a
 
 Shipped: QUERY and TRACE; `not_equals`, `not_contains` and `absent` on every target (a missing value counts as not equal); `template` on the path with `{{pathParams.x}}`; `form`, `xml` (hardened XPath), `soap_action` and `graphql` targets. A JSON field that is `null` counts as absent, which covers Beeceptor's is null / is not null.
 
-### B2 — Response editor parity
+### B2 — Response editor parity ✅ done
 | Beeceptor | Ours | Status |
 |---|---|---|
-| **Set Content-Type** picker (JSON, XML, HTML, JavaScript, CSV, text) | Free text header | ❌ |
-| **Send a file/blob** as the body | Text only | ❌ |
-| `{}` pretty-print the body | — | ❌ |
-| **Rule description** (Additional information) | Name only | ❌ |
-| Weighted answers with a **description** and **percent** shown | Weights, no description, no % | 🟡 |
-| Single vs weighted switch | Add answers one by one | 🟡 |
+| **Set Content-Type** picker (JSON, XML, HTML, JavaScript, CSV, text) | Type picker beside the body | ✅ |
+| **Send a file/blob** as the body | Send a file, up to 16 KB | ✅ |
+| `{}` pretty-print the body | `{ }` formats JSON | ✅ |
+| **Rule description** (Additional information) | Description, up to 500 characters | ✅ |
+| Weighted answers with a **description** and **percent** shown | Weights, description and % | ✅ |
+| Single vs weighted switch | One answer / Weighted answers switch | ✅ |
 
 ### B3 — Dynamic values in the bin
 | Beeceptor | Ours | Status |

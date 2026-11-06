@@ -43,7 +43,10 @@
 </table>
 <p>Each condition tests the value with <em>equals</em>, <em>doesn't equal</em>, <em>starts with</em>, <em>contains</em>, <em>doesn't contain</em>, <em>matches regex</em>, <em>is present</em> or <em>is absent</em>. A missing value counts as not equal and not containing, so <code>header X-Env doesn't equal prod</code> also matches a request without the header.</p>
 <p>The path can also <em>match a pattern</em> such as <code>/users/:id</code> or <code>/orders/{orderId}/items</code>. Each parameter matches one non-empty segment, and the answer reads it as <code>{{pathParams.id}}</code> when <strong>Fill in dynamic values</strong> is ticked.</p>
-<p>An answer has a status, a delay up to 15 seconds, headers and a body. Tick <strong>Fill in dynamic values</strong> to render the body and headers as a <a href="/docs/templating/">template</a>, for example <code>{{jsonPath request.body '$.id'}}</code>, <code>{{now}}</code> or <code>{{fake 'Name.fullName'}}</code>. Give a rule up to five answers with weights to make a flaky endpoint: weights 3 and 1 answer the first three times in four.</p>
+<p>A rule can have a <strong>description</strong> of up to 500 characters, shown under it in the list, so whoever opens the bin knows what it is for.</p>
+<p>An answer has a status, a delay up to 15 seconds, headers and a body. The type picker beside <strong>Body</strong> sets <code>Content-Type</code> to JSON, XML, HTML, JavaScript, CSV or plain text; without one the bin guesses from the body. <code>{ }</code> formats a JSON body. Tick <strong>Fill in dynamic values</strong> to render the body and headers as a <a href="/docs/templating/">template</a>, for example <code>{{jsonPath request.body '$.id'}}</code>, <code>{{now}}</code> or <code>{{fake 'Name.fullName'}}</code>.</p>
+<p><strong>Send a file</strong> answers with a file of up to 16 KB, such as an image, a PDF or a CSV, byte for byte. Its type comes from the file, and the request log shows a binary answer as its size. A file has no dynamic values; <strong>Use text instead</strong> goes back to a text body.</p>
+<p>Switch from <strong>One answer</strong> to <strong>Weighted answers</strong> to make a flaky endpoint. A rule has up to five answers, each with a weight, an optional description such as "Usually succeeds" and the share of requests it gets: weights 3 and 1 show 75% and 25%. Switching back keeps only the first answer.</p>
 <p>The starting points fill the editor with a common rule: fail with 500, answer after 5 seconds, match one event type, echo the body back and fail one in four. A bin holds up to 50 rules of up to 10 conditions each.</p>
 <p>When the server has an <a href="/docs/ai/">AI provider</a>, <strong>AI</strong> in the top bar, or <strong>Draft with AI</strong> under the rules, turns a description such as "answer 402 with the payment id when the event is payment.failed" into a rule. It needs a MockHub sign-in: anonymous visitors don't get AI drafts. Each user gets 10 drafts an hour. The draft opens in the editor and is saved only when you save it.</p>
 
@@ -65,6 +68,8 @@ curl https://mockhub.devops-monk.com/__public/inspect/{id} -H 'X-Bin-Token: {tok
 curl -X PUT https://mockhub.devops-monk.com/__public/inspect/{id}/rules -H 'X-Bin-Token: {token}' \
   -H 'Content-Type: application/json' -d '{"rulesEnabled": true, "rules": [{
     "name": "Failed payments", "method": "POST",
+    "description": "Payment failures get 402",
     "conditions": [{"target": "json", "key": "$.type", "op": "equals", "value": "payment.failed"}],
     "answers": [{"status": 402, "delayMs": 500, "body": "{\"id\": \"{{jsonPath request.body '"'"'$.id'"'"'}}\"}", "template": true}]}]}'</code></pre>
+<p>An answer sends a file with <code>"fileName": "logo.png"</code> and the file's bytes in base64 as <code>"body"</code>. Each answer can also have a <code>"description"</code> of up to 120 characters.</p>
 <p>Every endpoint is listed under <a href="/docs/config/#public-tools">Public tools</a>.</p>

@@ -9,7 +9,6 @@ import io.mockhub.auth.Principal;
 import io.mockhub.playground.JdkHttpSender;
 import io.mockhub.playground.TargetGuard;
 import io.mockhub.tunnel.TunnelGateway;
-import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -90,7 +89,7 @@ public final class BinTool implements PublicTool {
     long started = millis.getAsLong();
     BinResponder.Answer answer = responder.answer(id, settings.get(), call);
     long took = millis.getAsLong() - started + answer.delayMs();
-    String text = new String(answer.body(), StandardCharsets.UTF_8);
+    String text = Bins.readable(answer.body());
     boolean cut = answer.body().length > Bins.MAX_ANSWER_BODY;
     Map<String, String> shown = new LinkedHashMap<>(answer.headers());
     bins.record(id, request, call.path(), BinMatcher.eventOf(request, call.json()),

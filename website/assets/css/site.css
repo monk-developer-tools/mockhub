@@ -5234,6 +5234,67 @@ select.tool-select-small {
   gap: 12px;
 }
 
+.bin-body-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.bin-type.tool-input {
+  width: auto;
+  font-size: 13px;
+  padding: 4px 8px;
+}
+
+.bin-answer-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.bin-answer-head .tool-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.bin-share {
+  font-size: 13px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.bin-file {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-m);
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+.bin-file span {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.bin-mode {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+}
+
+.bin-rule-note {
+  display: block;
+  font-size: 13px;
+  color: var(--muted);
+  font-style: italic;
+}
+
 .bin-dynamic.tool-input {
   width: auto;
   font-size: 13px;
@@ -5544,4 +5605,8 @@ select.tool-select-small {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.bin-prose.tool-input {
+  font-family: inherit;
 }

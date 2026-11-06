@@ -78,8 +78,11 @@ final class BinResponder {
         headers.put(e.getKey(), h.error() == null ? h.output().strip() : e.getValue());
       }
     }
-    if (headers.keySet().stream().noneMatch(k -> k.equalsIgnoreCase("Content-Type"))) headers.put("Content-Type", guessType(body));
-    return new Answer(chosen.status(), headers, body.getBytes(StandardCharsets.UTF_8), chosen.delayMs(), "rule", rule.label());
+    if (headers.keySet().stream().noneMatch(k -> k.equalsIgnoreCase("Content-Type"))) {
+      headers.put("Content-Type", chosen.file() ? fileType(chosen.fileName()) : guessType(body));
+    }
+    byte[] bytes = chosen.template() ? body.getBytes(StandardCharsets.UTF_8) : chosen.bytes();
+    return new Answer(chosen.status(), headers, bytes, chosen.delayMs(), "rule", rule.label());
   }
 
   private BinRule.Answer pick(List<BinRule.Answer> answers) {
@@ -187,6 +190,29 @@ final class BinResponder {
   private static String query(BinMatcher.Call call) {
     String q = call.request().rawQuery();
     return q == null || q.isEmpty() ? "" : "?" + q;
+  }
+
+  static String fileType(String name) {
+    String lower = name.toLowerCase(Locale.ROOT);
+    String ext = lower.contains(".") ? lower.substring(lower.lastIndexOf('.') + 1) : "";
+    return switch (ext) {
+      case "json" -> "application/json";
+      case "xml" -> "application/xml";
+      case "html", "htm" -> "text/html";
+      case "js", "mjs" -> "text/javascript";
+      case "css" -> "text/css";
+      case "csv" -> "text/csv";
+      case "txt" -> "text/plain";
+      case "png" -> "image/png";
+      case "jpg", "jpeg" -> "image/jpeg";
+      case "gif" -> "image/gif";
+      case "svg" -> "image/svg+xml";
+      case "webp" -> "image/webp";
+      case "ico" -> "image/x-icon";
+      case "pdf" -> "application/pdf";
+      case "zip" -> "application/zip";
+      default -> "application/octet-stream";
+    };
   }
 
   static String guessType(String body) {

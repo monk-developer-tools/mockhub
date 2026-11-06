@@ -1,7 +1,7 @@
 import { $, show, wireCopyButtons } from './common.js';
 import { call, toCurl } from './http.js';
 import {
-  DYNAMIC_VALUES, METHODS, OPS, RECIPES, opsFor, TARGETS, binLink, blankAnswer, blankCondition, blankRule, duplicate, flow, headerLines, mergeRequests, move,
+  CONTENT_TYPES, DYNAMIC_VALUES, MAX_FILE_BYTES, METHODS, OPS, RECIPES, base64Size, contentTypeOf, fileSize, opsFor, percents, prettyBody, withContentType, TARGETS, binLink, blankAnswer, blankCondition, blankRule, duplicate, flow, headerLines, mergeRequests, move,
   outcomeText, outcomeTone, parseBinHash, routeSummary, rememberBin, forgetBin, renameBin, parseHeaderLines, previewRequest, recipe, routingFromForm, snippets, summary, tunnelCommand,
 } from './bin.js';
 
@@ -351,7 +351,8 @@ function renderRules() {
       el('input', { type: 'checkbox', checked: rule.enabled !== false, 'aria-label': `Use ${rule.name || `rule ${i + 1}`}`, onchange: (e) => saveRules(rules.map((r, j) => (j === i ? { ...r, enabled: e.target.checked } : r))) }),
       el('span', { class: 'bin-rule-text' },
         el('strong', {}, rule.name || `Rule ${i + 1}`),
-        el('span', { class: 'tool-hint' }, summary(rule))),
+        el('span', { class: 'tool-hint' }, summary(rule)),
+        rule.description ? el('span', { class: 'bin-rule-note' }, rule.description) : null),
       el('span', { class: 'bin-rule-actions' },
         el('button', { type: 'button', class: 'btn ghost small', 'aria-label': 'Move up', disabled: i === 0, onclick: () => saveRules(move(rules, i, i - 1)) }, '↑'),
         el('button', { type: 'button', class: 'btn ghost small', 'aria-label': 'Move down', disabled: i === rules.length - 1, onclick: () => saveRules(move(rules, i, i + 1)) }, '↓'),
@@ -450,6 +451,7 @@ function openEditor(rule, index) {
   editing = index;
   $('#bin-editor-title').textContent = index < 0 ? 'New rule' : 'Edit rule';
   $('[data-rule-name]').value = draft.name ?? '';
+  $('[data-rule-description]').value = draft.description ?? '';
   $('[data-rule-method]').replaceChildren(...options(METHODS, draft.method ?? 'ANY'));
   show($('[data-rule-error]'), '');
   renderConditions();
@@ -497,36 +499,124 @@ function previewBlock(text, dynamic) {
   return el('div', { class: 'bin-preview' }, el('div', { class: 'bin-preview-row' }, button, note), out);
 }
 
+function renderAnswerMode() {
+  const weighted = draft.answers.length > 1;
+  for (const radio of document.querySelectorAll('[data-rule-mode]')) radio.checked = radio.value === (weighted ? 'weighted' : 'single');
+  $('[data-rule-add-answer]').hidden = !weighted || draft.answers.length >= 5;
+}
+
+function setAnswerMode(mode) {
+  if (mode === 'weighted' && draft.answers.length < 2) draft.answers.push({ ...blankAnswer(), status: 503, body: '{"error": "Try again later"}' });
+  if (mode === 'single') draft.answers = draft.answers.slice(0, 1);
+  renderAnswers();
+}
+
+function readFile(a, file, note) {
+  if (file.size > MAX_FILE_BYTES) {
+    show(note, `${file.name} is ${fileSize(file.size)}; a file answer can be up to ${fileSize(MAX_FILE_BYTES)}.`);
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = () => {
+    const bytes = new Uint8Array(reader.result);
+    let binary = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    a.body = btoa(binary);
+    a.fileName = file.name;
+    a.template = false;
+    a.headers = withContentType(a.headers, file.type || 'application/octet-stream');
+    renderAnswers();
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function typePicker(a, headers) {
+  const current = contentTypeOf(a.headers);
+  const known = CONTENT_TYPES.some((t) => t.value === current);
+  return el('select', { class: 'tool-input bin-type', 'aria-label': 'Content type', onchange: (e) => {
+    a.headers = withContentType(a.headers, e.target.value);
+    headers.value = headerLines(a.headers);
+  } },
+  el('option', { value: '' }, 'No Content-Type'),
+  ...CONTENT_TYPES.map((t) => el('option', { value: t.value, selected: t.value === current }, t.label)),
+  current && !known ? el('option', { value: current, selected: true }, current) : null);
+}
+
+function answerBody(a, i, headers) {
+  const note = el('p', { class: 'tool-hint', hidden: true, 'data-answer-note': '' });
+  const upload = el('input', { type: 'file', hidden: true, 'data-answer-file': '', onchange: (e) => { if (e.target.files[0]) readFile(a, e.target.files[0], note); } });
+  if (a.fileName) {
+    return [
+      el('div', { class: 'bin-body-head' }, el('span', { class: 'tool-label' }, 'Body'), typePicker(a, headers)),
+      el('div', { class: 'bin-file' },
+        el('span', {}, el('strong', {}, a.fileName), ` · ${fileSize(base64Size(a.body))}`),
+        el('button', { type: 'button', class: 'btn ghost small', onclick: () => upload.click() }, 'Replace'),
+        el('button', { type: 'button', class: 'btn ghost small', 'data-answer-text': '', onclick: () => { a.fileName = ''; a.body = ''; renderAnswers(); } }, 'Use text instead')),
+      el('p', { class: 'tool-hint' }, 'The file is sent exactly as uploaded, so it has no dynamic values.'),
+      upload, note];
+  }
+  const body = el('textarea', { id: `ans-b-${i}`, class: 'tool-input', rows: '5', spellcheck: 'false', 'aria-label': 'Body', value: a.body ?? '', oninput: (e) => { a.body = e.target.value; } });
+  const template = el('input', { type: 'checkbox', checked: a.template, onchange: (e) => { a.template = e.target.checked; } });
+  const dynamic = el('select', { class: 'tool-input bin-dynamic', 'aria-label': 'Insert a dynamic value', onchange: (e) => {
+    if (!e.target.value) return;
+    insertAt(body, e.target.value);
+    a.template = true;
+    template.checked = true;
+    e.target.value = '';
+  } }, el('option', { value: '' }, 'Insert a dynamic value…'), ...DYNAMIC_VALUES.map((d) => el('option', { value: d.text }, d.label)));
+  const pretty = el('button', { type: 'button', class: 'btn ghost small', title: 'Format JSON', 'aria-label': 'Format JSON', 'data-answer-pretty': '', onclick: () => {
+    const result = prettyBody(body.value);
+    if (result.error) {
+      show(note, result.error);
+      return;
+    }
+    body.value = result.text;
+    a.body = result.text;
+    show(note, '');
+  } }, '{ }');
+  const file = el('button', { type: 'button', class: 'btn ghost small', 'data-answer-upload': '', onclick: () => upload.click() }, 'Send a file');
+  return [
+    el('div', { class: 'bin-body-head' }, el('label', { class: 'tool-label', for: `ans-b-${i}` }, 'Body'), el('span', { class: 'bin-body-tools' }, typePicker(a, headers), pretty, file, dynamic)),
+    body,
+    note,
+    upload,
+    el('label', { class: 'bin-check' }, template, ' Fill in dynamic values ({{…}}) from each request'),
+    previewBlock(() => a.body, () => a.template)];
+}
+
 function renderAnswers() {
   const weighted = draft.answers.length > 1;
+  const shares = percents(draft.answers);
+  const shareLabels = [];
+  const refreshShares = () => percents(draft.answers).forEach((p, j) => { if (shareLabels[j]) shareLabels[j].textContent = `${p}% of requests`; });
   $('[data-rule-answers]').replaceChildren(...draft.answers.map((a, i) => {
-    const body = el('textarea', { class: 'tool-input', rows: '5', spellcheck: 'false', 'aria-label': 'Body', value: a.body ?? '', oninput: (e) => { a.body = e.target.value; } });
-    const template = el('input', { type: 'checkbox', checked: a.template, onchange: (e) => { a.template = e.target.checked; } });
-    const dynamic = el('select', { class: 'tool-input bin-dynamic', 'aria-label': 'Insert a dynamic value', onchange: (e) => {
-      if (!e.target.value) return;
-      insertAt(body, e.target.value);
-      a.template = true;
-      template.checked = true;
-      e.target.value = '';
-    } }, el('option', { value: '' }, 'Insert a dynamic value…'), ...DYNAMIC_VALUES.map((d) => el('option', { value: d.text }, d.label)));
+    const headers = el('textarea', { id: `ans-h-${i}`, class: 'tool-input', rows: '2', spellcheck: 'false', value: headerLines(a.headers), oninput: (e) => {
+      a.headers = parseHeaderLines(e.target.value);
+      const picker = e.target.closest('.bin-answer').querySelector('.bin-type');
+      const type = contentTypeOf(a.headers);
+      if (picker && [...picker.options].some((o) => o.value === type)) picker.value = type;
+    } });
+    shareLabels[i] = el('span', { class: 'bin-share', 'data-answer-share': '' }, `${shares[i]}% of requests`);
     return el('li', { class: 'bin-answer' },
+      weighted ? el('div', { class: 'bin-answer-head' },
+        el('input', { class: 'tool-input', type: 'text', maxlength: '120', 'aria-label': 'Answer description', placeholder: `Answer ${i + 1}, like "Usually succeeds"`, value: a.description ?? '', oninput: (e) => { a.description = e.target.value; } }),
+        shareLabels[i]) : null,
       el('div', { class: 'tool-row' },
-        weighted ? el('div', {}, el('label', { class: 'tool-label', for: `ans-w-${i}` }, 'Weight'), el('input', { id: `ans-w-${i}`, class: 'tool-input', type: 'number', min: '1', max: '100', value: a.weight, oninput: (e) => { a.weight = Number(e.target.value); } })) : null,
+        weighted ? el('div', {}, el('label', { class: 'tool-label', for: `ans-w-${i}` }, 'Weight'), el('input', { id: `ans-w-${i}`, class: 'tool-input', type: 'number', min: '1', max: '100', value: a.weight, oninput: (e) => { a.weight = Number(e.target.value); refreshShares(); } })) : null,
         el('div', {}, el('label', { class: 'tool-label', for: `ans-s-${i}` }, 'Status'), el('input', { id: `ans-s-${i}`, class: 'tool-input', type: 'number', min: '100', max: '599', value: a.status, oninput: (e) => { a.status = Number(e.target.value); } })),
         el('div', {}, el('label', { class: 'tool-label', for: `ans-d-${i}` }, 'Delay, ms'), el('input', { id: `ans-d-${i}`, class: 'tool-input', type: 'number', min: '0', max: '15000', step: '100', value: a.delayMs, oninput: (e) => { a.delayMs = Number(e.target.value); } })),
         weighted ? el('div', { class: 'bin-answer-remove' }, el('button', { type: 'button', class: 'btn ghost small', onclick: () => { draft.answers.splice(i, 1); renderAnswers(); } }, 'Remove')) : null),
       el('label', { class: 'tool-label', for: `ans-h-${i}` }, 'Headers, one per line'),
-      el('textarea', { id: `ans-h-${i}`, class: 'tool-input', rows: '2', spellcheck: 'false', value: headerLines(a.headers), oninput: (e) => { a.headers = parseHeaderLines(e.target.value); } }),
-      el('div', { class: 'bin-body-head' }, el('span', { class: 'tool-label' }, 'Body'), dynamic),
-      body,
-      el('label', { class: 'bin-check' }, template, ' Fill in dynamic values ({{…}}) from each request'),
-      previewBlock(() => a.body, () => a.template));
+      headers,
+      ...answerBody(a, i, headers));
   }));
+  renderAnswerMode();
 }
 
 async function saveDraft(e) {
   e.preventDefault();
   draft.name = $('[data-rule-name]').value.trim();
+  draft.description = $('[data-rule-description]').value.trim();
   draft.method = $('[data-rule-method]').value;
   const next = editing < 0 ? [...rules, draft] : rules.map((r, i) => (i === editing ? draft : r));
   const button = $('[data-rule-save]');
@@ -827,6 +917,7 @@ $('[data-rule-add-answer]').addEventListener('click', () => {
   draft.answers.push(blankAnswer());
   renderAnswers();
 });
+for (const radio of document.querySelectorAll('[data-rule-mode]')) radio.addEventListener('change', (e) => setAnswerMode(e.target.value));
 $('[data-bin-editor-form]').addEventListener('submit', saveDraft);
 $('[data-bin-editor-close]').addEventListener('click', closeEditor);
 $('[data-bin-editor-cancel]').addEventListener('click', closeEditor);

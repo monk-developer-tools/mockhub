@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { binLink, opsFor, duplicate, flow, forgetBin, rememberBin, renameBin, routeSummary, parseBinHash, previewRequest, headerLines, mergeRequests, move, outcomeText, outcomeTone, parseHeaderLines, recipe, routingFromForm, snippets, summary, tunnelCommand } from '../assets/js/tools/bin.js';
+import { base64Size, binLink, contentTypeOf, fileSize, opsFor, percents, prettyBody, withContentType, duplicate, flow, forgetBin, rememberBin, renameBin, routeSummary, parseBinHash, previewRequest, headerLines, mergeRequests, move, outcomeText, outcomeTone, parseHeaderLines, recipe, routingFromForm, snippets, summary, tunnelCommand } from '../assets/js/tools/bin.js';
 
 test('summarises a rule in one line', () => {
   // Given
@@ -23,7 +23,7 @@ test('summarises weighted, delayed and catch-all rules', () => {
   const lines = [summary(flaky), summary(slow), summary(header)];
 
   // Then
-  assert.deepEqual(lines, ['any request → 200 (3) or 503 (1)', 'any request → 200 after 5s', 'header X-Event is present → 204']);
+  assert.deepEqual(lines, ['any request → 200 (75%) or 503 (25%)', 'any request → 200 after 5s', 'header X-Event is present → 204']);
 });
 
 test('starting points carry templates only where they use helpers', () => {
@@ -249,4 +249,67 @@ test('offers a path pattern only when the rule looks at the path', () => {
   assert.equal(onPath, true);
   assert.equal(onHeader, false);
   assert.ok(opsFor('xml').some((o) => o.value === 'absent'));
+});
+
+test('sets the content type in place of whatever case it was written in', () => {
+  // Given
+  const headers = { 'content-type': 'text/plain', 'X-Trace': '1' };
+
+  // When
+  const json = withContentType(headers, 'application/json');
+  const none = withContentType(headers, '');
+
+  // Then
+  assert.deepEqual(json, { 'Content-Type': 'application/json', 'X-Trace': '1' });
+  assert.equal(contentTypeOf(json), 'application/json');
+  assert.deepEqual(none, { 'X-Trace': '1' });
+  assert.equal(contentTypeOf(none), '');
+});
+
+test('formats JSON and explains why other bodies cannot be formatted', () => {
+  // Given
+  const bodies = ['{"a":1,"b":[2]}', '{"id": "{{request.id}}"', 'plain'];
+
+  // When
+  const [json, template, plain] = bodies.map(prettyBody);
+
+  // Then
+  assert.equal(json.text, '{\n  "a": 1,\n  "b": [\n    2\n  ]\n}');
+  assert.match(template.error, /dynamic values/);
+  assert.match(plain.error, /isn't valid JSON/);
+});
+
+test('shows each weighted answer as a share of requests', () => {
+  // Given
+  const answers = [{ weight: 3 }, { weight: 1 }, { weight: 0 }];
+
+  // When
+  const shares = percents(answers);
+
+  // Then
+  assert.deepEqual(shares, [75, 25, 0]);
+});
+
+test('measures an uploaded file from its base64 text', () => {
+  // Given
+  const encoded = Buffer.from(new Uint8Array(2000)).toString('base64');
+
+  // When
+  const size = base64Size(encoded);
+
+  // Then
+  assert.equal(size, 2000);
+  assert.equal(fileSize(size), '2.0 KB');
+  assert.equal(fileSize(300), '300 B');
+});
+
+test('names the file a rule answers with', () => {
+  // Given
+  const rule = { method: 'GET', conditions: [], answers: [{ status: 200, delayMs: 0, weight: 1, fileName: 'logo.png' }] };
+
+  // When
+  const line = summary(rule);
+
+  // Then
+  assert.equal(line, 'GET any request → 200 with logo.png');
 });

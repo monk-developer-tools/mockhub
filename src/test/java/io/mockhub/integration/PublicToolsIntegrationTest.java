@@ -123,6 +123,34 @@ class PublicToolsIntegrationTest {
   }
 
   @Test
+  void aBinRuleSendsAnUploadedFileAndLogsItAsBinary() {
+    // Given
+    server = MockHubServer.start(data, ON);
+    ApiClient api = server.api();
+    JsonNode bin = api.post("/__public/bins", "").json();
+    String id = bin.get("id").asText();
+    Map<String, String> owner = Map.of("X-Bin-Token", bin.get("token").asText());
+    String rules = """
+        {"rulesEnabled": true, "rules": [{"name": "Logo", "description": "Serves the logo", "method": "GET",
+          "answers": [{"status": 200, "body": "iVBORw0KGgo=", "fileName": "logo.png", "description": "The real file"}]}]}
+        """;
+    api.send("PUT", "/__public/inspect/" + id + "/rules", rules, "application/json", owner);
+
+    // When
+    ApiClient.Result logo = api.send("GET", "/__public/bins/" + id + "/logo.png", null, null);
+    JsonNode saved = api.send("GET", "/__public/inspect/" + id + "/settings", null, null, owner).json();
+    JsonNode log = api.send("GET", "/__public/inspect/" + id, null, null, owner).json();
+
+    // Then
+    assertThat(logo.bytes()).containsExactly((byte) 0x89, 'P', 'N', 'G', '\r', '\n', 0x1a, '\n');
+    assertThat(logo.contentType()).isEqualTo("image/png");
+    assertThat(saved.at("/rules/0/description").asText()).isEqualTo("Serves the logo");
+    assertThat(saved.at("/rules/0/answers/0/fileName").asText()).isEqualTo("logo.png");
+    assertThat(saved.at("/rules/0/answers/0/description").asText()).isEqualTo("The real file");
+    assertThat(log.at("/requests/0/outcome/body").asText()).isEqualTo("(8 bytes of binary data)");
+  }
+
+  @Test
   void binRulesMatchNewMethodsPathPatternsFormsAndSoapActions() {
     // Given
     server = MockHubServer.start(data, ON);

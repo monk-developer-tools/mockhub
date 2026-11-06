@@ -7,6 +7,9 @@ import io.mockhub.api.Jsons;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -488,6 +491,15 @@ public final class Bins {
       if (!lower.startsWith("x-forwarded-") && !lower.equals("x-real-ip")) out.put(k, v);
     });
     return out;
+  }
+
+  static String readable(byte[] body) {
+    try {
+      return StandardCharsets.UTF_8.newDecoder().onMalformedInput(CodingErrorAction.REPORT).onUnmappableCharacter(CodingErrorAction.REPORT)
+          .decode(ByteBuffer.wrap(body)).toString();
+    } catch (CharacterCodingException e) {
+      return "(" + body.length + " bytes of binary data)";
+    }
   }
 
   static String cut(String body, int max) {

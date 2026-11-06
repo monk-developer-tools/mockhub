@@ -250,12 +250,18 @@
         <select id="rule-method" class="tool-input" data-rule-method></select>
       </div>
     </div>
+    <label class="tool-label" for="rule-description">Description <span class="tool-hint">(optional)</span></label>
+    <textarea id="rule-description" class="tool-input bin-prose" rows="2" maxlength="500" placeholder="What this rule is for, so others know when it answers" data-rule-description></textarea>
     <h4 class="tool-sub">When all of these hold</h4>
     <ol class="bin-conditions" data-rule-conditions></ol>
     <div class="tool-actions-row"><button type="button" class="btn ghost small" data-rule-add-condition>Add condition</button></div>
     <h4 class="tool-sub">Answer with</h4>
+    <div class="bin-mode" role="radiogroup" aria-label="Answers">
+      <label class="bin-check"><input type="radio" name="answer-mode" value="single" data-rule-mode> One answer</label>
+      <label class="bin-check"><input type="radio" name="answer-mode" value="weighted" data-rule-mode> Weighted answers, picked at random by weight</label>
+    </div>
     <ol class="bin-answers" data-rule-answers></ol>
-    <div class="tool-actions-row"><button type="button" class="btn ghost small" data-rule-add-answer>Add a weighted answer</button></div>
+    <div class="tool-actions-row"><button type="button" class="btn ghost small" data-rule-add-answer>Add an answer</button></div>
     <p class="tool-error" data-rule-error hidden></p>
     <div class="tool-actions-row">
       <button type="submit" class="btn primary" value="save" data-rule-save>Save rule</button>

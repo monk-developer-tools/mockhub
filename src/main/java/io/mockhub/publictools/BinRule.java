@@ -4,7 +4,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.mockhub.api.Jsons;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -15,13 +17,15 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
-public record BinRule(String id, String name, boolean enabled, String method, List<Condition> conditions, List<Answer> answers) {
+public record BinRule(String id, String name, String description, boolean enabled, String method, List<Condition> conditions, List<Answer> answers) {
   public static final int MAX_RULES = 50;
   public static final int MAX_CONDITIONS = 10;
   public static final int MAX_ANSWERS = 5;
   public static final int MAX_DELAY_MS = 15_000;
   public static final int MAX_BODY = 16 * 1024;
   public static final int MAX_HEADERS = 20;
+  public static final int MAX_DESCRIPTION = 500;
+  public static final int MAX_ANSWER_NOTE = 120;
   static final Set<String> METHODS = Set.of("ANY", "GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "QUERY", "TRACE");
 
   public enum Target {
@@ -58,7 +62,15 @@ public record BinRule(String id, String name, boolean enabled, String method, Li
 
   public record Condition(Target target, String key, Op op, String value) {}
 
-  public record Answer(int weight, int status, int delayMs, Map<String, String> headers, String body, boolean template) {}
+  public record Answer(int weight, int status, int delayMs, Map<String, String> headers, String body, boolean template, String description, String fileName) {
+    public boolean file() {
+      return !fileName.isEmpty();
+    }
+
+    public byte[] bytes() {
+      return file() ? Base64.getDecoder().decode(body) : body.getBytes(StandardCharsets.UTF_8);
+    }
+  }
 
   public static List<BinRule> listFrom(JsonNode node) {
     if (node == null || node.isNull() || node.isMissingNode()) return List.of();
@@ -81,6 +93,8 @@ public record BinRule(String id, String name, boolean enabled, String method, Li
     if (!id.matches("[a-z0-9-]{1,40}")) id = UUID.randomUUID().toString().substring(0, 8);
     String name = text(node, "name", "").trim();
     if (name.length() > 80) throw new IllegalArgumentException("Keep the name under 80 characters");
+    String description = text(node, "description", "").trim();
+    if (description.length() > MAX_DESCRIPTION) throw new IllegalArgumentException("Keep the description under " + MAX_DESCRIPTION + " characters");
     String method = text(node, "method", "ANY").toUpperCase(Locale.ROOT);
     if (!METHODS.contains(method)) throw new IllegalArgumentException("Unknown method " + method);
     List<Condition> conditions = new ArrayList<>();
@@ -92,7 +106,7 @@ public record BinRule(String id, String name, boolean enabled, String method, Li
     if (as.isEmpty()) throw new IllegalArgumentException("Give the rule an answer");
     if (as.size() > MAX_ANSWERS) throw new IllegalArgumentException("A rule has up to " + MAX_ANSWERS + " weighted answers");
     for (JsonNode a : as) answers.add(answer(a, as.size() > 1));
-    return new BinRule(id, name, node.path("enabled").asBoolean(true), method, List.copyOf(conditions), List.copyOf(answers));
+    return new BinRule(id, name, description, node.path("enabled").asBoolean(true), method, List.copyOf(conditions), List.copyOf(answers));
   }
 
   private static Condition condition(JsonNode c) {
@@ -132,7 +146,17 @@ public record BinRule(String id, String name, boolean enabled, String method, Li
     int weight = weighted ? a.path("weight").asInt(1) : 1;
     if (weight < 1 || weight > 100) throw new IllegalArgumentException("Weights go from 1 to 100");
     String body = text(a, "body", "");
-    if (body.length() > MAX_BODY) throw new IllegalArgumentException("Keep a body under 16 KB");
+    String fileName = text(a, "fileName", "").trim();
+    boolean template = a.path("template").asBoolean(false);
+    if (fileName.isEmpty()) {
+      if (body.length() > MAX_BODY) throw new IllegalArgumentException("Keep a body under 16 KB");
+    } else {
+      if (fileName.length() > 100 || fileName.contains("/") || fileName.contains("\\")) throw new IllegalArgumentException("Give the file a plain name under 100 characters");
+      if (template) throw new IllegalArgumentException("A file is sent as it is, so it can't fill in dynamic values");
+      if (decodedSize(body) > MAX_BODY) throw new IllegalArgumentException("Keep a file under 16 KB");
+    }
+    String note = text(a, "description", "").trim();
+    if (note.length() > MAX_ANSWER_NOTE) throw new IllegalArgumentException("Keep an answer's description under " + MAX_ANSWER_NOTE + " characters");
     Map<String, String> headers = new LinkedHashMap<>();
     a.path("headers").fields().forEachRemaining(e -> {
       String name = e.getKey().trim();
@@ -140,11 +164,11 @@ public record BinRule(String id, String name, boolean enabled, String method, Li
       headers.put(name, e.getValue().asText(""));
     });
     if (headers.size() > MAX_HEADERS) throw new IllegalArgumentException("Up to " + MAX_HEADERS + " headers per answer");
-    return new Answer(weight, status, delay, Map.copyOf(headers), body, a.path("template").asBoolean(false));
+    return new Answer(weight, status, delay, Map.copyOf(headers), body, template, note, fileName);
   }
 
   public ObjectNode toJson() {
-    ObjectNode out = Jsons.object().put("id", id).put("name", name).put("enabled", enabled).put("method", method);
+    ObjectNode out = Jsons.object().put("id", id).put("name", name).put("description", description).put("enabled", enabled).put("method", method);
     ArrayNode cs = out.putArray("conditions");
     for (Condition c : conditions) {
       ObjectNode n = cs.addObject().put("target", c.target().name().toLowerCase(Locale.ROOT)).put("op", c.op().name().toLowerCase(Locale.ROOT)).put("value", c.value());
@@ -153,6 +177,8 @@ public record BinRule(String id, String name, boolean enabled, String method, Li
     ArrayNode as = out.putArray("answers");
     for (Answer a : answers) {
       ObjectNode n = as.addObject().put("weight", a.weight()).put("status", a.status()).put("delayMs", a.delayMs()).put("body", a.body()).put("template", a.template());
+      if (!a.description().isEmpty()) n.put("description", a.description());
+      if (a.file()) n.put("fileName", a.fileName());
       ObjectNode h = n.putObject("headers");
       new TreeMap<>(a.headers()).forEach(h::put);
     }
@@ -167,6 +193,14 @@ public record BinRule(String id, String name, boolean enabled, String method, Li
 
   public String label() {
     return name.isEmpty() ? method + " rule" : name;
+  }
+
+  private static int decodedSize(String base64) {
+    try {
+      return Base64.getDecoder().decode(base64).length;
+    } catch (IllegalArgumentException e) {
+      throw new IllegalArgumentException("Send a file's body as base64");
+    }
   }
 
   private static String text(JsonNode node, String field, String fallback) {
