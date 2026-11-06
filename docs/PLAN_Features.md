@@ -25,7 +25,7 @@ Legend: ✅ have it · 🟡 partial · ❌ missing
 | Mock rules and request matching | Form and JSON editor, all WireMock matchers | ✅ | — |
 | Advanced matching filters | Body JSONPath/XPath, regex, headers, query, cookies | ✅ | — |
 | Execution order of rules | Matching order view, drag or arrows to reorder | ✅ | — |
-| CRUD routes | CRUD resources with `_sort`, `_order`, `_limit`, `_offset` | 🟡 | F7 |
+| CRUD routes | CRUD resources with Beeceptor-style filters, sort, `page/size` and `limit/offset`, record limits | ✅ | F7 |
 | HTTP callout rule | Webhooks, forward, wait for callout, callout log, retries, OAuth connections | ✅ | — |
 | Large and binary responses | Response files with content type | ✅ | — |
 | Template engine: request data, control flow, arrays, strings, maths, dates | Handlebars helpers and the Insert dynamic value picker | ✅ | — |
@@ -56,10 +56,10 @@ Legend: ✅ have it · 🟡 partial · ❌ missing
 | Agentic mode (MCP) | MCP server with 22 tools, direct or review tokens, audited | ✅ | — |
 | Contract drift detection | OpenAPI contract per project, drift findings, AI patch and webhook | ✅ | F13 |
 | Live traffic (RPS) | Traffic chart 5m–24h and 30 days, average and peak RPS, drag to select | ✅ | — |
-| Test data editor for OpenAPI mocks | Edit generated stubs by hand, AI body generator | 🟡 | F8 |
-| HTTP echo server | Missing as a built-in | ❌ | F11 |
-| "Mock these APIs" button | Missing | ❌ | F11 |
-| Error code reference | Scattered across docs | 🟡 | F1 |
+| Test data editor for OpenAPI mocks | "Edit as table" for list bodies, bind rows to a dataset, AI body generator | ✅ | F8 |
+| HTTP echo server | Echo response type and Echo server example at `/echo` | ✅ | F11 |
+| "Mock these APIs" button | Public import page for an OpenAPI URL with an embeddable badge | ✅ | F11 |
+| Error code reference | Error codes docs page: every status and header MockHub adds | ✅ | F1 |
 | Account management | Users, SSO, account dialog, personal access tokens | ✅ | — |
 | Product documentation as a card-based site | One long docs page | 🟡 | F1 |
 
