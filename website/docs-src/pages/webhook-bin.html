@@ -19,7 +19,7 @@
 </table>
 <p>An answer has a status, a delay up to 15 seconds, headers and a body. Tick <strong>Fill in dynamic values</strong> to render the body and headers as a <a href="/docs/templating/">template</a>, for example <code>{{jsonPath request.body '$.id'}}</code>, <code>{{now}}</code> or <code>{{fake 'Name.fullName'}}</code>. Give a rule up to five answers with weights to make a flaky endpoint: weights 3 and 1 answer the first three times in four.</p>
 <p>The starting points fill the editor with a common rule: fail with 500, answer after 5 seconds, match one event type, echo the body back and fail one in four. A bin holds up to 50 rules of up to 10 conditions each.</p>
-<p>When the server sets <code>MOCKHUB_PUBLIC_AI=true</code> and has an AI provider, <strong>Draft with AI</strong> turns a description such as "answer 402 with the payment id when the event is payment.failed" into a rule. The draft opens in the editor and is saved only when you save it.</p>
+<p>When the server has an <a href="/docs/ai/">AI provider</a>, <strong>Draft with AI</strong> turns a description such as "answer 402 with the payment id when the event is payment.failed" into a rule. It needs a MockHub sign-in: anonymous visitors don't get AI drafts. Each user gets 10 drafts an hour. The draft opens in the editor and is saved only when you save it.</p>
 
 <h3 id="bin-routing">Routing</h3>
 <p>Routing decides what answers a request no rule matched.</p>

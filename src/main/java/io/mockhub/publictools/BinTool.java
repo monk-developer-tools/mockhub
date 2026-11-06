@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.http.ResponseDefinition;
 import io.mockhub.api.Jsons;
+import io.mockhub.auth.Principal;
 import io.mockhub.playground.JdkHttpSender;
 import io.mockhub.playground.TargetGuard;
 import io.mockhub.tunnel.TunnelGateway;
@@ -30,22 +31,25 @@ public final class BinTool implements PublicTool {
   private final BinResponder responder;
   private final BinDrafter drafter;
   private final Function<String, Optional<Boolean>> tunnelOnline;
+  private final Function<String, Optional<Principal>> signedIn;
   private final LongSupplier millis;
 
-  BinTool(Bins bins, PublicLimits limits, BinResponder responder, BinDrafter drafter, Function<String, Optional<Boolean>> tunnelOnline, LongSupplier millis) {
+  BinTool(Bins bins, PublicLimits limits, BinResponder responder, BinDrafter drafter, Function<String, Optional<Boolean>> tunnelOnline,
+      Function<String, Optional<Principal>> signedIn, LongSupplier millis) {
     this.bins = bins;
     this.limits = limits;
     this.responder = responder;
     this.drafter = drafter;
     this.tunnelOnline = tunnelOnline;
+    this.signedIn = signedIn;
     this.millis = millis;
   }
 
   public static BinTool create(Bins bins, PublicLimits limits, TemplatePlayground templates, TargetGuard guard, TunnelGateway tunnels,
-      Function<String, Optional<Boolean>> tunnelOnline, BooleanSupplier aiOn, BinDrafter.Llm llm) {
+      Function<String, Optional<Boolean>> tunnelOnline, Function<String, Optional<Principal>> signedIn, BooleanSupplier aiOn, BinDrafter.Llm llm) {
     BinResponder responder = new BinResponder(templates, new JdkHttpSender(), new JdkHttpSender(true), guard, tunnels,
         bound -> ThreadLocalRandom.current().nextInt(bound), System::currentTimeMillis);
-    return new BinTool(bins, limits, responder, new BinDrafter(aiOn, llm), tunnelOnline, System::currentTimeMillis);
+    return new BinTool(bins, limits, responder, new BinDrafter(aiOn, llm), tunnelOnline, signedIn, System::currentTimeMillis);
   }
 
   @Override
@@ -160,8 +164,10 @@ public final class BinTool implements PublicTool {
 
   private ResponseDefinition draft(String id, String token, PublicRequest request) {
     if (!bins.verify(id, token)) return notYours(id);
-    if (!drafter.available()) return PublicResponses.error(409, "Describing a rule isn't turned on for this server.");
-    Optional<Long> wait = limits.take(request.clientIp(), PublicLimits.Kind.AI);
+    if (!drafter.available()) return PublicResponses.error(409, "This server has no AI provider set up.");
+    Optional<Principal> who = signedIn.apply(request.header("Authorization"));
+    if (who.isEmpty()) return PublicResponses.error(401, "Sign in to MockHub to draft rules with AI.");
+    Optional<Long> wait = limits.take("user:" + who.get().id(), PublicLimits.Kind.AI);
     if (wait.isPresent()) return PublicResponses.tooMany(wait.get(), "AI drafts");
     try {
       BinRule rule = drafter.draft(read(request.body()).path("description").asText(""));

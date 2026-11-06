@@ -5269,3 +5269,24 @@ select.tool-select-small {
 .btn[hidden] {
   display: none;
 }
+
+.bin-signin,
+.bin-describe {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bin-signin[hidden],
+.bin-describe[hidden] {
+  display: none;
+}
+
+.bin-link {
+  font: inherit;
+  color: var(--link);
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}

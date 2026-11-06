@@ -6,6 +6,7 @@ import {
 } from './bin.js';
 
 const KEY = 'mockhub-bin';
+const SESSION_KEY = 'mockhub-bin-session';
 const POLL_MS = 2000;
 const SETTINGS_MS = 10000;
 let bin = null;
@@ -34,6 +35,24 @@ const store = {
     try {
       if (value) localStorage.setItem(KEY, JSON.stringify(value));
       else localStorage.removeItem(KEY);
+    } catch (e) {
+      return;
+    }
+  },
+};
+
+const session = {
+  read() {
+    try {
+      return JSON.parse(sessionStorage.getItem(SESSION_KEY) ?? 'null');
+    } catch (e) {
+      return null;
+    }
+  },
+  write(value) {
+    try {
+      if (value) sessionStorage.setItem(SESSION_KEY, JSON.stringify(value));
+      else sessionStorage.removeItem(SESSION_KEY);
     } catch (e) {
       return;
     }
@@ -418,6 +437,31 @@ async function saveRouting(e) {
   if (result.json && !result.error) applySettings(result.json);
 }
 
+function renderSignIn(message = '') {
+  const signedIn = session.read();
+  $('[data-bin-signin]').hidden = Boolean(signedIn);
+  $('[data-bin-describe]').hidden = !signedIn;
+  $('[data-bin-signed-in]').textContent = signedIn ? `Signed in as ${signedIn.name}` : '';
+  $('[data-bin-signin-note]').textContent = message;
+}
+
+async function signIn(e) {
+  e.preventDefault();
+  const form = e.target;
+  const note = $('[data-bin-signin-note]');
+  note.textContent = 'Signing in…';
+  const body = JSON.stringify({ username: form.elements.username.value.trim(), password: form.elements.password.value });
+  const result = await call('/__admin/mockhub/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body });
+  form.elements.password.value = '';
+  if (result.error || !result.json?.token) {
+    note.textContent = result.status === 401 ? 'Wrong username or password.' : result.error ?? 'Signing in failed.';
+    return;
+  }
+  const user = result.json.user ?? {};
+  session.write({ token: result.json.token, name: user.displayName || user.username || form.elements.username.value.trim() });
+  renderSignIn();
+}
+
 async function draftWithAi(e) {
   e.preventDefault();
   const text = $('[data-bin-ai-text]').value.trim();
@@ -429,8 +473,14 @@ async function draftWithAi(e) {
   const button = $('[data-bin-ai-go]');
   button.disabled = true;
   note.textContent = 'Drafting…';
-  const result = await call(inspect('/draft'), { method: 'POST', headers: auth(true), body: JSON.stringify({ description: text }) });
+  const signedIn = session.read();
+  const result = await call(inspect('/draft'), { method: 'POST', headers: { ...auth(true), Authorization: `Bearer ${signedIn?.token ?? ''}` }, body: JSON.stringify({ description: text }) });
   button.disabled = false;
+  if (result.status === 401) {
+    session.write(null);
+    renderSignIn('Your sign-in has ended. Sign in again.');
+    return;
+  }
   if (result.error || !result.json?.rule) {
     note.textContent = result.error ?? 'No rule came back. Try describing it differently.';
     return;
@@ -524,13 +574,19 @@ $('[data-bin-routing]').addEventListener('change', (e) => {
 $('[data-bin-routing]').addEventListener('input', (e) => {
   if (e.target.name === 'target' || e.target.name === 'pathPrefix') renderFlow();
 });
-$('[data-bin-ai]').addEventListener('submit', draftWithAi);
+$('[data-bin-describe]').addEventListener('submit', draftWithAi);
+$('[data-bin-signin]').addEventListener('submit', signIn);
+$('[data-bin-signout]').addEventListener('click', () => {
+  session.write(null);
+  renderSignIn();
+});
 
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden && bin) poll();
 });
 
 renderRecipes();
+renderSignIn();
 const saved = store.read();
 if (saved?.id && saved?.token) open(saved);
 wireCopyButtons();

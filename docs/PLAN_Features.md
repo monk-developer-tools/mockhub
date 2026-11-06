@@ -750,8 +750,8 @@ for everything else, AI help, and no cap on how many requests it receives.
 - Routing for calls no rule answers: answer with the bin's default reply, forward to a public URL (path prefix,
   skip TLS checks, headers added to the request and to the answer), or a local tunnel (`mockhub tunnel` with the
   bin's key). A flow line shows client → bin → rules → target.
-- "Describe a rule" asks the server's AI provider for a rule, shown in the editor before it's saved. Off unless the
-  operator sets `MOCKHUB_PUBLIC_AI=true`, with its own rate limit.
+- "Describe a rule" asks the server's AI provider for a rule, shown in the editor before it's saved. Only for people
+  signed in to MockHub, never for anonymous visitors, with its own rate limit per user.
 - Each request shows how it was answered (rule name, default, forwarded, tunnel or an error), the status, time taken
   and the answer's body beside the request; webhook event types (`event`, `type`, `X-GitHub-Event` and similar) show
   as a badge. Code samples for cURL, JavaScript, Python and Java.
@@ -760,7 +760,7 @@ Checklist:
 - [x] Disk storage, paging, restart, size guard, separate send rate
 - [x] Rules: model, validation, matching, weighted and templated answers, delays
 - [x] Routing: default, forward, tunnel with the bin key
-- [x] AI rule drafts behind `MOCKHUB_PUBLIC_AI`
+- [x] AI rule drafts for signed-in users only
 - [x] Bin page: rules list and editor, starting points, routing cards and flow, AI box, answers beside requests,
       event badges, code samples, older pages
 - [x] Tests at unit, integration and system level; docs page, README, tool page copy

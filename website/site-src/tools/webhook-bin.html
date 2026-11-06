@@ -43,14 +43,36 @@
       <div class="tool-actions-row">
         <button type="button" class="btn secondary" data-bin-rule-new>New rule</button>
       </div>
-      <form class="bin-ai" data-bin-ai hidden>
-        <label class="tool-label" for="bin-ai-text">Describe a rule</label>
-        <textarea id="bin-ai-text" class="tool-input" rows="2" maxlength="1000" placeholder="Answer 402 with the payment id when the event is payment.failed" data-bin-ai-text></textarea>
-        <div class="tool-actions-row">
-          <button type="submit" class="btn secondary" data-bin-ai-go>Draft with AI</button>
-          <span class="tool-hint" data-bin-ai-note aria-live="polite">You check the draft before it's saved.</span>
-        </div>
-      </form>
+      <div class="bin-ai" data-bin-ai hidden>
+        <form class="bin-signin" data-bin-signin>
+          <p class="tool-hint">Sign in to MockHub to describe a rule and let AI draft it.</p>
+          <div class="tool-row">
+            <div class="tool-grow">
+              <label class="tool-label" for="bin-user">Username</label>
+              <input id="bin-user" class="tool-input" name="username" type="text" autocomplete="username" spellcheck="false" required>
+            </div>
+            <div class="tool-grow">
+              <label class="tool-label" for="bin-pass">Password</label>
+              <input id="bin-pass" class="tool-input" name="password" type="password" autocomplete="current-password" required>
+            </div>
+          </div>
+          <div class="tool-actions-row">
+            <button type="submit" class="btn secondary">Sign in</button>
+            <span class="tool-hint" data-bin-signin-note aria-live="polite"></span>
+          </div>
+        </form>
+        <form class="bin-describe" data-bin-describe hidden>
+          <div class="tool-head">
+            <label class="tool-label" for="bin-ai-text">Describe a rule</label>
+            <span class="tool-hint"><span data-bin-signed-in></span> · <button type="button" class="bin-link" data-bin-signout>Sign out</button></span>
+          </div>
+          <textarea id="bin-ai-text" class="tool-input" rows="2" maxlength="1000" placeholder="Answer 402 with the payment id when the event is payment.failed" data-bin-ai-text></textarea>
+          <div class="tool-actions-row">
+            <button type="submit" class="btn secondary" data-bin-ai-go>Draft with AI</button>
+            <span class="tool-hint" data-bin-ai-note aria-live="polite">You check the draft before it's saved.</span>
+          </div>
+        </form>
+      </div>
       <p class="tool-error" data-bin-rules-error hidden></p>
     </div>
 

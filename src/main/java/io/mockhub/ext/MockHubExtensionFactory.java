@@ -430,7 +430,8 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     PublicToolsFilter publicTools = new PublicToolsFilter(config.publicTools, publicLimits, List.of(
         new EchoTool(),
         BinTool.create(bins, publicLimits, templatePlayground, new TargetGuard(false, InetAddress::getAllByName, "MOCKHUB_PUBLIC_TOOLS"), tunnels, tunnels::isOnline,
-            () -> config.publicAi && aiSettings.get().enabled(), (system, user) -> {
+            header -> Optional.ofNullable(authRef.get()).filter(AuthService::enabled).flatMap(a -> a.principal(header)).filter(p -> !p.anonymous()),
+            () -> aiSettings.get().enabled(), (system, user) -> {
               ArrayNode messages = Jsons.MAPPER.createArrayNode();
               messages.addObject().put("role", "system").put("content", system);
               messages.addObject().put("role", "user").put("content", user);

@@ -44,7 +44,7 @@ public final class BinDrafter {
   }
 
   BinRule draft(String description) {
-    if (!available()) throw new Unavailable("Describing a rule isn't turned on for this server.");
+    if (!available()) throw new Unavailable("This server has no AI provider set up.");
     String text = description == null ? "" : description.strip();
     if (text.isEmpty()) throw new IllegalArgumentException("Describe the rule, for example: answer 402 when the event is payment.failed");
     if (text.length() > MAX_DESCRIPTION) throw new IllegalArgumentException("Keep the description under " + MAX_DESCRIPTION + " characters");
