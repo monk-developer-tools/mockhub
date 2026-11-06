@@ -7,6 +7,8 @@
 </ul>
 <p>OpenAPI 3.0, 3.1 and Swagger 2 are supported, up to 5 MB. Paths are matched with and without the path of the first server URL (or Swagger's <code>basePath</code>), so <code>/v1/orders</code> and <code>/orders</code> both match a contract served from <code>https://api.example.com/v1</code>. If calls arrive without a prefix the contract's paths have, such as <code>/api/v1</code>, fill in <strong>Prefix the traffic leaves out</strong>; an import that strips a prefix keeps it there for you.</p>
 
+<figure data-shot="contract">The Contract tab groups drift by kind, with how often each was seen and a link to the calls behind it.</figure>
+
 <h3 id="drift-checks">What is checked</h3>
 <table>
   <thead><tr><th>Finding</th><th>When</th></tr></thead>

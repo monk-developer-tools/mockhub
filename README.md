@@ -610,7 +610,11 @@ Screenshots for reviewing UI changes and refreshing the website:
 node ui/scripts/demo.mjs http://localhost:8080      # on a fresh server: seeds the "Acme" demo (sign-in on, user alex)
 MOCKHUB_USER=alex MOCKHUB_PASSWORD=demo-password-1 \
   npm --prefix ui run screens -- http://localhost:8080 screens   # key pages, light and dark, desktop and phone
+node ui/scripts/feature-shots.mjs                  # Contract, Tunnels and Forward proxy docs shots from build/libs/mockhub.jar
 ```
+
+`feature-shots.mjs` starts the built JAR on a free port with a temporary data folder, seeds the demo, attaches a Petstore
+contract, sends traffic, opens two tunnels and writes the WebP files to `website/assets/img/shots/` (needs Chrome and `cwebp`).
 
 The website is generated. Edit the docs pages in `website/docs-src/pages/` and the sidebar in `website/docs-src/docs.mjs`.
 Feature pages, the menus, the footer and the free tools come from `website/site-src/pages.mjs`. Then build (needs

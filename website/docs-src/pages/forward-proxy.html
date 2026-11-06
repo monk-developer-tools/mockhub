@@ -14,6 +14,8 @@
 </table>
 <p>In the request log, proxied calls show with the project's base path in front, like <code>/captured/users/42</code>. Open one and choose <strong>Create stub from this request</strong> to mock it from then on.</p>
 
+<figure data-shot="forward-proxy">The Forward proxy panel on the Server page: pick the project, download the CA, copy the client settings.</figure>
+
 <h3 id="proxy-ca">Trust the CA certificate</h3>
 <p>Download it from <strong>Server → Forward proxy → Download CA certificate</strong>, or without signing in:</p>
 <pre><code>curl -o mockhub-proxy-ca.pem http://&lt;mockhub-host&gt;:8080/__admin/mockhub/api/proxy/ca.pem</code></pre>

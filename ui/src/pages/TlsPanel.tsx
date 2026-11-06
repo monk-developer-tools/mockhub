@@ -45,7 +45,7 @@ export function TlsPanel() {
   return (
     <div className="panel">
       <div className="section">
-        <h3><Certificate size={16} /> HTTPS and client certificates</h3>
+        <h3><span className="title-with-icon"><Certificate size={16} /> HTTPS and client certificates</span></h3>
         {!view.httpsEnabled ? (
           <p className="muted small">
             The HTTPS port is off. Start MockHub with <span className="mono">MOCKHUB_HTTPS_PORT=8443</span> to serve mocks over HTTPS,

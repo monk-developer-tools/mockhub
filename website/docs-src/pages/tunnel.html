@@ -19,6 +19,8 @@ java -jar mockhub.jar tunnel --server https://mockhub.example.com --name laptop 
 </table>
 <p>The tunnel prints one line per request, such as <code>POST /hooks -> 204 (12 ms)</code>. Stop it with Ctrl+C. It only makes outgoing calls to MockHub, so it works from behind a firewall or NAT and through nginx, with no port to open.</p>
 
+<figure data-shot="tunnels">Your account dialog lists your tunnels while they are online, with the command to start one.</figure>
+
 <h3 id="tunnel-use">Use it in a stub</h3>
 <ul>
   <li><strong>Proxy</strong>: set the response type to Proxy and <strong>Forward to</strong> to <code>tunnel://laptop/api</code>. A call to <code>/pay/orders/7</code> reaches <code>http://localhost:3000/api/orders/7</code> on your machine, query string included.</li>

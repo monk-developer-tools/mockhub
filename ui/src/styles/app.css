@@ -5352,3 +5352,9 @@ button.map-node:hover,
 .drift-list .btn-row {
   margin-left: auto;
 }
+
+.title-with-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}

@@ -257,7 +257,7 @@ export function ContractTab() {
             headers, bodies, status codes and content types. Drift shows up here, grouped, with counts and an example.
           </p>
         </EmptyState>
-        {canEdit && <AttachForm projectId={project.id} replacing={false} onSaved={load} />}
+        {canEdit && <div className="panel-body"><AttachForm projectId={project.id} replacing={false} onSaved={load} /></div>}
       </div>
     );
   }
@@ -292,11 +292,15 @@ export function ContractTab() {
             )}
           </div>
         </div>
-        {replacing && <AttachForm projectId={project.id} replacing onSaved={() => { setReplacing(false); load(); }} onCancel={() => setReplacing(false)} />}
-        {canEdit && <NotifyForm key={contract.notifyUrl ?? ''} projectId={project.id} contract={contract} onSaved={setContract} />}
-        {drift.lastNotice?.error && (
-          <div className="callout danger small" role="alert">
-            <div>The last drift webhook failed: {drift.lastNotice.error}</div>
+        {(replacing || canEdit || drift.lastNotice?.error) && (
+          <div className="panel-body stack">
+            {replacing && <AttachForm projectId={project.id} replacing onSaved={() => { setReplacing(false); load(); }} onCancel={() => setReplacing(false)} />}
+            {canEdit && <NotifyForm key={contract.notifyUrl ?? ''} projectId={project.id} contract={contract} onSaved={setContract} />}
+            {drift.lastNotice?.error && (
+              <div className="callout danger small" role="alert">
+                <div>The last drift webhook failed: {drift.lastNotice.error}</div>
+              </div>
+            )}
           </div>
         )}
       </section>
@@ -330,50 +334,52 @@ export function ContractTab() {
             )}
           </div>
         </div>
-        {drift.capped && <p className="muted small">Showing the first 500 kinds of drift; new kinds are ignored until you fix or recheck.</p>}
-        {groups.length === 0 ? (
-          <div className="empty slim">
-            <CheckCircle size={22} aria-hidden="true" />
-            <span>{filter === 'expected' ? 'Nothing marked as expected.' : drift.scanned === 0 ? 'No recorded traffic yet. Call the mock, then check again.' : 'Traffic matches the contract.'}</span>
-          </div>
-        ) : (
-          groups.map((g) => (
-            <div key={g.kind} className="stack" style={{ gap: 6 }}>
-              <h3>
-                {g.label} <span className="muted small">{g.findings.length} · {g.total} calls · {g.side}</span>
-              </h3>
-              <ul className="drift-list" aria-label={g.label}>
-                {g.findings.map((f) => (
-                  <li key={f.key} className={f.expected ? 'expected' : undefined}>
-                    {aiOn && !f.expected && (
-                      <input type="checkbox" aria-label={`Choose ${f.method} ${f.path}`} checked={selected.includes(f.key)} onChange={() => toggle(f.key)} />
-                    )}
-                    <span className="route">
-                      <MethodJack method={f.method} />
-                      <span className="path">{f.path}</span>
-                    </span>
-                    <span className="drift-detail mono small">{f.detail}</span>
-                    <span className="muted small">{f.count}× · first {timeAgo(f.firstSeen)} · last {timeAgo(f.lastSeen)}</span>
-                    <span className="btn-row">
-                      <Link className="btn ghost icon" to={requestsLink(project.id, project.basePath, f)} title="See the calls" aria-label={`See calls for ${f.method} ${f.path}`}>
-                        <ArrowSquareOut size={15} />
-                      </Link>
-                      {canEdit && (
-                        f.expected ? (
-                          <button className="btn ghost" onClick={() => mark(f.key, false)}>Reopen</button>
-                        ) : (
-                          <button className="btn ghost" onClick={() => mark(f.key, true)} title="Hide it from open drift and don't notify about it">
-                            <X size={14} /> Mark expected
-                          </button>
-                        )
-                      )}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+        <div className="panel-body stack">
+          {drift.capped && <p className="muted small">Showing the first 500 kinds of drift; new kinds are ignored until you fix or recheck.</p>}
+          {groups.length === 0 ? (
+            <div className="empty slim">
+              <CheckCircle size={22} aria-hidden="true" />
+              <span>{filter === 'expected' ? 'Nothing marked as expected.' : drift.scanned === 0 ? 'No recorded traffic yet. Call the mock, then check again.' : 'Traffic matches the contract.'}</span>
             </div>
-          ))
-        )}
+          ) : (
+            groups.map((g) => (
+              <div key={g.kind} className="stack" style={{ gap: 6 }}>
+                <h3>
+                  {g.label} <span className="muted small">{g.findings.length} · {g.total} calls · {g.side}</span>
+                </h3>
+                <ul className="drift-list" aria-label={g.label}>
+                  {g.findings.map((f) => (
+                    <li key={f.key} className={f.expected ? 'expected' : undefined}>
+                      {aiOn && !f.expected && (
+                        <input type="checkbox" aria-label={`Choose ${f.method} ${f.path}`} checked={selected.includes(f.key)} onChange={() => toggle(f.key)} />
+                      )}
+                      <span className="route">
+                        <MethodJack method={f.method} />
+                        <span className="path">{f.path}</span>
+                      </span>
+                      <span className="drift-detail mono small">{f.detail}</span>
+                      <span className="muted small">{f.count}× · first {timeAgo(f.firstSeen)} · last {timeAgo(f.lastSeen)}</span>
+                      <span className="btn-row">
+                        <Link className="btn ghost icon" to={requestsLink(project.id, project.basePath, f)} title="See the calls" aria-label={`See calls for ${f.method} ${f.path}`}>
+                          <ArrowSquareOut size={15} />
+                        </Link>
+                        {canEdit && (
+                          f.expected ? (
+                            <button className="btn ghost" onClick={() => mark(f.key, false)}>Reopen</button>
+                          ) : (
+                            <button className="btn ghost" onClick={() => mark(f.key, true)} title="Hide it from open drift and don't notify about it">
+                              <X size={14} /> Mark expected
+                            </button>
+                          )
+                        )}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))
+          )}
+        </div>
       </section>
 
       {patch && <PatchDialog patch={patch} busy={patching} onApply={apply} onClose={() => setPatch(null)} />}

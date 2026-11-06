@@ -39,7 +39,7 @@ export function ProxyPanel() {
   return (
     <div className="panel">
       <div className="section">
-        <h3><ArrowsLeftRight size={16} /> Forward proxy</h3>
+        <h3><span className="title-with-icon"><ArrowsLeftRight size={16} /> Forward proxy</span></h3>
         {!view.enabled ? (
           <p className="muted small">
             The proxy is off. Start MockHub with <span className="mono">MOCKHUB_PROXY=true</span> to let browsers, apps and phones use it as an

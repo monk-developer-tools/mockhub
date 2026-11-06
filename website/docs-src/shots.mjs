@@ -3,9 +3,11 @@ export const SHOTS = {
   audit: "The audit log for today, with Li Wei's project change opened to show the exact local and UTC time",
   backup: 'The backup page with organisations and projects ticked for backup',
   callouts: 'The Callouts tab with every callback sent, its headers, body and the answer it got',
+  contract: 'The Contract tab for the Petstore project: five open findings grouped by kind, each with a count and a link to its calls',
   crud: 'The Data tab listing customer records saved by a CRUD resource',
   editor: 'The MockHub stub editor with the Petstore example: routes on the left and the editor for GET /pets/{id} on the right',
   faults: 'The stub editor with Realistic latency, a failure rate and a rate limit',
+  'forward-proxy': 'The Forward proxy panel with the Petstore project chosen, the CA download and ready-made curl, environment and Java settings',
   jwt: 'A token endpoint whose response signs a real RS256 JWT for the caller',
   mcp: 'A new access token with the MCP setup command for Claude Code',
   migrate: 'Importing a WireMock mappings folder into a MockHub project',
@@ -16,6 +18,7 @@ export const SHOTS = {
   snapshots: 'Comparing a project with its Release 1.4 snapshot: two stubs added since',
   soap: 'Editing a SOAP stub that matches Add requests where a is 2 and b is 3',
   teams: 'The organisation page: Organisation, Teams and Projects shown as a map, with team cards below',
+  tunnels: 'The Tunnels tab in the account dialog with two tunnels online, laptop and payments-dev, and the command to start one',
   webhooks: 'A stub that calls back after answering, with a templated URL, headers and body',
 };
 
