@@ -12,3 +12,6 @@
 </table>
 <p>Only members see a team's projects. Someone in the Checkout team can't open, change or delete the Search team's projects, stubs, request log or activity, and the admin API answers <code>403</code>. Mock URLs are different: apps and tests call them without signing in, so turn on an <a href="#api-keys">API key</a> when a project's mocks must stay private.</p>
 <p><strong>Secrets stay with admins.</strong> Only admins create organisations, see or change a project's API key, and configure the AI assistant, single sign-on and backups. Managers and editors see <em>X-API-Key · set</em>; Try it, code snippets and Postman / Bruno exports use a <code>{{apiKey}}</code> placeholder, which Postman and Bruno mark as a secret variable to fill in. Existing <em>owner</em> memberships and SSO mappings become <em>manager</em> automatically.</p>
+
+<figure data-shot="teams">The organisation page with its teams and projects.</figure>
+

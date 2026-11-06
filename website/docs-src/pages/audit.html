@@ -2,3 +2,6 @@
 <p>Entries are kept for 90 days, then removed from disk to save space. Change this with <code>MOCKHUB_AUDIT_RETENTION_DAYS</code>. Each entry is also printed to standard output as one line, so your log platform keeps its own copy:</p>
 <div class="code"><pre>2026-03-10T09:14:02.511Z INFO audit - Sam Patel: Deleted stub “GET /orders” {"actor":"Sam Patel","action":"deleted","target":"stub",...}</pre></div>
 <p>Each user also has a <strong>server role</strong>. <em>Viewer everywhere</em> and <em>editor everywhere</em> apply to every organisation. <em>Admin</em> also manages users, single sign-on, backups and the native WireMock API. Changing a password or disabling a user signs out that user's other sessions.</p>
+
+<figure data-shot="audit">The audit log with one change opened to show what changed and when.</figure>
+

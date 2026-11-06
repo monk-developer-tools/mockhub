@@ -4865,3 +4865,22 @@ select.tool-select-small {
 .docs-topic .doc-cards {
   margin-top: 24px;
 }
+
+.docs-shot {
+  margin: 24px 0;
+}
+
+.docs-shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+}
+
+.docs-shot figcaption {
+  margin-top: 8px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}

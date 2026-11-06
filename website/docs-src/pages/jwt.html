@@ -1,5 +1,7 @@
 <p>Mock an OAuth or OpenID provider, or any API that hands out and reads JSON Web Tokens. MockHub signs real tokens your client libraries accept, publishes the public key as a JWKS, and reads claims from incoming bearer tokens. Turn on <strong>Response templating</strong> for the stub; <strong>Insert dynamic value → JWT &amp; OAuth</strong> has every helper ready to insert.</p>
 
+<figure data-shot="jwt">A token endpoint that signs a real RS256 JWT for each caller.</figure>
+
 <h3 id="jwt-sign">Sign a token</h3>
 <div class="code"><pre>{
   "access_token": "{{jwt sub=(jsonPath request.body '$.username') scope='read write' expiresIn=3600}}",

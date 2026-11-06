@@ -3,6 +3,7 @@ import { createRequire } from 'node:module';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { GROUPS, topicPath } from '../docs-src/docs.mjs';
+import { shotFigure } from '../docs-src/shots.mjs';
 import { featureCards, footer as siteFooter, groupAnchor, header as siteHeader, useCases } from '../docs-src/layout.mjs';
 import { PAGES as FEATURES } from '../site-src/pages.mjs';
 import { SITE, ogMeta, renderFeature } from '../site-src/render.mjs';
@@ -80,6 +81,10 @@ function rewrite(page) {
       return match;
     }
     return `href="${target}"`;
+  }).replace(/<figure data-shot="([a-z0-9-]+)">([\s\S]*?)<\/figure>/g, (match, name, caption) => {
+    const figure = shotFigure(name, caption.trim());
+    if (!figure) problems.push(`${page.slug}: unknown screenshot ${name}`);
+    return figure ?? match;
   });
 }
 

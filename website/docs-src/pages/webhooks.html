@@ -16,3 +16,6 @@
 <p><strong>Catch all webhooks.</strong> On the Requests tab, this adds a low-priority stub that answers <code>200</code> to anything no other stub matched. Point a third-party webhook at <code>&lt;mock URL&gt;/webhooks</code> and inspect each call in the <a href="#requests">request history</a>.</p>
 <p>Calls to MockHub's own mock URLs always work. Private and local addresses are blocked unless an admin sets <code>MOCKHUB_CALLOUT_ALLOW_PRIVATE=true</code>. Webhooks are stored as <code>mockhub-callout</code> serve event listeners. WireMock's own <code>webhook</code> mappings still run, and they become <code>mockhub-callout</code> when you save them in the editor. The WireMock mappings export turns them back into <code>webhook</code>.</p>
 <p><strong>Tokens and retries.</strong> To call a service that needs an OAuth2 token or an API key, add a <a href="#connections">connection</a> and pick it under <strong>Sign with</strong>. The same section sets retries for answers like <code>503</code>.</p>
+
+<figure data-shot="callouts">The Callouts tab lists every callout with what was sent and the answer it got.</figure>
+

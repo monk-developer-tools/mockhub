@@ -5,6 +5,8 @@
   <li><strong>Trickle</strong>: send the body in chunks over a period of time.</li>
   <li><strong>Faults</strong>: connection reset, empty response, malformed chunk, or random data then close.</li>
 </ul>
+<figure data-shot="faults">Realistic latency, a failure rate and a rate limit set on one stub.</figure>
+
 <h3 id="project-latency">Latency for a whole project</h3>
 <p>To slow every answer of a project down, without touching each stub, pick a delay in <strong>Settings → Runtime behaviour → Latency</strong>: <em>Fixed</em>, <em>Random range</em> or <em>Realistic</em> (log-normal around a typical delay, with a spread from 0.1 for steady to 1 for very spiky). Delays go up to 60 seconds. Stubs that set their own delay keep it.</p>
 <p><strong>Get slower under load</strong> adds time when the project gets busy, like a real service near capacity: above a number of requests a second, each extra request adds some milliseconds, up to 30 seconds. For example, above 10 requests a second with 20 ms each, a project getting 25 requests a second adds 300 ms to every answer. Use it in load tests to see how your timeouts and retries behave.</p>

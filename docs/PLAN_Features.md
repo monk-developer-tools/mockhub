@@ -146,7 +146,7 @@ Checklist:
 - [x] Links from the UI, the homepage and the tutorials to the new pages
 - [x] Deploy script builds the docs; the build fails on a broken docs link or a duplicate heading id
 - [x] Group pages listing their guides as cards (`/docs/topics/<group>/`, linked from the landing page headings and each guide's breadcrumb, in the sitemap and with preview cards)
-- [ ] Screenshots inside feature pages
+- [x] Screenshots inside feature pages (17 pages show an existing light and dark screenshot through `<figure data-shot>`, expanded by the builder from `website/docs-src/shots.mjs`; pages for features added since F10 have none yet)
 
 ### Phase F1b — Website redesign
 
