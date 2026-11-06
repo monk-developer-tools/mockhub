@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { base64Size, binLink, filterQuery, filtered, multipartParts, parseShareHash, requestBytes, ruleFromRequest, searchValues, shareLink, stateRows, contentTypeOf, fileSize, opsFor, percents, prettyBody, withContentType, duplicate, flow, forgetBin, rememberBin, renameBin, routeSummary, parseBinHash, previewRequest, headerLines, mergeRequests, move, outcomeText, outcomeTone, parseHeaderLines, recipe, routingFromForm, snippets, summary, tunnelCommand } from '../assets/js/tools/bin.js';
+import { base64Size, binLink, filterQuery, optionsFromForm, optionsSummary, filtered, multipartParts, parseShareHash, requestBytes, ruleFromRequest, searchValues, shareLink, stateRows, contentTypeOf, fileSize, opsFor, percents, prettyBody, withContentType, duplicate, flow, forgetBin, rememberBin, renameBin, routeSummary, parseBinHash, previewRequest, headerLines, mergeRequests, move, outcomeText, outcomeTone, parseHeaderLines, recipe, routingFromForm, snippets, summary, tunnelCommand } from '../assets/js/tools/bin.js';
 
 test('summarises a rule in one line', () => {
   // Given
@@ -415,4 +415,31 @@ test('splits a multipart body into its fields and files, bytes intact', () => {
   assert.deepEqual({ name: parts[1].name, filename: parts[1].filename, type: parts[1].type }, { name: 'logo', filename: 'logo.png', type: 'image/png' });
   assert.deepEqual([...parts[1].bytes], [...file]);
   assert.deepEqual(multipartParts(requestBytes({ body: 'x' }), 'application/json'), []);
+});
+
+test('reads bin settings from the form and refuses ones the server would', () => {
+  // Given
+  const form = { cors: true, requiredName: ' X-Api-Key ', requiredValue: 'k1', rateRequests: '10', per: 'second', latencyMs: '250' };
+
+  // When
+  const read = optionsFromForm(form);
+
+  // Then
+  assert.deepEqual(read.options, { cors: true, latencyMs: 250, rateLimit: { requests: 10, per: 'second' }, requiredHeader: { name: 'X-Api-Key', value: 'k1' } });
+  assert.deepEqual(optionsFromForm({ cors: false }).options, { cors: false, latencyMs: 0, rateLimit: null, requiredHeader: null });
+  assert.match(optionsFromForm({ requiredName: 'X-Key', requiredValue: '' }).error, /Give X-Key a value/);
+  assert.match(optionsFromForm({ latencyMs: '20000' }).error, /0 to 15000/);
+  assert.match(optionsFromForm({ rateRequests: '0' }).error, /1 to 10000/);
+});
+
+test('summarises the settings that change how the bin answers', () => {
+  // Given
+  const options = { cors: false, latencyMs: 300, rateLimit: { requests: 5, per: 'minute' }, requiredHeader: { name: 'X-Api-Key', value: 'k' } };
+
+  // When
+  const line = optionsSummary(options);
+
+  // Then
+  assert.equal(line, 'needs X-Api-Key · 5 a minute · +300 ms · no CORS');
+  assert.equal(optionsSummary({ cors: true, latencyMs: 0, rateLimit: null, requiredHeader: null }), '');
 });

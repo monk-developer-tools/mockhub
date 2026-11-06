@@ -9,8 +9,10 @@ import io.mockhub.auth.Principal;
 import io.mockhub.playground.JdkHttpSender;
 import io.mockhub.playground.TargetGuard;
 import io.mockhub.tunnel.TunnelGateway;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
@@ -24,7 +26,7 @@ import java.util.regex.Pattern;
 public final class BinTool implements PublicTool {
   public static final int MAX_REPLY_BODY = 4 * 1024;
   private static final Pattern CAPTURE = Pattern.compile("/bins/([a-z0-9]{12})(/.*)?");
-  private static final Pattern INSPECT = Pattern.compile("/inspect/([a-z0-9]{12})(/requests(?:/\\d{1,12}(?:/share)?)?|/response|/settings|/rules|/routing|/draft|/state|/export)?");
+  private static final Pattern INSPECT = Pattern.compile("/inspect/([a-z0-9]{12})(/requests(?:/\\d{1,12}(?:/share)?)?|/response|/settings|/rules|/routing|/draft|/state|/export|/options)?");
   private static final Pattern ONE = Pattern.compile("/requests/(\\d{1,12})(/share)?");
 
   private final Bins bins;
@@ -34,6 +36,7 @@ public final class BinTool implements PublicTool {
   private final Function<String, Optional<Boolean>> tunnelOnline;
   private final Function<String, Optional<Principal>> signedIn;
   private final LongSupplier millis;
+  private final BinGate gate;
 
   BinTool(Bins bins, PublicLimits limits, BinResponder responder, BinDrafter drafter, Function<String, Optional<Boolean>> tunnelOnline,
       Function<String, Optional<Principal>> signedIn, LongSupplier millis) {
@@ -44,6 +47,7 @@ public final class BinTool implements PublicTool {
     this.tunnelOnline = tunnelOnline;
     this.signedIn = signedIn;
     this.millis = millis;
+    this.gate = new BinGate(millis);
   }
 
   public static BinTool create(Bins bins, PublicLimits limits, TemplatePlayground templates, TargetGuard guard, TunnelGateway tunnels,
@@ -61,6 +65,10 @@ public final class BinTool implements PublicTool {
     Matcher inspect = INSPECT.matcher(request.path());
     if (inspect.matches()) return Optional.of(inspect(inspect.group(1), inspect.group(2), request));
     return Optional.empty();
+  }
+
+  static boolean capturesAt(String path) {
+    return CAPTURE.matcher(path).matches();
   }
 
   static boolean usesBinRate(String path) {
@@ -86,21 +94,55 @@ public final class BinTool implements PublicTool {
   private ResponseDefinition capture(String id, PublicRequest request) {
     Optional<Bins.Settings> settings = bins.settingsFor(id);
     if (settings.isEmpty()) return PublicResponses.error(404, "No bin " + id + ". Bins are deleted 24 hours after their last request.");
+    BinOptions options = settings.get().options();
+    if (options.cors() && request.method().equals("OPTIONS") && request.header("Access-Control-Request-Method") != null) {
+      bins.touch(id);
+      return PublicResponses.binPreflight(request.header("Access-Control-Request-Method"), request.header("Access-Control-Request-Headers"));
+    }
     String rest = request.path().substring(("/bins/" + id).length());
     BinMatcher.Call call = new BinMatcher.Call(request.method(), rest.isEmpty() ? "/" : rest, request);
     long started = millis.getAsLong();
-    BinResponder.Answer answer = responder.answer(id, settings.get(), bins.stateFor(id).orElseGet(BinState::new), call);
-    bins.keepState(id);
-    long took = millis.getAsLong() - started + answer.delayMs();
+    BinResponder.Answer answer = gated(id, options, request).orElseGet(() -> {
+      BinResponder.Answer a = responder.answer(id, settings.get(), bins.stateFor(id).orElseGet(BinState::new), call);
+      bins.keepState(id);
+      return a;
+    });
+    int delay = answer.delayMs() > 0 || answer.by().equals("auth") || answer.by().equals("limit") ? answer.delayMs() : options.latencyMs();
+    long took = millis.getAsLong() - started + delay;
     String text = Bins.readable(answer.body());
     boolean cut = answer.body().length > Bins.MAX_ANSWER_BODY;
     Map<String, String> shown = new LinkedHashMap<>(answer.headers());
     bins.record(id, request, call.path(), BinMatcher.eventOf(request, call.json()),
         new Bins.Outcome(answer.by(), answer.rule(), answer.status(), took, shown, cut ? Bins.cut(text, Bins.MAX_ANSWER_BODY) : text, cut));
-    ResponseDefinitionBuilder out = PublicResponses.base(answer.status()).withHeader("X-MockHub-Bin", id);
+    ResponseDefinitionBuilder out = PublicResponses.forBin(answer.status(), options.cors()).withHeader("X-MockHub-Bin", id);
     answer.headers().forEach(out::withHeader);
-    if (answer.delayMs() > 0) out.withFixedDelay(answer.delayMs());
+    if (answer.headers().keySet().stream().noneMatch(k -> k.equalsIgnoreCase("Cache-Control"))) out.withHeader("Cache-Control", "no-store");
+    if (delay > 0) out.withFixedDelay(delay);
     return out.withBody(answer.body()).build();
+  }
+
+  private Optional<BinResponder.Answer> gated(String id, BinOptions options, PublicRequest request) {
+    Optional<BinOptions.RequiredHeader> required = options.requiredHeader();
+    if (required.isPresent() && !required.get().accepts(request.header(required.get().name()))) {
+      return Optional.of(refusal(401, Map.of(), "auth", "Send the " + required.get().name() + " header with the bin's value."));
+    }
+    Optional<BinOptions.RateLimit> rate = options.rateLimit();
+    if (rate.isPresent()) {
+      Optional<Long> wait = gate.take(id, rate.get());
+      if (wait.isPresent()) {
+        BinOptions.RateLimit r = rate.get();
+        return Optional.of(refusal(429, Map.of("Retry-After", String.valueOf(wait.get())), "limit",
+            "This bin allows " + r.requests() + " requests a " + r.per().name().toLowerCase(Locale.ROOT) + ". Try again in " + wait.get() + " s."));
+      }
+    }
+    return Optional.empty();
+  }
+
+  private static BinResponder.Answer refusal(int status, Map<String, String> extra, String by, String message) {
+    Map<String, String> headers = new LinkedHashMap<>(extra);
+    headers.put("Content-Type", "application/json");
+    byte[] body = Jsons.write(Jsons.object().put("error", message).put("status", status)).getBytes(StandardCharsets.UTF_8);
+    return new BinResponder.Answer(status, headers, body, 0, by, "");
   }
 
   private ResponseDefinition inspect(String id, String part, PublicRequest request) {
@@ -146,8 +188,9 @@ public final class BinTool implements PublicTool {
     }
     if (what.equals("/rules") && method.equals("PUT")) return setRules(id, token, request.body());
     if (what.equals("/routing") && method.equals("PUT")) return setRouting(id, token, request.body());
+    if (what.equals("/options") && method.equals("PUT")) return setOptions(id, token, request.body());
     if (what.equals("/draft") && method.equals("POST")) return draft(id, token, request);
-    return PublicResponses.error(405, "Read a bin with GET, change it with PUT /response, /rules or /routing, clear it with DELETE, read and clear its saved values with GET and DELETE /state, or export it with GET /export");
+    return PublicResponses.error(405, "Read a bin with GET, change it with PUT /response, /rules or /routing, clear it with DELETE, read and clear its saved values with GET and DELETE /state, export it with GET /export, or change its settings with PUT /options");
   }
 
   private ResponseDefinition single(String id, String token, long seq, boolean sharing, String method) {
@@ -229,6 +272,16 @@ public final class BinTool implements PublicTool {
     }
   }
 
+  private ResponseDefinition setOptions(String id, String token, String body) {
+    try {
+      BinOptions options = BinOptions.from(read(body));
+      if (!bins.update(id, token, s -> s.withOptions(options))) return notYours(id);
+      return bins.settings(id, token).map(s -> PublicResponses.json(200, settings(id, token, s))).orElseGet(() -> notYours(id));
+    } catch (IllegalArgumentException e) {
+      return PublicResponses.error(400, e.getMessage());
+    }
+  }
+
   private ResponseDefinition draft(String id, String token, PublicRequest request) {
     if (!bins.verify(id, token)) return notYours(id);
     if (!drafter.available()) return PublicResponses.error(409, "This server has no AI provider set up.");
@@ -254,6 +307,7 @@ public final class BinTool implements PublicTool {
     out.put("rulesEnabled", s.rulesEnabled());
     out.set("rules", BinRule.toJson(s.rules()));
     out.set("routing", s.routing().toJson());
+    out.set("options", s.options().toJson());
     out.put("ai", drafter.available());
     bins.viewKey(id, token).ifPresent(k -> out.put("viewKey", k));
     String name = BinResponder.tunnelName(id);

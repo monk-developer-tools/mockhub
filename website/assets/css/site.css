@@ -5304,6 +5304,20 @@ select.tool-select-small {
   align-items: center;
 }
 
+.bin-options fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.bin-options label.tool-label {
+  display: block;
+}
+
+.bin-short.tool-input {
+  max-width: 160px;
+}
+
 .bin-filter {
   display: grid;
   grid-template-columns: 1fr auto auto;

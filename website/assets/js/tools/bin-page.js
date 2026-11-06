@@ -2,7 +2,7 @@ import { $, show, wireCopyButtons } from './common.js';
 import { call, toCurl } from './http.js';
 import {
   CONTENT_TYPES, MAX_FILE_BYTES, METHODS, OPS, RECIPES, base64Size, contentTypeOf, fileSize, opsFor, percents, prettyBody, searchValues, stateRows, withContentType, TARGETS, binLink, blankAnswer, blankCondition, blankRule, duplicate, flow, headerLines, mergeRequests, move,
-  outcomeText, outcomeTone, parseBinHash, parseShareHash, filterQuery, filtered, multipartParts, requestBytes, ruleFromRequest, shareLink, routeSummary, rememberBin, forgetBin, renameBin, parseHeaderLines, previewRequest, recipe, routingFromForm, snippets, summary, tunnelCommand,
+  outcomeText, outcomeTone, parseBinHash, parseShareHash, filterQuery, optionsFromForm, optionsSummary, filtered, multipartParts, requestBytes, ruleFromRequest, shareLink, routeSummary, rememberBin, forgetBin, renameBin, parseHeaderLines, previewRequest, recipe, routingFromForm, snippets, summary, tunnelCommand,
 } from './bin.js';
 
 const KEY = 'mockhub-bin';
@@ -390,6 +390,7 @@ function applySettings(value) {
   $('[data-bin-type]').value = value.reply?.contentType ?? 'application/json';
   $('[data-bin-body]').value = value.reply?.body ?? '';
   $('[data-bin-template]').checked = Boolean(value.reply?.template);
+  fillOptions(value.options);
   renderTunnel(value.tunnel);
   renderRules();
   renderMode();
@@ -399,7 +400,8 @@ function applySettings(value) {
 function renderRouteTo() {
   if (!settings) return;
   const active = rules.filter((r) => r.enabled !== false).length;
-  $('[data-bin-route-to]').textContent = routeSummary(settings.routing ?? { mode: 'mock' }, rulesOn, active, settings.tunnel?.online);
+  const extra = optionsSummary(settings.options);
+  $('[data-bin-route-to]').textContent = routeSummary(settings.routing ?? { mode: 'mock' }, rulesOn, active, settings.tunnel?.online) + (extra ? ` (${extra})` : '');
 }
 
 function openDialog(name) {
@@ -417,7 +419,7 @@ function openDialog(name) {
 function closeDialog(dialog) {
   if (!dialog?.open) return;
   dialog.close();
-  if (dialog.dataset.binDialog === 'routing' && settings) applySettings(settings);
+  if ((dialog.dataset.binDialog === 'routing' || dialog.dataset.binDialog === 'settings') && settings) applySettings(settings);
 }
 
 function flashConsole(message) {
@@ -827,6 +829,36 @@ async function saveDraft(e) {
   closeEditor();
 }
 
+function fillOptions(options = {}) {
+  const form = $('[data-bin-options]');
+  form.elements.cors.checked = options.cors !== false;
+  form.elements.requiredName.value = options.requiredHeader?.name ?? '';
+  form.elements.requiredValue.value = options.requiredHeader?.value ?? '';
+  form.elements.rateRequests.value = options.rateLimit?.requests ?? '';
+  form.elements.per.value = options.rateLimit?.per ?? 'minute';
+  form.elements.latencyMs.value = options.latencyMs ?? 0;
+  show($('[data-bin-options-error]'), '');
+}
+
+async function saveOptions(e) {
+  e.preventDefault();
+  const f = e.target.elements;
+  const read = optionsFromForm({ cors: f.cors.checked, requiredName: f.requiredName.value, requiredValue: f.requiredValue.value, rateRequests: f.rateRequests.value, per: f.per.value, latencyMs: f.latencyMs.value });
+  if (read.error) {
+    show($('[data-bin-options-error]'), read.error);
+    return;
+  }
+  const result = await call(inspect('/options'), { method: 'PUT', headers: auth(true), body: JSON.stringify(read.options) });
+  if (result.error) {
+    show($('[data-bin-options-error]'), result.error);
+    return;
+  }
+  applySettings(result.json);
+  closeDialog($('[data-bin-dialog="settings"]'));
+  const summary = optionsSummary(result.json.options);
+  flashConsole(`Settings saved. ${summary ? `This bin now ${summary.replace(/ · /g, ', ')}.` : 'No limits, CORS on.'}`);
+}
+
 async function saveRouting(e) {
   e.preventDefault();
   const form = e.target;
@@ -1183,6 +1215,7 @@ $('[data-bin-editor-form]').addEventListener('submit', saveDraft);
 $('[data-bin-editor-close]').addEventListener('click', closeEditor);
 $('[data-bin-editor-cancel]').addEventListener('click', closeEditor);
 $('[data-bin-routing]').addEventListener('submit', saveRouting);
+$('[data-bin-options]').addEventListener('submit', saveOptions);
 $('[data-bin-routing]').addEventListener('change', (e) => {
   if (e.target.name === 'mode') renderMode();
 });

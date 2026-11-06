@@ -30,6 +30,7 @@
         <button type="button" class="btn secondary small" data-owner data-bin-open="ai" hidden>AI</button>
         <button type="button" class="btn secondary small" data-owner data-bin-open="rules">Rules <span class="tool-badge" data-bin-rule-count></span></button>
         <button type="button" class="btn secondary small" data-owner data-bin-open="routing">Routing</button>
+        <button type="button" class="btn secondary small" data-owner data-bin-open="settings">Settings</button>
         <button type="button" class="btn secondary small" data-owner data-bin-open="share">Share</button>
         <button type="button" class="btn secondary small" data-owner data-bin-open="bins">My bins <span class="tool-badge" data-bin-saved-count></span></button>
         <button type="button" class="btn ghost small" data-owner data-bin-new>New bin</button>
@@ -249,6 +250,44 @@
     <span class="tool-hint" data-bin-saved-note aria-live="polite"></span>
     <button type="button" class="btn primary" data-bin-new>New bin</button>
   </div>
+</dialog>
+
+<dialog class="bin-dialog" data-bin-dialog="settings" aria-labelledby="bin-settings-title">
+  <form data-bin-options>
+    <div class="bin-dialog-head">
+      <h3 id="bin-settings-title">Bin settings</h3>
+      <button type="button" class="btn ghost small" data-bin-close aria-label="Close">Close</button>
+    </div>
+    <div class="bin-dialog-body bin-options">
+      <label class="bin-check"><input type="checkbox" name="cors" checked> <span><strong>Answer CORS checks</strong> Browsers may call the bin from any site: preflights pass with the method and headers they ask for, and every answer header can be read.</span></label>
+      <fieldset>
+        <legend class="tool-label">Require a header</legend>
+        <p class="tool-hint">Requests without it, or with another value, get <code>401</code>. Leave the name empty to accept every request.</p>
+        <div class="tool-row">
+          <div class="tool-grow"><label class="tool-label" for="opt-header">Name</label><input id="opt-header" class="tool-input" name="requiredName" type="text" spellcheck="false" placeholder="X-Api-Key"></div>
+          <div class="tool-grow"><label class="tool-label" for="opt-value">Value</label><input id="opt-value" class="tool-input" name="requiredValue" type="text" spellcheck="false" autocomplete="off"></div>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend class="tool-label">Rate limit</legend>
+        <p class="tool-hint">Past the limit the bin answers <code>429</code> with <code>Retry-After</code>, so you can test the sender's back-off. Leave it empty for no limit.</p>
+        <div class="tool-row">
+          <div><label class="tool-label" for="opt-rate">Requests</label><input id="opt-rate" class="tool-input" name="rateRequests" type="number" min="1" max="10000" placeholder="10"></div>
+          <div><label class="tool-label" for="opt-per">Per</label><select id="opt-per" class="tool-input" name="per"><option value="second">second</option><option value="minute" selected>minute</option><option value="hour">hour</option></select></div>
+        </div>
+      </fieldset>
+      <div>
+        <label class="tool-label" for="opt-latency">Default latency, ms</label>
+        <input id="opt-latency" class="tool-input bin-short" name="latencyMs" type="number" min="0" max="15000" step="100" value="0">
+        <p class="tool-hint">Every answer waits this long, unless its rule sets its own delay. Up to 15 seconds.</p>
+      </div>
+      <p class="tool-error" data-bin-options-error hidden></p>
+    </div>
+    <div class="bin-dialog-foot">
+      <button type="button" class="btn ghost" data-bin-close>Cancel</button>
+      <button type="submit" class="btn primary">Save settings</button>
+    </div>
+  </form>
 </dialog>
 
 <dialog class="bin-dialog" data-bin-dialog="share" aria-labelledby="bin-share-title">

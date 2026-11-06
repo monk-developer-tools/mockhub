@@ -123,6 +123,63 @@ class PublicToolsIntegrationTest {
   }
 
   @Test
+  void aBinsSettingsRequireAHeaderLimitTheRateAddLatencyAndControlCors() {
+    // Given
+    server = MockHubServer.start(data, ON);
+    JsonNode bin = server.api().post("/__public/bins", "").json();
+    String id = bin.get("id").asText();
+    Map<String, String> owner = Map.of("X-Bin-Token", bin.get("token").asText());
+    String inspect = "/__public/inspect/" + id;
+    String base = "/__public/bins/" + id;
+    ApiClient.Result saved = server.api().send("PUT", inspect + "/options",
+        "{\"cors\": true, \"latencyMs\": 300, \"rateLimit\": {\"requests\": 2, \"per\": \"minute\"}, \"requiredHeader\": {\"name\": \"X-Api-Key\", \"value\": \"k1\"}}",
+        "application/json", owner);
+    int invalid = server.api().send("PUT", inspect + "/options", "{\"latencyMs\": 99999}", "application/json", owner).status();
+    server.close();
+    server = MockHubServer.start(data, ON);
+    ApiClient api = server.api();
+    Map<String, String> key = Map.of("X-Api-Key", "k1");
+
+    // When
+    ApiClient.Result preflight = api.send("OPTIONS", base + "/orders", null, null, Map.of("Access-Control-Request-Method", "QUERY", "Access-Control-Request-Headers", "x-api-key, x-trace"));
+    ApiClient.Result noKey = api.send("POST", base + "/orders", "{}", "application/json");
+    long started = System.nanoTime();
+    ApiClient.Result first = api.send("POST", base + "/orders", "{}", "application/json", key);
+    long tookMs = (System.nanoTime() - started) / 1_000_000;
+    ApiClient.Result second = api.send("POST", base + "/orders", "{}", "application/json", key);
+    ApiClient.Result third = api.send("POST", base + "/orders", "{}", "application/json", key);
+    api.send("PUT", inspect + "/options", "{\"cors\": false}", "application/json", owner);
+    ApiClient.Result plainPreflight = api.send("OPTIONS", base + "/orders", null, null, Map.of("Access-Control-Request-Method", "PUT"));
+    JsonNode log = api.send("GET", inspect, null, null, owner).json();
+    JsonNode settings = api.send("GET", inspect + "/settings", null, null, owner).json();
+
+    // Then
+    assertThat(saved.status()).isEqualTo(200);
+    assertThat(saved.json().at("/options/rateLimit/per").asText()).isEqualTo("minute");
+    assertThat(invalid).isEqualTo(400);
+    assertThat(preflight.status()).isEqualTo(204);
+    assertThat(preflight.header("Access-Control-Allow-Methods")).isEqualTo("QUERY");
+    assertThat(preflight.header("Access-Control-Allow-Headers")).isEqualTo("x-api-key, x-trace");
+    assertThat(noKey.status()).isEqualTo(401);
+    assertThat(noKey.body()).contains("X-Api-Key");
+    assertThat(first.status()).isEqualTo(200);
+    assertThat(first.header("Access-Control-Allow-Origin")).isEqualTo("*");
+    assertThat(first.header("Access-Control-Expose-Headers")).isEqualTo("*");
+    assertThat(tookMs).isGreaterThanOrEqualTo(300);
+    assertThat(second.status()).isEqualTo(200);
+    assertThat(third.status()).isEqualTo(429);
+    assertThat(third.header("Retry-After")).isNotBlank();
+    assertThat(plainPreflight.header("Access-Control-Allow-Origin")).isNull();
+    assertThat(plainPreflight.status()).isEqualTo(200);
+    assertThat(log.at("/requests/0/method").asText()).isEqualTo("OPTIONS");
+    assertThat(log.at("/requests/0/outcome/by").asText()).isEqualTo("default");
+    assertThat(log.at("/requests/1/outcome/by").asText()).isEqualTo("limit");
+    assertThat(log.at("/requests/4/outcome/by").asText()).isEqualTo("auth");
+    assertThat(settings.at("/options/cors").asBoolean()).isFalse();
+    assertThat(settings.at("/options/rateLimit").isNull()).isTrue();
+  }
+
+  @Test
   void aBinsLogFiltersSharesDeletesAndExportsRequests() {
     // Given
     server = MockHubServer.start(data, ON);

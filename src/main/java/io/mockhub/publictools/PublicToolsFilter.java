@@ -30,7 +30,8 @@ public final class PublicToolsFilter implements StubRequestFilterV2 {
   @Override
   public RequestFilterAction filter(Request request, ServeEvent serveEvent) {
     if (!enabled || !handles(Urls.getPath(request.getUrl()))) return RequestFilterAction.continueWith(request);
-    if (request.getMethod().equals(RequestMethod.OPTIONS) && request.getHeader("Access-Control-Request-Method") != null) {
+    if (request.getMethod().equals(RequestMethod.OPTIONS) && request.getHeader("Access-Control-Request-Method") != null
+        && !BinTool.capturesAt(Urls.getPath(request.getUrl()).substring(PublicRequest.PREFIX.length()))) {
       return RequestFilterAction.stopWith(PublicResponses.preflight());
     }
     PublicRequest publicRequest = PublicRequest.from(request);

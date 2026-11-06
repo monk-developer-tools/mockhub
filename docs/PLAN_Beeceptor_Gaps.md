@@ -97,13 +97,15 @@ Beeceptor "New Callout Rule": either wait for the target (synchronous) or answer
 ### B6 — CRUD routes in the bin
 Beeceptor "New CRUD Route": an entity path and an id field give GET list, GET one, POST, PUT, PATCH and DELETE, with stored records and a data view. ❌
 
-### B7 — Bin settings
+### B7 — Bin settings ✅ done
 | Beeceptor (endpoint settings) | Ours | Status |
 |---|---|---|
-| CORS on every answer, preflight passes | ❔ to verify on bins | ❔ |
-| Simulated rate limit (429) | — | ❌ |
-| Required security header | — | ❌ |
-| Default latency | — | ❌ |
+| CORS on every answer, preflight passes | Per-bin switch; preflight echoes the asked method and headers, answers expose every header | ✅ |
+| Simulated rate limit (429) | Per bin, per second, minute or hour, with `Retry-After` | ✅ |
+| Required security header | Name and value; others get 401 | ✅ |
+| Default latency | Up to 15 s, unless a rule sets its own delay | ✅ |
+
+Found while checking: before this, a bin's preflight allowed only `Content-Type, Authorization, X-Bin-Token` and no QUERY or TRACE, and browsers could read only two answer headers. `BinOptions`, `BinGate`, `PUT /options`.
 
 ### B8 — AI parity
 | Beeceptor | Ours | Status |

@@ -82,6 +82,16 @@ curl '…/__public/inspect/{id}/export?format=har' -H 'X-Bin-Token: {token}'</co
 <p>The starting points fill the editor with a common rule: fail with 500, answer after 5 seconds, match one event type, echo the body back and fail one in four. A bin holds up to 50 rules of up to 10 conditions each.</p>
 <p>When the server has an <a href="/docs/ai/">AI provider</a>, <strong>AI</strong> in the top bar, or <strong>Draft with AI</strong> under the rules, turns a description such as "answer 402 with the payment id when the event is payment.failed" into a rule. It needs a MockHub sign-in: anonymous visitors don't get AI drafts. Each user gets 10 drafts an hour. The draft opens in the editor and is saved only when you save it.</p>
 
+<h3 id="bin-settings">Settings</h3>
+<p><strong>Settings</strong> in the top bar changes how the bin treats every request, before rules and routing:</p>
+<ul>
+  <li><strong>Answer CORS checks</strong>, on by default: a browser on any site can call the bin. A preflight gets <code>204</code> with the method and headers it asked for, and every answer has <code>Access-Control-Allow-Origin: *</code> and <code>Access-Control-Expose-Headers: *</code>. Turned off, a preflight is an ordinary <code>OPTIONS</code> request that rules and routing answer and the log keeps, and answers carry no CORS headers.</li>
+  <li><strong>Require a header</strong>: a request without the header, or with another value, gets <code>401</code> and shows as <em>Missing required header</em>.</li>
+  <li><strong>Rate limit</strong>: past a number of requests a second, minute or hour, the bin answers <code>429</code> with <code>Retry-After</code> and the log shows <em>Rate limited</em>. Requests refused for the header don't count.</li>
+  <li><strong>Default latency</strong>: every answer waits this long, up to 15 seconds, unless its rule has a delay of its own.</li>
+</ul>
+<p>The line beside the bin URL lists what is on, for example <em>default answer (needs X-Api-Key · 10 a minute · +200 ms)</em>. From a script, <code>PUT /__public/inspect/{id}/options</code> with <code>{"cors": true, "latencyMs": 200, "rateLimit": {"requests": 10, "per": "minute"}, "requiredHeader": {"name": "X-Api-Key", "value": "…"}}</code> replaces them all; leave a setting out or set it to <code>null</code> to turn it off.</p>
+
 <h3 id="bin-routing">Routing</h3>
 <p>Routing decides what answers a request no rule matched.</p>
 <ul>

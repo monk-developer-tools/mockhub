@@ -81,19 +81,23 @@ public final class Bins {
     static final Reply DEFAULT = new Reply(200, "application/json", "{\"ok\":true}", false);
   }
 
-  public record Settings(Reply reply, boolean rulesEnabled, List<BinRule> rules, BinRouting routing) {
-    static final Settings DEFAULT = new Settings(Reply.DEFAULT, true, List.of(), BinRouting.DEFAULT);
+  public record Settings(Reply reply, boolean rulesEnabled, List<BinRule> rules, BinRouting routing, BinOptions options) {
+    static final Settings DEFAULT = new Settings(Reply.DEFAULT, true, List.of(), BinRouting.DEFAULT, BinOptions.DEFAULT);
 
     Settings withReply(Reply r) {
-      return new Settings(r, rulesEnabled, rules, routing);
+      return new Settings(r, rulesEnabled, rules, routing, options);
     }
 
     Settings withRules(boolean enabled, List<BinRule> list) {
-      return new Settings(reply, enabled, list, routing);
+      return new Settings(reply, enabled, list, routing, options);
     }
 
     Settings withRouting(BinRouting r) {
-      return new Settings(reply, rulesEnabled, rules, r);
+      return new Settings(reply, rulesEnabled, rules, r, options);
+    }
+
+    Settings withOptions(BinOptions o) {
+      return new Settings(reply, rulesEnabled, rules, routing, o);
     }
   }
 
@@ -521,6 +525,7 @@ public final class Bins {
     bin.deleted.stream().sorted().forEach(out.withArray("deleted")::add);
     out.set("rules", BinRule.toJson(s.rules()));
     out.set("routing", s.routing().toJson());
+    out.set("options", s.options().toJson());
     Path dir = root.resolve(bin.id);
     try {
       Files.createDirectories(dir);
@@ -559,7 +564,8 @@ public final class Bins {
           JsonNode r = n.path("reply");
           Settings settings = new Settings(new Reply(r.path("status").asInt(200), r.path("contentType").asText("application/json"), r.path("body").asText(""), r.path("template").asBoolean(false)),
               n.path("rulesEnabled").asBoolean(true), BinRule.listFrom(n.path("rules")),
-              n.has("routing") ? BinRouting.from(n.path("routing")) : BinRouting.DEFAULT);
+              n.has("routing") ? BinRouting.from(n.path("routing")) : BinRouting.DEFAULT,
+              n.has("options") ? BinOptions.from(n.path("options")) : BinOptions.DEFAULT);
           Bin bin = new Bin(n.path("id").asText(), Base64.getDecoder().decode(n.path("tokenHash").asText()), Instant.parse(n.path("created").asText()), settings);
           bin.lastUsed = Instant.parse(n.path("lastUsed").asText());
           bin.seq = n.path("seq").asLong();

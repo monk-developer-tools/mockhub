@@ -213,6 +213,8 @@ const BY = {
   'forward-error': 'Forward failed',
   'tunnel-error': 'Tunnel failed',
   error: 'Rule failed',
+  auth: 'Missing required header',
+  limit: 'Rate limited',
   validation: 'Refused by a check',
 };
 
@@ -299,6 +301,33 @@ export function binLink(origin, pathname, id, key, viewOnly = false) {
 export function parseBinHash(hash) {
   const m = /^#(bin|view)=([a-z0-9]{12})\.([a-z0-9]{32})$/.exec(hash ?? '');
   return m ? { id: m[2], token: m[3], viewOnly: m[1] === 'view' } : null;
+}
+
+export function optionsFromForm(form) {
+  const name = (form.requiredName ?? '').trim();
+  const rate = String(form.rateRequests ?? '').trim();
+  const latency = Number(form.latencyMs || 0);
+  if (name && !(form.requiredValue ?? '')) return { error: `Give ${name} a value, or clear its name.` };
+  if (!Number.isInteger(latency) || latency < 0 || latency > 15000) return { error: 'Default latency goes from 0 to 15000 ms.' };
+  if (rate && !(Number.isInteger(Number(rate)) && Number(rate) >= 1 && Number(rate) <= 10000)) return { error: 'A rate limit allows 1 to 10000 requests.' };
+  return {
+    options: {
+      cors: Boolean(form.cors),
+      latencyMs: latency,
+      rateLimit: rate ? { requests: Number(rate), per: form.per || 'minute' } : null,
+      requiredHeader: name ? { name, value: form.requiredValue } : null,
+    },
+  };
+}
+
+export function optionsSummary(options) {
+  if (!options) return '';
+  const parts = [];
+  if (options.requiredHeader) parts.push(`needs ${options.requiredHeader.name}`);
+  if (options.rateLimit) parts.push(`${options.rateLimit.requests} a ${options.rateLimit.per}`);
+  if (options.latencyMs > 0) parts.push(`+${options.latencyMs} ms`);
+  if (options.cors === false) parts.push('no CORS');
+  return parts.join(' · ');
 }
 
 export function parseShareHash(hash) {

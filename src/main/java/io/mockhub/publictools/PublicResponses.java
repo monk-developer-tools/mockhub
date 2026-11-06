@@ -26,6 +26,21 @@ final class PublicResponses {
     return json(status, Jsons.object().put("error", message).put("status", status));
   }
 
+  static ResponseDefinitionBuilder forBin(int status, boolean cors) {
+    ResponseDefinitionBuilder out = new ResponseDefinitionBuilder().withStatus(status).withHeader("X-Robots-Tag", "noindex");
+    if (!cors) return out;
+    return out.withHeader("Access-Control-Allow-Origin", "*").withHeader("Access-Control-Expose-Headers", "*");
+  }
+
+  static ResponseDefinition binPreflight(String method, String headers) {
+    String allowMethods = method != null && method.trim().matches("[A-Z]{1,20}") ? method.trim() : "GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS, QUERY, TRACE";
+    ResponseDefinitionBuilder out = forBin(204, true)
+        .withHeader("Access-Control-Allow-Methods", allowMethods)
+        .withHeader("Access-Control-Max-Age", "1800");
+    if (headers != null && headers.matches("[A-Za-z0-9!#$%&'*+.^_`|~, -]{1,1000}")) out.withHeader("Access-Control-Allow-Headers", headers.trim());
+    return out.build();
+  }
+
   static ResponseDefinition preflight() {
     return base(204)
         .withHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS")
