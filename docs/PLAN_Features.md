@@ -61,7 +61,7 @@ Legend: ✅ have it · 🟡 partial · ❌ missing
 | "Mock these APIs" button | Public import page for an OpenAPI URL with an embeddable badge | ✅ | F11 |
 | Error code reference | Error codes docs page: every status and header MockHub adds | ✅ | F1 |
 | Account management | Users, SSO, account dialog, personal access tokens | ✅ | — |
-| Product documentation as a card-based site | One long docs page | 🟡 | F1 |
+| Product documentation as a card-based site | Docs landing with grouped cards, a page per feature and per group, search | ✅ | F1 |
 
 ## 2. Phases
 
@@ -145,7 +145,7 @@ Checklist:
 - [x] Error code reference
 - [x] Links from the UI, the homepage and the tutorials to the new pages
 - [x] Deploy script builds the docs; the build fails on a broken docs link or a duplicate heading id
-- [ ] Group pages listing their guides as cards (the landing page covers this for now)
+- [x] Group pages listing their guides as cards (`/docs/topics/<group>/`, linked from the landing page headings and each guide's breadcrumb, in the sitemap and with preview cards)
 - [ ] Screenshots inside feature pages
 
 ### Phase F1b — Website redesign

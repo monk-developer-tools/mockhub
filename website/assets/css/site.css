@@ -4850,3 +4850,18 @@ select.tool-select-small {
   display: grid;
   gap: 8px;
 }
+
+.docs-group h2 a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.docs-group h2 a:hover,
+.docs-group h2 a:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.docs-topic .doc-cards {
+  margin-top: 24px;
+}

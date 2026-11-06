@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { GROUPS } from '../docs-src/docs.mjs';
+import { GROUPS, topicPath } from '../docs-src/docs.mjs';
 import { PAGES } from '../site-src/pages.mjs';
 import { ogImage, ogKey, ogPages } from '../site-src/og.mjs';
 import { ogMeta } from '../site-src/render.mjs';
@@ -12,7 +12,7 @@ const website = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 test('every page of the site has a preview card', () => {
   // Given
-  const site = ['/', '/tutorials/', '/docs/', ...GROUPS.flatMap((g) => g.pages.map((p) => `/docs/${p.slug}/`)), ...PAGES.map((p) => `/${p.slug}/`)];
+  const site = ['/', '/tutorials/', '/docs/', ...GROUPS.map(topicPath), ...GROUPS.flatMap((g) => g.pages.map((p) => `/docs/${p.slug}/`)), ...PAGES.map((p) => `/${p.slug}/`)];
 
   // When
   const covered = ogPages().map((p) => p.path);

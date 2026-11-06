@@ -1,4 +1,4 @@
-import { GROUPS } from '../docs-src/docs.mjs';
+import { GROUPS, topicPath } from '../docs-src/docs.mjs';
 import { MENUS, PAGES } from './pages.mjs';
 
 export const OG_WIDTH = 1200;
@@ -20,6 +20,12 @@ export function ogPages() {
     { path: '/', eyebrow: 'Mock server', title: 'Mock any API in minutes. Share it with your whole team.', description: 'A self-hosted mock server for REST and SOAP, built on WireMock.' },
     { path: '/tutorials/', eyebrow: 'Tutorials', title: 'Learn MockHub step by step', description: 'A screenshot for every step, from your first stub to teams and single sign-on.' },
     { path: '/docs/', eyebrow: 'Documentation', title: 'MockHub docs', description: 'Run MockHub, mock REST and SOAP services, send webhooks and share mocks with your team.' },
+    ...GROUPS.map((group) => ({
+      path: topicPath(group),
+      eyebrow: 'Docs',
+      title: group.title,
+      description: group.description,
+    })),
     ...GROUPS.flatMap((group) => group.pages.map((page) => ({
       path: `/docs/${page.slug}/`,
       eyebrow: `Docs · ${group.title}`,

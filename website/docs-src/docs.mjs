@@ -133,3 +133,5 @@ export const GROUPS = [
     ],
   },
 ];
+
+export const topicPath = (group) => `/docs/topics/${group.id}/`;

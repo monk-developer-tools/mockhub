@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync
 import { createRequire } from 'node:module';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { GROUPS } from '../docs-src/docs.mjs';
+import { GROUPS, topicPath } from '../docs-src/docs.mjs';
 import { featureCards, footer as siteFooter, groupAnchor, header as siteHeader, useCases } from '../docs-src/layout.mjs';
 import { PAGES as FEATURES } from '../site-src/pages.mjs';
 import { SITE, ogMeta, renderFeature } from '../site-src/render.mjs';
@@ -172,7 +172,7 @@ ${header()}
     ${sidebar(page.slug)}
 
     <article class="prose docs-page" id="content">
-      <nav class="docs-crumbs" aria-label="Breadcrumb"><a href="/docs/">Docs</a><span aria-hidden="true">›</span><span>${escape(page.group.title)}</span></nav>
+      <nav class="docs-crumbs" aria-label="Breadcrumb"><a href="/docs/">Docs</a><span aria-hidden="true">›</span><a href="${topicPath(page.group)}">${escape(page.group.title)}</a></nav>
       <div class="docs-title">
         <span class="docs-title-icon">${icon(page.icon, 26)}</span>
         <h1>${escape(page.title)}</h1>
@@ -192,6 +192,43 @@ ${footer}
 `;
 }
 
+function cardsOf(group) {
+  return group.pages.map((p) => `<a class="doc-card" href="${p.url}">
+            <span class="doc-card-icon">${icon(p.icon, 22)}</span>
+            <strong>${escape(p.title)}</strong>
+            <span>${escape(p.description)}</span>
+            <span class="doc-card-arrow" aria-hidden="true">→</span>
+          </a>`).join('\n          ');
+}
+
+function renderTopic(group) {
+  const count = `${group.pages.length} ${group.pages.length === 1 ? 'guide' : 'guides'}`;
+  return `${head(`${group.title} — MockHub docs`, group.description, topicPath(group))}
+<body>
+${header()}
+
+  <div class="wrap docs-layout no-toc">
+    ${sidebar(null)}
+
+    <article class="prose docs-page docs-topic" id="content">
+      <nav class="docs-crumbs" aria-label="Breadcrumb"><a href="/docs/">Docs</a><span aria-hidden="true">›</span><span>${escape(group.title)}</span></nav>
+      <div class="docs-title">
+        <span class="docs-title-icon">${icon(group.icon, 26)}</span>
+        <h1>${escape(group.title)}</h1>
+      </div>
+      <p class="lede">${escape(group.description)} ${count}.</p>
+      <div class="doc-cards">
+          ${cardsOf(group)}
+      </div>
+    </article>
+  </div>
+
+${footer}
+</body>
+</html>
+`;
+}
+
 function renderLanding() {
   const redirect = `  <script>
     (function () {
@@ -202,17 +239,12 @@ function renderLanding() {
   </script>
 `;
   const groups = GROUPS.map((g) => {
-    const cards = g.pages.map((p) => `<a class="doc-card" href="${p.url}">
-            <span class="doc-card-icon">${icon(p.icon, 22)}</span>
-            <strong>${escape(p.title)}</strong>
-            <span>${escape(p.description)}</span>
-            <span class="doc-card-arrow" aria-hidden="true">→</span>
-          </a>`).join('\n          ');
+    const cards = cardsOf(g);
     return `<section class="docs-group" id="${groupAnchor(g)}" aria-labelledby="${g.id}-title">
         <header>
           <span class="docs-group-icon">${icon(g.icon, 22)}</span>
           <div>
-            <h2 id="${g.id}-title">${escape(g.title)}</h2>
+            <h2 id="${g.id}-title"><a href="${topicPath(g)}">${escape(g.title)}</a></h2>
             <p>${escape(g.description)}</p>
           </div>
           <span class="docs-group-count">${g.pages.length} ${g.pages.length === 1 ? 'guide' : 'guides'}</span>
@@ -260,6 +292,11 @@ if (problems.length) throw new Error(`Broken docs links:\n  ${problems.join('\n 
 rmSync(out, { recursive: true, force: true });
 mkdirSync(out, { recursive: true });
 writeFileSync(join(out, 'index.html'), renderLanding());
+for (const group of GROUPS) {
+  const dir = join(website, topicPath(group));
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, 'index.html'), renderTopic(group));
+}
 for (const [page, content] of html) {
   mkdirSync(join(out, page.slug), { recursive: true });
   writeFileSync(join(out, page.slug, 'index.html'), content);
@@ -325,7 +362,7 @@ for (const page of FEATURES) {
   mkdirSync(join(website, page.slug), { recursive: true });
   writeFileSync(join(website, page.slug, 'index.html'), renderFeature(page, featureContext));
 }
-const urls = ['/', '/tutorials/', '/docs/', ...pages.map((p) => p.url), ...FEATURES.map((p) => `/${p.slug}/`)];
+const urls = ['/', '/tutorials/', '/docs/', ...GROUPS.map(topicPath), ...pages.map((p) => p.url), ...FEATURES.map((p) => `/${p.slug}/`)];
 writeFileSync(join(website, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${urls.map((u) => `  <url><loc>${SITE}${u}</loc></url>`).join('\n')}
@@ -335,7 +372,7 @@ writeFileSync(join(website, 'robots.txt'), `User-agent: *\nAllow: /\nDisallow: /
 writeFileSync(generatedList, [...new Set(['/docs/', '/sitemap.xml', '/robots.txt', ...FEATURES.map((p) => `/${p.slug.split('/')[0]}/`)])].join('\n') + '\n');
 
 const groupAnchors = new Set(GROUPS.map(groupAnchor));
-const siteFiles = [join(website, 'index.html'), join(website, 'tutorials', 'index.html'), join(out, 'index.html'), ...pages.map((p) => join(out, p.slug, 'index.html')), ...FEATURES.map((p) => join(website, p.slug, 'index.html'))];
+const siteFiles = [join(website, 'index.html'), join(website, 'tutorials', 'index.html'), join(out, 'index.html'), ...GROUPS.map((g) => join(website, topicPath(g), 'index.html')), ...pages.map((p) => join(out, p.slug, 'index.html')), ...FEATURES.map((p) => join(website, p.slug, 'index.html'))];
 const broken = [];
 const where = (file) => file.replace(website, '');
 for (const file of siteFiles) {
