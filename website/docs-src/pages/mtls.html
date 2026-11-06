@@ -22,6 +22,8 @@
 <p>Match on them like any <a href="#matching">header</a>, for example to answer one service differently, or echo them with <code>{{request.headers.X-MockHub-Client-Cert-Subject}}</code>. MockHub removes these headers from every incoming request before it sets them, so a caller can't send them itself.</p>
 <p>A caller without a certificate still connects, and so does one whose certificate no trusted CA signed. Both are treated as anonymous: no headers are set.</p>
 
+<figure data-shot="mtls">The HTTPS and client certificates panel on the Server page.</figure>
+
 <h3 id="mtls-require">Require a certificate for a project</h3>
 <p>In a project's <strong>Settings → Runtime behaviour</strong>, turn on <strong>Client certificate</strong>. Calls without a trusted certificate then get:</p>
 <div class="code"><pre>HTTP/1.1 403 Forbidden

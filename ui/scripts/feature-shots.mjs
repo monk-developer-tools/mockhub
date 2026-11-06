@@ -78,6 +78,7 @@ async function waitFor(url) {
 }
 
 const port = await freePort();
+const httpsPort = await freePort();
 const base = `http://localhost:${port}`;
 const api = `${base}/__admin/mockhub/api`;
 const data = mkdtempSync(join(tmpdir(), 'mockhub-feature-shots-'));
@@ -95,7 +96,7 @@ const stop = () => {
 };
 process.on('exit', stop);
 
-children.push(spawn('java', ['-jar', jar], { env: { ...process.env, PORT: String(port), MOCKHUB_DATA_DIR: data, MOCKHUB_PROXY: 'true' }, stdio: 'ignore' }));
+children.push(spawn('java', ['-jar', jar], { env: { ...process.env, PORT: String(port), MOCKHUB_DATA_DIR: data, MOCKHUB_PROXY: 'true', MOCKHUB_HTTPS_PORT: String(httpsPort) }, stdio: 'ignore' }));
 await waitFor(`${base}/__admin/health`);
 const seeded = JSON.parse(execFileSync('node', [join(root, 'ui/scripts/demo.mjs'), base], { encoding: 'utf8' }));
 const pet = seeded.projects['rest-basics'];
@@ -127,12 +128,41 @@ for (const name of ['laptop', 'payments-dev']) {
 }
 for (let i = 0; i < 40 && (await call(token, 'GET', '/tunnels')).length < 2; i++) await sleep(500);
 
+const org = seeded.org;
+const csv = 'sku,name,price,stock\nsku-1,Blue mug,12.5,3\nsku-2,Green teapot,34,12\nsku-3,Oak tray,22,0\nsku-4,Linen napkins,9.9,48\nsku-5,Stone bowl,18,7\n';
+await call(token, 'POST', `/orgs/${org}/datasets`, { key: 'products', name: 'Products', description: 'Shop catalogue used by the cart and search mocks', identity: ['sku'], indexes: ['name'] });
+const upload = await fetch(`${api}/orgs/${org}/datasets/products/upload?format=csv&mode=replace`, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'text/plain' }, body: csv });
+if (!upload.ok) throw new Error(`dataset upload: ${upload.status} ${await upload.text()}`);
+await call(token, 'POST', `/orgs/${org}/connections`, { key: 'payments-sandbox', name: 'Payments sandbox', type: 'oauth2', tokenUrl: 'https://auth.payments.example/oauth2/token', clientId: 'mockhub-callouts', scope: 'payments.write', clientAuth: 'basic', headerName: 'Authorization', headerPrefix: 'Bearer ', secret: 'demo-secret' });
+await call(token, 'POST', `/orgs/${org}/connections`, { key: 'partner-api-key', name: 'Partner API key', type: 'header', headerName: 'X-Api-Key', headerPrefix: '', secret: 'demo-key' });
+await call(token, 'PUT', `/projects/${pet}`, { name: project.name, basePath: project.basePath, color: project.color, description: project.description, teamId: project.teamId, domains: ['petstore.acme.test', 'pets.staging.acme.test'] });
+const echo = seeded.projects.echo;
+for (const [method, path] of [['GET', '/orders/42?expand=items'], ['POST', '/payments'], ['DELETE', '/carts/7']]) {
+  await fetch(`${base}/echo${path}`, { method, headers: method === 'POST' ? { 'Content-Type': 'application/json' } : {}, body: method === 'POST' ? '{"amount":40}' : undefined });
+}
+const stubOf = async (projectId, pick) => (await call(token, 'GET', `/projects/${projectId}/stubs`)).find(pick);
+const echoStub = await stubOf(echo, (stub) => stub.name === 'Echo · any request');
+const graphqlStub = await stubOf(seeded.projects['graphql-library'], (stub) => !String(stub.name).includes('·'));
+const grpcStub = await stubOf(seeded.projects['grpc-inventory'], (stub) => stub.name === 'GetItem · any sku');
+
 const ui = `${base}/__admin/mockhub/ui`;
-const shots = [
+const scrollTo = (text) => `const h = [...document.querySelectorAll('h2, h3')].find((e) => e.textContent.trim().startsWith(${JSON.stringify(text)})); h.style.scrollMarginTop = '76px'; h.scrollIntoView({ block: 'start' });`;
+const openAccount = (tab) => `document.querySelector('[aria-label="Your account"]').click(); await new Promise((r) => setTimeout(r, 600)); [...document.querySelectorAll('[role=tab]')].find((t) => t.textContent === ${JSON.stringify(tab)}).click();`;
+const all = [
   { name: 'contract', path: `/projects/${pet}/contract` },
-  { name: 'tunnels', path: '/', then: `document.querySelector('[aria-label="Your account"]').click(); await new Promise((r) => setTimeout(r, 600)); [...document.querySelectorAll('[role=tab]')].find((t) => t.textContent === 'Tunnels').click();` },
-  { name: 'forward-proxy', path: '/server', then: `[...document.querySelectorAll('h3')].find((h) => h.textContent.includes('Forward proxy')).scrollIntoView({ block: 'start' }); window.scrollBy(0, -80); document.querySelectorAll('main, .main, .content').forEach((m) => m.scrollBy(0, -80));` },
+  { name: 'tunnels', path: '/', then: openAccount('Tunnels') },
+  { name: 'forward-proxy', path: '/server', then: scrollTo('Forward proxy') },
+  { name: 'mtls', path: '/server', then: scrollTo('HTTPS and client certificates') },
+  { name: 'access-tokens', path: '/', then: openAccount('Access tokens') },
+  { name: 'datasets', path: '/org/datasets' },
+  { name: 'connections', path: '/org/connections' },
+  { name: 'custom-domains', path: `/projects/${pet}/settings`, then: scrollTo('Custom domains') },
+  { name: 'echo', path: `/projects/${echo}/stubs/${echoStub?.id}`, then: scrollTo('Response') },
+  { name: 'graphql', path: `/projects/${seeded.projects['graphql-library']}/stubs/${graphqlStub?.id}`, then: scrollTo('GraphQL console') },
+  { name: 'grpc', path: `/projects/${seeded.projects['grpc-inventory']}/stubs/${grpcStub?.id}` },
 ];
+const only = (process.env.SHOTS ?? '').split(',').filter(Boolean);
+const shots = only.length ? all.filter((shot) => only.includes(shot.name)) : all;
 
 const { send, close } = await connect();
 await send('Page.enable');

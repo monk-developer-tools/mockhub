@@ -46,6 +46,8 @@
 <h3 id="datasets-browse">Browse and try lookups</h3>
 <p>The Datasets page shows each dataset's columns and types, and lets you search and page through records. <strong>Use it in a stub</strong> lists helpers for that dataset to copy, and <strong>Try a lookup</strong> shows exactly what <code>dataset-one</code> or <code>dataset</code> returns for the filters you enter.</p>
 
+<figure data-shot="datasets">A dataset with its columns and records, and the helpers to answer from it.</figure>
+
 <h3 id="datasets-table">Turn a stub's body into a dataset</h3>
 <p>When a stub answers with a JSON list, such as one made by an <a href="#import">OpenAPI import</a>, choose <strong>Edit as table</strong> under the body. Edit cells, add or remove rows and columns; values keep their column's type. Then either use the result as the body, or choose <strong>Move the rows to a dataset</strong>: MockHub creates the dataset from the rows and replaces the body with a helper. A path like <code>/pets/{petId}</code> gets <code>dataset-one</code> by <code>petId</code>; other paths get the whole list. A body that wraps the list, like <code>{"data": [...], "total": 2}</code>, keeps its wrapper.</p>
 

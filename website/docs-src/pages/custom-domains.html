@@ -14,6 +14,8 @@
 </table>
 <p>Inside MockHub the request keeps its full path. The request log shows <code>/payments/charges/42</code>, and <code>{{request.path}}</code> in a template gives the same. Domains travel with the project in backups; a restored copy doesn't take names that another project already uses.</p>
 
+<figure data-shot="custom-domains">Custom domains in the project settings, with the address each name answers at.</figure>
+
 <h3 id="domains-dns">DNS and HTTPS</h3>
 <p>Point each name at the machine that runs MockHub, with an A record or a CNAME. A wildcard record such as <code>*.mocks.example.com</code> lets you add projects without touching DNS again. HTTPS stays with your reverse proxy, which needs a certificate for the names and must pass the original <code>Host</code> header on.</p>
 

@@ -35,6 +35,8 @@
   <li><strong>Path.</strong> The path is never prefixed with the project path, because gRPC clients always call <code>/package.Service/Method</code>.</li>
 </ul>
 
+<figure data-shot="grpc">A gRPC stub: pick the service and method from the descriptor set, then match and answer.</figure>
+
 <h3 id="grpc-status">Errors and status codes</h3>
 <p>Set <strong>Status</strong> to any gRPC code, such as <code>NOT_FOUND</code>, <code>INVALID_ARGUMENT</code>, <code>UNAUTHENTICATED</code> or <code>UNAVAILABLE</code>, and optionally a message. The client gets that status and message with no response message. In JSON these are two response headers:</p>
 <pre><code>"response": { "status": 200, "headers": { "grpc-status-name": "NOT_FOUND", "grpc-status-reason": "No book 404" } }</code></pre>

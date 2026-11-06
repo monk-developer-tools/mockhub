@@ -146,7 +146,7 @@ Checklist:
 - [x] Links from the UI, the homepage and the tutorials to the new pages
 - [x] Deploy script builds the docs; the build fails on a broken docs link or a duplicate heading id
 - [x] Group pages listing their guides as cards (`/docs/topics/<group>/`, linked from the landing page headings and each guide's breadcrumb, in the sitemap and with preview cards)
-- [x] Screenshots inside feature pages (17 pages show an existing light and dark screenshot through `<figure data-shot>`, expanded by the builder from `website/docs-src/shots.mjs`; contract drift, tunnels and the forward proxy have shots from `ui/scripts/feature-shots.mjs`; the other pages for features added since F10 have none yet)
+- [x] Screenshots inside feature pages (17 pages show an existing light and dark screenshot through `<figure data-shot>`, expanded by the builder from `website/docs-src/shots.mjs`; `ui/scripts/feature-shots.mjs` adds 11 more from a seeded server: contract drift, tunnels, forward proxy, mTLS, access tokens, datasets, connections, custom domains, echo, GraphQL and gRPC; reference pages such as error codes, limits and templating stay text only)
 
 ### Phase F1b — Website redesign
 

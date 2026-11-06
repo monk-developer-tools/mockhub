@@ -18,6 +18,8 @@
 <h3 id="token-manage">See and revoke tokens</h3>
 <p>The list shows each token's name, its first characters, access, projects, mode, when it was last used and when it expires. Select the bin to revoke one; anything using it stops working at once. Admins can revoke anyone's token through the API. A token can't create or revoke tokens, or change your password.</p>
 
+<figure data-shot="access-tokens">Your tokens, with their role, mode, projects and when they were last used.</figure>
+
 <h3 id="token-api">Tokens in the API</h3>
 <div class="code"><pre><span class="c"># call the API as yourself, from CI</span>
 curl -H "Authorization: Bearer $MOCKHUB_TOKEN" $HUB/__admin/mockhub/api/projects

@@ -12,6 +12,8 @@
 <p>The header name and value prefix can be changed for both, e.g. <code>Authorization</code> with prefix <code>Token </code>. For OAuth2, MockHub sends the client id and secret in a Basic auth header (or in the form body if the service wants that), keeps the token until 30 seconds before it expires and then fetches a new one. The token URL may be a path on this MockHub, which helps when you mock the identity provider too.</p>
 <p><strong>Test</strong> fetches a fresh token and shows a masked preview, how long it lasts and its scope, or the token endpoint's error.</p>
 
+<figure data-shot="connections">Each connection shows what it sends; secrets never come back to the browser.</figure>
+
 <h3 id="connections-secrets">How secrets are kept</h3>
 <p>Secrets are encrypted with AES-256-GCM before they're written to disk and are never sent back to the browser; leave the secret empty when you edit a connection to keep the saved one. The key comes from <code>MOCKHUB_SECRET_KEY</code>. Without it, MockHub creates a random key in <code>mockhub/secret.key</code> inside the data folder. Keep that file, or set the variable, or saved secrets can't be read after a move.</p>
 <p><a href="#export">Backups</a> include connections without their secrets. Restoring keeps the secret of a connection that's already there; a new one needs its secret entered again.</p>
