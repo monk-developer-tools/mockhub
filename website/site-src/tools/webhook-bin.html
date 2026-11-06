@@ -8,21 +8,34 @@
 </div>
 
 <div data-bin-live hidden>
-  <div class="tool-card">
-    <div class="tool-head">
-      <h3 data-bin-title>Your bin</h3>
-      <span class="tool-actions">
+  <div class="tool-card bin-console">
+    <div class="bin-console-row">
+      <div class="bin-console-id">
+        <h3 data-bin-title>Your bin</h3>
+        <p class="bin-route-line"><code data-bin-url></code> <span aria-hidden="true">→</span> <span class="bin-route-to" data-bin-route-to>Default answer</span></p>
+      </div>
+      <div class="bin-toolbar" role="toolbar" aria-label="Bin">
         <button type="button" class="btn secondary small" data-copy="[data-bin-url]">Copy URL</button>
-        <button type="button" class="btn secondary small" data-copy="[data-bin-view-link]" data-bin-view-copy data-owner hidden title="A link that shows this bin's requests and answers but can't change anything">Copy view-only link</button>
-        <button type="button" class="btn secondary small" data-copy="[data-bin-link]" data-owner title="A private link that opens this bin, with its key, in any browser">Copy private link</button>
+        <button type="button" class="btn secondary small" data-owner data-bin-open="ai" hidden>AI</button>
+        <button type="button" class="btn secondary small" data-owner data-bin-open="rules">Rules <span class="tool-badge" data-bin-rule-count></span></button>
+        <button type="button" class="btn secondary small" data-owner data-bin-open="routing">Routing</button>
+        <button type="button" class="btn secondary small" data-owner data-bin-open="share">Share</button>
         <button type="button" class="btn ghost small" data-bin-forget>New bin</button>
-      </span>
+      </div>
     </div>
-    <pre class="tool-out tool-url" data-bin-url></pre>
-    <pre class="bin-link" data-bin-link hidden></pre>
-    <pre class="bin-link" data-bin-view-link hidden></pre>
     <p class="bin-notice" data-viewer>You're viewing someone's bin. You see each request and the answer it got; only the owner can change rules, routing or clear it.</p>
-    <p class="tool-hint" data-owner>Send anything to this URL or any path under it. Every request is kept, up to <span data-bin-keeps>50</span> MB per bin, and the bin is deleted after 24 hours without a request. Only this browser holds the key to read it. Share <strong>Copy view-only link</strong> with people who should watch it; <strong>Copy private link</strong> gives full control.</p>
+    <p class="bin-saved" data-bin-console-note aria-live="polite" hidden></p>
+  </div>
+
+  <div class="tool-card bin-waiting" data-bin-empty>
+    <span class="bin-spinner" aria-hidden="true"></span>
+    <h3>Waiting for requests</h3>
+    <p class="tool-hint">Point a webhook at the URL above, or send one now. Every request is kept, up to <span data-bin-keeps>50</span> MB, and the bin is deleted after 24 hours without a request.</p>
+    <div class="tool-actions-row bin-waiting-actions">
+      <button type="button" class="btn primary" data-bin-sample>Send a test webhook</button>
+      <span class="tool-hint" data-bin-sample-note aria-live="polite"></span>
+    </div>
+    <h4 class="tool-sub">Or send one from your code</h4>
     <div class="tabs tabs-small" role="tablist" aria-label="Send a test request">
       <button type="button" role="tab" id="bin-tab-curl" aria-controls="bin-code-curl" aria-selected="true">cURL</button>
       <button type="button" role="tab" id="bin-tab-js" aria-controls="bin-code-js" aria-selected="false" tabindex="-1">JavaScript</button>
@@ -35,13 +48,39 @@
     <div class="bin-code" id="bin-code-java" role="tabpanel" aria-labelledby="bin-tab-java" hidden><pre class="tool-out" data-bin-code="java"></pre><button type="button" class="btn secondary small" data-copy="[data-bin-code='java']">Copy</button></div>
   </div>
 
-  <div class="tool-grid" data-owner>
-    <div class="tool-card" role="region" aria-labelledby="bin-rules-title">
+  <div class="tool-grid tool-bin" data-bin-log hidden>
+    <div class="tool-card">
       <div class="tool-head">
-        <h3 id="bin-rules-title">Rules <span class="tool-badge" data-bin-rule-count></span></h3>
-        <label class="bin-switch"><input type="checkbox" data-bin-rules-on checked> <span>Rules on</span></label>
+        <h3>Requests <span class="tool-badge" data-bin-count>0</span></h3>
+        <span class="tool-actions">
+          <span class="tool-live" data-bin-polling aria-live="polite">Waiting for requests…</span>
+          <button type="button" class="btn ghost small" data-bin-sample-again data-owner>Send test</button>
+          <button type="button" class="btn ghost small" data-bin-clear data-owner>Clear</button>
+        </span>
       </div>
-      <p class="tool-hint" data-bin-rules-hint>The first rule that matches answers the request. Drag to reorder. When none match, the routing below decides.</p>
+      <p class="tool-error" data-bin-error hidden></p>
+      <ul class="tool-requests" data-bin-list aria-label="Captured requests"></ul>
+      <button type="button" class="btn ghost small" data-bin-older hidden>Load older requests</button>
+    </div>
+    <div class="tool-card">
+      <div class="tool-head">
+        <h3>Request and answer</h3>
+        <span class="tool-actions"><button type="button" class="btn secondary small" data-copy="[data-bin-curl]" data-bin-curl-copy hidden>Copy as cURL</button></span>
+      </div>
+      <div data-bin-detail><p class="tool-hint">Pick a request to see what was sent and what the bin answered.</p></div>
+      <pre class="tool-out" data-bin-curl hidden></pre>
+    </div>
+  </div>
+</div>
+
+<dialog class="bin-dialog" data-bin-dialog="rules" aria-labelledby="bin-rules-title">
+  <div class="bin-dialog-head">
+    <h3 id="bin-rules-title">Rules</h3>
+    <label class="bin-switch"><input type="checkbox" data-bin-rules-on checked> <span>Rules on</span></label>
+    <button type="button" class="btn ghost small" data-bin-close aria-label="Close">Close</button>
+  </div>
+  <div class="bin-dialog-body">
+    <p class="tool-hint" data-bin-rules-hint>The first rule that matches answers the request. Drag to reorder. When none match, routing decides.</p>
       <p class="bin-notice" data-bin-rules-off hidden>Rules are off, so every request goes to the routing on the right. Tick <strong>Rules on</strong> to use them.</p>
       <p class="bin-saved" data-bin-rules-note aria-live="polite" hidden></p>
       <ol class="bin-rules" data-bin-rules aria-label="Rules, first match wins"></ol>
@@ -81,13 +120,17 @@
         </form>
       </div>
       <p class="tool-error" data-bin-rules-error hidden></p>
-    </div>
+  </div>
+</dialog>
 
-    <form class="tool-card" aria-labelledby="bin-routing-title" data-bin-routing>
-      <div class="tool-head">
-        <h3 id="bin-routing-title">Routing</h3>
-        <span class="tool-badge" data-bin-tunnel-state></span>
-      </div>
+<dialog class="bin-dialog wide" data-bin-dialog="routing" aria-labelledby="bin-routing-title">
+  <form data-bin-routing>
+    <div class="bin-dialog-head">
+      <h3 id="bin-routing-title">Routing</h3>
+      <span class="tool-badge" data-bin-tunnel-state></span>
+      <button type="button" class="btn ghost small" data-bin-close aria-label="Close">Close</button>
+    </div>
+    <div class="bin-dialog-body">
       <ol class="bin-flow" data-bin-flow aria-label="Where a request goes"></ol>
       <fieldset class="bin-modes">
         <legend class="tool-label">When no rule matches</legend>
@@ -141,38 +184,38 @@
         <input id="bin-tunnel-prefix" class="tool-input" name="tunnelPrefix" type="text" spellcheck="false" placeholder="/api">
         <p class="tool-hint">The command holds this bin's key. Keep it to yourself.</p>
       </div>
-
-      <div class="tool-actions-row">
-        <button type="submit" class="btn secondary">Save routing</button>
-        <span class="tool-hint" data-bin-routing-note aria-live="polite"></span>
-      </div>
-    </form>
-  </div>
-
-  <div class="tool-grid tool-bin">
-    <div class="tool-card">
-      <div class="tool-head">
-        <h3>Requests <span class="tool-badge" data-bin-count>0</span></h3>
-        <span class="tool-actions">
-          <span class="tool-live" data-bin-polling aria-live="polite">Waiting for requests…</span>
-          <button type="button" class="btn ghost small" data-bin-clear data-owner>Clear</button>
-        </span>
-      </div>
-      <p class="tool-error" data-bin-error hidden></p>
-      <ul class="tool-requests" data-bin-list aria-label="Captured requests"></ul>
-      <p class="tool-hint" data-bin-empty>Nothing yet. Send a request to the URL above.</p>
-      <button type="button" class="btn ghost small" data-bin-older hidden>Load older requests</button>
     </div>
-    <div class="tool-card">
-      <div class="tool-head">
-        <h3>Request and answer</h3>
-        <span class="tool-actions"><button type="button" class="btn secondary small" data-copy="[data-bin-curl]" data-bin-curl-copy hidden>Copy as cURL</button></span>
-      </div>
-      <div data-bin-detail><p class="tool-hint">Pick a request to see what was sent and what the bin answered.</p></div>
-      <pre class="tool-out" data-bin-curl hidden></pre>
+    <div class="bin-dialog-foot">
+      <span class="tool-hint" data-bin-routing-note aria-live="polite"></span>
+      <button type="button" class="btn ghost" data-bin-close>Cancel</button>
+      <button type="submit" class="btn primary">Save routing</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog class="bin-dialog" data-bin-dialog="share" aria-labelledby="bin-share-title">
+  <div class="bin-dialog-head">
+    <h3 id="bin-share-title">Share this bin</h3>
+    <button type="button" class="btn ghost small" data-bin-close aria-label="Close">Close</button>
+  </div>
+  <div class="bin-dialog-body bin-share">
+    <div class="bin-share-item">
+      <div class="tool-head"><h4 class="tool-sub">Webhook URL</h4><button type="button" class="btn secondary small" data-copy="[data-bin-share-url]">Copy</button></div>
+      <p class="tool-hint">Give this to the sender. Anyone can send to it; it shows nothing.</p>
+      <pre class="tool-out tool-wrap" data-bin-share-url></pre>
+    </div>
+    <div class="bin-share-item" data-bin-view-copy hidden>
+      <div class="tool-head"><h4 class="tool-sub">View-only link</h4><button type="button" class="btn secondary small" data-copy="[data-bin-view-link]">Copy</button></div>
+      <p class="tool-hint">For your team. Shows each request and its answer live, but can't change rules or routing, or clear the bin.</p>
+      <pre class="tool-out tool-wrap" data-bin-view-link></pre>
+    </div>
+    <div class="bin-share-item">
+      <div class="tool-head"><h4 class="tool-sub">Private link</h4><button type="button" class="btn secondary small" data-copy="[data-bin-link]">Copy</button></div>
+      <p class="tool-hint">Opens this bin with full control in any browser. Keep it to yourself, or keep it to get back to the bin.</p>
+      <pre class="tool-out tool-wrap" data-bin-link></pre>
     </div>
   </div>
-</div>
+</dialog>
 
 <dialog class="bin-dialog" data-bin-editor aria-labelledby="bin-editor-title">
   <form method="dialog" class="bin-editor" data-bin-editor-form>

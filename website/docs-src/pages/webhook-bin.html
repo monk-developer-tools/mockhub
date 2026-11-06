@@ -1,14 +1,14 @@
-<p>A webhook bin is a URL that records every request sent to it and shows each one beside the answer it got. It needs no account. Use the free <a href="/tools/webhook-bin/">webhook catcher</a> on the demo, or turn on <code>MOCKHUB_PUBLIC_TOOLS</code> on your own server (see <a href="/docs/config/#public-tools">Public tools</a>).</p>
+<p>A webhook bin is a URL that records every request sent to it and shows each one beside the answer it got. It needs no account. The page is a console: the top bar shows the bin URL and where requests go, with <strong>Rules</strong>, <strong>Routing</strong>, <strong>Share</strong> and, when available, <strong>AI</strong> each opening its own dialog. Below it is the request log; until the first request arrives, <strong>Send a test webhook</strong> sends a sample payment event so you can see how it looks. Use the free <a href="/tools/webhook-bin/">webhook catcher</a> on the demo, or turn on <code>MOCKHUB_PUBLIC_TOOLS</code> on your own server (see <a href="/docs/config/#public-tools">Public tools</a>).</p>
 
 <h3 id="bin-capture">What a bin keeps</h3>
 <p>Send any method to <code>/__public/bins/{id}</code> or any path under it. The bin keeps every request with its method, path, query, headers, body (up to 64 KB) and the answer it sent back: status, headers, body, how long it took and what produced it. There is no request count limit. A bin holds up to 50 MB in files of 10 MB; past that it drops its oldest file. The list loads 100 requests at a time, and <strong>Load older requests</strong> pages back.</p>
 <p>When a request names its event, the bin shows it as a badge. It reads the <code>X-GitHub-Event</code>, <code>X-Gitlab-Event</code>, <code>X-Event-Key</code>, <code>X-Shopify-Topic</code>, <code>X-Webhook-Event</code> and <code>X-Event-Type</code> headers, then the JSON fields <code>type</code>, <code>event</code>, <code>event_type</code>, <code>eventType</code>, <code>topic</code> and <code>action</code>.</p>
 <h3 id="bin-share">Sharing a bin</h3>
-<p>Only the browser that created the bin holds its token. There are three links to share:</p>
+<p>Only the browser that created the bin holds its token. <strong>Share</strong> shows three links:</p>
 <ul>
-  <li><strong>Copy URL</strong>: the address webhooks go to. Anyone can send to it, but it shows nothing.</li>
-  <li><strong>Copy view-only link</strong>: opens the bin's requests and the answers they got, live, in any browser. It can't change rules, routing or the default answer, can't clear the bin and doesn't show the settings, so forward headers and the tunnel key stay private. Opening it doesn't replace the viewer's own bin; <strong>Leave</strong> goes back to it.</li>
-  <li><strong>Copy private link</strong>: the token itself. Whoever has it controls the bin as you do; keep it to yourself.</li>
+  <li><strong>Webhook URL</strong>: the address webhooks go to. Anyone can send to it, but it shows nothing.</li>
+  <li><strong>View-only link</strong>: opens the bin's requests and the answers they got, live, in any browser. It can't change rules, routing or the default answer, can't clear the bin and doesn't show the settings, so forward headers and the tunnel key stay private. Opening it doesn't replace the viewer's own bin; <strong>Leave</strong> goes back to it.</li>
+  <li><strong>Private link</strong>: the token itself. Whoever has it controls the bin as you do; keep it to yourself.</li>
 </ul>
 <p>From a script, the owner reads the view key from <code>viewKey</code> in <code>GET /__public/inspect/{id}/settings</code> and a viewer sends it as <code>X-Bin-Token</code> to <code>GET /__public/inspect/{id}</code>. Every other call with it gets <code>403</code>. A bin is deleted 24 hours after its last request.</p>
 
@@ -36,7 +36,7 @@
 </table>
 <p>An answer has a status, a delay up to 15 seconds, headers and a body. Tick <strong>Fill in dynamic values</strong> to render the body and headers as a <a href="/docs/templating/">template</a>, for example <code>{{jsonPath request.body '$.id'}}</code>, <code>{{now}}</code> or <code>{{fake 'Name.fullName'}}</code>. Give a rule up to five answers with weights to make a flaky endpoint: weights 3 and 1 answer the first three times in four.</p>
 <p>The starting points fill the editor with a common rule: fail with 500, answer after 5 seconds, match one event type, echo the body back and fail one in four. A bin holds up to 50 rules of up to 10 conditions each.</p>
-<p>When the server has an <a href="/docs/ai/">AI provider</a>, <strong>Draft with AI</strong> turns a description such as "answer 402 with the payment id when the event is payment.failed" into a rule. It needs a MockHub sign-in: anonymous visitors don't get AI drafts. Each user gets 10 drafts an hour. The draft opens in the editor and is saved only when you save it.</p>
+<p>When the server has an <a href="/docs/ai/">AI provider</a>, <strong>AI</strong> in the top bar, or <strong>Draft with AI</strong> under the rules, turns a description such as "answer 402 with the payment id when the event is payment.failed" into a rule. It needs a MockHub sign-in: anonymous visitors don't get AI drafts. Each user gets 10 drafts an hour. The draft opens in the editor and is saved only when you save it.</p>
 
 <h3 id="bin-routing">Routing</h3>
 <p>Routing decides what answers a request no rule matched.</p>

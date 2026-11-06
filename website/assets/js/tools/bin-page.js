@@ -2,7 +2,7 @@ import { $, show, wireCopyButtons } from './common.js';
 import { call, toCurl } from './http.js';
 import {
   DYNAMIC_VALUES, METHODS, OPS, RECIPES, TARGETS, binLink, blankAnswer, blankCondition, blankRule, duplicate, flow, headerLines, mergeRequests, move,
-  outcomeText, outcomeTone, parseBinHash, parseHeaderLines, previewRequest, recipe, routingFromForm, snippets, summary, tunnelCommand,
+  outcomeText, outcomeTone, parseBinHash, routeSummary, parseHeaderLines, previewRequest, recipe, routingFromForm, snippets, summary, tunnelCommand,
 } from './bin.js';
 
 const KEY = 'mockhub-bin';
@@ -127,6 +127,7 @@ function renderList() {
     return el('li', {}, button);
   }));
   $('[data-bin-empty]').hidden = requests.length > 0;
+  $('[data-bin-log]').hidden = requests.length === 0;
   const oldestShown = requests.length ? requests[requests.length - 1].seq : 0;
   $('[data-bin-older]').hidden = !requests.length || oldestShown <= oldestKept;
 }
@@ -220,6 +221,7 @@ function applySettings(value) {
   $('[data-bin-view-link]').textContent = value.viewKey ? binLink(location.origin, location.pathname, bin.id, value.viewKey, true) : '';
   $('[data-bin-keeps]').textContent = String(value.limits?.keepsMb ?? 50);
   $('[data-bin-ai]').hidden = !value.ai;
+  $('[data-bin-open="ai"]').hidden = !value.ai;
   const form = $('[data-bin-routing]');
   const routing = value.routing ?? { mode: 'mock' };
   form.querySelector(`input[name="mode"][value="${routing.mode}"]`).checked = true;
@@ -236,6 +238,47 @@ function applySettings(value) {
   renderTunnel(value.tunnel);
   renderRules();
   renderMode();
+  renderRouteTo();
+}
+
+function renderRouteTo() {
+  if (!settings) return;
+  const active = rules.filter((r) => r.enabled !== false).length;
+  $('[data-bin-route-to]').textContent = routeSummary(settings.routing ?? { mode: 'mock' }, rulesOn, active, settings.tunnel?.online);
+}
+
+function openDialog(name) {
+  const dialog = $(`[data-bin-dialog="${name === 'ai' ? 'rules' : name}"]`);
+  if (!dialog.open) dialog.showModal();
+  if (name === 'ai') {
+    const box = $('[data-bin-ai]');
+    box.scrollIntoView({ block: 'nearest' });
+    (session.read() ? $('[data-bin-ai-text]') : $('#bin-user')).focus();
+  }
+}
+
+function closeDialog(dialog) {
+  if (!dialog?.open) return;
+  dialog.close();
+  if (dialog.dataset.binDialog === 'routing' && settings) applySettings(settings);
+}
+
+function flashConsole(message) {
+  const note = $('[data-bin-console-note]');
+  note.textContent = message;
+  note.hidden = false;
+  setTimeout(() => {
+    note.hidden = true;
+  }, 6000);
+}
+
+async function sendSample(noteSelector) {
+  const note = $(noteSelector);
+  const body = JSON.stringify({ type: 'payment.succeeded', id: `pi_${Math.random().toString(36).slice(2, 8)}`, amount: 4200, currency: 'EUR' });
+  if (note) note.textContent = 'Sending…';
+  const result = await call(`${binUrl()}/payments?source=test`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Webhook-Event': 'payment.succeeded' }, body });
+  if (note) note.textContent = result.status ? `Sent. The bin answered ${result.status}.` : result.error ?? 'Could not send.';
+  poll();
 }
 
 function renderTunnel(tunnel) {
@@ -266,7 +309,11 @@ async function refreshTunnel() {
   if (!bin) return;
   if (!document.hidden && currentMode() === 'tunnel') {
     const result = await call(inspect('/settings'), { headers: auth() });
-    if (result.json && !result.error) renderTunnel(result.json.tunnel);
+    if (result.json && !result.error) {
+    renderTunnel(result.json.tunnel);
+    if (settings) settings.tunnel = result.json.tunnel;
+    renderRouteTo();
+  }
   }
   settingsTimer = setTimeout(refreshTunnel, SETTINGS_MS);
 }
@@ -491,8 +538,12 @@ async function saveRouting(e) {
     }
   }
   const result = await call(inspect('/routing'), { method: 'PUT', headers: auth(true), body: JSON.stringify(routing) });
-  note.textContent = result.error ?? 'Saved. New requests follow this route.';
-  if (result.json && !result.error) applySettings(result.json);
+  note.textContent = result.error ?? '';
+  if (result.json && !result.error) {
+    applySettings(result.json);
+    $('[data-bin-dialog="routing"]').close();
+    flashConsole(`Routing saved. New requests go to ${$('[data-bin-route-to]').textContent}.`);
+  }
 }
 
 function renderSignIn(message = '') {
@@ -563,6 +614,11 @@ function open(value) {
   $('[data-bin-forget]').textContent = bin.viewOnly ? 'Leave' : 'New bin';
   $('[data-bin-view-copy]').hidden = true;
   $('[data-bin-url]').textContent = binUrl();
+  $('[data-bin-share-url]').textContent = binUrl();
+  $('[data-bin-route-to]').textContent = bin.viewOnly ? 'the owner\'s rules and routing' : 'default answer';
+  $('[data-bin-log]').hidden = true;
+  $('[data-bin-empty]').hidden = false;
+  settings = null;
   $('[data-bin-link]').textContent = binLink(location.origin, location.pathname, bin.id, bin.token);
   const code = snippets(binUrl());
   document.querySelectorAll('[data-bin-code]').forEach((pre) => {
@@ -631,6 +687,19 @@ $('[data-bin-clear]').addEventListener('click', async () => {
 });
 
 $('[data-bin-older]').addEventListener('click', loadOlder);
+document.querySelectorAll('[data-bin-open]').forEach((b) => b.addEventListener('click', () => openDialog(b.dataset.binOpen)));
+document.querySelectorAll('[data-bin-close]').forEach((b) => b.addEventListener('click', () => closeDialog(b.closest('dialog'))));
+document.querySelectorAll('[data-bin-dialog]').forEach((d) => {
+  d.addEventListener('click', (e) => {
+    if (e.target === d) closeDialog(d);
+  });
+  d.addEventListener('cancel', (e) => {
+    e.preventDefault();
+    closeDialog(d);
+  });
+});
+$('[data-bin-sample]').addEventListener('click', () => sendSample('[data-bin-sample-note]'));
+$('[data-bin-sample-again]').addEventListener('click', () => sendSample(null));
 $('[data-bin-rules-on]').addEventListener('change', (e) => saveRules(rules, e.target.checked, e.target.checked ? 'Rules are on.' : 'Rules are off. Every request goes to the routing.'));
 $('[data-bin-rule-new]').addEventListener('click', () => openEditor(blankRule(), -1));
 $('[data-rule-add-condition]').addEventListener('click', () => {

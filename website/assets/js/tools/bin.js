@@ -194,6 +194,13 @@ export function flow(routing, rulesOn, ruleCount) {
   return steps;
 }
 
+export function routeSummary(routing, rulesOn, ruleCount, tunnelOnline) {
+  const rulesPart = rulesOn && ruleCount > 0 ? `${ruleCount} rule${ruleCount === 1 ? '' : 's'}, then ` : '';
+  if (routing.mode === 'forward') return rulesPart + (routing.target ? hostOf(routing.target) + (routing.pathPrefix || '') : 'a target not set yet');
+  if (routing.mode === 'tunnel') return `${rulesPart}your machine (${tunnelOnline ? 'tunnel connected' : 'tunnel not connected'})`;
+  return `${rulesPart}default answer`;
+}
+
 function hostOf(target) {
   try {
     return new URL(target).host;

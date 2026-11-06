@@ -5331,3 +5331,148 @@ select.tool-select-small {
   gap: 10px;
 }
 [data-bin-live][data-view-only] [data-owner],[data-bin-live]:not([data-view-only]) [data-viewer]{display:none!important}
+.bin-console {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bin-console-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+}
+
+.bin-console-id {
+  min-width: 0;
+  flex: 1 1 360px;
+}
+
+.bin-console-id h3 {
+  margin: 0 0 4px;
+}
+
+.bin-route-line {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.bin-route-line code {
+  font-family: var(--mono);
+  color: var(--ink);
+}
+
+.bin-route-to {
+  color: var(--accent);
+}
+
+.bin-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.bin-waiting {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bin-waiting > h3,
+.bin-waiting > .tool-hint,
+.bin-waiting > .bin-spinner {
+  align-self: center;
+  text-align: center;
+  margin: 0;
+}
+
+.bin-waiting-actions {
+  justify-content: center;
+}
+
+.bin-waiting[hidden],
+.tool-bin[hidden] {
+  display: none;
+}
+
+.bin-spinner {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+  border-top-color: var(--accent);
+  animation: bin-spin 1s linear infinite;
+}
+
+@keyframes bin-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bin-spinner {
+    animation: none;
+  }
+}
+
+.bin-dialog.wide {
+  width: min(920px, calc(100vw - 32px));
+}
+
+.bin-dialog-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: var(--tile);
+  border-bottom: 1px solid var(--line);
+}
+
+.bin-dialog-head h3 {
+  margin: 0;
+  flex: 1;
+}
+
+.bin-dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px;
+}
+
+.bin-dialog-foot {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 20px;
+  background: var(--tile);
+  border-top: 1px solid var(--line);
+}
+
+.bin-dialog-foot .tool-hint {
+  flex: 1;
+}
+
+.bin-share {
+  gap: 18px;
+}
+
+.bin-share-item[hidden] {
+  display: none;
+}
+
+.bin-share-item .tool-hint {
+  margin: 4px 0 8px;
+}

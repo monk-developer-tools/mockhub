@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { binLink, duplicate, flow, parseBinHash, previewRequest, headerLines, mergeRequests, move, outcomeText, outcomeTone, parseHeaderLines, recipe, routingFromForm, snippets, summary, tunnelCommand } from '../assets/js/tools/bin.js';
+import { binLink, duplicate, flow, routeSummary, parseBinHash, previewRequest, headerLines, mergeRequests, move, outcomeText, outcomeTone, parseHeaderLines, recipe, routingFromForm, snippets, summary, tunnelCommand } from '../assets/js/tools/bin.js';
 
 test('summarises a rule in one line', () => {
   // Given
@@ -176,4 +176,15 @@ test('a view-only link reads back as view-only', () => {
   // Then
   assert.equal(link, `https://demo.test/tools/webhook-bin/#view=abcdefghijk2.v${'b'.repeat(31)}`);
   assert.deepEqual(parsed, { id: 'abcdefghijk2', token: `v${'b'.repeat(31)}`, viewOnly: true });
+});
+
+test('sums up where a request goes in one line', () => {
+  // Given
+  const forward = { mode: 'forward', target: 'https://api.example.com', pathPrefix: '/hooks' };
+
+  // When
+  const lines = [routeSummary(forward, true, 2, false), routeSummary({ mode: 'tunnel' }, false, 2, true), routeSummary({ mode: 'mock' }, true, 0, false), routeSummary({ mode: 'tunnel' }, true, 1, false)];
+
+  // Then
+  assert.deepEqual(lines, ['2 rules, then api.example.com/hooks', 'your machine (tunnel connected)', 'default answer', '1 rule, then your machine (tunnel not connected)']);
 });
