@@ -128,8 +128,15 @@ Found while checking: before this, a bin's preflight allowed only `Content-Type,
 | AI chat that makes static, dynamic, CRUD and callout rules, several at once | One rule per draft | 🟡 |
 | **Fix template with AI** when a template fails | — | ❌ (also missing in the app) |
 
-### B9 — Bin API parity
-Beeceptor API v2 has rules one by one (get, create, replace, patch, delete, reorder, bulk replace), request history one by one (get, delete, multipart download) and the state store (list, upsert, delete). We only have PUT for all rules and GET for a page of requests. ❌
+### B9 — Bin API parity ✅ done
+| Beeceptor API v2 | Ours | Status |
+|---|---|---|
+| Rules: list, get, create, replace, patch, delete, reorder, bulk replace | `GET/POST /rules`, `GET/PUT/PATCH/DELETE /rules/{ruleId}`, `PUT /rules/order`, `PUT /rules` | ✅ |
+| Requests: get, delete, multipart download | `GET/DELETE /requests/{seq}` (B4), `GET /requests/{seq}/parts[/{index}]` | ✅ |
+| State: list, upsert, delete | `GET/DELETE /state`, `PUT/DELETE /state/{counters,values,lists}/{name}` | ✅ |
+| CRUD data | `GET/PUT/DELETE /data` (B6) | ✅ |
+
+Rule ids are now unique within a bin (a duplicate gets a new one) and `order` is reserved. Parts download as attachments with `Content-Security-Policy: sandbox`, so an uploaded HTML file can't run on the site. `BinRuleEdits`, `BinMultipart`, `BinState.put/remove`.
 
 ### B10 — Keep a bin
 Beeceptor keeps free endpoints 30 days, and 90 once claimed. Ours are deleted 24 hours after the last request. Build: **Save to my MockHub**, which turns a bin and its rules into a project for signed-in users. That also joins the free tool to the full app. ❌

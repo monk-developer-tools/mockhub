@@ -147,5 +147,11 @@ curl -X PUT https://mockhub.devops-monk.com/__public/inspect/{id}/rules -H 'X-Bi
     "description": "Payment failures get 402",
     "conditions": [{"target": "json", "key": "$.type", "op": "equals", "value": "payment.failed"}],
     "answers": [{"status": 402, "delayMs": 500, "body": "{\"id\": \"{{jsonPath request.body '"'"'$.id'"'"'}}\"}", "template": true}]}]}'</code></pre>
+<p>One rule at a time:</p>
+<pre><code>curl -X POST …/inspect/{id}/rules -H 'X-Bin-Token: {token}' -d '{"name": "Paid", "answers": [{"status": 200}]}'
+curl -X PATCH …/inspect/{id}/rules/{ruleId} -H 'X-Bin-Token: {token}' -d '{"enabled": false}'
+curl -X PUT …/inspect/{id}/rules/order -H 'X-Bin-Token: {token}' -d '{"ids": ["{ruleId}", "…"]}'
+curl -X PUT …/inspect/{id}/state/counters/orders -H 'X-Bin-Token: {token}' -d '{"value": 0}'
+curl …/inspect/{id}/requests/{seq}/parts/0 -H 'X-Bin-Token: {token}' -o file</code></pre>
 <p>An answer sends a file with <code>"fileName": "logo.png"</code> and the file's bytes in base64 as <code>"body"</code>. Each answer can also have a <code>"description"</code> of up to 120 characters.</p>
 <p>Every endpoint is listed under <a href="/docs/config/#public-tools">Public tools</a>.</p>

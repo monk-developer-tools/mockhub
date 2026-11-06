@@ -7,6 +7,7 @@ import io.mockhub.api.Jsons;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -28,6 +29,7 @@ public record BinRule(String id, String name, String description, boolean enable
   public static final int MAX_HEADERS = 20;
   public static final int MAX_DESCRIPTION = 500;
   public static final int MAX_ANSWER_NOTE = 120;
+  static final String RESERVED_ID = "order";
   static final Set<String> METHODS = Set.of("ANY", "GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "QUERY", "TRACE");
 
   public enum Target {
@@ -79,9 +81,12 @@ public record BinRule(String id, String name, String description, boolean enable
     if (!node.isArray()) throw new IllegalArgumentException("Send rules as a list");
     if (node.size() > MAX_RULES) throw new IllegalArgumentException("A bin holds up to " + MAX_RULES + " rules");
     List<BinRule> out = new ArrayList<>();
+    Set<String> ids = new HashSet<>();
     for (int i = 0; i < node.size(); i++) {
       try {
-        out.add(from(node.get(i)));
+        BinRule rule = from(node.get(i));
+        while (!ids.add(rule.id())) rule = rule.withId(UUID.randomUUID().toString().substring(0, 8));
+        out.add(rule);
       } catch (IllegalArgumentException e) {
         throw new IllegalArgumentException("Rule " + (i + 1) + ": " + e.getMessage());
       }
@@ -92,7 +97,7 @@ public record BinRule(String id, String name, String description, boolean enable
   public static BinRule from(JsonNode node) {
     if (node == null || !node.isObject()) throw new IllegalArgumentException("A rule is a JSON object");
     String id = text(node, "id", "");
-    if (!id.matches("[a-z0-9-]{1,40}")) id = UUID.randomUUID().toString().substring(0, 8);
+    if (!id.matches("[a-z0-9-]{1,40}") || id.equals(RESERVED_ID)) id = UUID.randomUUID().toString().substring(0, 8);
     String name = text(node, "name", "").trim();
     if (name.length() > 80) throw new IllegalArgumentException("Keep the name under 80 characters");
     String description = text(node, "description", "").trim();
@@ -215,6 +220,10 @@ public record BinRule(String id, String name, String description, boolean enable
     ArrayNode out = Jsons.MAPPER.createArrayNode();
     rules.forEach(r -> out.add(r.toJson()));
     return out;
+  }
+
+  BinRule withId(String newId) {
+    return new BinRule(newId, name, description, enabled, method, conditions, answers, callout, crud);
   }
 
   public String label() {

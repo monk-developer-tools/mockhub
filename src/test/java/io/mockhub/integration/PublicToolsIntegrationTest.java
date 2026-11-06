@@ -291,6 +291,63 @@ class PublicToolsIntegrationTest {
     assertThat(log.at("/requests/0/outcome/rule").asText()).isEqualTo("Users");
   }
 
+  @Test
+  void aBinsRulesStateAndMultipartPartsWorkOneByOneFromAScript() {
+    // Given
+    server = MockHubServer.start(data, ON);
+    ApiClient api = server.api();
+    JsonNode bin = api.post("/__public/bins", "").json();
+    String id = bin.get("id").asText();
+    Map<String, String> owner = Map.of("X-Bin-Token", bin.get("token").asText());
+    String inspect = "/__public/inspect/" + id;
+    String viewKey = api.send("GET", inspect + "/settings", null, null, owner).json().get("viewKey").asText();
+    String multipart = "--b1\r\nContent-Disposition: form-data; name=\"doc\"; filename=\"a<b>.html\"\r\nContent-Type: text/html\r\n\r\n<p>hi</p>\r\n--b1--\r\n";
+
+    // When
+    ApiClient.Result first = api.send("POST", inspect + "/rules", "{\"id\": \"paid\", \"name\": \"Paid\", \"answers\": [{\"status\": 200}]}", "application/json", owner);
+    ApiClient.Result second = api.send("POST", inspect + "/rules", "{\"name\": \"Failed\", \"answers\": [{\"status\": 402}]}", "application/json", owner);
+    String secondId = second.json().get("id").asText();
+    int taken = api.send("POST", inspect + "/rules", "{\"id\": \"paid\", \"answers\": [{}]}", "application/json", owner).status();
+    ApiClient.Result patched = api.send("PATCH", inspect + "/rules/paid", "{\"description\": \"200 for paid\"}", "application/json", owner);
+    ApiClient.Result reordered = api.send("PUT", inspect + "/rules/order", "{\"ids\": [\"" + secondId + "\", \"paid\"]}", "application/json", owner);
+    int missing = api.send("GET", inspect + "/rules/nope", null, null, owner).status();
+    int viewerEdits = api.send("DELETE", inspect + "/rules/paid", null, null, Map.of("X-Bin-Token", viewKey)).status();
+    ApiClient.Result deleted = api.send("DELETE", inspect + "/rules/" + secondId, null, null, owner);
+    ApiClient.Result counter = api.send("PUT", inspect + "/state/counters/orders%20today", "{\"value\": 7}", "application/json", owner);
+    ApiClient.Result list = api.send("PUT", inspect + "/state/lists/seen", "{\"value\": [\"a\", \"b\"]}", "application/json", owner);
+    int badKind = api.send("PUT", inspect + "/state/maps/x", "{\"value\": 1}", "application/json", owner).status();
+    ApiClient.Result unset = api.send("DELETE", inspect + "/state/lists/seen", null, null, owner);
+    api.send("POST", "/__public/bins/" + id + "/upload", multipart, "multipart/form-data; boundary=b1");
+    long seq = api.send("GET", inspect, null, null, owner).json().at("/requests/0/seq").asLong();
+    JsonNode partList = api.send("GET", inspect + "/requests/" + seq + "/parts", null, null, Map.of("X-Bin-Token", viewKey)).json();
+    ApiClient.Result part = api.send("GET", inspect + "/requests/" + seq + "/parts/0", null, null, owner);
+    int noPart = api.send("GET", inspect + "/requests/" + seq + "/parts/5", null, null, owner).status();
+
+    // Then
+    assertThat(first.status()).isEqualTo(201);
+    assertThat(first.json().get("id").asText()).isEqualTo("paid");
+    assertThat(second.status()).isEqualTo(201);
+    assertThat(taken).isEqualTo(409);
+    assertThat(patched.json().get("description").asText()).isEqualTo("200 for paid");
+    assertThat(patched.json().at("/answers/0/status").asInt()).isEqualTo(200);
+    assertThat(reordered.json().at("/rules/0/id").asText()).isEqualTo(secondId);
+    assertThat(missing).isEqualTo(404);
+    assertThat(viewerEdits).isEqualTo(403);
+    assertThat(deleted.json().get("rules").size()).isEqualTo(1);
+    assertThat(api.send("GET", inspect + "/rules", null, null, owner).json().at("/rules/0/id").asText()).isEqualTo("paid");
+    assertThat(counter.json().at("/counters/orders today").asLong()).isEqualTo(7);
+    assertThat(list.json().at("/lists/seen/1").asText()).isEqualTo("b");
+    assertThat(badKind).isEqualTo(400);
+    assertThat(unset.json().get("lists").has("seen")).isFalse();
+    assertThat(partList.at("/parts/0/filename").asText()).isEqualTo("a<b>.html");
+    assertThat(partList.at("/parts/0/size").asInt()).isEqualTo(9);
+    assertThat(part.status()).isEqualTo(200);
+    assertThat(part.body()).isEqualTo("<p>hi</p>");
+    assertThat(part.header("Content-Disposition")).isEqualTo("attachment; filename=\"a_b_.html\"");
+    assertThat(part.header("Content-Security-Policy")).isEqualTo("sandbox");
+    assertThat(noPart).isEqualTo(404);
+  }
+
   private static String headerOf(JsonNode headers, String name) {
     for (var it = headers.fields(); it.hasNext(); ) {
       var e = it.next();

@@ -9,13 +9,18 @@ import io.mockhub.auth.Principal;
 import io.mockhub.playground.JdkHttpSender;
 import io.mockhub.playground.TargetGuard;
 import io.mockhub.tunnel.TunnelGateway;
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiFunction;
+import java.util.function.UnaryOperator;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.LongSupplier;
@@ -26,8 +31,11 @@ import java.util.regex.Pattern;
 public final class BinTool implements PublicTool {
   public static final int MAX_REPLY_BODY = 4 * 1024;
   private static final Pattern CAPTURE = Pattern.compile("/bins/([a-z0-9]{12})(/.*)?");
-  private static final Pattern INSPECT = Pattern.compile("/inspect/([a-z0-9]{12})(/requests(?:/\\d{1,12}(?:/share)?)?|/response|/settings|/rules|/routing|/draft|/state|/export|/options|/data)?");
+  private static final Pattern INSPECT = Pattern.compile("/inspect/([a-z0-9]{12})(/requests(?:/\\d{1,12}(?:/share|/parts(?:/\\d{1,3})?)?)?|/response|/settings|/rules(?:/[a-z0-9-]{1,40})?|/state/[a-z]{1,10}/[^/]{1,200}|/routing|/draft|/state|/export|/options|/data)?");
   private static final Pattern ONE = Pattern.compile("/requests/(\\d{1,12})(/share)?");
+  private static final Pattern PARTS = Pattern.compile("/requests/(\\d{1,12})/parts(?:/(\\d{1,3}))?");
+  private static final Pattern RULE = Pattern.compile("/rules/([a-z0-9-]{1,40})");
+  private static final Pattern STATE_ONE = Pattern.compile("/state/([a-z]{1,10})/([^/]{1,200})");
 
   private final Bins bins;
   private final PublicLimits limits;
@@ -180,11 +188,20 @@ public final class BinTool implements PublicTool {
     Matcher one = ONE.matcher(what);
     boolean single = one.matches();
     boolean sharing = single && one.group(2) != null;
-    boolean reading = method.equals("GET") && (what.equals("/requests") || what.equals("/export") || what.equals("/data") || (single && !sharing));
+    Matcher parts = PARTS.matcher(what);
+    boolean partsAsked = parts.matches();
+    boolean reading = method.equals("GET") && (what.equals("/requests") || what.equals("/export") || what.equals("/data") || partsAsked || (single && !sharing));
     if (!reading && bins.viewOnly(id, token)) {
       return PublicResponses.error(403, "This is a view-only link. Only the bin's owner can change it.");
     }
     if (single) return single(id, token, Long.parseLong(one.group(1)), sharing, method);
+    if (partsAsked) return parts(id, token, Long.parseLong(parts.group(1)), parts.group(2), method);
+    Matcher rule = RULE.matcher(what);
+    if (rule.matches()) return rule(id, token, rule.group(1), method, request);
+    if (what.equals("/rules") && method.equals("GET")) return rules(id, token);
+    if (what.equals("/rules") && method.equals("POST")) return editRules(id, token, list -> BinRuleEdits.create(list, read(request.body()), -1), 201, BinTool::added);
+    Matcher stateOne = STATE_ONE.matcher(what);
+    if (stateOne.matches()) return stateOne(id, token, stateOne.group(1), decode(stateOne.group(2)), method, request);
     if (what.equals("/export") && method.equals("GET")) return export(id, token, request);
     if (what.equals("/data")) return data(id, token, method, request);
     if (part == null && method.equals("DELETE")) {
@@ -219,7 +236,118 @@ public final class BinTool implements PublicTool {
     if (what.equals("/routing") && method.equals("PUT")) return setRouting(id, token, request.body());
     if (what.equals("/options") && method.equals("PUT")) return setOptions(id, token, request.body());
     if (what.equals("/draft") && method.equals("POST")) return draft(id, token, request);
-    return PublicResponses.error(405, "Read a bin with GET, change it with PUT /response, /rules or /routing, clear it with DELETE, read and clear its saved values with GET and DELETE /state, export it with GET /export, change its settings with PUT /options, or read and change stored records with /data");
+    return PublicResponses.error(405, "Read a bin with GET, change it with PUT /response, /rules or /routing, clear it with DELETE, read and clear its saved values with GET and DELETE /state, export it with GET /export, change its settings with PUT /options, read and change stored records with /data, or edit one rule at /rules/{ruleId} and one saved entry at /state/{kind}/{name}");
+  }
+
+  private ResponseDefinition rules(String id, String token) {
+    return bins.settings(id, token)
+        .map(s -> PublicResponses.json(200, Jsons.object().put("rulesEnabled", s.rulesEnabled()).set("rules", BinRule.toJson(s.rules()))))
+        .orElseGet(() -> notYours(id));
+  }
+
+  private ResponseDefinition rule(String id, String token, String ruleId, String method, PublicRequest request) {
+    if (ruleId.equals(BinRule.RESERVED_ID)) {
+      if (!method.equals("PUT")) return PublicResponses.error(405, "Reorder rules with PUT /rules/order and {\"ids\": [...]}");
+      return editRules(id, token, list -> BinRuleEdits.reorder(list, read(request.body()).path("ids")), 200, BinTool::allRules);
+    }
+    return switch (method) {
+      case "GET" -> bins.settings(id, token)
+          .map(s -> BinRuleEdits.find(s.rules(), ruleId).map(r -> PublicResponses.json(200, r.toJson())).orElseGet(() -> PublicResponses.error(404, new BinRuleEdits.Missing(ruleId).getMessage())))
+          .orElseGet(() -> notYours(id));
+      case "PUT" -> editRules(id, token, list -> BinRuleEdits.replace(list, ruleId, read(request.body())), 200, one(ruleId));
+      case "PATCH" -> editRules(id, token, list -> BinRuleEdits.patch(list, ruleId, read(request.body())), 200, one(ruleId));
+      case "DELETE" -> editRules(id, token, list -> BinRuleEdits.delete(list, ruleId), 200, BinTool::allRules);
+      default -> PublicResponses.error(405, "Read a rule with GET, replace it with PUT, change fields with PATCH or delete it with DELETE");
+    };
+  }
+
+  private ResponseDefinition editRules(String id, String token, UnaryOperator<List<BinRule>> edit, int status, BiFunction<List<BinRule>, List<BinRule>, JsonNode> view) {
+    AtomicReference<List<BinRule>> before = new AtomicReference<>();
+    try {
+      boolean owned = bins.update(id, token, s -> {
+        before.set(s.rules());
+        return s.withRules(s.rulesEnabled(), edit.apply(s.rules()));
+      });
+      if (!owned) return notYours(id);
+    } catch (BinRuleEdits.Missing e) {
+      return PublicResponses.error(404, e.getMessage());
+    } catch (BinRuleEdits.Taken e) {
+      return PublicResponses.error(409, e.getMessage());
+    } catch (IllegalArgumentException e) {
+      return PublicResponses.error(400, e.getMessage());
+    }
+    return bins.settings(id, token).map(now -> PublicResponses.json(status, view.apply(before.get(), now.rules()))).orElseGet(() -> notYours(id));
+  }
+
+  private static JsonNode allRules(List<BinRule> before, List<BinRule> after) {
+    return Jsons.object().set("rules", BinRule.toJson(after));
+  }
+
+  private static JsonNode added(List<BinRule> before, List<BinRule> after) {
+    return after.stream().filter(r -> before.stream().noneMatch(b -> b.id().equals(r.id()))).findFirst().map(BinRule::toJson).orElseGet(Jsons::object);
+  }
+
+  private static BiFunction<List<BinRule>, List<BinRule>, JsonNode> one(String ruleId) {
+    return (before, after) -> BinRuleEdits.find(after, ruleId).map(r -> (JsonNode) r.toJson()).orElseGet(Jsons::object);
+  }
+
+  private ResponseDefinition stateOne(String id, String token, String kindName, String name, String method, PublicRequest request) {
+    Optional<BinState> state = bins.state(id, token);
+    if (state.isEmpty()) return notYours(id);
+    try {
+      BinState.Kind kind = BinState.Kind.of(kindName);
+      if (method.equals("PUT")) {
+        JsonNode node = read(request.body());
+        if (!node.has("value")) return PublicResponses.error(400, "Send {\"value\": ...}: a number for a counter, text for a value, a list of text for a list");
+        state.get().put(kind, name, node.get("value"));
+      } else if (method.equals("DELETE")) {
+        if (!state.get().remove(kind, name)) return PublicResponses.error(404, "No " + kindName + " entry named " + name);
+      } else {
+        return PublicResponses.error(405, "Set one entry with PUT or remove it with DELETE");
+      }
+    } catch (IllegalArgumentException | BinState.Full e) {
+      return PublicResponses.error(400, e.getMessage());
+    }
+    bins.keepState(id);
+    return PublicResponses.json(200, state.get().toJson());
+  }
+
+  private ResponseDefinition parts(String id, String key, long seq, String index, String method) {
+    if (!method.equals("GET")) return PublicResponses.error(405, "Read a request's parts with GET");
+    Optional<Bins.Captured> found = bins.one(id, key, seq);
+    if (found.isEmpty()) return missing(id, seq);
+    Bins.Captured c = found.get();
+    byte[] body = c.raw().isEmpty() ? c.body().getBytes(StandardCharsets.UTF_8) : Base64.getDecoder().decode(c.raw());
+    String type = c.headers().entrySet().stream().filter(e -> e.getKey().equalsIgnoreCase("Content-Type")).map(Map.Entry::getValue).findFirst().orElse("");
+    List<BinMultipart.Part> list = BinMultipart.parts(body, type);
+    if (index == null) {
+      ObjectNode out = Jsons.object().put("seq", seq).put("truncated", c.truncated());
+      var items = out.putArray("parts");
+      for (int i = 0; i < list.size(); i++) {
+        BinMultipart.Part p = list.get(i);
+        items.addObject().put("index", i).put("name", p.name()).put("filename", p.filename()).put("type", p.type()).put("size", p.bytes().length);
+      }
+      return PublicResponses.json(200, out);
+    }
+    int i = Integer.parseInt(index);
+    if (i >= list.size()) return PublicResponses.error(404, "Request " + seq + " has " + list.size() + " multipart parts");
+    BinMultipart.Part p = list.get(i);
+    String file = (p.filename().isEmpty() ? (p.name().isEmpty() ? "part-" + i : p.name()) : p.filename()).replaceAll("[^A-Za-z0-9._-]", "_");
+    return PublicResponses.base(200)
+        .withHeader("Content-Type", p.type().isEmpty() ? "application/octet-stream" : p.type())
+        .withHeader("Content-Disposition", "attachment; filename=\"" + file + "\"")
+        .withHeader("X-Content-Type-Options", "nosniff")
+        .withHeader("Content-Security-Policy", "sandbox")
+        .withBody(p.bytes())
+        .build();
+  }
+
+  private static String decode(String segment) {
+    try {
+      return URLDecoder.decode(segment.replace("+", "%2B"), StandardCharsets.UTF_8);
+    } catch (IllegalArgumentException e) {
+      return segment;
+    }
   }
 
   private ResponseDefinition data(String id, String token, String method, PublicRequest request) {

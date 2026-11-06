@@ -8,6 +8,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
@@ -72,6 +73,62 @@ public final class BinState {
   public synchronized List<String> list(String name) {
     Deque<String> list = lists.get(name);
     return list == null ? List.of() : List.copyOf(list);
+  }
+
+  public enum Kind {
+    COUNTERS, VALUES, LISTS;
+
+    static Kind of(String value) {
+      try {
+        return valueOf(value.toUpperCase(Locale.ROOT));
+      } catch (IllegalArgumentException e) {
+        throw new IllegalArgumentException("Saved state is counters, values or lists");
+      }
+    }
+  }
+
+  public synchronized void put(Kind kind, String name, JsonNode value) {
+    check(name);
+    switch (kind) {
+      case COUNTERS -> {
+        if (!value.isIntegralNumber()) throw new IllegalArgumentException("A counter is a whole number");
+        count(name, value.asLong(), true);
+      }
+      case VALUES -> {
+        if (!value.isTextual() && !value.isNumber() && !value.isBoolean()) throw new IllegalArgumentException("A saved value is text");
+        save(name, value.asText());
+      }
+      case LISTS -> {
+        if (!value.isArray()) throw new IllegalArgumentException("A list is an array of text");
+        if (value.size() > MAX_LIST) throw new IllegalArgumentException("A list keeps up to " + MAX_LIST + " items");
+        Deque<String> before = lists.remove(name);
+        try {
+          if (value.isEmpty()) {
+            room(name, 0);
+            lists.put(name, new ArrayDeque<>());
+          }
+          for (JsonNode item : value) {
+            if (item.isContainerNode()) throw new IllegalArgumentException("A list is an array of text");
+            add(name, item.asText());
+          }
+        } catch (RuntimeException e) {
+          if (before == null) lists.remove(name);
+          else lists.put(name, before);
+          throw e;
+        }
+      }
+    }
+    changed = true;
+  }
+
+  public synchronized boolean remove(Kind kind, String name) {
+    boolean removed = switch (kind) {
+      case COUNTERS -> counters.remove(name) != null;
+      case VALUES -> values.remove(name) != null;
+      case LISTS -> lists.remove(name) != null;
+    };
+    if (removed) changed = true;
+    return removed;
   }
 
   public synchronized void clear() {
