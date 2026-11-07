@@ -485,6 +485,25 @@
   margin-top: 2px;
 }
 
+.template-error {
+  flex-direction: column;
+}
+
+.template-error pre {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.template-error-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.template-error-actions svg {
+  margin-top: 0;
+}
+
 .project-table {
   width: 100%;
   border-collapse: collapse;

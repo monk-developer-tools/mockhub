@@ -149,11 +149,11 @@ export function TryIt({ project, form, fix }: { project: Project; form: StubForm
               </table>
             </details>
             {broken ? (
-              <div className="callout warn" data-template-error>
+              <div className="callout warn template-error" data-template-error>
                 <strong>The response template doesn't render.</strong>
                 <pre className="block">{broken}</pre>
                 {fix && (
-                  <div className="row-actions">
+                  <div className="template-error-actions">
                     <button className="btn" onClick={fixWithAi} disabled={fixing}>
                       <Sparkle size={14} /> {fixing ? 'Fixing…' : 'Fix with AI'}
                     </button>

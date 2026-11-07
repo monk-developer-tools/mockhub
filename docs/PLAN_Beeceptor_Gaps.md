@@ -192,6 +192,9 @@ Two tool pages over the webhook bin. `/tools/traffic-monitor/` takes a public AP
 ### P1 — Template helpers ✅ done
 Checked against Beeceptor's template docs (control flow, array, date, string, comparison and miscellaneous pages) and the live render endpoint. Already present: `eq`/`gt`/…, `contains`, `split`, `replace`, `trim`, `base64`, `urlEncode`, `slugify`, `stripTags`, `len`, `object`, `json`, `jsonMerge`, `isNumber`. Added, with Beeceptor's names, argument order and documented outputs as the tests: `switch`/`case`/`default` (the existing `default` value helper becomes the switch default when used as a block), `repeat`, `sort`, `reverse`, `oneOf`, `someOf`, `concat`, `objectMerge`, `coalesce`, `jsonParse`, `padStart`, `padEnd`, `urlDecode`, `base64Decode`, `lowercase`, `uppercase`, `isInteger`, `isDate`, `dateParse`, `dateAdd`, `dateDiff` (UTC, with Beeceptor's format shorthands and day.js patterns). They run in stubs, bins and the public playground, where `repeat` counts against the loop budget and `padStart`/`padEnd` against the size cap, and they are in the Insert dynamic value catalogue.
 
+### P2 — Fix template with AI in the app ✅ done
+A broken template used to come back from **Try it** as the server's raw HTML error page. Try it now reads the Handlebars message out of it (`templateError`), shows it in plain words and, for editors on a server with AI, offers **Fix with AI**: `POST /projects/{id}/ai/template/fix` sends the template, the error and the request that was tried, and the fix goes into the body to check and save. Bins and projects share one `TemplateFixer` (one prompt and set of checks; bins add their memory helpers, projects add state and dataset helpers).
+
 ### T7 — gRPC mocks without login
 Split out of T1. Three things block it on the public demo: MockHub reads only compiled descriptor sets (no `.proto` text parser); gRPC routes by service name, so two visitors uploading the same service would collide on a shared server; and the demo's nginx has no HTTP/2 or `grpc_pass`. Needs a `.proto` parser, a per-mock service namespace, and HTTP/2 gRPC in MockHub's own nginx site file.
 
@@ -200,7 +203,7 @@ Split out of T1. Three things block it on the public demo: MockHub reads only co
 | Beeceptor | Ours | Status | Phase |
 |---|---|---|---|
 | Template helpers `dateAdd`, `dateDiff`, `coalesce`, `objectMerge`, `switch`, `repeat`, `someOf`, sort by key, `reverse`, `isInteger`, `isDate`, `base64Decode`, `urlDecode`, `padStart`/`padEnd`, `concat` | All of them, with Beeceptor's names and argument order, plus `oneOf`, `jsonParse`, `dateParse`, `lowercase`, `uppercase` | ✅ | P1 |
-| **Fix template with AI** | Try it shows template errors with **Fix with AI** (`POST /projects/{id}/ai/template/fix`) | 🟡 built and tested, not yet deployed or browser-checked | P2 |
+| **Fix template with AI** | Try it shows template errors with **Fix with AI** (`POST /projects/{id}/ai/template/fix`) | ✅ | P2 |
 | **OpenTelemetry (OTLP) export** of traffic, logs and metrics | — | ❌ | P3 |
 | **Workspaces** (group projects inside an organisation) | — | ❌ | P4 |
 | **Header masking** in request history | ❔ | ❔ | P5 |
@@ -269,7 +272,7 @@ W4 status page: a public `/status/` page and a footer badge. The badge reads the
 | 17 | T6 Traffic monitoring and tunnel pages ✅ | S | Pages |
 | 17b | T7 gRPC mocks without login | L | Split out of T1: needs a .proto parser, per-mock service names and HTTP/2 on the demo |
 | 18 | P1 Template helpers ✅ | S | Verify, then add the missing ones |
-| 19 | P2 Fix template with AI | S | |
+| 19 | P2 Fix template with AI ✅ | S | |
 | 20 | P3 OpenTelemetry export | M | |
 | 21 | P4 Workspaces | M | |
 | 22 | P5 Header masking | S | |
