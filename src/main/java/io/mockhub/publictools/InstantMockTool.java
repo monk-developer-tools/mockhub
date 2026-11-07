@@ -113,7 +113,8 @@ public final class InstantMockTool implements PublicTool {
       case "" -> InstantSources.stubs(InstantStarter.stubs());
       case "example" -> examples.source(body.path("id").asText(""));
       case "records" -> InstantSources.records(body.path("resource").asText(null), body.get("records"));
-      default -> throw new InstantStubRules.Refused("Start from openapi, wsdl, graphql, example or records");
+      case "json" -> InstantSources.json(body.get("data"), body.path("resource").asText(null));
+      default -> throw new InstantStubRules.Refused("Start from openapi, wsdl, graphql, json, example or records");
     };
   }
 

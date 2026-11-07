@@ -913,6 +913,48 @@ class PublicToolsIntegrationTest {
   }
 
   @Test
+  void turnsAPastedJsonDocumentIntoRoutesWithCrudForListsOfRecords() {
+    // Given
+    server = MockHubServer.start(data, ON);
+    ApiClient api = server.api();
+    String db = """
+        {"posts": [{"id": 1, "title": "Hello", "author": "ada"}, {"id": 2, "title": "Again", "author": "alan"}],
+         "comments": [],
+         "profile": {"name": "typicode"},
+         "tags": ["a", "b"],
+         "Bad Key": [{"id": 1}]}
+        """;
+
+    // When
+    ApiClient.Result created = api.post("/__public/mocks", "{\"from\": \"json\", \"data\": " + db + "}");
+    String base = created.json().get("baseUrl").asText();
+    JsonNode posts = api.get(base + "/posts").json();
+    ApiClient.Result added = api.post(base + "/comments", "{\"postId\": 1, \"body\": \"Nice\"}");
+    JsonNode comments = api.get(base + "/comments").json();
+    JsonNode profile = api.get(base + "/profile").json();
+    JsonNode tags = api.get(base + "/tags").json();
+    ApiClient.Result list = api.send("POST", "/__public/mocks", "{\"from\": \"json\", \"resource\": \"books\", \"data\": [{\"id\": 1, \"title\": \"Dune\"}]}",
+        "application/json", Map.of("X-Forwarded-For", "198.51.100.21"));
+    StringBuilder many = new StringBuilder("[");
+    for (int i = 0; i < 101; i++) many.append(i == 0 ? "" : ",").append("{\"n\":").append(i).append('}');
+    ApiClient.Result tooMany = api.send("POST", "/__public/mocks", "{\"from\": \"json\", \"data\": {\"items\": " + many + "]}}",
+        "application/json", Map.of("X-Forwarded-For", "198.51.100.22"));
+
+    // Then
+    assertThat(created.status()).isEqualTo(201);
+    assertThat(created.json().get("skipped").toString()).contains("Bad Key: route names are lowercase letters");
+    assertThat(posts).hasSize(2);
+    assertThat(posts.get(0).get("title").asText()).isEqualTo("Hello");
+    assertThat(added.status()).isEqualTo(201);
+    assertThat(comments).hasSize(1);
+    assertThat(profile.get("name").asText()).isEqualTo("typicode");
+    assertThat(tags.toString()).isEqualTo("[\"a\",\"b\"]");
+    assertThat(api.get(list.json().get("baseUrl").asText() + "/books/1").json().get("title").asText()).isEqualTo("Dune");
+    assertThat(tooMany.status()).isEqualTo(400);
+    assertThat(tooMany.body()).contains("up to 100 records in all");
+  }
+
+  @Test
   void refusesStartersThatCantRunAndCapsStoredRecords() {
     // Given
     server = MockHubServer.start(data, ON);

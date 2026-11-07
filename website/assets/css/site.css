@@ -6042,3 +6042,79 @@ select.tool-select-small {
   margin: 0;
   font-variant-numeric: tabular-nums;
 }
+
+.api-routes {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.api-routes li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.api-routes .jack {
+  flex: none;
+  min-width: 64px;
+  text-align: center;
+}
+
+.api-root {
+  max-width: 280px;
+}
+
+.api-resource {
+  width: auto;
+  min-width: 140px;
+}
+
+.api-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  margin: 8px 0 12px;
+}
+
+.api-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+
+.api-table th,
+.api-table td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.api-table th {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.api-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.api-row-actions {
+  text-align: right;
+}
+
+.api-row-actions .btn + .btn {
+  margin-left: 4px;
+}
+
+.api-record.tool-code {
+  min-height: 120px;
+}

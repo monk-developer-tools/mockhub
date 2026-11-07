@@ -79,7 +79,7 @@ export function samplePath(stub) {
   return path.replace(/\{[^}]+\}/g, '42');
 }
 
-export const MAX_RECORDS = 50;
+export const MAX_RECORDS = 100;
 
 export function resourceName(fileName) {
   const base = String(fileName ?? '').replace(/\.[^.]*$/, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');

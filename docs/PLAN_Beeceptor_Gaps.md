@@ -160,8 +160,8 @@ The bin page now adds a **Get started** card for a new owner: catch a request (t
 | SOAP mock from WSDL file or URL | Instant mock from a WSDL file, paste or public URL | ✅ | T1 |
 | **GraphQL mock from SDL, no login**, with a query explorer | Instant mock from SDL, introspection or a URL, with an explorer of example queries | ✅ | T1 |
 | **gRPC mock from .proto, no login** | Signed-in only, from protoc descriptor sets | ❌ | T7 |
-| JSON/XML server: paste a payload, get a live API | ❔ instant mock starts from stubs or records | 🟡 | T3 |
-| CSV to REST API (upload, preview, read/add/update/delete) | Instant mock from CSV records | 🟡 needs its own page and CRUD check | T3 |
+| JSON/XML server: paste a payload, get a live API | `/tools/json-server/`: each key a route, lists of objects as CRUD | ✅ JSON; XML via the instant mock editor | T3 |
+| CSV to REST API (upload, preview, read/add/update/delete) | `/tools/csv-to-api/` with a preview and a records table | ✅ | T3 |
 | **2FA code generator** (QR screenshot or secret to TOTP codes, plus an API) | `/tools/totp/` and `GET|POST /__public/totp` | ✅ | T2 |
 | Test data generator: Handlebars templates, a sample JSON to imitate, AI picks the locale | Fields and locale picker | 🟡 | T4 |
 | **Virtual sandboxes**: ready mock copies of DHL, FedEx, UPS, AWS S3, GitHub, Amadeus and others | 10 MockHub examples | 🟡 | T5 |
@@ -176,6 +176,9 @@ The bin page now adds a **Get started** card for a new owner: catch a request (t
 
 ### T2 — 2FA code generator ✅ done
 `/tools/totp/` turns a Base32 secret, an `otpauth://totp/` link or a QR screenshot (chosen, or pasted with Ctrl/Cmd+V) into the current code with a countdown and the previous and next codes, all in the browser with Web Crypto. QR codes are read with the browser's BarcodeDetector where it has one, else with vendored jsQR 1.4.0 (Apache-2.0), loaded only when needed. **New test secret** makes a random one. `GET|POST /__public/totp` gives the same codes to scripts, with `format=text`, `time` and the previous and next codes; tested against the RFC 6238 vectors for SHA1, SHA256 and SHA512.
+
+### T3 — JSON server and CSV to REST API ✅ done
+`POST /__public/mocks` takes `{"from": "json", "data": {...}}`: each top-level key becomes a route, a list of objects becomes a CRUD resource with its records and anything else answers `GET`; bad route names are listed in `skipped`. Two tool pages sit on it: `/tools/json-server/` (paste a document, see the planned routes before creating) and `/tools/csv-to-api/` (upload, preview as a table). Both show every endpoint and a records table to list, add, change and delete records through the live API, with the last call and its status. Instant mocks now take up to 100 records to start (was 50), the same as fake data's largest set, and still keep up to 200. An XML payload is served by adding a stub in the instant mock editor; there is no separate XML page.
 
 ### T7 — gRPC mocks without login
 Split out of T1. Three things block it on the public demo: MockHub reads only compiled descriptor sets (no `.proto` text parser); gRPC routes by service name, so two visitors uploading the same service would collide on a shared server; and the demo's nginx has no HTTP/2 or `grpc_pass`. Needs a `.proto` parser, a per-mock service namespace, and HTTP/2 gRPC in MockHub's own nginx site file.
@@ -248,7 +251,7 @@ W4 status page: a public `/status/` page and a footer badge. The badge reads the
 | 11 | B11 Onboarding | S | Polish |
 | 12 | T1 GraphQL and spec URLs without login ✅ | M | Importers exist, free path missing |
 | 13 | T2 2FA code generator ✅ | M | New tool |
-| 14 | T3 Paste a payload, CSV to API page | S | Mostly pages over existing features |
+| 14 | T3 Paste a payload, CSV to API page ✅ | S | Mostly pages over existing features |
 | 15 | T4 Test data generator extras | M | |
 | 16 | T5 Virtual sandboxes catalog | L | Content heavy |
 | 17 | T6 Traffic monitoring and tunnel pages | S | Pages |

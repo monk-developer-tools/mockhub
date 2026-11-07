@@ -1,0 +1,28 @@
+<div class="tool-card tool-start" data-api-start data-api-tool="json">
+  <h3>Paste JSON, get a REST API</h3>
+  <p>Each top-level key becomes a route. A list of objects becomes a full REST resource that keeps what you send; anything else is answered as it is on <code>GET</code>.</p>
+  <label class="tool-label" for="api-json-file">JSON file</label>
+  <input id="api-json-file" class="tool-input" type="file" accept=".json,application/json,.txt" data-api-file>
+  <label class="tool-label" for="api-json">Or paste it</label>
+  <textarea id="api-json" class="tool-input tool-code" rows="12" spellcheck="false" autocomplete="off" data-api-text>{
+  "posts": [
+    { "id": 1, "title": "Hello, world", "author": "ada" },
+    { "id": 2, "title": "Mock servers", "author": "alan" }
+  ],
+  "comments": [
+    { "id": 1, "postId": 1, "body": "Nice post" }
+  ],
+  "profile": { "name": "MockHub demo" }
+}</textarea>
+  <label class="tool-label" for="api-root">Name for a top-level list</label>
+  <input id="api-root" class="tool-input api-root" type="text" spellcheck="false" autocomplete="off" value="items" data-api-root>
+  <h4 class="tool-sub">You get</h4>
+  <ul class="api-routes" data-api-plan aria-live="polite"></ul>
+  <p class="tool-hint">Up to 20 routes and 100 records to start, 200 stored, 4 KB per record. Route names are lowercase letters, digits and dashes.</p>
+  <div class="tool-actions-row">
+    <button type="button" class="btn primary" data-api-create>Create the API</button>
+  </div>
+  <p class="tool-error" data-api-create-error hidden></p>
+</div>
+
+<!-- api-console -->

@@ -419,6 +419,7 @@ $('[data-mock-export]').addEventListener('click', () => {
   if (mock) download(`${key.slug}-mappings.json`, JSON.stringify(exportMappings(mock.stubs), null, 2));
 });
 $('[data-mock-delete]').addEventListener('click', async () => {
+  if (!key) return;
   if (!confirm('Delete this mock and all its stubs? This cannot be undone.')) return;
   const result = await call(api(), { method: 'DELETE', headers: auth() });
   if (result.error && result.status !== 404) {

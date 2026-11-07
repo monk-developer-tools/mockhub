@@ -99,6 +99,7 @@ public final class InstantMocks {
   }
 
   private static List<ObjectNode> accept(InstantSeed seed, List<String> skipped) {
+    skipped.addAll(seed.skipped());
     if (seed.strict()) {
       if (seed.stubs().size() > MAX_STUBS) throw new InstantStubRules.Refused("An instant mock holds up to " + MAX_STUBS + " stubs");
       return seed.stubs().stream().map(InstantStubRules::check).toList();

@@ -1,0 +1,43 @@
+<div data-api-live hidden>
+  <div class="tool-card">
+    <div class="tool-head">
+      <h3>Your API</h3>
+      <span class="tool-actions">
+        <button type="button" class="btn secondary small" data-copy="[data-api-base]">Copy URL</button>
+        <a class="btn secondary small" data-api-edit href="/tools/instant-mock/">Edit stubs</a>
+        <button type="button" class="btn ghost small" data-api-delete>Delete</button>
+      </span>
+    </div>
+    <pre class="tool-out tool-url" data-api-base></pre>
+    <p class="tool-hint">Anyone with this URL can call the API. It is deleted 7 days after its last change. <strong>Edit stubs</strong> opens it in the instant mock editor with its private link.</p>
+    <details class="tool-skipped" data-api-skipped hidden>
+      <summary data-api-skipped-title></summary>
+      <ul data-api-skipped-list></ul>
+    </details>
+    <h4 class="tool-sub">Endpoints</h4>
+    <ul class="api-routes" data-api-routes aria-label="Endpoints"></ul>
+  </div>
+
+  <div class="tool-card" data-api-records-card hidden>
+    <div class="tool-head">
+      <h3>Records</h3>
+      <span class="tool-actions">
+        <select class="tool-input api-resource" aria-label="Resource" data-api-resource></select>
+        <button type="button" class="btn ghost small" data-api-refresh>Refresh</button>
+      </span>
+    </div>
+    <p class="tool-hint" data-api-count></p>
+    <div class="api-table-wrap"><table class="api-table" data-api-table></table></div>
+    <form class="api-editor" data-api-editor>
+      <label class="tool-label" for="api-record" data-api-editor-title>Add a record</label>
+      <textarea id="api-record" class="tool-input tool-code api-record" rows="5" spellcheck="false" autocomplete="off" data-api-record></textarea>
+      <div class="tool-actions-row">
+        <button type="submit" class="btn primary" data-api-save>Add record</button>
+        <button type="button" class="btn ghost small" data-api-cancel hidden>Cancel</button>
+        <span class="tool-hint" data-api-note aria-live="polite"></span>
+      </div>
+      <p class="tool-error" data-api-error hidden></p>
+      <pre class="tool-out" data-api-last hidden></pre>
+    </form>
+  </div>
+</div>

@@ -1,0 +1,22 @@
+<div class="tool-card tool-start" data-api-start data-api-tool="csv">
+  <h3>Turn a CSV file into a REST API</h3>
+  <p>Upload or paste a CSV with a header row. Each row becomes a record you can list, read, add to, change and delete.</p>
+  <label class="tool-label" for="api-csv-file">CSV file</label>
+  <input id="api-csv-file" class="tool-input" type="file" accept=".csv,text/csv,.txt" data-api-file>
+  <label class="tool-label" for="api-csv">Or paste it</label>
+  <textarea id="api-csv" class="tool-input tool-code" rows="8" spellcheck="false" autocomplete="off" data-api-text>id,name,email,plan
+1,Ada Lovelace,ada@example.com,pro
+2,Alan Turing,alan@example.com,free
+3,Grace Hopper,grace@example.com,team</textarea>
+  <label class="tool-label" for="api-resource-name">Resource name</label>
+  <input id="api-resource-name" class="tool-input api-root" type="text" spellcheck="false" autocomplete="off" value="users" data-api-root>
+  <h4 class="tool-sub" data-api-preview-title>Preview</h4>
+  <div class="api-table-wrap"><table class="api-table" data-api-preview></table></div>
+  <p class="tool-hint">Numbers, true and false become JSON values; everything else stays text. Up to 100 rows to start, 200 stored, 4 KB per row.</p>
+  <div class="tool-actions-row">
+    <button type="button" class="btn primary" data-api-create>Create the API</button>
+  </div>
+  <p class="tool-error" data-api-create-error hidden></p>
+</div>
+
+<!-- api-console -->

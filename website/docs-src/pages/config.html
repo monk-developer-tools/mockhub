@@ -60,7 +60,8 @@
       <code>{"from": "openapi", "text": "..."}</code> or <code>{"from": "wsdl", "text": "..."}</code> with a spec up to 500 KB (the first 20 operations);
       <code>{"from": "graphql", "text": "..."}</code> with a GraphQL schema (SDL or an introspection result) up to 500 KB, served at <code>/graphql</code> with generated data;
       any of these three with <code>"url": "https://…"</code> instead of <code>text</code>, which the server downloads from a public address (private and local addresses need <code>MOCKHUB_PLAYGROUND_ALLOW_PRIVATE=true</code>);
-      <code>{"from": "records", "resource": "users", "records": [...]}</code> with up to 50 records, served as a CRUD resource;
+      <code>{"from": "records", "resource": "users", "records": [...]}</code> with up to 100 records, served as a CRUD resource;
+      <code>{"from": "json", "data": {...}}</code>, where each top-level key becomes a route: a list of objects becomes a CRUD resource and any other value answers <code>GET</code> (up to 20 keys and 100 records; a top-level list becomes one resource named by <code>resource</code>, and keys that aren't valid route names are listed in <code>skipped</code>);
       <code>{"from": "example", "id": "crud"}</code>. Stubs from a spec or an example that instant mocks can't run are left out and listed in <code>skipped</code>.</td></tr>
     <tr><td><code>GET /__public/mocks/examples</code></td><td>The built-in examples that can start an instant mock</td></tr>
     <tr><td><code>ANY /{slug}/**</code></td><td>The mock answers like any MockHub project</td></tr>

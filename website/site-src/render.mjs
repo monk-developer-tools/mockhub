@@ -306,6 +306,8 @@ function examplesGrid(examples, icon) {
 const SCRIPTS = {
   jwt: 'jwt-page.js',
   totp: 'totp-page.js',
+  'json-server': 'dataapi-page.js',
+  'csv-to-api': 'dataapi-page.js',
   'curl-to-stub': 'curl-page.js',
   'stub-checker': 'stubcheck-page.js',
   'http-echo': 'echo-page.js',
@@ -333,7 +335,7 @@ const catalogueScript = (data) => `<script type="application/json" id="tool-cata
 const toolBody = (page, ctx) => `<section class="tool-section" aria-labelledby="tool-title">
       <div class="wrap fp-wide">
         <h2 class="sr-only" id="tool-title">${esc(page.nav[0])}</h2>
-        ${ctx.tools[page.tool].replace('<!-- catalogue -->', () => catalogueScript(ctx.catalogues[page.tool] ?? [])).trim().split('\n').join('\n        ')}
+        ${ctx.tools[page.tool].replace('<!-- catalogue -->', () => catalogueScript(ctx.catalogues[page.tool] ?? [])).replace('<!-- api-console -->', () => ctx.tools['_api-console']).trim().split('\n').join('\n        ')}
       </div>
     </section>`;
 

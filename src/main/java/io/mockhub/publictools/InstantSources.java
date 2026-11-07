@@ -1,18 +1,24 @@
 package io.mockhub.publictools;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.mockhub.api.Jsons;
 import io.mockhub.data.CrudResource;
 import io.mockhub.data.CrudStubs;
 import io.mockhub.example.ExampleInstaller;
 import io.mockhub.importer.StubImporter;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 final class InstantSources {
-  static final int MAX_RECORDS = 50;
+  static final int MAX_RECORDS = 100;
   static final int MAX_SPEC = 500 * 1024;
   static final int MAX_NAME = 60;
+  static final int MAX_ROUTES = 20;
+  private static final Pattern ROUTE = Pattern.compile("[a-z0-9][a-z0-9-]{0,59}");
   private static final Map<String, String> LABELS = Map.of("openapi", "OpenAPI or Swagger file", "wsdl", "WSDL file", "graphql", "GraphQL schema");
 
   private InstantSources() {}
@@ -55,6 +61,51 @@ final class InstantSources {
       throw new InstantStubRules.Refused("Name the resource with lowercase letters, digits and dashes, like users or order-items");
     }
     return project -> new InstantSeed(List.of(CrudStubs.stub(resource)), List.of(new ExampleInstaller.Seed(resource, records)), false, 0);
+  }
+
+  static InstantSource json(JsonNode data, String rootName) {
+    if (data == null || data.isNull()) throw new InstantStubRules.Refused("Send the JSON as data: an object whose keys become routes, or a list of records");
+    if (data.isArray()) return records(rootName == null || rootName.isBlank() ? "items" : rootName, data);
+    if (!data.isObject() || data.isEmpty()) throw new InstantStubRules.Refused("Send a JSON object whose keys become routes, like {\"posts\": [{\"id\": 1}]}, or a list of records");
+    if (data.size() > MAX_ROUTES) throw new InstantStubRules.Refused("Keep it to " + MAX_ROUTES + " top-level keys; each becomes a route");
+    List<JsonNode> stubs = new ArrayList<>();
+    List<ExampleInstaller.Seed> seeds = new ArrayList<>();
+    List<String> skipped = new ArrayList<>();
+    int total = 0;
+    for (Map.Entry<String, JsonNode> field : data.properties()) {
+      String name = field.getKey();
+      JsonNode value = field.getValue();
+      if (!ROUTE.matcher(name).matches()) {
+        skipped.add(name + ": route names are lowercase letters, digits and dashes, like posts or order-items");
+        continue;
+      }
+      if (isRecords(value)) {
+        total += value.size();
+        if (total > MAX_RECORDS) throw new InstantStubRules.Refused("Start with up to " + MAX_RECORDS + " records in all");
+        for (JsonNode r : value) {
+          if (r.toString().getBytes(StandardCharsets.UTF_8).length > InstantRecordPolicy.MAX_RECORD_BYTES) {
+            throw new InstantStubRules.Refused("Each record in " + name + " must be under 4 KB");
+          }
+        }
+        CrudResource resource = new CrudResource(name, "id", idType(value));
+        stubs.add(CrudStubs.stub(resource));
+        seeds.add(new ExampleInstaller.Seed(resource, value));
+      } else {
+        ObjectNode stub = Jsons.object().put("name", "GET /" + name);
+        stub.putObject("request").put("method", "GET").put("urlPath", "/" + name);
+        stub.putObject("response").put("status", 200).set("jsonBody", value);
+        stubs.add(stub);
+      }
+    }
+    return project -> new InstantSeed(stubs, seeds, false, 0, skipped);
+  }
+
+  private static boolean isRecords(JsonNode value) {
+    if (!value.isArray()) return false;
+    for (JsonNode item : value) {
+      if (!item.isObject()) return false;
+    }
+    return true;
   }
 
   private static CrudResource.IdType idType(JsonNode records) {
