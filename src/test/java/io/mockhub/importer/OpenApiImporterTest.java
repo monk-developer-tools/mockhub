@@ -227,4 +227,20 @@ class OpenApiImporterTest {
     assertThat(result.stubs()).anySatisfy(s -> assertThat(s.at("/response/jsonBody/number").asInt()).isEqualTo(1347));
     assertThat(result.stubs()).noneSatisfy(s -> assertThat(s.at("/response/jsonBody").has("$ref")).isTrue());
   }
+
+  @Test
+  void importsOpenApi32QueryOperationsAsQueryStubs() {
+    // Given
+    String spec = "{\"openapi\":\"3.2.0\",\"info\":{\"title\":\"t\",\"version\":\"1\"},\"paths\":{\"/search\":{\"query\":{\"responses\":"
+        + "{\"200\":{\"description\":\"ok\",\"content\":{\"application/json\":{\"example\":{\"hits\":2}}}}}}}}}";
+
+    // When
+    StubImporter.Result result = importer.parse(new StubImporter.Request(project("s"), spec, Map.of()));
+
+    // Then
+    assertThat(result.stubs()).singleElement().satisfies(s -> {
+      assertThat(s.at("/request/method").asText()).isEqualTo("QUERY");
+      assertThat(s.at("/response/jsonBody/hits").asInt()).isEqualTo(2);
+    });
+  }
 }

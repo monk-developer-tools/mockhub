@@ -113,4 +113,23 @@ class GraphQlEngineTest {
     assertThatThrownBy(() -> engine.execute("type Query {", "{ a }", null, null))
         .isInstanceOf(GraphQlException.class).hasMessageStartingWith("The schema isn't valid GraphQL");
   }
+
+  @Test
+  void answersSubscriptionsWithAClearErrorInsteadOfFailing() {
+    // Given
+    String sdl = "type Query { hello: String } type Subscription { ticks: Int }";
+    String both = "query Hi { hello } subscription Ticks { ticks }";
+
+    // When
+    Map<String, Object> subscription = engine.execute(sdl, "subscription { ticks }", null, Map.of());
+    Map<String, Object> named = engine.execute(sdl, both, "Ticks", Map.of());
+    Map<String, Object> query = engine.execute(sdl, both, "Hi", Map.of());
+
+    // Then
+    assertThat(subscription.toString()).contains("Subscriptions need a WebSocket or SSE connection");
+    assertThat(subscription).doesNotContainKey("data");
+    assertThat(named.toString()).contains("Subscriptions need a WebSocket");
+    assertThat(query).containsKey("data");
+    assertThat(GraphQlEngine.subscription("{ broken", null)).isFalse();
+  }
 }

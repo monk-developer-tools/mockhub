@@ -204,6 +204,9 @@ Beeceptor's workspaces (Enterprise) group endpoints with Read/Write/Manager memb
 ### P5 — Header masking ✅ done
 Beeceptor (Enterprise): org admins list headers that are masked wherever they're shown or stored, case-insensitively. MockHub: `Organization.maskedHeaders`, set by organisation managers in the org settings. `HistoryStore` masks before writing and on every read (search, detail, `each` for HAR/MCP), before the search filter so a masked value can't be found by searching; `RequestLogService` masks the in-memory log too. Requests recorded before a header was added stay on disk but are masked when shown. WireMock's admin-only `/__admin/requests` journal isn't masked.
 
+### P6 — QUERY, streaming and subscriptions, verified ✅ done
+Checked against the running server. **QUERY**: a `QUERY` stub matches a `QUERY` request with a body and not a `POST`; the stub editor didn't offer it (added), and the OpenAPI importer and contract checker didn't know OpenAPI 3.2's `query` operation (added). **gRPC**: the WireMock gRPC extension 0.11 has only unary and client-streaming handlers; server streaming sends one message, and a bidirectional call is handled as client streaming and gets one answer (new test with a `chat.dsc` descriptor). Several messages per stream would need changes in the extension. **GraphQL subscriptions**: a `subscription` operation crashed with graphql-java's internal assertion and a Jetty HTML 500; it now gets a GraphQL error explaining that subscriptions need WebSocket or SSE, which MockHub doesn't serve.
+
 ### T7 — gRPC mocks without login
 Split out of T1. Three things block it on the public demo: MockHub reads only compiled descriptor sets (no `.proto` text parser); gRPC routes by service name, so two visitors uploading the same service would collide on a shared server; and the demo's nginx has no HTTP/2 or `grpc_pass`. Needs a `.proto` parser, a per-mock service namespace, and HTTP/2 gRPC in MockHub's own nginx site file.
 
@@ -216,8 +219,8 @@ Split out of T1. Three things block it on the public demo: MockHub reads only co
 | **OpenTelemetry (OTLP) export** of traffic, logs and metrics | Traces, logs and metrics over OTLP/HTTP JSON from the standard `OTEL_*` variables | ✅ | P3 |
 | **Workspaces** (group projects inside an organisation) | Teams: members with roles, projects that move between teams, delete only when empty, and now restricted teams | ✅ | P4 |
 | **Header masking** in request history | Per organisation, applied on write and on every read | ✅ | P5 |
-| QUERY method in stubs | ❔ | ❔ | P6 |
-| gRPC client, server and bidi streaming; GraphQL subscriptions | ❔ | ❔ | P6 |
+| QUERY method in stubs | Matched end to end; now in the editor and imported from OpenAPI 3.2 `query` operations | ✅ | P6 |
+| gRPC client, server and bidi streaming; GraphQL subscriptions | Unary, server (one message), client and bidi (one answer) verified; subscriptions answered with a clear error | 🟡 multi-message streams and subscriptions not mocked | P6 |
 | Published performance benchmark (load, payload sizes, 8-hour soak) | — | ❌ | P7 |
 | **Import a Postman collection** into stubs | Export to Postman only | ❌ | P8 |
 
@@ -285,7 +288,7 @@ W4 status page: a public `/status/` page and a footer badge. The badge reads the
 | 20 | P3 OpenTelemetry export ✅ | M | |
 | 21 | P4 Workspaces ✅ | M | |
 | 22 | P5 Header masking ✅ | S | |
-| 23 | P6 Verify QUERY, streaming, subscriptions | S–M | |
+| 23 | P6 Verify QUERY, streaming, subscriptions ✅ | S–M | |
 | 24 | P7 Benchmark report | M | |
 | 25 | P8 Postman collection import | S | |
 | 26 | W4 Status page and footer badge | S | Asked for; cheap trust signal |

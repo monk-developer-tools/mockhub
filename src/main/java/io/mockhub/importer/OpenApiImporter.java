@@ -18,7 +18,7 @@ import java.util.Set;
 public final class OpenApiImporter implements StubImporter {
   private static final long SEED = 20261016L;
   private static final ObjectMapper YAML = new ObjectMapper(new YAMLFactory());
-  private static final Set<String> METHODS = Set.of("get", "put", "post", "delete", "patch", "head", "options");
+  private static final Set<String> METHODS = Set.of("get", "put", "post", "delete", "patch", "head", "options", "query");
   private static final int MAX_DEPTH = 8;
   static final int MAX_NODES = 5_000;
 

@@ -313,4 +313,25 @@ class GrpcIntegrationTest {
       throw new IllegalStateException(e);
     }
   }
+
+  @Test
+  void answersABidirectionalStreamWithOneMessageFromTheFirstMatchingStub() {
+    // Given
+    byte[] chat = GrpcTestClient.resource("chat.dsc");
+    upload(projectId, "chat.dsc", chat);
+    stub("{\"name\":\"Talk\",\"request\":{\"method\":\"POST\",\"urlPath\":\"/chat.v1.ChatService/Talk\","
+        + "\"bodyPatterns\":[{\"equalToJson\":{\"text\":\"bye\"},\"ignoreExtraElements\":true}]},"
+        + "\"response\":{\"status\":200,\"jsonBody\":{\"text\":\"see you\"}},\"metadata\":{\"mockhub\":{\"type\":\"grpc\"}}}");
+
+    // When
+    GrpcTestClient.Streamed talk;
+    try (GrpcTestClient client = new GrpcTestClient(server.port(), chat)) {
+      talk = client.bidiStream("chat.v1.ChatService", "Talk", List.of("{\"text\":\"hi\"}", "{\"text\":\"bye\"}"));
+    }
+
+    // Then
+    assertThat(talk.status()).isEqualTo("OK");
+    assertThat(talk.replies()).hasSize(1);
+    assertThat(read(talk.replies().get(0)).get("text").asText()).isEqualTo("see you");
+  }
 }

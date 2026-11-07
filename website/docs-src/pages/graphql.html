@@ -22,6 +22,7 @@
   </tbody>
 </table>
 <p>The same query with the same arguments always gets the same answer, so tests stay stable; another id gets other data. Requests can be <code>POST</code> with JSON (<code>query</code>, <code>operationName</code>, <code>variables</code>), a batch array of up to 20 operations, <code>POST</code> with <code>Content-Type: application/graphql</code>, or <code>GET</code> with <code>?query=</code>. Introspection works, so GraphiQL, Apollo tools and code generators can read the mock's schema.</p>
+<p>Subscriptions aren't served: they need a WebSocket or SSE connection. A schema with a <code>Subscription</code> type imports and answers its queries and mutations, and a <code>subscription</code> operation gets a GraphQL error that says so, rather than a server error.</p>
 
 <h3 id="graphql-operations">Fixed answers for an operation</h3>
 <p>A GraphQL stub can match an <strong>operation name</strong> and, optionally, some <strong>variables</strong>. Choose <strong>GraphQL stub</strong> in the Stubs tab, or <strong>GraphQL</strong> as the service type in the editor:</p>

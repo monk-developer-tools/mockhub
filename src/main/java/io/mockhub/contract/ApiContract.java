@@ -18,7 +18,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class ApiContract {
-  static final Set<String> METHODS = Set.of("get", "put", "post", "delete", "patch", "head", "options", "trace");
+  static final Set<String> METHODS = Set.of("get", "put", "post", "delete", "patch", "head", "options", "trace", "query");
   private static final Set<String> SWAGGER_SCHEMA_FIELDS = Set.of("type", "format", "items", "enum", "minimum", "maximum",
       "exclusiveMinimum", "exclusiveMaximum", "pattern", "minLength", "maxLength", "minItems", "maxItems", "uniqueItems", "multipleOf");
   private static final Pattern VARIABLE = Pattern.compile("\\{([^}/]+)}");

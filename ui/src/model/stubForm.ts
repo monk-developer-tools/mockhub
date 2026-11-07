@@ -157,7 +157,7 @@ export interface Conversion {
   unsupported: string[];
 }
 
-export const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS', 'ANY'];
+export const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS', 'QUERY', 'ANY'];
 export const VALUE_OPERATORS: ValueOperator[] = ['equalTo', 'contains', 'matches', 'doesNotMatch', 'doesNotContain', 'absent', 'present'];
 export const BODY_OPERATORS: BodyOperator[] = [
   'equalToJson',

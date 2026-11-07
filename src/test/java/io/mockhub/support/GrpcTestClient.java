@@ -98,6 +98,45 @@ public final class GrpcTestClient implements AutoCloseable {
     }
   }
 
+  public Streamed bidiStream(String service, String method, List<String> requestJsons) {
+    MethodDescriptor m = method(service, method);
+    List<String> replies = new java.util.concurrent.CopyOnWriteArrayList<>();
+    CompletableFuture<Void> done = new CompletableFuture<>();
+    StreamObserver<DynamicMessage> requests = ClientCalls.asyncBidiStreamingCall(
+        channel.newCall(grpcMethod(m, io.grpc.MethodDescriptor.MethodType.BIDI_STREAMING), options()), new StreamObserver<>() {
+          @Override
+          public void onNext(DynamicMessage value) {
+            try {
+              replies.add(JsonFormat.printer().print(value));
+            } catch (InvalidProtocolBufferException e) {
+              done.completeExceptionally(e);
+            }
+          }
+
+          @Override
+          public void onError(Throwable t) {
+            done.completeExceptionally(t);
+          }
+
+          @Override
+          public void onCompleted() {
+            done.complete(null);
+          }
+        });
+    requestJsons.forEach(json -> requests.onNext(message(m, json)));
+    requests.onCompleted();
+    try {
+      done.get(20, TimeUnit.SECONDS);
+      return new Streamed("OK", List.copyOf(replies));
+    } catch (ExecutionException e) {
+      return new Streamed(Status.fromThrowable(e.getCause()).getCode().name(), List.copyOf(replies));
+    } catch (Exception e) {
+      throw new IllegalStateException(e);
+    }
+  }
+
+  public record Streamed(String status, List<String> replies) {}
+
   public List<String> reflectedServices() {
     CompletableFuture<List<String>> names = new CompletableFuture<>();
     StreamObserver<ServerReflectionRequest> requests = ServerReflectionGrpc.newStub(channel).withDeadlineAfter(20, TimeUnit.SECONDS)

@@ -49,6 +49,7 @@
     <tr><td>Unary</td><td>One request, one response message from the matching stub.</td></tr>
     <tr><td>Server streaming</td><td>The stream holds one message, the stub's response, then completes.</td></tr>
     <tr><td>Client streaming</td><td>Each message the client sends is matched in turn. The first one that matches a stub decides the answer.</td></tr>
+    <tr><td>Bidirectional streaming</td><td>The same as client streaming: the client's messages are matched in turn, and the stream answers with one message from the first stub that matches, then completes. A conversation of several answers isn't mocked.</td></tr>
   </tbody>
 </table>
 
