@@ -86,6 +86,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.Optional;
 import com.github.tomakehurst.wiremock.http.Request;
@@ -116,6 +117,7 @@ import io.mockhub.playground.JdkHttpSender;
 import io.mockhub.playground.PlaygroundHistory;
 import io.mockhub.playground.PlaygroundService;
 import io.mockhub.playground.TargetGuard;
+import io.mockhub.publictools.BinDrafter;
 import io.mockhub.publictools.BinProject;
 import io.mockhub.publictools.TotpTool;
 import io.mockhub.publictools.BinTool;
@@ -431,19 +433,22 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     TemplatePlayground templatePlayground = new TemplatePlayground(List.of(fakeHelpers, valueHelpers, validationHelpers, jwtHelpers), renderWorkers(), 2000);
     if (config.publicTools) orgs.ensureInstant();
     InstantMocks instantMocks = new InstantMocks(dataDir, projects, stubs, crud, () -> teams.ensureDefault(Organization.INSTANT_ID).id(), clock);
+    Function<String, Optional<Principal>> publicUser =
+        header -> Optional.ofNullable(authRef.get()).filter(AuthService::enabled).flatMap(a -> a.principal(header)).filter(p -> !p.anonymous());
+    BooleanSupplier publicAiOn = () -> aiSettings.get().enabled();
+    BinDrafter.Llm publicLlm = (system, user) -> {
+      ArrayNode messages = Jsons.MAPPER.createArrayNode();
+      messages.addObject().put("role", "system").put("content", system);
+      messages.addObject().put("role", "user").put("content", user);
+      return chat.complete(aiSettings.get(), messages, null).message().path("content").asText("");
+    };
     BinProject binProject = BinProject.around(bins, projects, stubs, crud, teamChoice, defaultResponses);
     PublicToolsFilter publicTools = new PublicToolsFilter(config.publicTools, publicLimits, List.of(
         new EchoTool(),
         new TotpTool(clock::millis),
         BinTool.create(bins, publicLimits, templatePlayground, new TargetGuard(config.binAllowPrivate, InetAddress::getAllByName, "MOCKHUB_BIN_ALLOW_PRIVATE"), tunnels, tunnels::isOnline,
-            header -> Optional.ofNullable(authRef.get()).filter(AuthService::enabled).flatMap(a -> a.principal(header)).filter(p -> !p.anonymous()),
-            () -> aiSettings.get().enabled(), (system, user) -> {
-              ArrayNode messages = Jsons.MAPPER.createArrayNode();
-              messages.addObject().put("role", "system").put("content", system);
-              messages.addObject().put("role", "user").put("content", user);
-              return chat.complete(aiSettings.get(), messages, null).message().path("content").asText("");
-            }, binProject),
-        new FakeTool(new DataGenerator(fakeData), publicLimits),
+            publicUser, publicAiOn, publicLlm, binProject),
+        new FakeTool(new DataGenerator(fakeData), publicLimits, publicAiOn, publicLlm, publicUser),
         new RenderTool(templatePlayground, publicLimits),
         new InstantMockTool(instantMocks, history, publicLimits, importers, new InstantExamples(examples, exampleInstaller), specFetcher, graphQlExamples)));
     maintenance.scheduleWithFixedDelay(() -> safely(bins::prune), 10, 10, TimeUnit.MINUTES);

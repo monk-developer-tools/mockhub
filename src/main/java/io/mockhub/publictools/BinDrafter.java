@@ -5,14 +5,11 @@ import io.mockhub.api.Jsons;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BooleanSupplier;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public final class BinDrafter {
   static final int MAX_DESCRIPTION = 1000;
   static final int MAX_RULES = 5;
   static final int MAX_TEMPLATE = BinRule.MAX_BODY;
-  private static final Pattern FENCE = Pattern.compile("```[a-zA-Z0-9+-]*[ \\t]*\\r?\\n?(.*?)```", Pattern.DOTALL);
   static final String SYSTEM = """
       You write rules for a webhook bin. Reply with one JSON object and nothing else: {"rules": [rule, ...]}, one to five
       rules, in the order they should be checked (the first rule that matches answers). Make as many as the request asks for.
@@ -90,7 +87,7 @@ public final class BinDrafter {
     String user = "Template:\n" + template + "\n\nError:\n" + (why.isEmpty() ? "(none given; it doesn't do what was meant)" : cut(why, 2000))
         + (sample == null || sample.isBlank() ? "" : "\n\nA request it answers:\n" + cut(sample, 4000));
     String reply = llm.complete(FIX, user);
-    String fixed = unfence(reply);
+    String fixed = LlmJson.unfence(reply);
     if (fixed.isBlank()) throw new IllegalArgumentException("The AI didn't return a template. Try again.");
     if (fixed.length() > MAX_TEMPLATE) throw new IllegalArgumentException("The AI's template was over 16 KB");
     return fixed;
@@ -114,23 +111,7 @@ public final class BinDrafter {
   }
 
   static JsonNode parse(String reply) {
-    String text = unfence(reply);
-    int object = text.indexOf('{');
-    int array = text.indexOf('[');
-    int start = array >= 0 && (object < 0 || array < object) ? array : object;
-    int end = Math.max(text.lastIndexOf('}'), text.lastIndexOf(']'));
-    if (start < 0 || end <= start) throw new IllegalArgumentException("The AI didn't return a rule. Try describing it differently.");
-    try {
-      return Jsons.MAPPER.readTree(text.substring(start, end + 1));
-    } catch (Exception e) {
-      throw new IllegalArgumentException("The AI didn't return a rule. Try describing it differently.");
-    }
-  }
-
-  private static String unfence(String reply) {
-    String text = reply == null ? "" : reply.strip();
-    Matcher fence = FENCE.matcher(text);
-    return fence.find() ? fence.group(1).replaceAll("\\s+$", "") : text;
+    return LlmJson.parse(reply, "The AI didn't return a rule. Try describing it differently.");
   }
 
   private static String cut(String text, int max) {

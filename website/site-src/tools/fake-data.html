@@ -1,9 +1,79 @@
 <div class="tool-grid">
   <form class="tool-card" data-fake-form>
-    <h3>Fields</h3>
-    <div class="tool-fields" data-fake-fields></div>
-    <div class="tool-actions-row">
-      <button type="button" class="btn ghost small" data-fake-add>Add a field</button>
+    <div class="tabs tabs-small" role="tablist" aria-label="Make the records from">
+      <button type="button" role="tab" id="fake-tab-fields" aria-controls="fake-mode-fields" aria-selected="true" data-fake-mode="fields">Fields</button>
+      <button type="button" role="tab" id="fake-tab-template" aria-controls="fake-mode-template" aria-selected="false" tabindex="-1" data-fake-mode="template">Template</button>
+      <button type="button" role="tab" id="fake-tab-sample" aria-controls="fake-mode-sample" aria-selected="false" tabindex="-1" data-fake-mode="sample">Sample</button>
+      <button type="button" role="tab" id="fake-tab-ai" aria-controls="fake-mode-ai" aria-selected="false" tabindex="-1" data-fake-mode="ai" hidden>AI</button>
+    </div>
+    <div class="tab-panel" id="fake-mode-fields" role="tabpanel" aria-labelledby="fake-tab-fields">
+      <div class="tool-fields" data-fake-fields></div>
+      <div class="tool-actions-row">
+        <button type="button" class="btn ghost small" data-fake-add>Add a field</button>
+      </div>
+      <p class="tool-hint" data-fake-fields-note hidden></p>
+      <p class="tool-hint">Pick a type from the list or type any <a href="https://www.datafaker.net/documentation/providers/">Datafaker</a> expression, such as <code>Book.title</code>. Use dots in a name to nest it, for example <code>address.city</code>.</p>
+    </div>
+    <div class="tab-panel" id="fake-mode-template" role="tabpanel" aria-labelledby="fake-tab-template" hidden>
+      <label class="tool-label" for="fake-template">Template for one record</label>
+      <textarea id="fake-template" class="tool-input tool-code" rows="9" spellcheck="false" autocomplete="off" data-fake-template>{
+  "id": {{this}},
+  "name": "{{fake 'Name.fullName'}}",
+  "email": "{{fake 'Internet.emailAddress'}}",
+  "plan": "{{pickRandom 'free' 'pro' 'team'}}",
+  "joined": "{{now offset='-30 days' format='yyyy-MM-dd'}}",
+  "tags": [{{#each (range 1 2)}}{{#if @index}}, {{/if}}"{{fake 'Lorem.word'}}"{{/each}}]
+}</textarea>
+      <p class="tool-hint">A <a href="/tools/template-playground/">Handlebars template</a> rendered once per record; it must make one JSON object. <code>{{this}}</code> is the record number. For another language add <code>locale='de'</code> to a fake helper, like <code>{{fake 'Name.fullName' locale='de'}}</code>.</p>
+    </div>
+    <div class="tab-panel" id="fake-mode-sample" role="tabpanel" aria-labelledby="fake-tab-sample" hidden>
+      <label class="tool-label" for="fake-sample">A sample record to imitate</label>
+      <textarea id="fake-sample" class="tool-input tool-code" rows="9" spellcheck="false" autocomplete="off" data-fake-sample>{
+  "id": 1,
+  "firstName": "Ada",
+  "lastName": "Lovelace",
+  "email": "ada@example.com",
+  "company": "Analytical Engines Ltd",
+  "address": { "city": "London", "postcode": "N1 9GU" },
+  "balance": 1250.5,
+  "active": true,
+  "createdAt": "2026-01-04T10:15:00Z"
+}</textarea>
+      <div class="tool-actions-row">
+        <button type="button" class="btn secondary" data-fake-infer>Use these fields</button>
+      </div>
+      <p class="tool-hint">Paste one record, or a list, from your API. Each field gets a type from its name and value; check them on the Fields tab before you generate.</p>
+      <p class="tool-error" data-fake-sample-error hidden></p>
+    </div>
+    <div class="tab-panel" id="fake-mode-ai" role="tabpanel" aria-labelledby="fake-tab-ai" hidden>
+      <div data-fake-signin>
+        <p class="tool-hint">Sign in to MockHub to describe the records and let AI pick the fields, how many and the language.</p>
+        <div class="tool-row">
+          <div class="tool-grow">
+            <label class="tool-label" for="fake-user">Username</label>
+            <input id="fake-user" class="tool-input" type="text" autocomplete="username" spellcheck="false" data-fake-username>
+          </div>
+          <div class="tool-grow">
+            <label class="tool-label" for="fake-pass">Password</label>
+            <input id="fake-pass" class="tool-input" type="password" autocomplete="current-password" data-fake-password>
+          </div>
+        </div>
+        <div class="tool-actions-row">
+          <button type="button" class="btn secondary" data-fake-signin-go>Sign in</button>
+          <span class="tool-hint" data-fake-signin-note aria-live="polite"></span>
+        </div>
+      </div>
+      <div data-fake-describe hidden>
+        <div class="tool-head">
+          <label class="tool-label" for="fake-describe">Describe the records</label>
+          <span class="tool-hint"><span data-fake-signed-in></span> · <button type="button" class="bin-link" data-fake-signout>Sign out</button></span>
+        </div>
+        <textarea id="fake-describe" class="tool-input" rows="3" maxlength="500" placeholder="25 German online-shop customers with an IBAN, a delivery address and the date they joined" data-fake-describe-text></textarea>
+        <div class="tool-actions-row">
+          <button type="button" class="btn secondary" data-fake-draft>Pick the fields</button>
+          <span class="tool-hint" data-fake-draft-note aria-live="polite">You check the fields before generating.</span>
+        </div>
+      </div>
     </div>
     <div class="tool-row">
       <div>
@@ -26,7 +96,6 @@
     </div>
     <p class="tool-error" data-fake-error hidden></p>
     <datalist id="fake-expressions" data-fake-expressions></datalist>
-    <p class="tool-hint">Pick a type from the list or type any <a href="https://www.datafaker.net/documentation/providers/">Datafaker</a> expression, such as <code>Book.title</code>. Use dots in a name to nest it, for example <code>address.city</code>.</p>
   </form>
   <div class="tool-card">
     <div class="tool-head">

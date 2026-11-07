@@ -33,4 +33,18 @@ class FakeDataTest {
     // Then
     assertThatThrownBy(() -> fake.generate(" ", null)).hasMessageContaining("Say what to generate");
   }
+
+  @Test
+  void keepsABoundedNumberOfLocalesSoCallersCannotGrowTheCache() {
+    // Given
+    FakeData fake = new FakeData("en");
+
+    // When
+    for (int i = 0; i < 200; i++) fake.generate("Name.firstName", "x-private-" + i);
+    String german = fake.generate("Address.country", "de");
+
+    // Then
+    assertThat(fake.cachedLocales()).isLessThanOrEqualTo(FakeData.MAX_LOCALES);
+    assertThat(german).isNotBlank();
+  }
 }

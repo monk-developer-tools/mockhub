@@ -1,13 +1,19 @@
 package io.mockhub.fake;
 
+import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import net.datafaker.Faker;
 
 public final class FakeData {
   private final String defaultLocale;
-  private final Map<String, Faker> fakers = new ConcurrentHashMap<>();
+  static final int MAX_LOCALES = 32;
+  private final Map<String, Faker> fakers = new LinkedHashMap<>(16, 0.75f, true) {
+    @Override
+    protected boolean removeEldestEntry(Map.Entry<String, Faker> eldest) {
+      return size() > MAX_LOCALES;
+    }
+  };
 
   public FakeData(String defaultLocale) {
     this.defaultLocale = defaultLocale == null || defaultLocale.isBlank() ? "en" : defaultLocale.trim();
@@ -23,8 +29,17 @@ public final class FakeData {
     }
   }
 
+  int cachedLocales() {
+    synchronized (fakers) {
+      return fakers.size();
+    }
+  }
+
   private Faker faker(String locale) {
     String tag = locale == null || locale.isBlank() ? defaultLocale : locale.trim();
-    return fakers.computeIfAbsent(tag, t -> new Faker(Locale.forLanguageTag(t.replace('_', '-'))));
+    Locale chosen = Locale.forLanguageTag(tag.replace('_', '-'));
+    synchronized (fakers) {
+      return fakers.computeIfAbsent(chosen.toLanguageTag(), t -> new Faker(chosen));
+    }
   }
 }
