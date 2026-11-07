@@ -195,6 +195,9 @@ Checked against Beeceptor's template docs (control flow, array, date, string, co
 ### P2 — Fix template with AI in the app ✅ done
 A broken template used to come back from **Try it** as the server's raw HTML error page. Try it now reads the Handlebars message out of it (`templateError`), shows it in plain words and, for editors on a server with AI, offers **Fix with AI**: `POST /projects/{id}/ai/template/fix` sends the template, the error and the request that was tried, and the fix goes into the body to check and save. Bins and projects share one `TemplateFixer` (one prompt and set of checks; bins add their memory helpers, projects add state and dataset helpers).
 
+### P3 — OpenTelemetry export ✅ done
+`io.mockhub.otel` sends OTLP over HTTP with JSON (no SDK dependency): a server span per mock request (joining the caller's trace through `traceparent`, 5xx as errors), a log record per request, and cumulative `mockhub.requests` and `http.server.request.duration` metrics split by method, status, project and match. Configured only by the standard `OTEL_*` variables; off without an endpoint. `HistoryRecorder` hands each served request to a `ServedRequestListener`; the exporter queues up to 10,000, sends from a daemon thread, rate-limits warnings and flushes when the server stops (`MockHubExtensionFactory.serverStopped`, since WireMock's `stop()` doesn't stop extensions). Bodies and headers are not exported.
+
 ### T7 — gRPC mocks without login
 Split out of T1. Three things block it on the public demo: MockHub reads only compiled descriptor sets (no `.proto` text parser); gRPC routes by service name, so two visitors uploading the same service would collide on a shared server; and the demo's nginx has no HTTP/2 or `grpc_pass`. Needs a `.proto` parser, a per-mock service namespace, and HTTP/2 gRPC in MockHub's own nginx site file.
 
@@ -204,7 +207,7 @@ Split out of T1. Three things block it on the public demo: MockHub reads only co
 |---|---|---|---|
 | Template helpers `dateAdd`, `dateDiff`, `coalesce`, `objectMerge`, `switch`, `repeat`, `someOf`, sort by key, `reverse`, `isInteger`, `isDate`, `base64Decode`, `urlDecode`, `padStart`/`padEnd`, `concat` | All of them, with Beeceptor's names and argument order, plus `oneOf`, `jsonParse`, `dateParse`, `lowercase`, `uppercase` | ✅ | P1 |
 | **Fix template with AI** | Try it shows template errors with **Fix with AI** (`POST /projects/{id}/ai/template/fix`) | ✅ | P2 |
-| **OpenTelemetry (OTLP) export** of traffic, logs and metrics | — | ❌ | P3 |
+| **OpenTelemetry (OTLP) export** of traffic, logs and metrics | Traces, logs and metrics over OTLP/HTTP JSON from the standard `OTEL_*` variables | ✅ | P3 |
 | **Workspaces** (group projects inside an organisation) | — | ❌ | P4 |
 | **Header masking** in request history | ❔ | ❔ | P5 |
 | QUERY method in stubs | ❔ | ❔ | P6 |
@@ -273,7 +276,7 @@ W4 status page: a public `/status/` page and a footer badge. The badge reads the
 | 17b | T7 gRPC mocks without login | L | Split out of T1: needs a .proto parser, per-mock service names and HTTP/2 on the demo |
 | 18 | P1 Template helpers ✅ | S | Verify, then add the missing ones |
 | 19 | P2 Fix template with AI ✅ | S | |
-| 20 | P3 OpenTelemetry export | M | |
+| 20 | P3 OpenTelemetry export ✅ | M | |
 | 21 | P4 Workspaces | M | |
 | 22 | P5 Header masking | S | |
 | 23 | P6 Verify QUERY, streaming, subscriptions | S–M | |

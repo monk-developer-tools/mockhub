@@ -30,6 +30,10 @@ import io.mockhub.callout.CalloutService;
 import io.mockhub.callout.CalloutTargets;
 import io.mockhub.history.HistoryCalloutLog;
 import io.mockhub.history.HistoryRecorder;
+import org.slf4j.LoggerFactory;
+import java.util.concurrent.CopyOnWriteArrayList;
+import io.mockhub.history.ServedRequestListener;
+import io.mockhub.otel.OtlpExporter;
 import io.mockhub.history.HistoryStore;
 import io.mockhub.contract.ContractPatcher;
 import io.mockhub.contract.ContractStore;
@@ -240,6 +244,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public final class MockHubExtensionFactory implements ExtensionFactory {
   private final Config config;
   private final AtomicInteger port = new AtomicInteger();
+  private final List<AutoCloseable> closeables = new CopyOnWriteArrayList<>();
 
   public MockHubExtensionFactory(Config config) {
     this.config = config;
@@ -247,6 +252,16 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
 
   public void serverStarted(int actualPort) {
     port.set(actualPort);
+  }
+
+  public void serverStopped() {
+    for (AutoCloseable closeable : closeables) {
+      try {
+        closeable.close();
+      } catch (Exception e) {
+        LoggerFactory.getLogger(MockHubExtensionFactory.class).warn("Couldn't close {}: {}", closeable, e.getMessage());
+      }
+    }
   }
 
   @Override
@@ -462,6 +477,8 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     maintenance.scheduleWithFixedDelay(() -> safely(instantMocks::prune), 5, 60, TimeUnit.MINUTES);
     maintenance.scheduleWithFixedDelay(() -> safely(rateLimiter::prune), 10, 10, TimeUnit.MINUTES);
 
+    ServedRequestListener otel = OtlpExporter.start(config.otel, new JdkHttpSender(), Main.VERSION);
+    closeables.add(otel);
     List<Extension> extensions = new ArrayList<>(List.of(
         server,
         new GrpcRequestFilter(),
@@ -473,7 +490,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
         new ErrorRateTransformer(() -> ThreadLocalRandom.current().nextDouble()),
         new DisabledStubMatcher(),
         new CalloutListener(callouts, calloutScheduler),
-        new HistoryRecorder(projectForPath, history, traffic),
+        new HistoryRecorder(projectForPath, history, traffic, otel),
         new StateScopeListener(projectForPath, stateScope),
         new SyncCalloutTransformer(callouts),
         new GraphQlTransformer(new GraphQlEngine(graphQlSchemas)),

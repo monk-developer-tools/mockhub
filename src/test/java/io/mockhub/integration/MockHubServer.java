@@ -13,8 +13,10 @@ import java.util.Map;
 final class MockHubServer implements AutoCloseable {
 
   private final WireMockServer server;
+  private final MockHubExtensionFactory factory;
 
-  private MockHubServer(WireMockServer server) {
+  private MockHubServer(WireMockServer server, MockHubExtensionFactory factory) {
+    this.factory = factory;
     this.server = server;
   }
 
@@ -49,7 +51,7 @@ final class MockHubServer implements AutoCloseable {
     WireMockServer server = new WireMockServer(options);
     server.start();
     factory.serverStarted(server.port());
-    return new MockHubServer(server);
+    return new MockHubServer(server, factory);
   }
 
   String baseUrl() {
@@ -71,5 +73,6 @@ final class MockHubServer implements AutoCloseable {
   @Override
   public void close() {
     server.stop();
+    factory.serverStopped();
   }
 }

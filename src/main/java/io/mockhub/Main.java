@@ -60,7 +60,10 @@ public final class Main {
       System.out.println("MockHub could not start: " + e.getMessage());
       System.exit(1);
     }
-    Runtime.getRuntime().addShutdownHook(new Thread(server::stop, "mockhub-shutdown"));
+    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+      server.stop();
+      factory.serverStopped();
+    }, "mockhub-shutdown"));
 
     System.out.printf(
         "%nMockHub %s is running%n  UI:      http://localhost:%d/__admin/mockhub/ui/%n  Mocks:   http://localhost:%d/<project>/...%s%s%n  Data:    %s%n  Auth:    %s%n%n",

@@ -1,0 +1,31 @@
+<p>MockHub can send a trace, a log record and metrics for every request a mock answers to an OpenTelemetry collector, so mock traffic shows up next to the rest of your system in Grafana, Jaeger, Honeycomb, Datadog or any other OTLP backend. It is off until you set an endpoint.</p>
+
+<h3 id="otel-setup">Turn it on</h3>
+<p>Set the standard OpenTelemetry variables and restart MockHub:</p>
+<pre><code>OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+OTEL_SERVICE_NAME=mockhub
+OTEL_EXPORTER_OTLP_HEADERS=x-api-key=…</code></pre>
+<p>MockHub sends OTLP over HTTP with JSON to <code>/v1/traces</code>, <code>/v1/metrics</code> and <code>/v1/logs</code> under the endpoint, which every OpenTelemetry collector accepts on port 4318. It does not speak gRPC or protobuf; if <code>OTEL_EXPORTER_OTLP_PROTOCOL</code> asks for one, it logs a warning and still sends JSON.</p>
+<table>
+  <thead><tr><th>Variable</th><th>What it does</th></tr></thead>
+  <tbody>
+    <tr><td><code>OTEL_EXPORTER_OTLP_ENDPOINT</code></td><td>Base URL of the collector. Off when empty</td></tr>
+    <tr><td><code>OTEL_EXPORTER_OTLP_TRACES_ENDPOINT</code>, <code>…_METRICS_ENDPOINT</code>, <code>…_LOGS_ENDPOINT</code></td><td>Full URL for one signal, instead of the base URL</td></tr>
+    <tr><td><code>OTEL_TRACES_EXPORTER</code>, <code>OTEL_METRICS_EXPORTER</code>, <code>OTEL_LOGS_EXPORTER</code></td><td><code>none</code> turns that signal off</td></tr>
+    <tr><td><code>OTEL_EXPORTER_OTLP_HEADERS</code></td><td>Headers for every export, as <code>name=value,name2=value2</code>, for an API key or a tenant</td></tr>
+    <tr><td><code>OTEL_SERVICE_NAME</code>, <code>OTEL_RESOURCE_ATTRIBUTES</code></td><td>The service name (default <code>mockhub</code>) and extra resource attributes such as <code>deployment.environment=staging</code></td></tr>
+    <tr><td><code>OTEL_BSP_SCHEDULE_DELAY</code></td><td>How often spans and logs are sent, in ms (default 5000)</td></tr>
+    <tr><td><code>OTEL_METRIC_EXPORT_INTERVAL</code></td><td>How often metrics are sent, in ms (default 60000)</td></tr>
+  </tbody>
+</table>
+
+<h3 id="otel-signals">What is sent</h3>
+<ul>
+  <li><strong>Traces:</strong> one server span per mock request, named <em>method stub-name</em> (or <em>method unmatched</em>), with <code>http.request.method</code>, <code>url.path</code>, <code>url.query</code>, <code>http.response.status_code</code>, <code>client.address</code>, <code>mockhub.project.slug</code>, <code>mockhub.stub.name</code> and <code>mockhub.matched</code>. A request with a W3C <code>traceparent</code> header becomes part of the caller's trace, so a mocked dependency appears inside your service's trace. 5xx answers are marked as errors.</li>
+  <li><strong>Logs:</strong> one record per request, like <em>POST /shop/orders → 201 in 12 ms</em>, INFO for 2xx and 3xx, WARN for 4xx and ERROR for 5xx, with the same attributes and the span's trace and span ids.</li>
+  <li><strong>Metrics:</strong> <code>mockhub.requests</code>, a cumulative counter, and <code>http.server.request.duration</code>, a histogram in seconds with the usual HTTP buckets, both split by method, status, project and whether a stub matched.</li>
+</ul>
+<p>Request and response bodies and headers are not sent. Admin API calls are not exported, only mock traffic.</p>
+
+<h3 id="otel-delivery">Delivery</h3>
+<p>Exports run on a background thread, so a slow or missing collector never slows a mock down. Up to 10,000 requests wait to be sent; past that, new ones are dropped rather than held in memory. When the collector can't be reached or answers with an error, MockHub logs a warning at most once a minute and carries on. When MockHub stops, it sends what is left.</p>

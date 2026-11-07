@@ -128,6 +128,7 @@ export const GROUPS = [
     pages: [
       { slug: 'config', title: 'Configuration', icon: 'Sliders', description: 'Every environment variable and what it changes.' },
       { slug: 'api', title: 'API & CI', icon: 'TerminalWindow', description: 'Manage projects and stubs from scripts and pipelines.' },
+      { slug: 'opentelemetry', title: 'OpenTelemetry', icon: 'ChartLine', description: 'Send a trace, a log and metrics for every mock request to any OTLP collector.' },
       { slug: 'deploy', title: 'Deployment', icon: 'CloudArrowUp', description: 'Docker, Kubernetes, AWS ECS, reverse proxies and logs.' },
       { slug: 'persistence', title: 'Persistence & backup', icon: 'Archive', description: 'Where data lives and how to back up and restore projects.' },
       { slug: 'limits', title: 'Limits', icon: 'Info', description: 'What MockHub does not do, so nothing surprises you.' },

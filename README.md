@@ -272,6 +272,7 @@ All configuration is through environment variables.
 | `MOCKHUB_LOG_LEVEL` | `info` | Detail written to standard output |
 | `MOCKHUB_STUB_CORS` | `true` | CORS for projects that keep the server default: any website can call the mocks. Each project can set its own rules |
 | `MOCKHUB_FAKE_LOCALE` | `en` | Default language for `{{fake ...}}` data, e.g. `de`, `fr`, `en-GB` |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | empty | Send a trace, a log and metrics for every mock request to an OpenTelemetry collector (OTLP over HTTP with JSON). The standard `OTEL_*` variables set headers, the service name and intervals; see [OpenTelemetry](https://mockhub.devops-monk.com/docs/opentelemetry/) |
 | `MOCKHUB_PLAYGROUND_ALLOW_PRIVATE` | `false` | Let the Playground call, and spec and schema downloads from a URL reach, private and local addresses (blocked by default so the server can't reach your internal network) |
 | `MOCKHUB_BIN_ALLOW_PRIVATE` | `false` | Let webhook bins forward and call out to private and local addresses. Leave it off on a public server |
 | `MOCKHUB_CALLOUT_ALLOW_PRIVATE` | `false` | Let webhooks and *wait for callout* stubs call private and local addresses. Calls to MockHub's own mock URLs always work. Set it to `true` for callbacks to services on your own network, e.g. `host.docker.internal` |

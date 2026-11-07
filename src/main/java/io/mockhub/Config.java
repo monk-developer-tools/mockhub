@@ -1,5 +1,6 @@
 package io.mockhub;
 
+import io.mockhub.otel.OtlpConfig;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +32,7 @@ public final class Config {
   public final String secretKey;
   public final boolean proxyEnabled;
   public final String proxyAllow;
+  public final OtlpConfig otel;
 
   public Config(Map<String, String> env) {
     this.port = Integer.parseInt(env.getOrDefault("PORT", "8080"));
@@ -58,6 +60,7 @@ public final class Config {
     this.secretKey = env.getOrDefault("MOCKHUB_SECRET_KEY", "");
     this.proxyEnabled = Boolean.parseBoolean(env.getOrDefault("MOCKHUB_PROXY", "false"));
     this.proxyAllow = env.getOrDefault("MOCKHUB_PROXY_ALLOW", DEFAULT_PROXY_ALLOW);
+    this.otel = OtlpConfig.from(env);
   }
 
   public Path proxyCaKeystore() {

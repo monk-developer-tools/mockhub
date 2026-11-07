@@ -23,16 +23,27 @@ public final class HistoryRecorder implements ServeEventListener {
   private final Function<String, Optional<Project>> projectForPath;
   private final HistoryStore store;
   private final TrafficCounters traffic;
+  private final ServedRequestListener listener;
 
   public HistoryRecorder(Function<String, Optional<Project>> projectForPath, HistoryStore store, TrafficCounters traffic) {
+    this(projectForPath, store, traffic, ServedRequestListener.NONE);
+  }
+
+  public HistoryRecorder(Function<String, Optional<Project>> projectForPath, HistoryStore store, TrafficCounters traffic, ServedRequestListener listener) {
     this.projectForPath = projectForPath;
     this.store = store;
     this.traffic = traffic;
+    this.listener = listener;
   }
 
   @Override
   public String getName() {
     return NAME;
+  }
+
+  @Override
+  public void stop() {
+    listener.close();
   }
 
   @Override
@@ -51,6 +62,7 @@ public final class HistoryRecorder implements ServeEventListener {
     HistoryEntry entry = entry(event, project.get().id());
     traffic.record(entry.projectId(), entry.at(), entry.matched());
     store.record(entry);
+    listener.served(project.get(), entry);
   }
 
   static HistoryEntry entry(ServeEvent event, String projectId) {
