@@ -1,0 +1,41 @@
+{
+  "info": { "name": "Shop API", "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json" },
+  "item": [
+    {
+      "name": "Orders",
+      "item": [
+        {
+          "name": "Get order",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/orders/:id", "host": ["{{baseUrl}}"], "path": ["api", "orders", ":id"] }, "description": "One order by id" },
+          "response": [
+            { "name": "Found", "code": 200, "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Date", "value": "Mon" }],
+              "body": "{\"id\": 7, \"status\": \"PAID\"}",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/orders/:id", "path": ["api", "orders", ":id"] } } },
+            { "name": "Missing", "code": 404, "header": [], "body": "{\"error\": \"not found\"}",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/orders/999", "path": ["api", "orders", "999"] } } }
+          ]
+        },
+        {
+          "name": "Search orders",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/orders?status=PAID&page={{page}}", "path": ["api", "orders"],
+            "query": [{ "key": "status", "value": "PAID" }, { "key": "page", "value": "{{page}}" }, { "key": "debug", "value": "1", "disabled": true }] } },
+          "response": [
+            { "name": "Paid", "code": 200, "header": [{ "key": "Content-Type", "value": "application/json" }], "body": "[{\"id\": 7}]",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/orders?status=PAID", "path": ["api", "orders"], "query": [{ "key": "status", "value": "PAID" }] } } }
+          ]
+        },
+        {
+          "name": "Create order",
+          "request": { "method": "POST", "url": "https://api.example.com/api/orders", "body": { "mode": "raw", "raw": "{\"sku\": \"A1\"}" } },
+          "response": [
+            { "name": "Created", "code": 201, "header": [{ "key": "Location", "value": "/api/orders/8" }], "body": "{\"id\": 8}",
+              "originalRequest": { "method": "POST", "url": "https://api.example.com/api/orders", "body": { "mode": "raw", "raw": "{\"sku\": \"A1\"}" } } },
+            { "name": "Again", "code": 201, "header": [], "body": "{\"id\": 9}",
+              "originalRequest": { "method": "POST", "url": "https://api.example.com/api/orders", "body": { "mode": "raw", "raw": "{\"sku\": \"A1\"}" } } }
+          ]
+        }
+      ]
+    },
+    { "name": "Health", "request": { "method": "GET", "url": "{{baseUrl}}/api/health" } }
+  ]
+}

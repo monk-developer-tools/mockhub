@@ -6,12 +6,29 @@
     <tr><td>SOAP requests (no WSDL)</td><td>One stub per operation found, plus an endpoint for any other operation. See <a href="#soap">SOAP &amp; WSDL</a>.</td></tr>
     <tr><td>GraphQL SDL or introspection JSON</td><td>One endpoint that answers from the schema. See <a href="#graphql">GraphQL</a>.</td></tr>
     <tr><td>Protobuf descriptor set (<code>.dsc</code>)</td><td>Serves the gRPC services in it, with one starter stub per method on request. Upload it under <strong>gRPC services</strong> in the same tab. See <a href="#grpc">gRPC</a>.</td></tr>
+    <tr><td>Postman collection (v2.0 or v2.1)</td><td>See <a href="#postman">Postman collections</a>.</td></tr>
     <tr><td>WireMock mappings</td><td>A <code>{"mappings": [...]}</code> file, an array, or one stub. Exports from another project are re-rooted automatically.</td></tr>
     <tr><td>WireMock folder (.zip)</td><td>A zip of a folder with <code>mappings</code> and <code>__files</code>, at any depth. Every mapping file is imported, body files are copied into the project (sub-folders included) and <code>bodyFileName</code> is updated. Folders are kept, and <code>./</code> paths and file names built with templates keep working. Files a mapping needs but the zip lacks are listed. Limits: 20,000 entries, 10 MB per file, 200 MB in total.</td></tr>
   </tbody>
 </table>
 
 <figure data-shot="openapi">Stubs generated from an OpenAPI file, grouped by tag.</figure>
+
+<h3 id="postman">Postman collections</h3>
+<p>In Postman, choose <strong>Export</strong> on the collection and keep <em>Collection v2.1</em>. Then upload the file under <strong>Postman collection</strong> in the project's <strong>Import / export</strong> tab. Version 1 collections are refused, with a hint to export again.</p>
+<table>
+  <thead><tr><th>In the collection</th><th>In MockHub</th></tr></thead>
+  <tbody>
+    <tr><td>A saved example response</td><td>One stub. It answers with the example's status, headers and body. When a request has several examples, each is named <em>Request · Example</em>.</td></tr>
+    <tr><td>A request with no saved example</td><td>One stub that answers 200 with an empty body. The import result lists it, so you can fill in the response.</td></tr>
+    <tr><td>Folders</td><td>Stub folders, with nested names joined by <code>/</code>.</td></tr>
+    <tr><td>URL path</td><td>Matched on the path only. The host and <code>{{baseUrl}}</code> are dropped. <code>:id</code> and <code>{{id}}</code> segments become path parameters. Strip a prefix such as <code>/api</code> as with OpenAPI; requests outside it are left out and listed.</td></tr>
+    <tr><td>Query parameters</td><td>Matched exactly. Disabled ones and ones whose value is a <code>{{variable}}</code> are not matched.</td></tr>
+    <tr><td>Raw JSON body (not GET)</td><td>Matched as JSON, ignoring extra fields, so each example answers its own body.</td></tr>
+    <tr><td>Request description</td><td>The stub's description.</td></tr>
+  </tbody>
+</table>
+<p>Two examples that match exactly the same request keep only the first; the rest are listed in the result. One import makes at most 1,000 stubs. Over the API: <code>POST /__admin/mockhub/api/projects/{id}/import/postman?stripPrefix=/api</code> with the collection as the body.</p>
 
 <h3 id="mock-these-apis">Mock an OpenAPI file from a URL</h3>
 <p>Open <strong>Mock an OpenAPI URL</strong> in the sidebar and paste the address of an OpenAPI 3 or Swagger 2 file. MockHub downloads it, shows its title, version and number of operations, and creates a new project with one stub per operation. You need the editor role in a team.</p>

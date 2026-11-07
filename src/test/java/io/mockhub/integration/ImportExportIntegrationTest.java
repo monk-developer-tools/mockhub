@@ -147,4 +147,30 @@ class ImportExportIntegrationTest {
       return new String(in.readAllBytes(), StandardCharsets.UTF_8);
     }
   }
+
+  @Test
+  void importsAPostmanCollectionsSavedExamplesAsWorkingStubs() throws IOException {
+    // Given
+    String collection = resource("shop.postman_collection.json");
+
+    // When
+    ApiClient.Result imported = api.send("POST", API + "/projects/" + projectId + "/import/postman?stripPrefix=/api", collection, "application/json", java.util.Map.of());
+    ApiClient.Result order = api.get("/calc/orders/7");
+    ApiClient.Result missing = api.get("/calc/orders/999");
+    ApiClient.Result paid = api.get("/calc/orders?status=PAID");
+    ApiClient.Result created = api.send("POST", "/calc/orders", "{\"sku\": \"A1\", \"qty\": 2}", "application/json", java.util.Map.of());
+    ApiClient.Result health = api.get("/calc/health");
+
+    // Then
+    assertThat(imported.status()).as(imported.body()).isEqualTo(200);
+    assertThat(imported.json().get("imported").asInt()).isEqualTo(5);
+    assertThat(imported.json().get("skipped").toString()).contains("no saved example response");
+    assertThat(order.status()).isEqualTo(200);
+    assertThat(order.json().get("status").asText()).isEqualTo("PAID");
+    assertThat(missing.status()).isEqualTo(404);
+    assertThat(paid.json().get(0).get("id").asInt()).isEqualTo(7);
+    assertThat(created.status()).isEqualTo(201);
+    assertThat(created.json().get("id").asInt()).isEqualTo(8);
+    assertThat(health.status()).isEqualTo(200);
+  }
 }

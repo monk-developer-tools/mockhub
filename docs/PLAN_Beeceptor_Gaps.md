@@ -207,6 +207,9 @@ Beeceptor (Enterprise): org admins list headers that are masked wherever they're
 ### P6 — QUERY, streaming and subscriptions, verified ✅ done
 Checked against the running server. **QUERY**: a `QUERY` stub matches a `QUERY` request with a body and not a `POST`; the stub editor didn't offer it (added), and the OpenAPI importer and contract checker didn't know OpenAPI 3.2's `query` operation (added). **gRPC**: the WireMock gRPC extension 0.11 has only unary and client-streaming handlers; server streaming sends one message, and a bidirectional call is handled as client streaming and gets one answer (new test with a `chat.dsc` descriptor). Several messages per stream would need changes in the extension. **GraphQL subscriptions**: a `subscription` operation crashed with graphql-java's internal assertion and a Jetty HTML 500; it now gets a GraphQL error explaining that subscriptions need WebSocket or SSE, which MockHub doesn't serve.
 
+### P8 — Postman collection import ✅ done
+`PostmanImporter` (format `postman`) reads Collection v2.0 and v2.1 and refuses v1 with a hint to export again. Each saved example becomes a stub matched on its own `originalRequest`: method, path (host and `{{baseUrl}}` dropped, `:id` and `{{id}}` as path parameters, optional `stripPrefix`), exact query values (disabled and `{{variable}}` ones skipped) and, for non-GET raw JSON bodies, `equalToJson` ignoring extra fields. It answers with the example's status, headers (hop-by-hop and `Date` dropped) and body. Requests without an example get a 200 stub; folders become stub folders; the request description becomes the stub's. Duplicate requests and anything over 1,000 stubs are left out and listed in the result's `skipped` notes, which the Import tab shows.
+
 ### T7 — gRPC mocks without login
 Split out of T1. Three things block it on the public demo: MockHub reads only compiled descriptor sets (no `.proto` text parser); gRPC routes by service name, so two visitors uploading the same service would collide on a shared server; and the demo's nginx has no HTTP/2 or `grpc_pass`. Needs a `.proto` parser, a per-mock service namespace, and HTTP/2 gRPC in MockHub's own nginx site file.
 
@@ -222,7 +225,7 @@ Split out of T1. Three things block it on the public demo: MockHub reads only co
 | QUERY method in stubs | Matched end to end; now in the editor and imported from OpenAPI 3.2 `query` operations | ✅ | P6 |
 | gRPC client, server and bidi streaming; GraphQL subscriptions | Unary, server (one message), client and bidi (one answer) verified; subscriptions answered with a clear error | 🟡 multi-message streams and subscriptions not mocked | P6 |
 | Published performance benchmark (load, payload sizes, 8-hour soak) | — | ❌ | P7 |
-| **Import a Postman collection** into stubs | Export to Postman only | ❌ | P8 |
+| **Import a Postman collection** into stubs | Export to Postman only | ✅ | P8 ✅ |
 
 ---
 
@@ -290,7 +293,7 @@ W4 status page: a public `/status/` page and a footer badge. The badge reads the
 | 22 | P5 Header masking ✅ | S | |
 | 23 | P6 Verify QUERY, streaming, subscriptions ✅ | S–M | |
 | 24 | P7 Benchmark report | M | |
-| 25 | P8 Postman collection import | S | |
+| 25 | P8 Postman collection import ✅ | S | |
 | 26 | W4 Status page and footer badge | S | Asked for; cheap trust signal |
 | 27 | W2 gRPC and forward-proxy pages | S | The GraphQL page shipped with T1; the gRPC page waits for T7 |
 | 28 | W1 Development bottlenecks and testing limitations pages | S | Content |

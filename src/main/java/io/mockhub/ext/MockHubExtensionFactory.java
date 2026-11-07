@@ -196,6 +196,7 @@ import io.mockhub.export.WireMockMappingsExporter;
 import io.mockhub.importer.ImporterRegistry;
 import io.mockhub.importer.WireMockArchiveImporter;
 import io.mockhub.importer.OpenApiImporter;
+import io.mockhub.importer.PostmanImporter;
 import io.mockhub.importer.WireMockJsonImporter;
 import io.mockhub.importer.WsdlStubImporter;
 import io.mockhub.journal.RequestLogService;
@@ -373,7 +374,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     ExampleOperations graphQlExamples = new ExampleOperations(graphQlSchemas);
     SpecFetcher specFetcher = new SpecFetcher(new JdkHttpSender(), new TargetGuard(config.playgroundAllowPrivate, InetAddress::getAllByName));
     ImporterRegistry importers = new ImporterRegistry(List.of(new WireMockJsonImporter(), new WsdlStubImporter(), new OpenApiImporter(),
-        new GraphQlStubImporter(graphQlExamples), new SoapSampleImporter()));
+        new GraphQlStubImporter(graphQlExamples), new SoapSampleImporter(), new PostmanImporter()));
     ProjectViews views = new ProjectViews(stubs, requestLog, urls, clock);
     UserViews userViews = new UserViews(orgs, teams);
     TeamChoice teamChoice = new TeamChoice(orgs, teams);

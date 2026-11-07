@@ -156,7 +156,8 @@ screenshots, and the [live demo](https://mockhub.devops-monk.com/__admin/mockhub
   JSON describing it: method, path, query, headers, body and parsed JSON or form fields.
 - **Mock these APIs.** Paste the URL of an OpenAPI file to get a mock project, and put a "Mock these APIs" badge in
   your API docs that opens that page with the file filled in.
-- **Import** OpenAPI 3 / Swagger 2 (JSON or YAML), WSDL, SOAP sample requests, GraphQL schemas, or WireMock mappings.
+- **Import** OpenAPI 3 / Swagger 2 (JSON or YAML), WSDL, SOAP sample requests, GraphQL schemas, Postman collections (each saved example
+  becomes a stub), or WireMock mappings.
 - **Move a whole WireMock repository.** Start MockHub on a copy of the folder, or import it as one zip (up to 20,000
   files): files with many stubs, `./` body file paths, folders and templated file names all keep working, and the stub
   that wins a tie stays the same after edits and restarts. See
@@ -539,7 +540,7 @@ MockHub is a WireMock extension running inside a regular WireMock server:
 | GET | `/__admin/mockhub/api/projects/{id}/traffic/daily` | requests and unmatched requests per day for the last 30 days |
 | GET/DELETE | `/__admin/mockhub/api/projects/{id}/callouts?limit=` | callout log: webhooks and *wait for callout* calls with what was sent, the answer, timing and errors |
 | GET | `/__admin/mockhub/api/projects/{id}/export/{postman,bruno,wiremock}` | download an export |
-| POST | `/__admin/mockhub/api/projects/{id}/import/{openapi,wsdl,soap,graphql,wiremock}` | import a document (request body); `soap` (sample requests) and `graphql` take `?path=&name=` |
+| POST | `/__admin/mockhub/api/projects/{id}/import/{openapi,wsdl,soap,graphql,postman,wiremock}` | import a document (request body); `soap` (sample requests) and `graphql` take `?path=&name=`; `openapi` and `postman` take `?stripPrefix=` |
 | POST | `/__admin/mockhub/api/projects/{id}/graphql/operations` | example operations for `{schema}` (viewers too) |
 | GET/POST | `/__admin/mockhub/api/examples`, `/examples/{id}/install` | built-in examples |
 | GET | `/__admin/mockhub/api/stubs/unassigned` | stubs not in any project |

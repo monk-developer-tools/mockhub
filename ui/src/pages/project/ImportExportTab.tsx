@@ -19,6 +19,7 @@ const IMPORTS = [
   { format: 'wsdl', name: 'WSDL (SOAP)', accept: '.wsdl,.xml', detail: 'One stub per operation with sample envelopes, plus ?wsdl and a fault for unknown operations.' },
   { format: 'soap', name: 'SOAP samples', accept: '.xml,.txt', detail: 'No WSDL? Paste one or more SOAP requests. Each operation found gets a stub, and an endpoint answers any other operation with an <Operation>Response envelope.' },
   { format: 'graphql', name: 'GraphQL', accept: '.graphql,.graphqls,.gql,.json', detail: 'A schema (SDL) or an introspection result. One endpoint answers every query and mutation with generated data that follows the schema.' },
+  { format: 'postman', name: 'Postman collection', accept: '.json', detail: 'Collection v2.0 or v2.1. Each saved example response becomes a stub, matched on its method, path and query, in a folder per collection folder.' },
   { format: 'wiremock', name: 'WireMock mappings', accept: '.json', detail: 'A mappings file, an array of stubs or a single stub.' },
   {
     format: 'wiremock-zip',
@@ -47,14 +48,15 @@ export function ImportExportTab() {
     const options: Record<string, string> = {};
     if ((format === 'wsdl' || format === 'graphql' || format === 'soap') && path) options.path = path;
     if ((format === 'graphql' || format === 'soap') && fileName !== PASTED) options.name = fileName.replace(/\.[^.]+$/, '');
-    if (format === 'openapi' && stripPrefix) options.stripPrefix = stripPrefix;
+    if ((format === 'openapi' || format === 'postman') && stripPrefix) options.stripPrefix = stripPrefix;
     if (format === 'openapi' && keepContract) {
       options.contract = 'true';
       if (fileName !== PASTED) options.fileName = fileName;
     }
     try {
       const r = await api.importInto(project.id, format, text, options);
-      setResult(`Imported ${r.imported} stub${r.imported === 1 ? '' : 's'} from ${fileName}.${r.contract === true ? ' It is now the contract that traffic is checked against.' : ''}`);
+      const skipped = Array.isArray(r.skipped) ? (r.skipped as string[]) : [];
+      setResult(`Imported ${r.imported} stub${r.imported === 1 ? '' : 's'} from ${fileName}.${r.contract === true ? ' It is now the contract that traffic is checked against.' : ''}${skipped.length ? ` Notes: ${skipped.join('; ')}.` : ''}`);
       toast.notify(`Imported ${r.imported} stubs`);
       reloadProject();
       refreshProjects();
@@ -139,7 +141,7 @@ export function ImportExportTab() {
                   <input type="text" className="mono" placeholder={format === 'soap' ? '/ws/customers' : '/graphql'} value={path} onChange={(e) => setPath(e.target.value)} />
                 </label>
               )}
-              {format === 'openapi' && (
+              {(format === 'openapi' || format === 'postman') && (
                 <label className="field">
                   <span>Strip path prefix <span className="hint">optional, e.g. /api/v1</span></span>
                   <input type="text" className="mono" value={stripPrefix} onChange={(e) => setStripPrefix(e.target.value)} />
