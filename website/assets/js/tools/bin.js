@@ -562,3 +562,19 @@ export function renameBin(list, id, name) {
   if (!clean) return list;
   return list.map((b) => (b.id === id ? { ...b, name: clean } : b));
 }
+
+export const START_STEPS = [
+  { id: 'request', label: 'Catch a request', hint: 'Point a webhook at the URL, or send one now.', action: 'test', actionLabel: 'Send a test webhook' },
+  { id: 'inspect', label: 'Look inside a request', hint: 'Click a request in the log to see its headers and body.', action: '', actionLabel: '' },
+  { id: 'rule', label: 'Answer with a rule', hint: 'Rules answer matching requests before the default reply.', action: 'rules', actionLabel: 'Open rules' },
+  { id: 'save', label: 'Keep it in MockHub', hint: 'Copy the bin into a project you own; it outlives the bin.', action: 'save', actionLabel: 'Save to MockHub' },
+];
+
+export function startSteps(done, live = {}) {
+  const seen = { request: live.requests > 0, inspect: Boolean(live.inspected), rule: live.rules > 0, save: Boolean(live.project) };
+  return START_STEPS.map((step) => ({ ...step, done: seen[step.id] || done.includes(step.id) }));
+}
+
+export function startDone(steps) {
+  return steps.filter((s) => s.done).map((s) => s.id);
+}

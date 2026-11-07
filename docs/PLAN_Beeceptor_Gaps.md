@@ -145,8 +145,10 @@ Beeceptor keeps free endpoints 30 days, and 90 once claimed. Ours are deleted 24
 
 `POST /__public/inspect/{id}/project` with a MockHub sign-in copies the bin into a project: rules become stubs in a *From webhook bin* folder (name, order, description, off-switch kept), CRUD records are seeded, callouts and weighted answers carry over, and the default answer becomes the project's default response. What converts differently or not at all comes back as `notes` and is listed in the dialog and the docs. The project opens with the sign-in carried over, and the link stays under My bins. 10 saves an hour per user.
 
-### B11 — Onboarding
-Beeceptor shows a "Get started" checklist: add a rule, test the endpoint, inspect requests, generate fake data. We have the waiting card with a test webhook. 🟡
+### B11 — Onboarding ✅ done
+Beeceptor shows a "Get started" checklist: add a rule, test the endpoint, inspect requests, generate fake data. We have the waiting card with a test webhook.
+
+The bin page now adds a **Get started** card for a new owner: catch a request (test webhook button), look inside a request, answer with a rule (opens Rules), keep it in MockHub (opens Save). Steps tick themselves off from what actually happens, are remembered in the browser, and the card hides when all are done or when hidden; view-only visitors never see it.
 
 ---
 

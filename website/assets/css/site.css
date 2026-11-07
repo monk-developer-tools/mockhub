@@ -5814,6 +5814,63 @@ select.tool-select-small {
   margin-top: 12px;
 }
 
+.bin-onboarding-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 12px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.bin-onboarding-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  padding: 12px;
+}
+
+.bin-onboarding-step.done {
+  border-color: color-mix(in srgb, var(--ok) 40%, var(--line));
+  background: color-mix(in srgb, var(--ok) 6%, transparent);
+}
+
+.bin-onboarding-tick {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  line-height: 1;
+  color: #fff;
+  margin-top: 2px;
+}
+
+.bin-onboarding-step.done .bin-onboarding-tick {
+  background: var(--ok);
+  border-color: var(--ok);
+}
+
+.bin-onboarding-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.bin-onboarding-label {
+  font-weight: 600;
+}
+
+.bin-onboarding-text .tool-hint {
+  margin: 0;
+}
+
 .bin-save-notes .tool-hint {
   margin: 0 0 4px;
 }

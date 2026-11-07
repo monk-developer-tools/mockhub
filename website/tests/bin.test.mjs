@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { blankCrud, checkCrud, crudRoutes, normalCrudPath, blankCallout, calloutLost, calloutText, calloutTone, checkCallout, outcomeText as outcomeLine, base64Size, binLink, filterQuery, optionsFromForm, optionsSummary, filtered, multipartParts, parseShareHash, requestBytes, ruleFromRequest, searchValues, shareLink, stateRows, contentTypeOf, fileSize, opsFor, percents, prettyBody, withContentType, duplicate, flow, forgetBin, rememberBin, renameBin, routeSummary, parseBinHash, previewRequest, headerLines, mergeRequests, move, outcomeText, outcomeTone, parseHeaderLines, recipe, routingFromForm, snippets, summary, tunnelCommand } from '../assets/js/tools/bin.js';
+import { startDone, startSteps, blankCrud, checkCrud, crudRoutes, normalCrudPath, blankCallout, calloutLost, calloutText, calloutTone, checkCallout, outcomeText as outcomeLine, base64Size, binLink, filterQuery, optionsFromForm, optionsSummary, filtered, multipartParts, parseShareHash, requestBytes, ruleFromRequest, searchValues, shareLink, stateRows, contentTypeOf, fileSize, opsFor, percents, prettyBody, withContentType, duplicate, flow, forgetBin, rememberBin, renameBin, routeSummary, parseBinHash, previewRequest, headerLines, mergeRequests, move, outcomeText, outcomeTone, parseHeaderLines, recipe, routingFromForm, snippets, summary, tunnelCommand } from '../assets/js/tools/bin.js';
 
 test('summarises a rule in one line', () => {
   // Given
@@ -546,4 +546,29 @@ test('refuses CRUD routes the server would refuse', () => {
     "A CRUD route's path is lowercase letters, digits and dashes, like /users or /api/v1/orders",
     "A CRUD route's path is lowercase letters, digits and dashes, like /users or /api/v1/orders",
     'The id field must be a plain field name, e.g. id']);
+});
+
+test('get-started steps tick off with live state and stay done', () => {
+  // Given
+  const remembered = ['inspect'];
+
+  // When
+  const first = startSteps(remembered, { requests: 1, rules: 0, inspected: false, project: false });
+  const all = startSteps(startDone(first), { requests: 2, rules: 3, inspected: true, project: true });
+
+  // Then
+  assert.deepEqual(first.map((s) => [s.id, s.done]), [['request', true], ['inspect', true], ['rule', false], ['save', false]]);
+  assert.deepEqual(startDone(first), ['request', 'inspect']);
+  assert.ok(all.every((s) => s.done));
+});
+
+test('get-started steps work with nothing done and nothing live', () => {
+  // Given
+  // When
+  const steps = startSteps([], {});
+
+  // Then
+  assert.equal(steps.length, 4);
+  assert.ok(steps.every((s) => !s.done));
+  assert.deepEqual(startDone(steps), []);
 });

@@ -4,12 +4,13 @@ import {
   blankCrud, checkCrud, crudRoutes, normalCrudPath,
   AUTH_TYPES, CALLOUT_METHODS, blankCallout, calloutLost, calloutText, calloutTone, checkCallout,
   CONTENT_TYPES, MAX_FILE_BYTES, METHODS, OPS, RECIPES, base64Size, contentTypeOf, fileSize, opsFor, percents, prettyBody, searchValues, stateRows, withContentType, TARGETS, binLink, blankAnswer, blankCondition, blankRule, duplicate, flow, headerLines, mergeRequests, move,
-  outcomeText, outcomeTone, parseBinHash, parseShareHash, filterQuery, optionsFromForm, optionsSummary, filtered, multipartParts, requestBytes, ruleFromRequest, shareLink, routeSummary, rememberBin, forgetBin, renameBin, parseHeaderLines, previewRequest, recipe, routingFromForm, snippets, summary, tunnelCommand,
+  outcomeText, outcomeTone, parseBinHash, parseShareHash, filterQuery, optionsFromForm, optionsSummary, filtered, multipartParts, requestBytes, ruleFromRequest, shareLink, routeSummary, rememberBin, forgetBin, renameBin, parseHeaderLines, previewRequest, recipe, routingFromForm, snippets, startDone, startSteps, summary, tunnelCommand,
 } from './bin.js';
 
 const KEY = 'mockhub-bin';
 const LIST_KEY = 'mockhub-bins';
 const SESSION_KEY = 'mockhub-bin-session';
+const START_KEY = 'mockhub-bin-start';
 const POLL_MS = 2000;
 const SETTINGS_MS = 10000;
 let bin = null;
@@ -90,6 +91,24 @@ const session = {
   },
 };
 
+const startStore = {
+  read() {
+    try {
+      const value = JSON.parse(localStorage.getItem(START_KEY) ?? '{}');
+      return { done: Array.isArray(value.done) ? value.done.filter((d) => typeof d === 'string') : [], hidden: Boolean(value.hidden) };
+    } catch (e) {
+      return { done: [], hidden: false };
+    }
+  },
+  write(value) {
+    try {
+      localStorage.setItem(START_KEY, JSON.stringify(value));
+    } catch (e) {
+      return;
+    }
+  },
+};
+
 const binUrl = () => `${location.origin}/__public/bins/${bin.id}`;
 const auth = (json) => (json ? { 'X-Bin-Token': bin.token, 'Content-Type': 'application/json' } : { 'X-Bin-Token': bin.token });
 const inspect = (part = '') => `/__public/inspect/${bin.id}${part}`;
@@ -154,6 +173,7 @@ function renderList() {
       selected = r.seq;
       renderList();
       renderDetail();
+      markStart('inspect');
     });
     return el('li', {}, button);
   }));
@@ -163,6 +183,7 @@ function renderList() {
   $('[data-bin-no-match]').hidden = !(narrowed && requests.length === 0);
   const oldestShown = requests.length ? requests[requests.length - 1].seq : 0;
   $('[data-bin-older]').hidden = !requests.length || oldestShown <= oldestKept || noOlder;
+  renderStart();
 }
 
 function setCount(total) {
@@ -425,6 +446,7 @@ function applySettings(value) {
   renderRules();
   renderMode();
   renderRouteTo();
+  renderStart();
 }
 
 function renderRouteTo() {
@@ -464,6 +486,42 @@ function flashConsole(message) {
   setTimeout(() => {
     note.hidden = true;
   }, 6000);
+}
+
+function renderStart() {
+  const card = $('[data-bin-onboarding]');
+  const state = startStore.read();
+  const mine = bin && !bin.viewOnly;
+  const steps = startSteps(state.done, mine ? {
+    requests: requests.length,
+    rules: rules.length,
+    inspected: state.done.includes('inspect'),
+    project: Boolean(savedProject) || Boolean(savedBins.read().find((b) => b.id === bin.id)?.project),
+  } : {});
+  const done = startDone(steps);
+  if (mine && done.length !== state.done.length) startStore.write({ ...state, done });
+  card.hidden = !mine || state.hidden || done.length === steps.length;
+  $('[data-bin-onboarding-steps]').replaceChildren(...steps.map((step) => el('li', {
+    class: `bin-onboarding-step${step.done ? ' done' : ''}`,
+    'data-bin-step': step.id,
+  },
+  el('span', { class: 'bin-onboarding-tick', 'aria-hidden': 'true' }, step.done ? '✓' : ''),
+  el('span', { class: 'bin-onboarding-text' },
+    el('span', { class: 'bin-onboarding-label' }, step.label),
+    el('span', { class: 'tool-hint' }, step.hint)),
+  !step.done && step.action ? el('button', {
+    type: 'button',
+    class: 'btn secondary small',
+    'data-bin-step-action': step.id,
+    onclick: () => (step.action === 'test' ? sendSample('[data-bin-sample-note]') : openDialog(step.action)),
+  }, step.actionLabel) : null)));
+}
+
+function markStart(step) {
+  const state = startStore.read();
+  if (state.done.includes(step)) return;
+  startStore.write({ ...state, done: [...state.done, step] });
+  renderStart();
 }
 
 async function sendSample(noteSelector) {
@@ -1200,6 +1258,7 @@ async function saveToProject(e) {
   }
   savedBins.write(savedBins.read().map((b) => (b.id === bin.id ? { ...b, project: { name: result.json.name, url: result.json.url, ui: result.json.ui } } : b)));
   renderSave();
+  renderStart();
 }
 
 async function draftWithAi(e) {
@@ -1323,6 +1382,7 @@ function open(value) {
     savedBins.write(rememberBin(savedBins.read(), bin));
   }
   renderTitle();
+  renderStart();
   $('[data-bin-view-copy]').hidden = true;
   $('[data-bin-url]').textContent = binUrl();
   $('[data-bin-share-url]').textContent = binUrl();
@@ -1559,6 +1619,11 @@ document.addEventListener('visibilitychange', () => {
 
 renderRecipes();
 renderSignIn();
+renderStart();
+$('[data-bin-onboarding-hide]').addEventListener('click', () => {
+  startStore.write({ ...startStore.read(), hidden: true });
+  renderStart();
+});
 $('[data-bin-insert]').addEventListener('click', () => openValues($('[data-bin-body]'), () => {
   $('[data-bin-template]').checked = true;
 }));
