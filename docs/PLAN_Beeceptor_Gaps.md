@@ -140,8 +140,10 @@ Drafts and fixes share the 10-an-hour AI limit and need a sign-in.
 
 Rule ids are now unique within a bin (a duplicate gets a new one) and `order` is reserved. Parts download as attachments with `Content-Security-Policy: sandbox`, so an uploaded HTML file can't run on the site. `BinRuleEdits`, `BinMultipart`, `BinState.put/remove`.
 
-### B10 — Keep a bin
-Beeceptor keeps free endpoints 30 days, and 90 once claimed. Ours are deleted 24 hours after the last request. Build: **Save to my MockHub**, which turns a bin and its rules into a project for signed-in users. That also joins the free tool to the full app. ❌
+### B10 — Keep a bin ✅ done
+Beeceptor keeps free endpoints 30 days, and 90 once claimed. Ours are deleted 24 hours after the last request. Build: **Save to my MockHub**, which turns a bin and its rules into a project for signed-in users. That also joins the free tool to the full app.
+
+`POST /__public/inspect/{id}/project` with a MockHub sign-in copies the bin into a project: rules become stubs in a *From webhook bin* folder (name, order, description, off-switch kept), CRUD records are seeded, callouts and weighted answers carry over, and the default answer becomes the project's default response. What converts differently or not at all comes back as `notes` and is listed in the dialog and the docs. The project opens with the sign-in carried over, and the link stays under My bins. 10 saves an hour per user.
 
 ### B11 — Onboarding
 Beeceptor shows a "Get started" checklist: add a rule, test the endpoint, inspect requests, generate fake data. We have the waiting card with a test webhook. 🟡

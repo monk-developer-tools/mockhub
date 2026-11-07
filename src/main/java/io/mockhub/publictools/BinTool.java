@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.http.ResponseDefinition;
+import io.mockhub.api.ApiException;
 import io.mockhub.api.Jsons;
 import io.mockhub.auth.Principal;
 import io.mockhub.playground.JdkHttpSender;
@@ -31,7 +32,7 @@ import java.util.regex.Pattern;
 public final class BinTool implements PublicTool {
   public static final int MAX_REPLY_BODY = 4 * 1024;
   private static final Pattern CAPTURE = Pattern.compile("/bins/([a-z0-9]{12})(/.*)?");
-  private static final Pattern INSPECT = Pattern.compile("/inspect/([a-z0-9]{12})(/requests(?:/\\d{1,12}(?:/share|/parts(?:/\\d{1,3})?)?)?|/response|/settings|/rules(?:/[a-z0-9-]{1,40})?|/state/[a-z]{1,10}/[^/]{1,200}|/routing|/draft(?:/fix)?|/state|/export|/options|/data)?");
+  private static final Pattern INSPECT = Pattern.compile("/inspect/([a-z0-9]{12})(/requests(?:/\\d{1,12}(?:/share|/parts(?:/\\d{1,3})?)?)?|/response|/settings|/rules(?:/[a-z0-9-]{1,40})?|/state/[a-z]{1,10}/[^/]{1,200}|/routing|/draft(?:/fix)?|/project|/state|/export|/options|/data)?");
   private static final Pattern ONE = Pattern.compile("/requests/(\\d{1,12})(/share)?");
   private static final Pattern PARTS = Pattern.compile("/requests/(\\d{1,12})/parts(?:/(\\d{1,3}))?");
   private static final Pattern RULE = Pattern.compile("/rules/([a-z0-9-]{1,40})");
@@ -47,15 +48,17 @@ public final class BinTool implements PublicTool {
   private final BinGate gate;
   private final BinScheduler scheduler;
   private final BinCrud records;
+  private final BinProject saves;
 
   BinTool(Bins bins, PublicLimits limits, BinResponder responder, BinDrafter drafter, Function<String, Optional<Boolean>> tunnelOnline,
-      Function<String, Optional<Principal>> signedIn, LongSupplier millis) {
-    this(bins, limits, responder, drafter, tunnelOnline, signedIn, millis, BinScheduler.pooled(4));
+      Function<String, Optional<Principal>> signedIn, LongSupplier millis, BinProject saves) {
+    this(bins, limits, responder, drafter, tunnelOnline, signedIn, millis, BinScheduler.pooled(4), saves);
   }
 
   BinTool(Bins bins, PublicLimits limits, BinResponder responder, BinDrafter drafter, Function<String, Optional<Boolean>> tunnelOnline,
-      Function<String, Optional<Principal>> signedIn, LongSupplier millis, BinScheduler scheduler) {
+      Function<String, Optional<Principal>> signedIn, LongSupplier millis, BinScheduler scheduler, BinProject saves) {
     this.scheduler = scheduler;
+    this.saves = saves;
     this.records = new BinCrud(bins.records());
     this.bins = bins;
     this.limits = limits;
@@ -68,10 +71,11 @@ public final class BinTool implements PublicTool {
   }
 
   public static BinTool create(Bins bins, PublicLimits limits, TemplatePlayground templates, TargetGuard guard, TunnelGateway tunnels,
-      Function<String, Optional<Boolean>> tunnelOnline, Function<String, Optional<Principal>> signedIn, BooleanSupplier aiOn, BinDrafter.Llm llm) {
+      Function<String, Optional<Boolean>> tunnelOnline, Function<String, Optional<Principal>> signedIn, BooleanSupplier aiOn, BinDrafter.Llm llm,
+      BinProject saves) {
     BinResponder responder = new BinResponder(templates, new JdkHttpSender(), new JdkHttpSender(true), guard, tunnels,
         bound -> ThreadLocalRandom.current().nextInt(bound), System::currentTimeMillis, bins.records());
-    return new BinTool(bins, limits, responder, new BinDrafter(aiOn, llm), tunnelOnline, signedIn, System::currentTimeMillis);
+    return new BinTool(bins, limits, responder, new BinDrafter(aiOn, llm), tunnelOnline, signedIn, System::currentTimeMillis, saves);
   }
 
   @Override
@@ -237,7 +241,36 @@ public final class BinTool implements PublicTool {
     if (what.equals("/options") && method.equals("PUT")) return setOptions(id, token, request.body());
     if (what.equals("/draft") && method.equals("POST")) return withAi(id, token, request, this::draft);
     if (what.equals("/draft/fix") && method.equals("POST")) return withAi(id, token, request, this::fix);
-    return PublicResponses.error(405, "Read a bin with GET, change it with PUT /response, /rules or /routing, clear it with DELETE, read and clear its saved values with GET and DELETE /state, export it with GET /export, change its settings with PUT /options, read and change stored records with /data, or edit one rule at /rules/{ruleId} and one saved entry at /state/{kind}/{name}");
+    if (what.equals("/project") && method.equals("POST")) return saveProject(id, token, request);
+    return PublicResponses.error(405, "Read a bin with GET, change it with PUT /response, /rules or /routing, clear it with DELETE, read and clear its saved values with GET and DELETE /state, export it with GET /export, change its settings with PUT /options, read and change stored records with /data, edit one rule at /rules/{ruleId} and one saved entry at /state/{kind}/{name}, or save the whole bin as a MockHub project with POST /project");
+  }
+
+  private ResponseDefinition saveProject(String id, String token, PublicRequest request) {
+    if (!bins.verify(id, token)) return notYours(id);
+    Optional<Principal> who = signedIn.apply(request.header("Authorization"));
+    if (who.isEmpty()) return PublicResponses.error(401, "Sign in to MockHub to save this bin as a project.");
+    if (saves == null) return PublicResponses.error(503, "Saving projects isn't set up on this server.");
+    Optional<Long> wait = limits.take("user:" + who.get().id(), PublicLimits.Kind.CREATE);
+    if (wait.isPresent()) return PublicResponses.tooMany(wait.get(), "saves");
+    Optional<Bins.Settings> settings = bins.settings(id, token);
+    if (settings.isEmpty()) return notYours(id);
+    try {
+      BinProject.Saved saved = saves.save(id, settings.get(), who.get(), read(request.body()).path("name").asText(""));
+      ObjectNode out = Jsons.object()
+          .put("projectId", saved.projectId())
+          .put("name", saved.name())
+          .put("slug", saved.slug())
+          .put("url", "/" + saved.slug())
+          .put("ui", saved.ui());
+      saved.notes().forEach(out.putArray("notes")::add);
+      return PublicResponses.json(201, out);
+    } catch (IllegalArgumentException e) {
+      return PublicResponses.error(400, e.getMessage());
+    } catch (ApiException e) {
+      return PublicResponses.error(e.status, e.getMessage());
+    } catch (RuntimeException e) {
+      return PublicResponses.error(502, "The project couldn't be created. Try again.");
+    }
   }
 
   private ResponseDefinition rules(String id, String token) {

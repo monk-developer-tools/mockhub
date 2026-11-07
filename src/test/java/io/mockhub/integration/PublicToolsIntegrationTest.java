@@ -825,6 +825,60 @@ class PublicToolsIntegrationTest {
     assertThat(badSpec.status()).isEqualTo(400);
   }
 
+  @Test
+  void aBinSavesIntoASignedInUsersProjectWithItsRulesRecordsAndDefaultAnswer() {
+    // Given
+    server = MockHubServer.start(data, Map.of("MOCKHUB_PUBLIC_TOOLS", "true", "MOCKHUB_USERS", "admin:pw:admin"));
+    ApiClient api = server.api();
+    JsonNode bin = api.post("/__public/bins", "").json();
+    String id = bin.get("id").asText();
+    Map<String, String> owner = Map.of("X-Bin-Token", bin.get("token").asText());
+    String inspect = "/__public/inspect/" + id;
+    api.send("PUT", inspect + "/rules", """
+        {"rules": [
+          {"name": "Hello", "method": "GET", "conditions": [{"target": "path", "op": "equals", "value": "/hello"}],
+           "answers": [{"status": 200, "body": "hi"}]},
+          {"name": "Users", "crud": {"path": "/users", "idType": "number"}},
+          {"name": "Form thing", "conditions": [{"target": "form", "key": "a", "op": "equals", "value": "1"}],
+           "answers": [{"status": 200}]}]}
+        """, "application/json", owner);
+    api.send("PUT", inspect + "/data", "{\"route\": {\"path\": \"/users\"}, \"records\": [{\"name\": \"Ada\"}]}", "application/json", owner);
+    String token = server.api().post("/__admin/mockhub/api/auth/login", "{\"username\":\"admin\",\"password\":\"pw\"}").json().get("token").asText();
+    Map<String, String> signedOwner = Map.of("X-Bin-Token", bin.get("token").asText(), "Authorization", "Bearer " + token);
+    ApiClient admin = server.api().login("admin", "pw");
+
+    // When
+    int anonymous = api.send("POST", inspect + "/project", "{}", "application/json", owner).status();
+    int wrongToken = api.send("POST", inspect + "/project", "{}", "application/json",
+        Map.of("X-Bin-Token", "nope", "Authorization", "Bearer " + token)).status();
+    ApiClient.Result saved = api.send("POST", inspect + "/project", "{\"name\": \"My webhooks\"}", "application/json", signedOwner);
+    JsonNode project = saved.json();
+    String projectId = project.get("projectId").asText();
+    ApiClient.Result stubs = admin.get("/__admin/mockhub/api/projects/" + projectId + "/stubs");
+    ApiClient.Result hello = api.send("GET", "/my-webhooks/hello", null, null, Map.of());
+    ApiClient.Result record = api.send("GET", "/my-webhooks/users", null, null, Map.of());
+    ApiClient.Result fallback = api.send("GET", "/my-webhooks/anything", null, null, Map.of());
+
+    // Then
+    assertThat(anonymous).isEqualTo(401);
+    assertThat(wrongToken).isEqualTo(404);
+    assertThat(saved.status()).isEqualTo(201);
+    assertThat(project.get("name").asText()).isEqualTo("My webhooks");
+    assertThat(project.get("slug").asText()).isEqualTo("my-webhooks");
+    assertThat(project.get("url").asText()).isEqualTo("/my-webhooks");
+    assertThat(project.get("ui").asText()).isEqualTo("/__admin/mockhub/ui/projects/" + projectId);
+    assertThat(project.get("notes").toString()).contains("form-field checks only exist in bins");
+    assertThat(stubs.status()).isEqualTo(200);
+    assertThat(stubs.json()).hasSize(2);
+    assertThat(stubs.json().get(0).get("name").asText()).isEqualTo("Hello");
+    assertThat(hello.status()).isEqualTo(200);
+    assertThat(hello.body()).isEqualTo("hi");
+    assertThat(record.status()).isEqualTo(200);
+    assertThat(record.json().get(0).get("name").asText()).isEqualTo("Ada");
+    assertThat(fallback.status()).isEqualTo(200);
+    assertThat(fallback.body()).isEqualTo("{\"ok\":true}");
+  }
+
   private static List<String> stubPaths(ApiClient api, JsonNode created) {
     JsonNode mock = api.send("GET", "/__public/mocks/" + created.get("slug").asText(), null, null,
         Map.of("X-Mock-Token", created.get("token").asText())).json();

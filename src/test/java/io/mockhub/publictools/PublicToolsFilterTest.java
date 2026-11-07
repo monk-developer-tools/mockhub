@@ -36,7 +36,7 @@ class PublicToolsFilterTest {
   void setUp() {
     bins = new Bins(data.resolve(String.valueOf(System.nanoTime())), clock);
     BinTool binTool = new BinTool(bins, limits, new BinResponder(null, null, null, null, null, bound -> 0, System::currentTimeMillis),
-        new BinDrafter(() -> false, (system, user) -> ""), name -> Optional.empty(), header -> Optional.empty(), System::currentTimeMillis);
+        new BinDrafter(() -> false, (system, user) -> ""), name -> Optional.empty(), header -> Optional.empty(), System::currentTimeMillis, null);
     tools = List.of(new EchoTool(), binTool, new FakeTool(new DataGenerator(new FakeData("en")), limits));
   }
 

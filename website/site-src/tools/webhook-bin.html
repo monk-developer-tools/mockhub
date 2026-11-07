@@ -30,6 +30,7 @@
         <button type="button" class="btn secondary small" data-owner data-bin-open="ai" hidden>AI</button>
         <button type="button" class="btn secondary small" data-owner data-bin-open="rules">Rules <span class="tool-badge" data-bin-rule-count></span></button>
         <button type="button" class="btn secondary small" data-owner data-bin-open="routing">Routing</button>
+        <button type="button" class="btn secondary small" data-owner data-bin-open="save">Save to MockHub</button>
         <button type="button" class="btn secondary small" data-owner data-bin-open="settings">Settings</button>
         <button type="button" class="btn secondary small" data-owner data-bin-open="share">Share</button>
         <button type="button" class="btn secondary small" data-owner data-bin-open="bins">My bins <span class="tool-badge" data-bin-saved-count></span></button>
@@ -261,6 +262,49 @@
   <div class="bin-dialog-foot">
     <span class="tool-hint" data-bin-saved-note aria-live="polite"></span>
     <button type="button" class="btn primary" data-bin-new>New bin</button>
+  </div>
+</dialog>
+
+<dialog class="bin-dialog" data-bin-dialog="save" aria-labelledby="bin-save-title">
+  <div class="bin-dialog-head">
+    <h3 id="bin-save-title">Save to MockHub</h3>
+    <button type="button" class="btn ghost small" data-bin-close aria-label="Close">Close</button>
+  </div>
+  <div class="bin-dialog-body">
+    <p class="tool-hint">Copy this bin into a MockHub project you own: rules become stubs, stored records come along and the default answer catches what no rule matches. The bin itself keeps running.</p>
+    <form class="bin-signin" data-bin-save-signin hidden>
+      <p class="tool-hint">Sign in to MockHub first. Projects live in your MockHub account.</p>
+      <div class="tool-row">
+        <div class="tool-grow">
+          <label class="tool-label" for="bin-save-user">Username</label>
+          <input id="bin-save-user" class="tool-input" name="username" type="text" autocomplete="username" spellcheck="false" required>
+        </div>
+        <div class="tool-grow">
+          <label class="tool-label" for="bin-save-pass">Password</label>
+          <input id="bin-save-pass" class="tool-input" name="password" type="password" autocomplete="current-password" required>
+        </div>
+      </div>
+      <div class="tool-actions-row">
+        <button type="submit" class="btn secondary">Sign in</button>
+        <span class="tool-hint" data-bin-save-signin-note aria-live="polite"></span>
+      </div>
+    </form>
+    <form data-bin-save-form hidden>
+      <label class="tool-label" for="bin-save-name">Project name</label>
+      <input id="bin-save-name" class="tool-input" data-bin-save-name type="text" maxlength="60" placeholder="My webhooks">
+      <p class="tool-hint">Leave it empty to name the project after the bin.</p>
+      <div class="tool-actions-row">
+        <button type="submit" class="btn primary" data-bin-save-go>Save as project</button>
+        <span class="tool-hint" data-bin-save-note aria-live="polite"></span>
+      </div>
+    </form>
+    <div data-bin-save-result hidden>
+      <p class="bin-saved" data-bin-save-done>Saved. The project opens with you signed in.</p>
+      <div class="tool-actions-row">
+        <a class="btn primary small" data-bin-save-link href target="_blank" rel="noopener">Open the project</a>
+      </div>
+      <div class="bin-save-notes" data-bin-save-notes hidden></div>
+    </div>
   </div>
 </dialog>
 

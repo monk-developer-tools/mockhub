@@ -140,6 +140,20 @@ curl '…/__public/inspect/{id}/export?format=har' -H 'X-Bin-Token: {token}'</co
 </ul>
 <p>When forwarding or the tunnel fails, the sender gets <code>502</code> with a JSON error, and the request shows <em>Forward failed</em> or <em>Tunnel failed</em>.</p>
 
+<h3 id="bin-save">Save to MockHub</h3>
+<p><strong>Save to MockHub</strong> in the top bar copies the bin into a MockHub project you own, so it outlives the bin's 24 hours and gains everything a project has: the stub editor, teams, deployment keys and the rest of the docs on this site. It needs a MockHub sign-in; the dialog asks for one if you haven't. Give the project a name or leave it empty to name it after the bin, and each user can save 10 bins an hour. The bin itself keeps running untouched.</p>
+<p>The copy keeps the shape of the bin: each rule becomes a stub named after it, in the same order, in a <em>From webhook bin</em> folder, with its description, and a rule switched off stays off. Stored records come along, a CRUD route keeps its collection, callouts keep their URL, auth and body, and the default answer becomes the project's default response, catching what no rule matches.</p>
+<p>Some things work differently or not at all in a project, and the result lists one line for each:</p>
+<ul>
+  <li>a rule with a <strong>form-field</strong> condition is left out, with its name and the reason — check the body text instead;</li>
+  <li>bin memory helpers (<code>{{counter}}</code>, <code>{{saveValue}}</code>, <code>{{savedValue}}</code>, <code>{{addToList}}</code>, <code>{{savedList}}</code>) only exist in bins; stubs using them error in the project until you edit them;</li>
+  <li>weighted answers lose their delays and serve <code>{{…}}</code> templates as plain text;</li>
+  <li>a background callout waits a fixed time instead of a random range;</li>
+  <li>an answer that sends a binary file is left out, since stub bodies are text;</li>
+  <li>a SOAP action is checked only against the <code>SOAPAction</code> header, not also the <code>action</code> part of <code>Content-Type</code> as in the bin.</li>
+</ul>
+<p>From a script, <code>POST /__public/inspect/{id}/project</code> with <code>{"name": "optional"}</code>, the bin token and the sign-in as <code>Authorization</code>, returns <code>201</code> with the <code>projectId</code>, <code>name</code>, <code>slug</code>, the project's <code>url</code> and <code>ui</code> path, and the <code>notes</code>. The project opens from the dialog with you already signed in, and the link stays under <strong>My bins</strong>.</p>
+
 <h3 id="bin-api">From a script</h3>
 <pre><code>curl -X POST https://mockhub.devops-monk.com/__public/bins
 curl https://mockhub.devops-monk.com/__public/inspect/{id} -H 'X-Bin-Token: {token}'

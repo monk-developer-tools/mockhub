@@ -33,6 +33,7 @@ let filter = { q: '', method: '', status: '' };
 let deletedCount = 0;
 let noOlder = false;
 let generation = 0;
+let savedProject = null;
 const plain = { request: false, answer: false };
 
 const store = {
@@ -436,6 +437,7 @@ function renderRouteTo() {
 function openDialog(name) {
   const dialog = $(`[data-bin-dialog="${name === 'ai' ? 'rules' : name}"]`);
   if (name === 'bins') renderBins();
+  if (name === 'save') renderSave();
   if ((name === 'rules' || name === 'ai') && !bin.viewOnly) {
     loadState();
     loadData();
@@ -446,6 +448,7 @@ function openDialog(name) {
     box.scrollIntoView({ block: 'nearest' });
     (session.read() ? $('[data-bin-ai-text]') : $('#bin-user')).focus();
   }
+  if (name === 'save' && !savedProject) (session.read() ? $('[data-bin-save-name]') : $('#bin-save-user')).focus();
 }
 
 function closeDialog(dialog) {
@@ -1123,23 +1126,80 @@ function renderSignIn(message = '') {
   $('[data-bin-describe]').hidden = !signedIn;
   $('[data-bin-signed-in]').textContent = signedIn ? `Signed in as ${signedIn.name}` : '';
   $('[data-bin-signin-note]').textContent = message;
+  renderSave(message);
 }
 
-async function signIn(e) {
-  e.preventDefault();
-  const form = e.target;
-  const note = $('[data-bin-signin-note]');
+async function logIn(form, note) {
   note.textContent = 'Signing in…';
   const body = JSON.stringify({ username: form.elements.username.value.trim(), password: form.elements.password.value });
   const result = await call('/__admin/mockhub/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body });
   form.elements.password.value = '';
   if (result.error || !result.json?.token) {
     note.textContent = result.status === 401 ? 'Wrong username or password.' : result.error ?? 'Signing in failed.';
-    return;
+    return false;
   }
   const user = result.json.user ?? {};
   session.write({ token: result.json.token, name: user.displayName || user.username || form.elements.username.value.trim() });
   renderSignIn();
+  return true;
+}
+
+async function signIn(e) {
+  e.preventDefault();
+  await logIn(e.target, e.target.querySelector('[data-bin-signin-note]'));
+}
+
+function renderSave(message = '') {
+  const signedIn = session.read();
+  $('[data-bin-save-signin]').hidden = Boolean(signedIn);
+  $('[data-bin-save-form]').hidden = !signedIn || Boolean(savedProject);
+  $('[data-bin-save-result]').hidden = !savedProject;
+  $('[data-bin-save-signin-note]').textContent = message;
+  if (savedProject) {
+    $('[data-bin-save-link]').href = savedProject.ui;
+    $('[data-bin-save-link]').textContent = savedProject.name;
+    $('[data-bin-save-notes]').replaceChildren(...savedProject.notes.map((n) => el('p', { class: 'tool-hint' }, n)));
+    $('[data-bin-save-notes]').hidden = !savedProject.notes.length;
+  }
+}
+
+async function signInForSave(e) {
+  e.preventDefault();
+  await logIn(e.target, e.target.querySelector('[data-bin-save-signin-note]'));
+}
+
+async function saveToProject(e) {
+  e.preventDefault();
+  const signedIn = session.read();
+  if (!signedIn) return;
+  const button = $('[data-bin-save-go]');
+  const note = $('[data-bin-save-note]');
+  button.disabled = true;
+  note.textContent = 'Saving…';
+  const result = await call(inspect('/project'), {
+    method: 'POST',
+    headers: { ...auth(true), Authorization: `Bearer ${signedIn.token}` },
+    body: JSON.stringify({ name: $('[data-bin-save-name]').value.trim() }),
+  });
+  button.disabled = false;
+  if (result.status === 401) {
+    session.write(null);
+    renderSignIn('Your sign-in has ended. Sign in again.');
+    return;
+  }
+  if (result.error || !result.json?.projectId) {
+    note.textContent = result.error ?? 'Saving failed.';
+    return;
+  }
+  note.textContent = '';
+  savedProject = { name: result.json.name, ui: result.json.ui, notes: result.json.notes ?? [] };
+  try {
+    sessionStorage.setItem('mockhub.auth', `Bearer ${signedIn.token}`);
+  } catch (err) {
+    // ignore
+  }
+  savedBins.write(savedBins.read().map((b) => (b.id === bin.id ? { ...b, project: { name: result.json.name, url: result.json.url, ui: result.json.ui } } : b)));
+  renderSave();
 }
 
 async function draftWithAi(e) {
@@ -1270,6 +1330,7 @@ function open(value) {
   $('[data-bin-log]').hidden = true;
   $('[data-bin-empty]').hidden = false;
   settings = null;
+  savedProject = null;
   $('[data-bin-link]').textContent = binLink(location.origin, location.pathname, bin.id, bin.token);
   const code = snippets(binUrl());
   document.querySelectorAll('[data-bin-code]').forEach((pre) => {
@@ -1325,6 +1386,7 @@ function renderBins() {
       el('div', { class: 'bin-saved-main' },
         name,
         el('code', { class: 'bin-saved-url' }, `${location.origin}/__public/bins/${entry.id}`),
+        entry.project ? el('a', { class: 'bin-saved-project', href: entry.project.ui, target: '_blank', rel: 'noopener' }, `MockHub project: ${entry.project.name}`) : '',
         summary),
       el('div', { class: 'bin-saved-actions' },
         current ? el('span', { class: 'tool-badge ok' }, 'Current') : el('button', { type: 'button', class: 'btn secondary small', onclick: () => switchTo(entry) }, 'Open'),
@@ -1484,6 +1546,8 @@ $('[data-bin-routing]').addEventListener('input', (e) => {
 });
 $('[data-bin-describe]').addEventListener('submit', draftWithAi);
 $('[data-bin-signin]').addEventListener('submit', signIn);
+$('[data-bin-save-signin]').addEventListener('submit', signInForSave);
+$('[data-bin-save-form]').addEventListener('submit', saveToProject);
 $('[data-bin-signout]').addEventListener('click', () => {
   session.write(null);
   renderSignIn();

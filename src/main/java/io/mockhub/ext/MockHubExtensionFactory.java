@@ -116,6 +116,7 @@ import io.mockhub.playground.JdkHttpSender;
 import io.mockhub.playground.PlaygroundHistory;
 import io.mockhub.playground.PlaygroundService;
 import io.mockhub.playground.TargetGuard;
+import io.mockhub.publictools.BinProject;
 import io.mockhub.publictools.BinTool;
 import io.mockhub.publictools.BinTunnelKeys;
 import io.mockhub.publictools.Bins;
@@ -354,7 +355,8 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     AiProviders aiProviders = AiProviders.defaults();
     ChatCompletions chat = new ChatCompletions(new JdkLlmTransport(), aiProviders, config.publicUrl);
     RateLimiter rateLimiter = new RateLimiter(clock);
-    RuntimeService runtimeService = new RuntimeService(projects, new DefaultResponseStubs(stubs), rateLimiter);
+    DefaultResponseStubs defaultResponses = new DefaultResponseStubs(stubs);
+    RuntimeService runtimeService = new RuntimeService(projects, defaultResponses, rateLimiter);
     SnapshotService snapshots = new SnapshotService(snapshotStore, projects, stubs, runtimeService, bodyFiles, clock);
     AssistantService assistant = new AssistantService(aiSettings, chat, stubs, history, clock, calloutLog, runtimeService, snapshots);
     AssistantJobs assistantJobs = new AssistantJobs(assistant, Executors.newCachedThreadPool(r -> {
@@ -427,6 +429,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     TemplatePlayground templatePlayground = new TemplatePlayground(List.of(fakeHelpers, valueHelpers, validationHelpers, jwtHelpers), renderWorkers(), 2000);
     if (config.publicTools) orgs.ensureInstant();
     InstantMocks instantMocks = new InstantMocks(dataDir, projects, stubs, crud, () -> teams.ensureDefault(Organization.INSTANT_ID).id(), clock);
+    BinProject binProject = BinProject.around(bins, projects, stubs, crud, teamChoice, defaultResponses);
     PublicToolsFilter publicTools = new PublicToolsFilter(config.publicTools, publicLimits, List.of(
         new EchoTool(),
         BinTool.create(bins, publicLimits, templatePlayground, new TargetGuard(config.binAllowPrivate, InetAddress::getAllByName, "MOCKHUB_BIN_ALLOW_PRIVATE"), tunnels, tunnels::isOnline,
@@ -436,7 +439,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
               messages.addObject().put("role", "system").put("content", system);
               messages.addObject().put("role", "user").put("content", user);
               return chat.complete(aiSettings.get(), messages, null).message().path("content").asText("");
-            }),
+            }, binProject),
         new FakeTool(new DataGenerator(fakeData), publicLimits),
         new RenderTool(templatePlayground, publicLimits),
         new InstantMockTool(instantMocks, history, publicLimits, importers, new InstantExamples(examples, exampleInstaller))));

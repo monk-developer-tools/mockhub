@@ -41,7 +41,7 @@ class BinDraftTest {
           asked.append(user);
           return system.equals(BinDrafter.FIX) ? "Here you go:\n```handlebars\n{\"id\": \"{{jsonPath request.body '$.id'}}\" }\n```" : reply;
         }), name -> Optional.empty(),
-        header -> "Bearer signed-in".equals(header) ? Optional.of(alex) : Optional.empty(), System::currentTimeMillis);
+        header -> "Bearer signed-in".equals(header) ? Optional.of(alex) : Optional.empty(), System::currentTimeMillis, null);
   }
 
   private ResponseDefinition draft(Map<String, String> headers) {
