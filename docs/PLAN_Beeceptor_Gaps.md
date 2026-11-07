@@ -198,6 +198,9 @@ A broken template used to come back from **Try it** as the server's raw HTML err
 ### P3 — OpenTelemetry export ✅ done
 `io.mockhub.otel` sends OTLP over HTTP with JSON (no SDK dependency): a server span per mock request (joining the caller's trace through `traceparent`, 5xx as errors), a log record per request, and cumulative `mockhub.requests` and `http.server.request.duration` metrics split by method, status, project and match. Configured only by the standard `OTEL_*` variables; off without an endpoint. `HistoryRecorder` hands each served request to a `ServedRequestListener`; the exporter queues up to 10,000, sends from a daemon thread, rate-limits warnings and flushes when the server stops (`MockHubExtensionFactory.serverStopped`, since WireMock's `stop()` doesn't stop extensions). Bodies and headers are not exported.
 
+### P4 — Workspaces ✅ done
+Beeceptor's workspaces (Enterprise) group endpoints with Read/Write/Manager members, an access policy of *Restricted* or *Organization read-only*, endpoints that move between workspaces, and deletion only when empty. MockHub's teams already had all of that except the policy: an organisation-wide role always applied to every team. Teams now have `restricted` (`TeamAccess` registry kept in sync by `TeamService`; `User.roleInTeam` drops the organisation and server role for restricted teams, except organisation managers and admins). Set under the team's Settings; the project dialog's hint and the team header say so.
+
 ### T7 — gRPC mocks without login
 Split out of T1. Three things block it on the public demo: MockHub reads only compiled descriptor sets (no `.proto` text parser); gRPC routes by service name, so two visitors uploading the same service would collide on a shared server; and the demo's nginx has no HTTP/2 or `grpc_pass`. Needs a `.proto` parser, a per-mock service namespace, and HTTP/2 gRPC in MockHub's own nginx site file.
 
@@ -208,7 +211,7 @@ Split out of T1. Three things block it on the public demo: MockHub reads only co
 | Template helpers `dateAdd`, `dateDiff`, `coalesce`, `objectMerge`, `switch`, `repeat`, `someOf`, sort by key, `reverse`, `isInteger`, `isDate`, `base64Decode`, `urlDecode`, `padStart`/`padEnd`, `concat` | All of them, with Beeceptor's names and argument order, plus `oneOf`, `jsonParse`, `dateParse`, `lowercase`, `uppercase` | ✅ | P1 |
 | **Fix template with AI** | Try it shows template errors with **Fix with AI** (`POST /projects/{id}/ai/template/fix`) | ✅ | P2 |
 | **OpenTelemetry (OTLP) export** of traffic, logs and metrics | Traces, logs and metrics over OTLP/HTTP JSON from the standard `OTEL_*` variables | ✅ | P3 |
-| **Workspaces** (group projects inside an organisation) | — | ❌ | P4 |
+| **Workspaces** (group projects inside an organisation) | Teams: members with roles, projects that move between teams, delete only when empty, and now restricted teams | ✅ | P4 |
 | **Header masking** in request history | ❔ | ❔ | P5 |
 | QUERY method in stubs | ❔ | ❔ | P6 |
 | gRPC client, server and bidi streaming; GraphQL subscriptions | ❔ | ❔ | P6 |
@@ -277,7 +280,7 @@ W4 status page: a public `/status/` page and a footer badge. The badge reads the
 | 18 | P1 Template helpers ✅ | S | Verify, then add the missing ones |
 | 19 | P2 Fix template with AI ✅ | S | |
 | 20 | P3 OpenTelemetry export ✅ | M | |
-| 21 | P4 Workspaces | M | |
+| 21 | P4 Workspaces ✅ | M | |
 | 22 | P5 Header masking | S | |
 | 23 | P6 Verify QUERY, streaming, subscriptions | S–M | |
 | 24 | P7 Benchmark report | M | |

@@ -107,6 +107,7 @@ export interface Team {
   projectCount: number;
   memberCount: number;
   role: Role;
+  restricted?: boolean;
 }
 
 export interface TeamMember extends UserSummary {

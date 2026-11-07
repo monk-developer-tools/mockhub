@@ -182,4 +182,68 @@ class TeamsIntegrationTest {
     assertThat(teams).hasSize(1);
     assertThat(admin.get(API + "/projects/" + cart).json().get("teamId").asText()).isEqualTo(teams.get(0).get("id").asText());
   }
+
+  @Test
+  void aRestrictedTeamsProjectsAreOnlyForItsMembersOrgManagersAndAdmins() {
+    // Given
+    String secret = team("Secret");
+    String open = team("Open");
+    ApiClient.Result restricted = admin.put(API + "/orgs/" + orgId + "/teams/" + secret, "{\"restricted\": true}");
+    String secretProject = admin.post(API + "/projects", "{\"name\":\"Vault\",\"slug\":\"vault\",\"orgId\":\"" + orgId + "\",\"teamId\":\"" + secret + "\"}").json().get("id").asText();
+    admin.post(API + "/projects", "{\"name\":\"Shop\",\"slug\":\"shop\",\"orgId\":\"" + orgId + "\",\"teamId\":\"" + open + "\"}");
+    String veraId = admin.post(API + "/users", "{\"username\":\"vera\",\"password\":\"longenough\"}").json().get("id").asText();
+    String tomId = admin.post(API + "/users", "{\"username\":\"tom\",\"password\":\"longenough\"}").json().get("id").asText();
+    String miaId = admin.post(API + "/users", "{\"username\":\"mia\",\"password\":\"longenough\"}").json().get("id").asText();
+    admin.put(API + "/orgs/" + orgId + "/members/" + veraId, "{\"role\":\"editor\"}");
+    admin.put(API + "/orgs/" + orgId + "/members/" + miaId, "{\"role\":\"owner\"}");
+    admin.put(API + "/orgs/" + orgId + "/teams/" + secret + "/members/" + tomId, "{\"role\":\"viewer\"}");
+    ApiClient vera = server.api().login("vera", "longenough");
+    ApiClient tom = server.api().login("tom", "longenough");
+    ApiClient mia = server.api().login("mia", "longenough");
+
+    // When
+    JsonNode veraSees = vera.get(API + "/projects").json();
+    int veraOpens = vera.get(API + "/projects/" + secretProject).status();
+    int veraStubs = vera.get(API + "/projects/" + secretProject + "/stubs").status();
+    JsonNode tomSees = tom.get(API + "/projects").json();
+    JsonNode miaSees = mia.get(API + "/projects").json();
+    String veraRoleInSecret = StreamSupport.stream(vera.get(API + "/orgs/" + orgId + "/teams").json().spliterator(), false)
+        .filter(t -> t.get("id").asText().equals(secret)).findFirst().orElseThrow().get("role").asText();
+    admin.put(API + "/orgs/" + orgId + "/teams/" + secret, "{\"restricted\": false}");
+    JsonNode veraAfter = vera.get(API + "/projects").json();
+
+    // Then
+    assertThat(restricted.json().get("restricted").asBoolean()).isTrue();
+    assertThat(hasName(veraSees, "Shop")).isTrue();
+    assertThat(hasName(veraSees, "Vault")).isFalse();
+    assertThat(veraOpens).isIn(403, 404);
+    assertThat(veraStubs).isIn(403, 404);
+    assertThat(veraRoleInSecret).isEqualTo("none");
+    assertThat(hasName(tomSees, "Vault")).isTrue();
+    assertThat(hasName(tomSees, "Shop")).isFalse();
+    assertThat(hasName(miaSees, "Vault")).isTrue();
+    assertThat(hasName(veraAfter, "Vault")).isTrue();
+  }
+
+  @Test
+  void aProjectMovesToAnotherTeamWhereTheMoverManages() {
+    // Given
+    String from = team("From");
+    String to = team("To");
+    String project = admin.post(API + "/projects", "{\"name\":\"Mover\",\"slug\":\"mover\",\"orgId\":\"" + orgId + "\",\"teamId\":\"" + from + "\"}").json().get("id").asText();
+    String edId = admin.post(API + "/users", "{\"username\":\"ed\",\"password\":\"longenough\"}").json().get("id").asText();
+    admin.put(API + "/orgs/" + orgId + "/teams/" + from + "/members/" + edId, "{\"role\":\"owner\"}");
+    admin.put(API + "/orgs/" + orgId + "/teams/" + to + "/members/" + edId, "{\"role\":\"editor\"}");
+    ApiClient ed = server.api().login("ed", "longenough");
+
+    // When
+    ApiClient.Result refused = ed.put(API + "/projects/" + project, "{\"teamId\":\"" + to + "\"}");
+    ApiClient.Result moved = admin.put(API + "/projects/" + project, "{\"teamId\":\"" + to + "\"}");
+
+    // Then
+    assertThat(refused.status()).isEqualTo(403);
+    assertThat(moved.status()).as(moved.body()).isEqualTo(200);
+    assertThat(moved.json().get("teamId").asText()).isEqualTo(to);
+    assertThat(admin.get(API + "/orgs/" + orgId + "/teams/" + to).json().get("projectCount").asInt()).isEqualTo(1);
+  }
 }

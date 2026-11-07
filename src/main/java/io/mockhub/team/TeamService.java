@@ -22,6 +22,7 @@ public final class TeamService implements OrganizationListener {
     this.repository = repository;
     this.listeners = listeners;
     this.clock = clock;
+    TeamAccess.trackAll(repository.findAll());
   }
 
   public List<Team> findAll() {
@@ -63,8 +64,9 @@ public final class TeamService implements OrganizationListener {
     String slug = requested.isBlank() ? availableSlug(orgId, Slugs.slugify(name, "team")) : requested;
     validateSlug(orgId, slug, null);
     String now = now();
-    Team team = new Team(newId(), orgId, name, slug, body.path("description").asText(""), now, now);
+    Team team = new Team(newId(), orgId, name, slug, body.path("description").asText(""), now, now, body.path("restricted").asBoolean(false));
     repository.save(team);
+    TeamAccess.track(team);
     return team;
   }
 
@@ -79,8 +81,10 @@ public final class TeamService implements OrganizationListener {
         slug,
         body.hasNonNull("description") ? body.get("description").asText() : before.description(),
         before.createdAt(),
-        now());
+        now(),
+        body.hasNonNull("restricted") ? body.get("restricted").asBoolean() : before.restricted());
     repository.save(after);
+    TeamAccess.track(after);
     return after;
   }
 
@@ -88,14 +92,17 @@ public final class TeamService implements OrganizationListener {
     Team team = get(id);
     listeners.forEach(l -> l.onTeamDeleted(team));
     repository.deleteById(id);
+    TeamAccess.forget(id);
   }
 
   public Team restore(Team team) {
     boolean taken = findByOrg(team.orgId()).stream().anyMatch(t -> t.slug().equals(team.slug()) && !t.id().equals(team.id()));
     Team saved = taken
-        ? new Team(team.id(), team.orgId(), team.name(), availableSlug(team.orgId(), team.slug()), team.description(), team.createdAt(), team.updatedAt())
+        ? new Team(team.id(), team.orgId(), team.name(), availableSlug(team.orgId(), team.slug()), team.description(), team.createdAt(), team.updatedAt(),
+            team.restricted())
         : team;
     repository.save(saved);
+    TeamAccess.track(saved);
     return saved;
   }
 

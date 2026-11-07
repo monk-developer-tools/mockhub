@@ -2,6 +2,7 @@ package io.mockhub.user;
 
 import io.mockhub.auth.Role;
 import io.mockhub.org.Organization;
+import io.mockhub.team.TeamAccess;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -47,7 +48,8 @@ public record User(
   }
 
   public Role roleInTeam(String orgId, String teamId) {
-    Role role = roleIn(orgId);
+    Role org = roleIn(orgId);
+    Role role = TeamAccess.restricted(teamId) && org != Role.ADMIN && org != Role.MANAGER ? Role.NONE : org;
     for (TeamMembership m : teamMemberships) if (m.teamId().equals(teamId)) role = Role.max(role, m.role());
     for (TeamMembership m : groupTeamMemberships) if (m.teamId().equals(teamId)) role = Role.max(role, m.role());
     return role;

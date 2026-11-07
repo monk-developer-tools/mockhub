@@ -26,6 +26,7 @@ export function TeamPage() {
   const [directory, setDirectory] = useState<UserSummary[]>([]);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [restricted, setRestricted] = useState(false);
   const [adding, setAdding] = useState(false);
   const [missing, setMissing] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -46,6 +47,7 @@ export function TeamPage() {
       setMembers(m);
       setName(t?.name ?? '');
       setDescription(t?.description ?? '');
+      setRestricted(Boolean(t?.restricted));
     } catch (e) {
       setMissing(true);
       toast.fail(e);
@@ -97,7 +99,7 @@ export function TeamPage() {
 
   const save = (e: FormEvent) => {
     e.preventDefault();
-    run(() => api.updateTeam(orgId, teamId, { name, description }), 'Team saved').then(async (ok) => {
+    run(() => api.updateTeam(orgId, teamId, { name, description, restricted }), 'Team saved').then(async (ok) => {
       if (ok) await refreshSession();
     });
   };
@@ -114,7 +116,7 @@ export function TeamPage() {
       <PageHeader
         icon={<TeamMark name={team.name} seed={team.id} size={44} />}
         title={team.name}
-        description={team.description || `A team in ${currentOrg.name}`}
+        description={`${team.description || `A team in ${currentOrg.name}`}${team.restricted ? ' · Restricted: only its members, organisation owners and admins see its projects' : ''}`}
         actions={
           <>
             <RoleBadge role={isAdmin ? 'admin' : team.role} />
@@ -226,6 +228,18 @@ export function TeamPage() {
                   <span>Description</span>
                   <input type="text" value={description} onChange={(e) => setDescription(e.target.value)} />
                 </label>
+                <div className="field" role="radiogroup" aria-label="Who can see its projects">
+                  <span>Who can see its projects</span>
+                  <label className="check-row">
+                    <input type="radio" name="team-access" checked={!restricted} onChange={() => setRestricted(false)} />
+                    Everyone in {currentOrg?.name ?? 'the organisation'}, with their organisation role
+                  </label>
+                  <label className="check-row">
+                    <input type="radio" name="team-access" checked={restricted} onChange={() => setRestricted(true)} />
+                    Only the people added to this team, plus organisation owners and admins
+                  </label>
+                  <span className="hint">This controls the app. Anyone can still call the mocks' URLs; give a project an API key to protect them.</span>
+                </div>
                 <div><button className="btn" type="submit">Save</button></div>
               </div>
             </form>
