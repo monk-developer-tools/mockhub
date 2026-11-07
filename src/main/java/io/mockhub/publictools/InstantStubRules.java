@@ -6,6 +6,9 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.mockhub.api.Jsons;
 import io.mockhub.data.CrudResource;
 import io.mockhub.data.CrudStubs;
+import io.mockhub.graphql.GraphQlException;
+import io.mockhub.graphql.GraphQlTransformer;
+import io.mockhub.graphql.SchemaSource;
 import io.mockhub.template.WeightedTransformer;
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
@@ -40,8 +43,8 @@ public final class InstantStubRules {
 
   public static ObjectNode check(JsonNode input) {
     if (input == null || !input.isObject()) throw new Refused("Send a stub as a JSON object with request and response");
-    if (Jsons.write(input).getBytes(StandardCharsets.UTF_8).length > MAX_STUB_BYTES) throw new Refused("Keep each stub under 64 KB");
     ObjectNode stub = input.deepCopy();
+    size(stub);
     only(stub, TOP, "");
     stub.remove("id");
     stub.remove("uuid");
@@ -147,10 +150,43 @@ public final class InstantStubRules {
     }
   }
 
+  private static void size(ObjectNode stub) {
+    JsonNode schema = stub.path("response").path("transformerParameters").path(GraphQlTransformer.SCHEMA);
+    ObjectNode rest = stub;
+    if (schema.isTextual()) {
+      if (schema.asText().length() > InstantSources.MAX_SPEC) throw new Refused("Keep the GraphQL schema under 500 KB");
+      rest = stub.deepCopy();
+      ((ObjectNode) rest.path("response").path("transformerParameters")).remove(GraphQlTransformer.SCHEMA);
+    }
+    if (Jsons.write(rest).getBytes(StandardCharsets.UTF_8).length > MAX_STUB_BYTES) throw new Refused("Keep each stub under 64 KB");
+  }
+
+  private static boolean graphql(JsonNode list) {
+    for (JsonNode t : list) {
+      if (t.asText().equals(GraphQlTransformer.NAME)) return true;
+    }
+    return false;
+  }
+
+  private static void graphqlEndpoint(ObjectNode response) {
+    if (response.get("transformers").size() != 1) throw new Refused("A GraphQL stub can't use other transformers");
+    JsonNode parameters = response.path("transformerParameters");
+    if (!parameters.path(GraphQlTransformer.SCHEMA).isTextual()) throw new Refused("A GraphQL stub needs its schema in transformerParameters.schema");
+    try {
+      ((ObjectNode) parameters).put(GraphQlTransformer.SCHEMA, SchemaSource.toSdl(parameters.get(GraphQlTransformer.SCHEMA).asText()));
+    } catch (GraphQlException e) {
+      throw new Refused(e.getMessage());
+    }
+  }
+
   private static void transformers(ObjectNode response) {
     JsonNode list = response.get("transformers");
     if (list == null) return;
     if (!list.isArray()) throw new Refused("response.transformers must be a list");
+    if (graphql(list)) {
+      graphqlEndpoint(response);
+      return;
+    }
     ArrayNode ordered = Jsons.MAPPER.createArrayNode();
     boolean template = false;
     for (JsonNode t : list) {

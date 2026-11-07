@@ -28,16 +28,20 @@ public final class SpecFetcher {
   }
 
   public String fetch(String url) {
+    return fetch(url, MAX_BYTES);
+  }
+
+  public String fetch(String url, int maxBytes) {
     URI uri = parse(url);
     for (int hop = 0; hop <= MAX_REDIRECTS; hop++) {
       check(uri);
-      HttpSender.Raw response = send(uri);
+      HttpSender.Raw response = send(uri, maxBytes);
       if (REDIRECTS.contains(response.status())) {
         uri = uri.resolve(location(response));
         continue;
       }
       if (response.status() != 200) throw new ApiException(502, uri.getHost() + " answered " + response.status() + " for the API description");
-      if (response.truncated()) throw ApiException.badRequest("The API description is larger than 5 MB");
+      if (response.truncated()) throw ApiException.badRequest("The API description is larger than " + size(maxBytes));
       return new String(response.body(), StandardCharsets.UTF_8);
     }
     throw new ApiException(502, "The API description redirected more than " + MAX_REDIRECTS + " times");
@@ -60,9 +64,13 @@ public final class SpecFetcher {
     }
   }
 
-  private HttpSender.Raw send(URI uri) {
+  private static String size(int bytes) {
+    return bytes % (1024 * 1024) == 0 ? bytes / (1024 * 1024) + " MB" : bytes / 1024 + " KB";
+  }
+
+  private HttpSender.Raw send(URI uri, int maxBytes) {
     try {
-      return http.send(uri, "GET", ACCEPT, "", TIMEOUT, MAX_BYTES);
+      return http.send(uri, "GET", ACCEPT, "", TIMEOUT, maxBytes);
     } catch (Exception e) {
       throw new ApiException(502, "Couldn't download " + uri + ": " + (e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage()));
     }

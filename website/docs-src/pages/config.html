@@ -18,7 +18,7 @@
     <tr><td><code>MOCKHUB_AUDIT_RETENTION_DAYS</code></td><td><code>90</code></td><td>Days the <a href="#audit">audit log</a> keeps changes</td></tr>
     <tr><td><code>MOCKHUB_LOG_LEVEL</code></td><td><code>info</code></td><td>Standard output detail: <code>error</code>, <code>warn</code>, <code>info</code>, <code>debug</code></td></tr>
     <tr><td><code>MOCKHUB_STUB_CORS</code></td><td><code>true</code></td><td>CORS for projects that keep the server default: <code>true</code> lets any website call the mocks, <code>false</code> sends no CORS headers. Each project can set its own <a href="#cors">CORS rules</a>.</td></tr>
-    <tr><td><code>MOCKHUB_PLAYGROUND_ALLOW_PRIVATE</code></td><td><code>false</code></td><td>Let the Playground call private and local addresses</td></tr>
+    <tr><td><code>MOCKHUB_PLAYGROUND_ALLOW_PRIVATE</code></td><td><code>false</code></td><td>Let the Playground call, and spec and schema downloads from a URL (mock from a URL, instant mocks) reach, private and local addresses</td></tr>
     <tr><td><code>MOCKHUB_CALLOUT_ALLOW_PRIVATE</code></td><td><code>false</code></td><td>Let webhooks and wait-for-callout stubs call private and local addresses (MockHub's own mock URLs always work)</td></tr>
     <tr><td><code>MOCKHUB_BIN_ALLOW_PRIVATE</code></td><td><code>false</code></td><td>Let webhook bins forward and call out to private and local addresses. Leave it off on a public server</td></tr>
     <tr><td><code>MOCKHUB_PUBLIC_TOOLS</code></td><td><code>false</code></td><td>Turn on the no-login tools under <code>/__public/</code>. Meant for a public demo, not private installs (see below)</td></tr>
@@ -57,6 +57,8 @@
     <tr><td><code>POST /__public/mocks</code></td><td>Creates an instant mock and returns its <code>slug</code>, a private <code>token</code>, its <code>baseUrl</code> and a <code>skipped</code> list. Send nothing for two sample stubs, or one of:
       <code>{"stubs": [...]}</code> with WireMock stub JSON;
       <code>{"from": "openapi", "text": "..."}</code> or <code>{"from": "wsdl", "text": "..."}</code> with a spec up to 500 KB (the first 20 operations);
+      <code>{"from": "graphql", "text": "..."}</code> with a GraphQL schema (SDL or an introspection result) up to 500 KB, served at <code>/graphql</code> with generated data;
+      any of these three with <code>"url": "https://…"</code> instead of <code>text</code>, which the server downloads from a public address (private and local addresses need <code>MOCKHUB_PLAYGROUND_ALLOW_PRIVATE=true</code>);
       <code>{"from": "records", "resource": "users", "records": [...]}</code> with up to 50 records, served as a CRUD resource;
       <code>{"from": "example", "id": "crud"}</code>. Stubs from a spec or an example that instant mocks can't run are left out and listed in <code>skipped</code>.</td></tr>
     <tr><td><code>GET /__public/mocks/examples</code></td><td>The built-in examples that can start an instant mock</td></tr>
@@ -64,6 +66,7 @@
     <tr><td><code>GET|DELETE /__public/mocks/{slug}</code></td><td>Describes or deletes the mock; send the token as <code>X-Mock-Token</code></td></tr>
     <tr><td><code>POST /__public/mocks/{slug}/stubs</code>, <code>PUT|DELETE …/stubs/{id}</code></td><td>Adds, changes or removes a stub</td></tr>
     <tr><td><code>GET /__public/mocks/{slug}/requests</code></td><td>The last 50 requests to the mock</td></tr>
+    <tr><td><code>GET /__public/mocks/{slug}/graphql</code></td><td>For each GraphQL endpoint in the mock, its <code>path</code> and example <code>operations</code> built from the schema, each with a ready <code>query</code> and <code>variables</code></td></tr>
   </tbody>
 </table>
 <p>Limits per client address: 120 requests a minute to the tools, 1,200 requests a minute to bins (webhooks sent to them and their owners reading or changing them), 30 renders or fake-data calls a minute, 100 new bins an hour and 10 new instant mocks an hour. Over the limit the answer is <code>429</code> with <code>Retry-After</code>. Bins are stored under the data directory and deleted 24 hours after their last request; the server holds at most 1,000. A bin keeps every request until it holds 50 MB, then drops its oldest file of 10 MB, and all bins together stop at 4 GB.</p>

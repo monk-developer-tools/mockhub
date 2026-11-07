@@ -13,6 +13,7 @@ final class InstantSources {
   static final int MAX_RECORDS = 50;
   static final int MAX_SPEC = 500 * 1024;
   static final int MAX_NAME = 60;
+  private static final Map<String, String> LABELS = Map.of("openapi", "OpenAPI or Swagger file", "wsdl", "WSDL file", "graphql", "GraphQL schema");
 
   private InstantSources() {}
 
@@ -21,7 +22,7 @@ final class InstantSources {
   }
 
   static InstantSource imported(StubImporter importer, String text) {
-    if (text == null || text.isBlank()) throw new InstantStubRules.Refused("Paste or upload the " + importer.format() + " file");
+    if (text == null || text.isBlank()) throw new InstantStubRules.Refused("Paste, upload or link the " + LABELS.getOrDefault(importer.format(), importer.format()));
     if (text.length() > MAX_SPEC) throw new InstantStubRules.Refused("Keep the file under 500 KB");
     return project -> {
       StubImporter.Result result = importer.parse(new StubImporter.Request(project, text, Map.of("limit", String.valueOf(InstantMocks.MAX_STUBS))));

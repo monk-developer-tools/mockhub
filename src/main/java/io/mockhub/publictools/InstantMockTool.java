@@ -6,14 +6,19 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.tomakehurst.wiremock.http.ResponseDefinition;
 import io.mockhub.api.ApiException;
 import io.mockhub.api.Jsons;
+import io.mockhub.graphql.ExampleOperations;
+import io.mockhub.graphql.GraphQlException;
+import io.mockhub.graphql.GraphQlTransformer;
 import io.mockhub.history.HistoryEntry;
 import io.mockhub.history.HistoryQuery;
 import io.mockhub.history.HistoryStore;
 import io.mockhub.importer.ImporterRegistry;
+import io.mockhub.importer.SpecFetcher;
 import io.mockhub.playground.Header;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -21,20 +26,26 @@ public final class InstantMockTool implements PublicTool {
   public static final int MAX_REQUEST = 256 * 1024;
   public static final int RECENT = 50;
   public static final int MAX_CREATE = 600 * 1024;
-  private static final Pattern MOCK = Pattern.compile("/mocks/(m-[a-z0-9]{10})(/stubs(?:/([A-Za-z0-9-]{1,64}))?|/requests)?");
+  private static final Pattern MOCK = Pattern.compile("/mocks/(m-[a-z0-9]{10})(/stubs(?:/([A-Za-z0-9-]{1,64}))?|/requests|/graphql)?");
+  private static final Set<String> SPECS = Set.of("openapi", "wsdl", "graphql");
 
   private final InstantMocks mocks;
   private final HistoryStore history;
   private final PublicLimits limits;
   private final ImporterRegistry importers;
   private final InstantExamples examples;
+  private final SpecFetcher fetcher;
+  private final ExampleOperations operations;
 
-  public InstantMockTool(InstantMocks mocks, HistoryStore history, PublicLimits limits, ImporterRegistry importers, InstantExamples examples) {
+  public InstantMockTool(InstantMocks mocks, HistoryStore history, PublicLimits limits, ImporterRegistry importers, InstantExamples examples,
+      SpecFetcher fetcher, ExampleOperations operations) {
     this.mocks = mocks;
     this.history = history;
     this.limits = limits;
     this.importers = importers;
     this.examples = examples;
+    this.fetcher = fetcher;
+    this.operations = operations;
   }
 
   @Override
@@ -97,13 +108,41 @@ public final class InstantMockTool implements PublicTool {
       return InstantSources.stubs(stubs);
     }
     String from = body.path("from").asText("");
+    if (SPECS.contains(from)) return InstantSources.imported(importers.get(from), specText(body));
     return switch (from) {
       case "" -> InstantSources.stubs(InstantStarter.stubs());
-      case "openapi", "wsdl" -> InstantSources.imported(importers.get(from), body.path("text").asText(null));
       case "example" -> examples.source(body.path("id").asText(""));
       case "records" -> InstantSources.records(body.path("resource").asText(null), body.get("records"));
-      default -> throw new InstantStubRules.Refused("Start from openapi, wsdl, example or records");
+      default -> throw new InstantStubRules.Refused("Start from openapi, wsdl, graphql, example or records");
     };
+  }
+
+  private String specText(JsonNode body) {
+    String url = body.path("url").asText("").trim();
+    if (url.isEmpty()) return body.path("text").asText(null);
+    if (!body.path("text").asText("").isBlank()) throw new InstantStubRules.Refused("Send the text or a URL, not both");
+    return fetcher.fetch(url, InstantSources.MAX_SPEC);
+  }
+
+  private ResponseDefinition graphqlOperations(InstantMocks.Entry entry) {
+    ObjectNode out = Jsons.object();
+    ArrayNode endpoints = out.putArray("endpoints");
+    for (JsonNode stub : mocks.stubsOf(entry)) {
+      JsonNode sdl = stub.path("response").path("transformerParameters").path(GraphQlTransformer.SCHEMA);
+      if (!sdl.isTextual()) continue;
+      ObjectNode endpoint = endpoints.addObject().put("name", stub.path("name").asText("GraphQL")).put("path", stub.path("request").path("urlPath").asText());
+      ArrayNode list = endpoint.putArray("operations");
+      try {
+        for (ExampleOperations.Operation o : operations.list(sdl.asText())) {
+          ObjectNode op = list.addObject().put("kind", o.kind()).put("field", o.field()).put("operationName", o.operationName())
+              .put("description", o.description()).put("query", o.query());
+          op.set("variables", Jsons.MAPPER.valueToTree(o.variables()));
+        }
+      } catch (GraphQlException e) {
+        endpoint.put("error", e.getMessage());
+      }
+    }
+    return PublicResponses.json(200, out);
   }
 
   private ResponseDefinition exampleList() {
@@ -123,6 +162,8 @@ public final class InstantMockTool implements PublicTool {
       }
     } else if (part.equals("/requests") && method.equals("GET")) {
       return PublicResponses.json(200, recent(entry));
+    } else if (part.equals("/graphql") && method.equals("GET")) {
+      return graphqlOperations(entry);
     } else if (stubId == null && method.equals("POST")) {
       return PublicResponses.json(201, mocks.addStub(entry, stubBody(request)));
     } else if (stubId != null && method.equals("PUT")) {
@@ -131,7 +172,7 @@ public final class InstantMockTool implements PublicTool {
       mocks.deleteStub(entry, stubId);
       return PublicResponses.json(200, Jsons.object().put("deleted", true));
     }
-    return PublicResponses.error(405, "Use GET or DELETE on the mock, POST to /stubs, PUT or DELETE on /stubs/{id}, or GET /requests");
+    return PublicResponses.error(405, "Use GET or DELETE on the mock, POST to /stubs, PUT or DELETE on /stubs/{id}, GET /requests or GET /graphql");
   }
 
   private static JsonNode stubBody(PublicRequest request) {

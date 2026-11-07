@@ -156,10 +156,10 @@ The bin page now adds a **Get started** card for a new owner: catch a request (t
 
 | Beeceptor tool | Ours | Status | Phase |
 |---|---|---|---|
-| OpenAPI mock server, no login, from a file **or a URL** | Instant mock from a file | 🟡 URL import ❔ | T1 |
-| SOAP mock from WSDL file or URL | Instant mock from WSDL | 🟡 URL ❔ | T1 |
-| **GraphQL mock from SDL, no login**, with a query explorer | Signed-in only | ❌ | T1 |
-| **gRPC mock from .proto, no login** | Signed-in only | ❌ | T1 |
+| OpenAPI mock server, no login, from a file **or a URL** | Instant mock from a file, paste or public URL | ✅ | T1 |
+| SOAP mock from WSDL file or URL | Instant mock from a WSDL file, paste or public URL | ✅ | T1 |
+| **GraphQL mock from SDL, no login**, with a query explorer | Instant mock from SDL, introspection or a URL, with an explorer of example queries | ✅ | T1 |
+| **gRPC mock from .proto, no login** | Signed-in only, from protoc descriptor sets | ❌ | T7 |
 | JSON/XML server: paste a payload, get a live API | ❔ instant mock starts from stubs or records | 🟡 | T3 |
 | CSV to REST API (upload, preview, read/add/update/delete) | Instant mock from CSV records | 🟡 needs its own page and CRUD check | T3 |
 | **2FA code generator** (QR screenshot or secret to TOTP codes, plus an API) | — | ❌ | T2 |
@@ -170,6 +170,12 @@ The bin page now adds a **Get started** card for a new owner: catch a request (t
 | HTTP echo | ✅ | ✅ | — |
 
 ---
+
+### T1 — GraphQL and spec URLs without login ✅ done
+`POST /__public/mocks` takes `{"from": "graphql", "text": "..."}` (SDL or an introspection result, up to 500 KB) and `"url"` in place of `text` for OpenAPI, WSDL and GraphQL; URLs are fetched with the same private-address guard as the signed-in "mock from a URL" (`MOCKHUB_PLAYGROUND_ALLOW_PRIVATE`), capped at 500 KB, after the create limit is taken. Instant mocks now allow the `mockhub-graphql` transformer on its own, with the schema checked and outside the 64 KB stub budget. `GET /__public/mocks/{slug}/graphql` lists example operations with ready queries and variables. The instant mock page has a URL field on the spec tab, a GraphQL tab and a GraphQL explorer; there is a new `/graphql-mock-server/` page. While testing, a site-wide bug where example code blocks made feature pages scroll sideways on phones was fixed.
+
+### T7 — gRPC mocks without login
+Split out of T1. Three things block it on the public demo: MockHub reads only compiled descriptor sets (no `.proto` text parser); gRPC routes by service name, so two visitors uploading the same service would collide on a shared server; and the demo's nginx has no HTTP/2 or `grpc_pass`. Needs a `.proto` parser, a per-mock service namespace, and HTTP/2 gRPC in MockHub's own nginx site file.
 
 ## 4. Signed-in platform gaps
 
@@ -199,8 +205,8 @@ Every page under Beeceptor's three header menus was read, plus the footer.
 | Development Bottlenecks (why mock servers) | `/contract-first/`, `/test-environments/` cover parts | 🟡 | W1 |
 | Testing Limitations (API virtualization for CI, flaky tests, failure simulation) | Spread over pages | 🟡 | W1 |
 | OpenAPI, SOAP mock server pages | ✅ | ✅ | — |
-| **GraphQL mock server page** | — | ❌ | W2 (with T1) |
-| **gRPC mock server page** | — | ❌ | W2 (with T1) |
+| **GraphQL mock server page** | `/graphql-mock-server/` | ✅ | T1 |
+| **gRPC mock server page** | — | ❌ | W2 (with T7) |
 | CRUD REST APIs | `/crud-api/` | ✅ | — |
 | JSON/XML server | `/mock-api/` | ✅ page, 🟡 paste flow (T3) | T3 |
 | Ready-to-use mock servers | `/examples/` | 🟡 smaller catalog (T5) | T5 |
@@ -237,12 +243,13 @@ W4 status page: a public `/status/` page and a footer badge. The badge reads the
 | 9 | B8 AI parity | M | Needs B5 and B6 to draft every rule kind |
 | 10 | B10 Save to my MockHub | M | Joins the bin to the app |
 | 11 | B11 Onboarding | S | Polish |
-| 12 | T1 GraphQL, gRPC and spec URLs without login | M | Importers exist, free path missing |
+| 12 | T1 GraphQL and spec URLs without login ✅ | M | Importers exist, free path missing |
 | 13 | T2 2FA code generator | M | New tool |
 | 14 | T3 Paste a payload, CSV to API page | S | Mostly pages over existing features |
 | 15 | T4 Test data generator extras | M | |
 | 16 | T5 Virtual sandboxes catalog | L | Content heavy |
 | 17 | T6 Traffic monitoring and tunnel pages | S | Pages |
+| 17b | T7 gRPC mocks without login | L | Split out of T1: needs a .proto parser, per-mock service names and HTTP/2 on the demo |
 | 18 | P1 Template helpers | S | Verify, then add the missing ones |
 | 19 | P2 Fix template with AI | S | |
 | 20 | P3 OpenTelemetry export | M | |
@@ -252,7 +259,7 @@ W4 status page: a public `/status/` page and a footer badge. The badge reads the
 | 24 | P7 Benchmark report | M | |
 | 25 | P8 Postman collection import | S | |
 | 26 | W4 Status page and footer badge | S | Asked for; cheap trust signal |
-| 27 | W2 GraphQL, gRPC and forward-proxy pages | S | Ships with T1 |
+| 27 | W2 gRPC and forward-proxy pages | S | The GraphQL page shipped with T1; the gRPC page waits for T7 |
 | 28 | W1 Development bottlenecks and testing limitations pages | S | Content |
 | 29 | W3 More compare pages | S | Content, facts checked |
 | 30 | W5 Changelog, trust centre, FAQ, about | S | Content |

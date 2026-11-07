@@ -6,6 +6,7 @@
   <li><strong>SDL</strong>, the schema language: <code>type Query { book(id: ID!): Book }</code>.</li>
   <li><strong>An introspection result</strong>, the JSON a GraphQL server returns for the introspection query, with or without the outer <code>data</code>.</li>
 </ul>
+<p>No account? The free <a href="/tools/instant-mock/">instant mock</a> on the demo takes a schema too: open its <strong>GraphQL</strong> tab, paste, upload or link a schema up to 500 KB, and you get a public <code>/graphql</code> endpoint with an explorer that lists example queries built from the schema. An instant mock is deleted 7 days after its last change.</p>
 <p>The import creates one stub, <em>GraphQL: &lt;name&gt;</em>, at <code>/graphql</code> (change it under <strong>Endpoint path</strong>) with priority 10, so fixed answers win. Directives the schema uses but doesn't declare, such as federation's <code>@key</code>, are ignored.</p>
 
 <h3 id="graphql-answers">How answers are made</h3>

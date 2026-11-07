@@ -1,6 +1,6 @@
 import { $, download, show, wireCopyButtons } from './common.js';
-import { call } from './http.js';
-import { displayPath, exportMappings, fitsForm, formToStub, keyHash, MAX_RECORDS, parseKey, parseRecords, resourceName, samplePath, specFormat, stubToForm } from './instant.js';
+import { call, toCurl } from './http.js';
+import { displayPath, exportMappings, fitsForm, formToStub, graphqlRequest, isGraphql, keyHash, MAX_RECORDS, parseKey, parseRecords, resourceName, samplePath, specStart, stubToForm } from './instant.js';
 
 const KEY = 'mockhub-instant-mock';
 const POLL_MS = 3000;
@@ -9,6 +9,8 @@ let mock = null;
 let editing = null;
 let jsonMode = false;
 let timer = null;
+let graphqlPath = null;
+let graphqlExamples = [];
 
 const store = {
   read() {
@@ -132,7 +134,77 @@ async function refresh() {
   mock = result.json;
   renderMeta();
   renderStubs();
+  loadGraphql();
   return true;
+}
+
+async function loadGraphql() {
+  const card = $('[data-mock-graphql]');
+  const stub = mock.stubs.find(isGraphql);
+  if (!stub) {
+    card.hidden = true;
+    graphqlPath = null;
+    return;
+  }
+  const path = stub.request?.urlPath ?? '/graphql';
+  card.hidden = false;
+  $('[data-mock-graphql-url]').textContent = `${base()}${path}`;
+  if ($('[data-mock-try-path]').value === '/hello') {
+    $('[data-mock-try-method]').value = 'POST';
+    $('[data-mock-try-path]').value = path;
+    $('[data-mock-try-body]').value = '{"query": "{ __typename }"}';
+  }
+  if (path === graphqlPath && graphqlExamples.length) return;
+  graphqlPath = path;
+  const result = await call(api('/graphql'), { headers: auth() });
+  const endpoint = (result.json?.endpoints ?? []).find((e) => e.path === path);
+  graphqlExamples = endpoint?.operations ?? [];
+  $('[data-mock-graphql-meta]').textContent = endpoint?.error ?? (result.error ? 'Examples are not available right now' : '');
+  const select = $('[data-mock-graphql-example]');
+  select.replaceChildren(el('option', { value: '' }, graphqlExamples.length ? 'Pick an example…' : 'No examples'),
+    ...graphqlExamples.map((op, i) => el('option', { value: String(i) }, `${op.kind} ${op.field}${op.description ? ` — ${op.description}` : ''}`)));
+  if (!$('[data-mock-graphql-query]').value.trim() && graphqlExamples.length) pickExample(0);
+}
+
+function pickExample(index) {
+  const op = graphqlExamples[index];
+  if (!op) return;
+  $('[data-mock-graphql-example]').value = String(index);
+  $('[data-mock-graphql-query]').value = op.query ?? '';
+  const variables = op.variables ?? {};
+  $('[data-mock-graphql-variables]').value = Object.keys(variables).length ? JSON.stringify(variables, null, 2) : '';
+  renderGraphqlCurl();
+}
+
+function graphqlBody() {
+  return graphqlRequest($('[data-mock-graphql-query]').value, $('[data-mock-graphql-variables]').value);
+}
+
+function renderGraphqlCurl() {
+  const pre = $('[data-mock-graphql-curl]');
+  try {
+    pre.textContent = toCurl({ method: 'POST', url: `${base()}${graphqlPath}`, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(graphqlBody()) });
+  } catch (e) {
+    pre.textContent = '';
+  }
+}
+
+async function runGraphql() {
+  let body;
+  try {
+    body = graphqlBody();
+  } catch (e) {
+    show($('[data-mock-graphql-error]'), e.message);
+    return;
+  }
+  show($('[data-mock-graphql-error]'), '');
+  const button = $('[data-mock-graphql-run]');
+  button.disabled = true;
+  const result = await call(`/${key.slug}${graphqlPath}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  button.disabled = false;
+  $('[data-mock-graphql-meta]').textContent = result.status ? `${result.status} in ${result.ms} ms` : '';
+  $('[data-mock-graphql-out]').textContent = result.json ? JSON.stringify(result.json, null, 2) : (result.text || result.error || '(empty body)');
+  pollRequests();
 }
 
 async function save(e) {
@@ -210,6 +282,14 @@ function forget(message) {
   clearTimeout(timer);
   key = null;
   mock = null;
+  graphqlPath = null;
+  graphqlExamples = [];
+  $('[data-mock-graphql-query]').value = '';
+  $('[data-mock-graphql-variables]').value = '';
+  $('[data-mock-graphql-out]').textContent = 'Run a query to see the answer.';
+  $('[data-mock-try-method]').value = 'GET';
+  $('[data-mock-try-path]').value = '/hello';
+  $('[data-mock-try-body]').value = '';
   store.write(null);
   history.replaceState(null, '', location.pathname);
   $('[data-mock-live]').hidden = true;
@@ -219,11 +299,7 @@ function forget(message) {
 }
 
 function starterBody(kind) {
-  if (kind === 'spec') {
-    const text = $('[data-start-text="spec"]').value;
-    if (!text.trim()) throw new Error('Upload or paste an OpenAPI or WSDL file first.');
-    return { from: specFormat(text), text };
-  }
+  if (kind === 'spec' || kind === 'graphql') return specStart(kind, $(`[data-start-text="${kind}"]`).value, $(`[data-start-url="${kind}"]`).value);
   if (kind === 'records') {
     const records = parseRecords($('[data-start-text="records"]').value);
     if (records.length > MAX_RECORDS) throw new Error(`Start with up to ${MAX_RECORDS} records. This file has ${records.length}.`);
@@ -278,6 +354,8 @@ function readFile(input, kind) {
   }
   file.text().then((text) => {
     $(`[data-start-text="${kind}"]`).value = text;
+    const url = $(`[data-start-url="${kind}"]`);
+    if (url) url.value = '';
     if (kind === 'records') $('[data-start-resource]').value = resourceName(file.name);
     show($('[data-mock-create-error]'), '');
   });
@@ -302,6 +380,13 @@ async function loadExamples() {
 
 document.querySelectorAll('[data-mock-create]').forEach((button) => button.addEventListener('click', create));
 document.querySelectorAll('[data-start-file]').forEach((input) => input.addEventListener('change', () => readFile(input, input.dataset.startFile)));
+document.querySelectorAll('[data-start-url]').forEach((input) => {
+  const text = $(`[data-start-text="${input.dataset.startUrl}"]`);
+  const sample = text.value;
+  input.addEventListener('input', () => {
+    if (input.value.trim() && text.value === sample) text.value = '';
+  });
+});
 loadExamples();
 $('[data-mock-editor]').addEventListener('submit', save);
 $('[data-mock-add]').addEventListener('click', () => openEditor(null));
@@ -325,6 +410,11 @@ $('[data-mock-mode]').addEventListener('click', () => {
   }
 });
 $('[data-mock-try]').addEventListener('click', tryIt);
+$('[data-mock-graphql-run]').addEventListener('click', runGraphql);
+$('[data-mock-graphql-example]').addEventListener('change', (e) => {
+  if (e.target.value !== '') pickExample(Number(e.target.value));
+});
+['[data-mock-graphql-query]', '[data-mock-graphql-variables]'].forEach((sel) => $(sel).addEventListener('input', renderGraphqlCurl));
 $('[data-mock-export]').addEventListener('click', () => {
   if (mock) download(`${key.slug}-mappings.json`, JSON.stringify(exportMappings(mock.stubs), null, 2));
 });

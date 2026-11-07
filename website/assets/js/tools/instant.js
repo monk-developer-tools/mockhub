@@ -170,3 +170,39 @@ export function parseRecords(text) {
 export function exportMappings(stubs) {
   return { mappings: stubs.map(({ id, ...rest }) => rest) };
 }
+
+export const GRAPHQL = 'mockhub-graphql';
+
+export const isGraphql = (stub) => (stub?.response?.transformers ?? []).includes(GRAPHQL);
+
+export function specFormatFromUrl(url) {
+  return /\.wsdl(\?|$)|[?&]wsdl(=|&|$)/i.test(String(url ?? '')) ? 'wsdl' : 'openapi';
+}
+
+export function specStart(from, text, url) {
+  const pasted = String(text ?? '');
+  const link = String(url ?? '').trim();
+  const what = from === 'graphql' ? 'a GraphQL schema' : 'an OpenAPI or WSDL file';
+  if (pasted.trim() && link) throw new Error('Use the pasted text or the URL, not both. Clear one of them.');
+  if (link) {
+    if (!/^https?:\/\/[^\s/]+/i.test(link)) throw new Error('The URL must start with http:// or https://');
+    return { from: from === 'graphql' ? 'graphql' : specFormatFromUrl(link), url: link };
+  }
+  if (!pasted.trim()) throw new Error(`Upload, paste or link ${what} first.`);
+  return { from: from === 'graphql' ? 'graphql' : specFormat(pasted), text: pasted };
+}
+
+export function graphqlRequest(query, variablesText) {
+  const text = String(query ?? '').trim();
+  if (!text) throw new Error('Write a query first, or pick an example.');
+  const raw = String(variablesText ?? '').trim();
+  if (!raw) return { query: text, variables: {} };
+  let variables;
+  try {
+    variables = JSON.parse(raw);
+  } catch (e) {
+    throw new Error('The variables are not valid JSON.');
+  }
+  if (variables === null || typeof variables !== 'object' || Array.isArray(variables)) throw new Error('The variables must be a JSON object, like {"id": "1"}.');
+  return { query: text, variables };
+}

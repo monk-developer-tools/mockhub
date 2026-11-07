@@ -537,9 +537,70 @@ payments.base-url: https://mocks.example.com/payments-qa`,
       ['Can I import into an existing project?', 'Yes. Imported stubs are added next to the ones you already have.'],
       ['Does it validate requests against the schema?', 'Not automatically. Use validation helpers or body matchers for the rules you care about.'],
       ['Can I strip a prefix like /api/v1?', 'Yes. Set the prefix when importing and the stubs match the shorter paths.'],
+      ['Can I start from a URL without an account?', 'Yes. The free instant mock fetches an OpenAPI, Swagger or WSDL file from a public URL, up to 500 KB and 20 operations.'],
     ],
     related: ['contract-first', 'mock-api', 'soap-mock-server'],
     definition: 'An OpenAPI mock server reads an OpenAPI (Swagger) specification and serves responses for each described operation, letting teams use an API before it is implemented.',
+  },
+  {
+    slug: 'graphql-mock-server',
+    menu: 'mock-servers',
+    icon: 'Graph',
+    nav: ['GraphQL mock server', 'A working endpoint from a schema.'],
+    title: 'GraphQL mock server from a schema, free and no login — MockHub',
+    description: 'Paste, upload or link a GraphQL schema and get a mock GraphQL endpoint that answers every query and mutation with realistic data, plus an explorer with example queries. No account needed.',
+    h1: 'A GraphQL mock server from your schema',
+    lede: 'Give MockHub your SDL or an introspection result and get an endpoint that answers every query and mutation with data in the right shape. Try it without an account, or pin exact answers per operation in a project.',
+    docs: '/docs/graphql/',
+    steps: [
+      ['Bring the schema', 'Paste SDL, upload a .graphql file, link one by URL, or use an introspection result.'],
+      ['Call the endpoint', 'POST queries to /graphql. Clients get exactly the fields they asked for.'],
+      ['Pin the answers that matter', 'Add a fixed answer for an operation, such as a not-found or an error.'],
+    ],
+    problem: {
+      title: 'The client is ready before the API is',
+      items: [
+        ['No server yet', 'The schema is agreed but the resolvers are weeks away.'],
+        ['Hand-written fixtures drift', 'JSON files stop matching the schema as it changes.'],
+        ['Edge cases are hard to reach', 'A real server rarely returns the null or the error you need to test.'],
+      ],
+    },
+    benefits: {
+      title: 'Schema in, working API out',
+      items: [
+        ['Graph', 'SDL or introspection', 'Directives it doesn\'t know, such as federation\'s @key, are ignored.', '/docs/graphql/'],
+        ['UserList', 'Realistic values', 'Fields named email, name or price get values that look like them.', '/docs/graphql/#graphql-answers'],
+        ['ListChecks', 'Real validation', 'Invalid queries get GraphQL errors, the way a real server sends them.', '/docs/graphql/#graphql-answers'],
+        ['Target', 'Fixed answers per operation', 'Match an operation by name and return exactly what a test needs.', '/docs/graphql/#graphql-operations'],
+        ['Lightning', 'No login to try', 'The instant mock takes a schema and gives you a public endpoint and an explorer.', '/tools/instant-mock/'],
+        ['Terminal', 'GraphQL console', 'Run queries against a project\'s endpoint from the app.', '/docs/graphql/#graphql-console'],
+      ],
+    },
+    example: {
+      title: 'One schema, every query answered',
+      text: 'Send any query the schema allows; the answer follows the shape you asked for.',
+      code: `curl -X POST https://mockhub.devops-monk.com/{your-mock}/graphql \\
+  -H 'Content-Type: application/json' \\
+  -d '{"query": "{ launches(limit: 2) { id mission } }"}'
+
+{
+  "data": {
+    "launches": [
+      { "id": "5841", "mission": "consequatur" },
+      { "id": "1207", "mission": "voluptas" }
+    ]
+  }
+}`,
+    },
+    faq: [
+      ['Do I need an account?', 'No. The free instant mock on the demo takes a schema up to 500 KB and gives you a public endpoint for 7 days after its last change. Run MockHub yourself, or sign in, to keep it in a project.'],
+      ['Which schema formats work?', 'GraphQL SDL, or the JSON result of an introspection query, with or without the outer data field.'],
+      ['Can I fetch the schema from a URL?', 'Yes. Give the address of a public .graphql file and MockHub downloads it. Private and local addresses are refused unless the server allows them.'],
+      ['Can I return a fixed answer?', 'In a project, yes: add a stub for an operation name and it wins over the generated answer.'],
+      ['Are subscriptions supported?', 'No. Queries and mutations are answered; subscriptions are not.'],
+    ],
+    related: ['openapi-mock-server', 'mock-api', 'tools/instant-mock'],
+    definition: 'A GraphQL mock server reads a GraphQL schema and answers queries and mutations with data that follows it, so client teams can build and test before the real resolvers exist.',
   },
   {
     slug: 'soap-mock-server',
@@ -872,18 +933,20 @@ PAGES.push(
     icon: 'Lightning',
     nav: ['Instant mock API', 'Your own mock URL in one click.'],
     title: 'Free online mock API, no login — MockHub',
-    description: 'Create a mock REST or SOAP API in one click, without an account. Start from an OpenAPI or WSDL file, CSV or JSON records, or an example, edit stubs with a form or JSON, and see every request.',
+    description: 'Create a mock REST, SOAP or GraphQL API in one click, without an account. Start from an OpenAPI or WSDL file or URL, a GraphQL schema, CSV or JSON records, or an example, edit stubs with a form or JSON, and see every request.',
     h1: 'Instant mock API, no account',
-    lede: 'Get your own mock URL straight away. Start from sample stubs, your OpenAPI or WSDL file, a CSV or JSON file of records, or an example. Change what it answers with a simple form or WireMock JSON, try it here, and watch the requests come in.',
+    lede: 'Get your own mock URL straight away. Start from sample stubs, your OpenAPI or WSDL file or its URL, a GraphQL schema, a CSV or JSON file of records, or an example. Change what it answers with a simple form or WireMock JSON, try it here, and watch the requests come in.',
     privacy: 'Runs on the MockHub demo server. A mock is deleted 7 days after its last change. Don\'t put real secrets in it.',
     docs: '/docs/first-stub/',
     steps: [
-      ['Create a mock', 'From sample stubs, a spec, your records or an example. You get a URL and a private link to edit it.'],
+      ['Create a mock', 'From sample stubs, a spec or its URL, a GraphQL schema, your records or an example. You get a URL and a private link to edit it.'],
       ['Shape the answers', 'Method, path, status, body, delay and templating, or any WireMock JSON.'],
       ['Call it', 'From your app, your tests or the Try it box. Requests show up live.'],
     ],
     faq: [
       ['What are the limits?', 'Up to 20 stubs, 1,000 requests a day, 64 KB per stub and per request body, and 200 stored records of up to 4 KB each. Spec files go up to 500 KB, and you can start with up to 50 records. A mock is deleted 7 days after its last change.'],
+      ['Can I mock GraphQL?', 'Yes. Paste, upload or link a schema on the GraphQL tab. You get a /graphql endpoint that answers every query and mutation with generated data, and an explorer here with example queries from your schema.'],
+      ['Can I start from a URL?', 'Yes, for OpenAPI, Swagger, WSDL and GraphQL. The file must be on a public address and under 500 KB.'],
       ['What happens to my records?', 'Records become a REST resource: GET lists them (with filters such as price[gte]=10, sorting and pages), POST adds one, and GET, PUT, PATCH and DELETE work on one record by id. Changes are kept until the mock is deleted.'],
       ['What can\'t an instant mock do?', 'Proxying, files, webhooks, and regex, XPath or schema matching are turned off on the public demo. When you start from a spec or an example, stubs that need them are left out and listed. Run MockHub yourself to use them.'],
       ['Who can see or change my mock?', 'Anyone with the mock URL can call it. Only someone with the private link can change it. Don\'t put real secrets in it.'],

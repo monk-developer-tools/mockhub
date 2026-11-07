@@ -344,6 +344,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     ExporterRegistry exporters = new ExporterRegistry(List.of(new PostmanExporter(), new BrunoExporter(), new WireMockMappingsExporter()));
     MockSchemas graphQlSchemas = new MockSchemas();
     ExampleOperations graphQlExamples = new ExampleOperations(graphQlSchemas);
+    SpecFetcher specFetcher = new SpecFetcher(new JdkHttpSender(), new TargetGuard(config.playgroundAllowPrivate, InetAddress::getAllByName));
     ImporterRegistry importers = new ImporterRegistry(List.of(new WireMockJsonImporter(), new WsdlStubImporter(), new OpenApiImporter(),
         new GraphQlStubImporter(graphQlExamples), new SoapSampleImporter()));
     ProjectViews views = new ProjectViews(stubs, requestLog, urls, clock);
@@ -404,7 +405,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
         new TunnelController(tunnels),
         new ImportExportController(projects, stubs, exporters, importers, urls, new WireMockArchiveImporter(bodyFiles), drift),
         new ContractController(projects, drift, new ContractPatcher(aiSettings, chat, history::get)),
-        new OpenApiLinkController(new SpecFetcher(new JdkHttpSender(), new TargetGuard(config.playgroundAllowPrivate, InetAddress::getAllByName)), importers),
+        new OpenApiLinkController(specFetcher, importers),
         new AiController(aiSettings, aiProviders, chat, assistant, assistantJobs, projects, urls, new BodyGenerator(aiSettings, chat)),
         new BackupController(new BackupService(orgs, teams, projects, gateway, dataStore, bodyFiles, datasets, connections, grpc, clock)),
         new DataController(projects, stubs, dataStore, crud),
@@ -442,7 +443,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
             }, binProject),
         new FakeTool(new DataGenerator(fakeData), publicLimits),
         new RenderTool(templatePlayground, publicLimits),
-        new InstantMockTool(instantMocks, history, publicLimits, importers, new InstantExamples(examples, exampleInstaller))));
+        new InstantMockTool(instantMocks, history, publicLimits, importers, new InstantExamples(examples, exampleInstaller), specFetcher, graphQlExamples)));
     maintenance.scheduleWithFixedDelay(() -> safely(bins::prune), 10, 10, TimeUnit.MINUTES);
     maintenance.scheduleWithFixedDelay(() -> safely(bins::flush), 5, 5, TimeUnit.MINUTES);
     maintenance.scheduleWithFixedDelay(() -> safely(instantMocks::prune), 5, 60, TimeUnit.MINUTES);

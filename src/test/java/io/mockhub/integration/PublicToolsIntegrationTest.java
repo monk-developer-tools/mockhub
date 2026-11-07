@@ -3,8 +3,13 @@ package io.mockhub.integration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.sun.net.httpserver.HttpServer;
 import io.mockhub.api.Jsons;
 import io.mockhub.support.Fixtures;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -15,6 +20,11 @@ import org.junit.jupiter.api.io.TempDir;
 class PublicToolsIntegrationTest {
 
   private static final Map<String, String> ON = Map.of("MOCKHUB_PUBLIC_TOOLS", "true");
+  private static final String SCHEMA = """
+      type Query { launches(limit: Int): [Launch!]! launch(id: ID!): Launch }
+      type Launch { id: ID! mission: String! rocket: Rocket! }
+      type Rocket { name: String! }
+      """;
 
   @TempDir
   Path data;
@@ -792,6 +802,89 @@ class PublicToolsIntegrationTest {
       assertThat(created.status()).as(example.get("id").asText()).isEqualTo(201);
       assertThat(created.json().get("skipped")).as(example.get("id").asText()).isEmpty();
     }
+  }
+
+  @Test
+  void startsAGraphqlMockFromASchemaThatAnswersQueriesAndListsExamples() {
+    // Given
+    server = MockHubServer.start(data, ON);
+    ApiClient api = server.api();
+
+    // When
+    ApiClient.Result created = api.post("/__public/mocks", Jsons.object().put("from", "graphql").put("text", SCHEMA).toString());
+    String slug = created.json().get("slug").asText();
+    String token = created.json().get("token").asText();
+    ApiClient.Result answer = api.post("/" + slug + "/graphql", "{\"query\":\"{ launches(limit: 2) { id mission rocket { name } } }\"}");
+    JsonNode explorer = api.send("GET", "/__public/mocks/" + slug + "/graphql", null, null, Map.of("X-Mock-Token", token)).json();
+    JsonNode endpoint = explorer.get("endpoints").get(0);
+    JsonNode example = endpoint.get("operations").get(0);
+    ApiClient.Result exampleAnswer = api.post("/" + slug + endpoint.get("path").asText(),
+        Jsons.object().put("query", example.get("query").asText()).set("variables", example.get("variables")).toString());
+    ApiClient.Result badSchema = api.post("/__public/mocks", "{\"from\":\"graphql\",\"text\":\"type Query {\"}");
+    ApiClient.Result noToken = api.get("/__public/mocks/" + slug + "/graphql");
+
+    // Then
+    assertThat(created.status()).isEqualTo(201);
+    assertThat(answer.status()).isEqualTo(200);
+    assertThat(answer.json().at("/data/launches")).hasSize(2);
+    assertThat(answer.json().at("/data/launches/0/rocket/name").isTextual()).isTrue();
+    assertThat(endpoint.get("path").asText()).isEqualTo("/graphql");
+    assertThat(endpoint.get("operations").findValuesAsText("field")).contains("launches", "launch");
+    assertThat(example.get("query").asText()).contains("launches");
+    assertThat(exampleAnswer.status()).isEqualTo(200);
+    assertThat(exampleAnswer.json().has("errors")).isFalse();
+    assertThat(badSchema.status()).isEqualTo(400);
+    assertThat(noToken.status()).isEqualTo(404);
+  }
+
+  @Test
+  void startsInstantMocksFromASpecOrSchemaAtAUrlAndRefusesPrivateAddressesByDefault() throws IOException {
+    // Given
+    HttpServer specs = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+    serve(specs, "/petstore.yaml", Fixtures.resource("petstore.yaml"));
+    serve(specs, "/schema.graphql", SCHEMA);
+    specs.start();
+    String base = "http://127.0.0.1:" + specs.getAddress().getPort();
+    try {
+      server = MockHubServer.start(data, Map.of("MOCKHUB_PUBLIC_TOOLS", "true", "MOCKHUB_PLAYGROUND_ALLOW_PRIVATE", "true"));
+      ApiClient open = server.api();
+
+      // When
+      JsonNode spec = open.post("/__public/mocks", Jsons.object().put("from", "openapi").put("url", base + "/petstore.yaml").toString()).json();
+      ApiClient.Result graph = open.send("POST", "/__public/mocks", Jsons.object().put("from", "graphql").put("url", base + "/schema.graphql").toString(),
+          "application/json", Map.of("X-Forwarded-For", "198.51.100.7"));
+      ApiClient.Result missing = open.send("POST", "/__public/mocks", Jsons.object().put("from", "openapi").put("url", base + "/nothing.yaml").toString(),
+          "application/json", Map.of("X-Forwarded-For", "198.51.100.8"));
+      ApiClient.Result both = open.send("POST", "/__public/mocks", Jsons.object().put("from", "openapi").put("url", base + "/petstore.yaml").put("text", "x").toString(),
+          "application/json", Map.of("X-Forwarded-For", "198.51.100.9"));
+      server.close();
+      server = MockHubServer.start(data, ON);
+      ApiClient.Result guarded = server.api().post("/__public/mocks", Jsons.object().put("from", "openapi").put("url", base + "/petstore.yaml").toString());
+
+      // Then
+      assertThat(server.api().get(spec.get("baseUrl").asText() + "/pets").status()).isEqualTo(200);
+      assertThat(graph.status()).isEqualTo(201);
+      assertThat(server.api().post(graph.json().get("baseUrl").asText() + "/graphql", "{\"query\":\"{ launch(id: 1) { mission } }\"}").json()
+          .at("/data/launch/mission").isTextual()).isTrue();
+      assertThat(missing.status()).isEqualTo(502);
+      assertThat(missing.body()).contains("answered 404");
+      assertThat(both.status()).isEqualTo(400);
+      assertThat(both.body()).contains("not both");
+      assertThat(guarded.status()).isEqualTo(400);
+      assertThat(guarded.body()).contains("MOCKHUB_PLAYGROUND_ALLOW_PRIVATE");
+    } finally {
+      specs.stop(0);
+    }
+  }
+
+  private static void serve(HttpServer http, String path, String text) {
+    http.createContext(path, exchange -> {
+      byte[] bytes = text.getBytes(StandardCharsets.UTF_8);
+      exchange.sendResponseHeaders(200, bytes.length);
+      try (OutputStream out = exchange.getResponseBody()) {
+        out.write(bytes);
+      }
+    });
   }
 
   @Test

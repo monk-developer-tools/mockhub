@@ -1,9 +1,10 @@
 <div class="tool-card tool-start" data-mock-start>
   <h3>A mock API in one click</h3>
-  <p>You get your own URL on the demo. Start with two sample stubs, your API spec, your own records or one of the examples, then change it and call it from your app or tests.</p>
+  <p>You get your own URL on the demo. Start with two sample stubs, your API spec, a GraphQL schema, your own records or one of the examples, then change it and call it from your app or tests.</p>
   <div class="tabs tabs-small" role="tablist" aria-label="Start from">
     <button type="button" role="tab" id="start-tab-sample" aria-controls="start-sample" aria-selected="true">Sample stubs</button>
     <button type="button" role="tab" id="start-tab-spec" aria-controls="start-spec" aria-selected="false" tabindex="-1">OpenAPI or WSDL</button>
+    <button type="button" role="tab" id="start-tab-graphql" aria-controls="start-graphql" aria-selected="false" tabindex="-1">GraphQL</button>
     <button type="button" role="tab" id="start-tab-records" aria-controls="start-records" aria-selected="false" tabindex="-1">CSV or JSON records</button>
     <button type="button" role="tab" id="start-tab-example" aria-controls="start-example" aria-selected="false" tabindex="-1">Example</button>
   </div>
@@ -20,9 +21,33 @@
     <input id="start-spec-file" class="tool-input" type="file" accept=".yaml,.yml,.json,.wsdl,.xml" data-start-file="spec">
     <label class="tool-label" for="start-spec-text">Or paste it</label>
     <textarea id="start-spec-text" class="tool-input tool-code" rows="8" spellcheck="false" autocomplete="off" placeholder="openapi: 3.0.0" data-start-text="spec"></textarea>
-    <p class="tool-hint">One stub per operation, with responses from your examples or from the schemas. Up to 500 KB and 20 operations; the first 20 are used.</p>
+    <label class="tool-label" for="start-spec-url">Or fetch it from a URL</label>
+    <input id="start-spec-url" class="tool-input" type="url" spellcheck="false" autocomplete="off" placeholder="https://petstore3.swagger.io/api/v3/openapi.json" data-start-url="spec">
+    <p class="tool-hint">One stub per operation, with responses from your examples or from the schemas. Up to 500 KB and 20 operations; the first 20 are used. A URL must be public; a link ending in <code>.wsdl</code> or <code>?wsdl</code> is read as WSDL.</p>
     <div class="tool-actions-row">
       <button type="button" class="btn primary" data-mock-create="spec">Create from the spec</button>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="start-graphql" role="tabpanel" aria-labelledby="start-tab-graphql" hidden>
+    <label class="tool-label" for="start-graphql-file">Schema file (SDL) or introspection result</label>
+    <input id="start-graphql-file" class="tool-input" type="file" accept=".graphql,.graphqls,.gql,.json,.txt" data-start-file="graphql">
+    <label class="tool-label" for="start-graphql-text">Or paste it</label>
+    <textarea id="start-graphql-text" class="tool-input tool-code" rows="8" spellcheck="false" autocomplete="off" data-start-text="graphql">type Query {
+  launches(limit: Int): [Launch!]!
+  launch(id: ID!): Launch
+}
+
+type Launch {
+  id: ID!
+  mission: String!
+  rocket: String!
+}</textarea>
+    <label class="tool-label" for="start-graphql-url">Or fetch it from a URL</label>
+    <input id="start-graphql-url" class="tool-input" type="url" spellcheck="false" autocomplete="off" placeholder="https://example.com/schema.graphql" data-start-url="graphql">
+    <p class="tool-hint">You get a GraphQL endpoint at <code>/graphql</code> that answers every query and mutation in the schema with realistic generated data, plus an explorer here to try them. Up to 500 KB.</p>
+    <div class="tool-actions-row">
+      <button type="button" class="btn primary" data-mock-create="graphql">Create from the schema</button>
     </div>
   </div>
 
@@ -130,6 +155,38 @@
       </div>
       <p class="tool-error" data-mock-save-error hidden></p>
     </form>
+  </div>
+
+  <div class="tool-card mock-graphql" data-mock-graphql hidden>
+    <div class="tool-head">
+      <h3>GraphQL explorer</h3>
+      <span class="tool-actions"><span class="tool-hint" data-mock-graphql-meta aria-live="polite"></span></span>
+    </div>
+    <p class="tool-hint">Send queries to <code data-mock-graphql-url></code>. Pick an example built from your schema, or write your own.</p>
+    <div class="tool-row">
+      <div class="tool-grow">
+        <label class="tool-label" for="mock-graphql-example">Example</label>
+        <select id="mock-graphql-example" class="tool-input" data-mock-graphql-example></select>
+      </div>
+    </div>
+    <div class="mock-graphql-panes">
+      <div>
+        <label class="tool-label" for="mock-graphql-query">Query</label>
+        <textarea id="mock-graphql-query" class="tool-input tool-code" rows="10" spellcheck="false" autocomplete="off" data-mock-graphql-query></textarea>
+        <label class="tool-label" for="mock-graphql-variables">Variables (JSON)</label>
+        <textarea id="mock-graphql-variables" class="tool-input tool-code mock-graphql-variables" rows="3" spellcheck="false" autocomplete="off" placeholder="{}" data-mock-graphql-variables></textarea>
+        <div class="tool-actions-row">
+          <button type="button" class="btn primary" data-mock-graphql-run>Run</button>
+          <button type="button" class="btn secondary small" data-copy="[data-mock-graphql-curl]">Copy as cURL</button>
+        </div>
+        <p class="tool-error" data-mock-graphql-error hidden></p>
+      </div>
+      <div>
+        <span class="tool-label">Answer</span>
+        <pre class="tool-out" data-mock-graphql-out>Run a query to see the answer.</pre>
+      </div>
+    </div>
+    <pre class="tool-out" data-mock-graphql-curl hidden></pre>
   </div>
 
   <div class="tool-grid tool-bin">

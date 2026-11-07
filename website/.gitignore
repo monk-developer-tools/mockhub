@@ -9,6 +9,7 @@
 /ai/
 /mock-api/
 /openapi-mock-server/
+/graphql-mock-server/
 /soap-mock-server/
 /crud-api/
 /stateful-mocks/

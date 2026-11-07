@@ -119,4 +119,49 @@ class InstantStubRulesTest {
     assertThat(checked.has("metadata")).isFalse();
     assertThatThrownBy(() -> InstantStubRules.check(stub)).hasMessageContaining("metadata");
   }
+
+  @Test
+  void acceptsAGraphqlEndpointWithALargeSchemaAndTurnsAnIntrospectionResultIntoSdl() {
+    // Given
+    StringBuilder types = new StringBuilder("type Query { a: A0 }\n");
+    for (int i = 0; i < 2000; i++) types.append("type A").append(i).append(" { id: ID! name: String next: A").append(Math.min(i + 1, 1999)).append(" }\n");
+    ObjectNode big = endpoint(types.toString());
+    ObjectNode introspected = endpoint("{\"data\":{\"__schema\":{\"queryType\":{\"name\":\"Query\"},\"types\":[{\"kind\":\"OBJECT\",\"name\":\"Query\","
+        + "\"fields\":[{\"name\":\"hello\",\"args\":[],\"type\":{\"kind\":\"SCALAR\",\"name\":\"String\"}}],\"interfaces\":[]},"
+        + "{\"kind\":\"SCALAR\",\"name\":\"String\"}],\"directives\":[]}}}");
+
+    // When
+    ObjectNode checkedBig = InstantStubRules.check(big);
+    ObjectNode checkedIntrospected = InstantStubRules.check(introspected);
+
+    // Then
+    assertThat(types.length()).isGreaterThan(InstantStubRules.MAX_STUB_BYTES);
+    assertThat(checkedBig.at("/response/transformers").toString()).isEqualTo("[\"mockhub-graphql\"]");
+    assertThat(checkedIntrospected.at("/response/transformerParameters/schema").asText()).contains("hello: String");
+  }
+
+  @Test
+  void refusesGraphqlEndpointsThatMixTransformersOrHaveABrokenOrHugeSchema() {
+    // Given
+    ObjectNode mixed = endpoint("type Query { a: String }");
+    mixed.withArray("/response/transformers").add("response-template");
+    ObjectNode broken = endpoint("type Query {");
+    ObjectNode huge = endpoint("type Query { a: String }\n#" + "x".repeat(InstantSources.MAX_SPEC));
+    ObjectNode missing = endpoint("type Query { a: String }");
+    missing.withObject("/response/transformerParameters").remove("schema");
+
+    // When / Then
+    assertThatThrownBy(() -> InstantStubRules.check(mixed)).hasMessageContaining("can't use other transformers");
+    assertThatThrownBy(() -> InstantStubRules.check(broken)).hasMessageContaining("isn't valid GraphQL");
+    assertThatThrownBy(() -> InstantStubRules.check(huge)).hasMessageContaining("under 500 KB");
+    assertThatThrownBy(() -> InstantStubRules.check(missing)).hasMessageContaining("needs its schema");
+  }
+
+  private static ObjectNode endpoint(String sdl) {
+    ObjectNode stub = Fixtures.json("""
+        {"name": "GraphQL", "request": {"method": "ANY", "urlPath": "/graphql"},
+         "response": {"status": 200, "transformers": ["mockhub-graphql"]}}""");
+    stub.withObject("/response").putObject("transformerParameters").put("schema", sdl);
+    return stub;
+  }
 }

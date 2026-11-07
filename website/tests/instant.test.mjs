@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { displayPath, exportMappings, fitsForm, formToStub, keyHash, parseCsv, parseKey, parseRecords, resourceName, samplePath, specFormat, stubToForm } from '../assets/js/tools/instant.js';
+import { displayPath, exportMappings, fitsForm, formToStub, graphqlRequest, isGraphql, keyHash, parseCsv, parseKey, parseRecords, resourceName, samplePath, specFormat, specFormatFromUrl, specStart, stubToForm } from '../assets/js/tools/instant.js';
 
 test('reads and writes the private manage key in the page address', () => {
   // Given
@@ -110,3 +110,71 @@ test('shows a CRUD stub as its resource path', () => {
   assert.equal(fitsForm(crud), false);
 });
 
+
+test('starts from pasted text or a URL, never both, and guesses the format from each', () => {
+  // Given
+  const openapi = 'openapi: 3.0.0';
+  const wsdl = '<definitions/>';
+
+  // When
+  const fromText = [specStart('spec', openapi, ''), specStart('spec', wsdl, ' '), specStart('graphql', 'type Query { a: String }', '')];
+  const fromUrl = [specStart('spec', '', 'https://api.example.com/openapi.yaml'), specStart('spec', '', 'https://svc.example.com/calc?wsdl'), specStart('graphql', '', 'https://example.com/schema.graphql')];
+
+  // Then
+  assert.deepEqual(fromText.map((b) => b.from), ['openapi', 'wsdl', 'graphql']);
+  assert.equal(fromText[0].text, openapi);
+  assert.deepEqual(fromUrl, [
+    { from: 'openapi', url: 'https://api.example.com/openapi.yaml' },
+    { from: 'wsdl', url: 'https://svc.example.com/calc?wsdl' },
+    { from: 'graphql', url: 'https://example.com/schema.graphql' },
+  ]);
+  assert.equal(specFormatFromUrl('https://x.example.com/Service.WSDL'), 'wsdl');
+  assert.equal(specFormatFromUrl('https://x.example.com/wsdl-guide/openapi.json'), 'openapi');
+});
+
+test('refuses a start with nothing, both, or a URL that is not http', () => {
+  // Given
+  const cases = [['spec', '', ''], ['spec', 'openapi: 3.0.0', 'https://a.example.com/x'], ['graphql', '', 'ftp://a.example.com/x'], ['graphql', '  ', '']];
+
+  // When
+  const messages = cases.map(([from, text, url]) => {
+    try {
+      specStart(from, text, url);
+      return '';
+    } catch (e) {
+      return e.message;
+    }
+  });
+
+  // Then
+  assert.deepEqual(messages, [
+    'Upload, paste or link an OpenAPI or WSDL file first.',
+    'Use the pasted text or the URL, not both. Clear one of them.',
+    'The URL must start with http:// or https://',
+    'Upload, paste or link a GraphQL schema first.',
+  ]);
+});
+
+test('builds a GraphQL request from a query and optional JSON variables', () => {
+  // Given
+  const query = '{ launch(id: $id) { mission } }';
+
+  // When
+  const plain = graphqlRequest(query, '');
+  const withVariables = graphqlRequest(query, '{"id": "7"}');
+  const errors = [['', ''], [query, '{nope'], [query, '[1]']].map(([q, v]) => {
+    try {
+      graphqlRequest(q, v);
+      return '';
+    } catch (e) {
+      return e.message;
+    }
+  });
+
+  // Then
+  assert.deepEqual(plain, { query, variables: {} });
+  assert.deepEqual(withVariables.variables, { id: '7' });
+  assert.deepEqual(errors, ['Write a query first, or pick an example.', 'The variables are not valid JSON.', 'The variables must be a JSON object, like {"id": "1"}.']);
+  assert.equal(isGraphql({ response: { transformers: ['mockhub-graphql'] } }), true);
+  assert.equal(isGraphql({ response: { transformers: ['response-template'] } }), false);
+});

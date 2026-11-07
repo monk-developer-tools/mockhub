@@ -3980,7 +3980,7 @@ footer a {
 
 @media (max-width: 960px) {
   .fp-example {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 28px;
   }
 
@@ -5967,4 +5967,26 @@ select.tool-select-small {
 
 .bin-ai-drafts[hidden] {
   display: none;
+}
+
+.mock-graphql-panes {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.mock-graphql-panes .tool-out {
+  max-height: 420px;
+  overflow: auto;
+}
+
+.mock-graphql-panes .mock-graphql-variables {
+  min-height: 72px;
+}
+
+@media (max-width: 720px) {
+  .mock-graphql-panes {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
