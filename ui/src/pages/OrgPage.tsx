@@ -2,6 +2,7 @@ import { ArrowRight, Buildings, CaretRight, Folder, GearSix, MagnifyingGlass, Pl
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../api/client';
+import { parseHeaderNames, withCommonSecrets } from '../model/maskedHeaders';
 import type { Member, Organization, OrgRole, Team, UserSummary } from '../api/types';
 import { PersonCell, TeamMark } from '../components/Avatar';
 import { Confirm, Modal } from '../components/Modal';
@@ -347,16 +348,19 @@ function OrgSettings({ org, orgId, onSaved }: { org: Organization | null; orgId:
   const toast = useToast();
   const [name, setName] = useState(org?.name ?? '');
   const [description, setDescription] = useState(org?.description ?? '');
+  const [masked, setMasked] = useState((org?.maskedHeaders ?? []).join('\n'));
+  const { invalid } = parseHeaderNames(masked);
 
   useEffect(() => {
     setName(org?.name ?? '');
     setDescription(org?.description ?? '');
+    setMasked((org?.maskedHeaders ?? []).join('\n'));
   }, [org]);
 
   const save = async (e: FormEvent) => {
     e.preventDefault();
     try {
-      await api.updateOrg(orgId, { name, description });
+      await api.updateOrg(orgId, { name, description, maskedHeaders: parseHeaderNames(masked).names });
       toast.notify('Organisation saved');
       onSaved();
     } catch (err) {
@@ -374,7 +378,17 @@ function OrgSettings({ org, orgId, onSaved }: { org: Organization | null; orgId:
         <span>Description</span>
         <input type="text" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What this organisation is for" />
       </label>
-      <div><button className="btn" type="submit">Save</button></div>
+      <label className="field">
+        <span>Masked headers <span className="hint">one per line</span></span>
+        <textarea className="mono" rows={4} value={masked} onChange={(e) => setMasked(e.target.value)} placeholder={'authorization\nx-api-key'} aria-label="Masked headers" />
+        <span className="hint">
+          Their values show as •••••• in every project's request log, history and HAR export, for everyone, and aren't written to disk.
+          Requests already recorded are masked when shown.{' '}
+          <button type="button" className="btn small ghost" onClick={() => setMasked(withCommonSecrets(masked))}>Add the usual secret headers</button>
+        </span>
+        {invalid.length > 0 && <span className="callout danger">Not header names: {invalid.join(', ')}</span>}
+      </label>
+      <div><button className="btn" type="submit" disabled={invalid.length > 0}>Save</button></div>
     </form>
   );
 }

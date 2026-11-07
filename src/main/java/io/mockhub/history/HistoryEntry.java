@@ -46,6 +46,11 @@ public record HistoryEntry(
         matched, stubId, stubName, durationMs);
   }
 
+  public HistoryEntry withHeaders(List<Header> request, List<Header> response) {
+    return new HistoryEntry(id, at, projectId, method, url, absoluteUrl, clientIp, request, requestBody, requestBodyTruncated, status, response,
+        responseBody, responseBodyTruncated, matched, stubId, stubName, durationMs);
+  }
+
   public static String cap(String body) {
     return body == null || body.length() <= MAX_BODY ? body : body.substring(0, MAX_BODY);
   }

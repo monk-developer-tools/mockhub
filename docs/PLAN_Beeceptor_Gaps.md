@@ -201,6 +201,9 @@ A broken template used to come back from **Try it** as the server's raw HTML err
 ### P4 — Workspaces ✅ done
 Beeceptor's workspaces (Enterprise) group endpoints with Read/Write/Manager members, an access policy of *Restricted* or *Organization read-only*, endpoints that move between workspaces, and deletion only when empty. MockHub's teams already had all of that except the policy: an organisation-wide role always applied to every team. Teams now have `restricted` (`TeamAccess` registry kept in sync by `TeamService`; `User.roleInTeam` drops the organisation and server role for restricted teams, except organisation managers and admins). Set under the team's Settings; the project dialog's hint and the team header say so.
 
+### P5 — Header masking ✅ done
+Beeceptor (Enterprise): org admins list headers that are masked wherever they're shown or stored, case-insensitively. MockHub: `Organization.maskedHeaders`, set by organisation managers in the org settings. `HistoryStore` masks before writing and on every read (search, detail, `each` for HAR/MCP), before the search filter so a masked value can't be found by searching; `RequestLogService` masks the in-memory log too. Requests recorded before a header was added stay on disk but are masked when shown. WireMock's admin-only `/__admin/requests` journal isn't masked.
+
 ### T7 — gRPC mocks without login
 Split out of T1. Three things block it on the public demo: MockHub reads only compiled descriptor sets (no `.proto` text parser); gRPC routes by service name, so two visitors uploading the same service would collide on a shared server; and the demo's nginx has no HTTP/2 or `grpc_pass`. Needs a `.proto` parser, a per-mock service namespace, and HTTP/2 gRPC in MockHub's own nginx site file.
 
@@ -212,7 +215,7 @@ Split out of T1. Three things block it on the public demo: MockHub reads only co
 | **Fix template with AI** | Try it shows template errors with **Fix with AI** (`POST /projects/{id}/ai/template/fix`) | ✅ | P2 |
 | **OpenTelemetry (OTLP) export** of traffic, logs and metrics | Traces, logs and metrics over OTLP/HTTP JSON from the standard `OTEL_*` variables | ✅ | P3 |
 | **Workspaces** (group projects inside an organisation) | Teams: members with roles, projects that move between teams, delete only when empty, and now restricted teams | ✅ | P4 |
-| **Header masking** in request history | ❔ | ❔ | P5 |
+| **Header masking** in request history | Per organisation, applied on write and on every read | ✅ | P5 |
 | QUERY method in stubs | ❔ | ❔ | P6 |
 | gRPC client, server and bidi streaming; GraphQL subscriptions | ❔ | ❔ | P6 |
 | Published performance benchmark (load, payload sizes, 8-hour soak) | — | ❌ | P7 |
@@ -281,7 +284,7 @@ W4 status page: a public `/status/` page and a footer badge. The badge reads the
 | 19 | P2 Fix template with AI ✅ | S | |
 | 20 | P3 OpenTelemetry export ✅ | M | |
 | 21 | P4 Workspaces ✅ | M | |
-| 22 | P5 Header masking | S | |
+| 22 | P5 Header masking ✅ | S | |
 | 23 | P6 Verify QUERY, streaming, subscriptions | S–M | |
 | 24 | P7 Benchmark report | M | |
 | 25 | P8 Postman collection import | S | |

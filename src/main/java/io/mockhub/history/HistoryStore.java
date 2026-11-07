@@ -17,11 +17,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 public final class HistoryStore implements ProjectListener, AutoCloseable {
@@ -49,6 +51,8 @@ public final class HistoryStore implements ProjectListener, AutoCloseable {
 
   private record Flush(CountDownLatch done) {}
 
+  private volatile Function<String, Set<String>> masked = projectId -> Set.of();
+
   public HistoryStore(Path root, Clock clock, Duration retention, long maxBytesPerProject) {
     this.root = root;
     this.clock = clock;
@@ -61,9 +65,13 @@ public final class HistoryStore implements ProjectListener, AutoCloseable {
     this.writer.start();
   }
 
+  public void maskHeaders(Function<String, Set<String>> masked) {
+    this.masked = masked;
+  }
+
   public void record(HistoryEntry entry) {
     if (entry.projectId() == null) return;
-    enqueue(new Pending(entry.projectId(), REQUESTS, entry.at(), line(entry)));
+    enqueue(new Pending(entry.projectId(), REQUESTS, entry.at(), line(HeaderMask.apply(entry, masked.apply(entry.projectId())))));
   }
 
   public void record(CalloutEntry entry) {
@@ -86,7 +94,9 @@ public final class HistoryStore implements ProjectListener, AutoCloseable {
     Map<String, Integer> statuses = new LinkedHashMap<>();
     Map<String, HistoryPage.StubCount> stubs = new HashMap<>();
     int[] counts = new int[3];
-    NdjsonSegments.Scan scan = requests.scanNewestFirst(projectId, query.from(), query.to(), MAX_SCAN, e -> {
+    Set<String> hidden = masked.apply(projectId);
+    NdjsonSegments.Scan scan = requests.scanNewestFirst(projectId, query.from(), query.to(), MAX_SCAN, stored -> {
+      HistoryEntry e = HeaderMask.apply(stored, hidden);
       if (!query.matches(e)) return true;
       counts[0]++;
       if (counts[0] > query.offset() && items.size() < query.limit()) items.add(full ? e : e.summary());
@@ -109,10 +119,11 @@ public final class HistoryStore implements ProjectListener, AutoCloseable {
   public int each(String projectId, long after, java.util.function.Consumer<HistoryEntry> visitor) {
     flush();
     int[] visited = {0};
+    Set<String> hidden = masked.apply(projectId);
     requests.scanNewestFirst(projectId, after + 1, Long.MAX_VALUE, MAX_SCAN, e -> {
       if (e.at() > after) {
         visited[0]++;
-        visitor.accept(e);
+        visitor.accept(HeaderMask.apply(e, hidden));
       }
       return true;
     });
@@ -127,7 +138,7 @@ public final class HistoryStore implements ProjectListener, AutoCloseable {
       found[0] = e;
       return false;
     });
-    return Optional.ofNullable(found[0]);
+    return Optional.ofNullable(HeaderMask.apply(found[0], masked.apply(projectId)));
   }
 
   public List<CalloutEntry> callouts(String projectId, int limit, String requestId) {

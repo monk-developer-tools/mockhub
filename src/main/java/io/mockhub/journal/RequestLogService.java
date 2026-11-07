@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
 import io.mockhub.api.Jsons;
+import io.mockhub.history.HeaderMask;
 import io.mockhub.project.Project;
 import io.mockhub.project.ProjectService;
 import io.mockhub.stub.StubGateway;
@@ -11,11 +12,19 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public final class RequestLogService {
   private final StubGateway gateway;
   private final ProjectService projects;
+
+  private volatile Function<String, Set<String>> masked = projectId -> Set.of();
+
+  public void maskHeaders(Function<String, Set<String>> masked) {
+    this.masked = masked;
+  }
 
   public RequestLogService(StubGateway gateway, ProjectService projects) {
     this.gateway = gateway;
@@ -46,10 +55,11 @@ public final class RequestLogService {
 
   public ArrayNode list(String projectId, int limit, boolean unmatchedOnly) {
     ArrayNode out = Jsons.MAPPER.createArrayNode();
+    Set<String> hidden = masked.apply(projectId);
     eventsOf(projects.get(projectId)).stream()
         .filter(e -> !unmatchedOnly || !e.getWasMatched())
         .limit(Math.max(1, limit))
-        .forEach(e -> out.add(Jsons.fromWireMock(e)));
+        .forEach(e -> out.add(HeaderMask.applyToEvent((ObjectNode) Jsons.fromWireMock(e), hidden)));
     return out;
   }
 

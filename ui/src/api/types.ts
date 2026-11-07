@@ -145,6 +145,7 @@ export interface Organization {
   memberCount: number;
   teamCount: number;
   role: Role;
+  maskedHeaders?: string[];
 }
 
 export interface Member extends UserSummary {

@@ -5,10 +5,17 @@ import io.mockhub.api.ApiException;
 import io.mockhub.common.Slugs;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 public final class OrganizationService {
+  static final int MAX_MASKED = 50;
+  private static final Pattern HEADER_NAME = Pattern.compile("[!#$%&'*+.^_`|~0-9a-z-]{1,100}");
   public static final String DEFAULT_NAME = "Default";
 
   private final OrganizationRepository repository;
@@ -23,6 +30,10 @@ public final class OrganizationService {
 
   public List<Organization> findAll() {
     return repository.findAll();
+  }
+
+  public Optional<Organization> find(String id) {
+    return id == null ? Optional.empty() : repository.findById(id);
   }
 
   public Organization get(String id) {
@@ -73,9 +84,24 @@ public final class OrganizationService {
         slug,
         body.hasNonNull("description") ? body.get("description").asText() : before.description(),
         before.createdAt(),
-        now());
+        now(),
+        body.has("maskedHeaders") ? maskedHeaders(body.get("maskedHeaders")) : before.maskedHeaders());
     repository.save(after);
     return after;
+  }
+
+  static List<String> maskedHeaders(JsonNode list) {
+    if (list == null || list.isNull()) return List.of();
+    if (!list.isArray()) throw ApiException.badRequest("maskedHeaders is a list of header names, like [\"Authorization\", \"X-Api-Key\"]");
+    Set<String> names = new LinkedHashSet<>();
+    for (JsonNode item : list) {
+      String name = item.asText("").trim().toLowerCase(Locale.ROOT);
+      if (name.isEmpty()) continue;
+      if (!HEADER_NAME.matcher(name).matches()) throw ApiException.badRequest("'" + item.asText() + "' isn't a header name");
+      names.add(name);
+    }
+    if (names.size() > MAX_MASKED) throw ApiException.badRequest("Mask at most " + MAX_MASKED + " headers");
+    return List.copyOf(names);
   }
 
   public void delete(String id) {
@@ -94,7 +120,7 @@ public final class OrganizationService {
     boolean taken = repository.findBySlug(organization.slug()).filter(o -> !o.id().equals(organization.id())).isPresent();
     Organization saved = taken
         ? new Organization(organization.id(), organization.name(), availableSlug(organization.slug()), organization.description(),
-            organization.createdAt(), organization.updatedAt())
+            organization.createdAt(), organization.updatedAt(), organization.maskedHeaders())
         : organization;
     repository.save(saved);
     return saved;

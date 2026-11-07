@@ -95,6 +95,7 @@ import java.util.function.BooleanSupplier;
 import java.util.stream.Stream;
 import java.util.function.Function;
 import java.util.Optional;
+import java.util.Set;
 import com.github.tomakehurst.wiremock.http.Request;
 import io.mockhub.audit.AuditLog;
 import io.mockhub.audit.AuditRecorder;
@@ -318,10 +319,14 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
         secrets,
         new TokenClient(new JdkHttpSender(), url -> calloutTargets.resolve(url, null).uri()), clock);
     OrganizationService orgs = new OrganizationService(new FileOrganizationRepository(dataDir), List.of(projects, teams, users, datasets, connections), clock);
+    Function<String, Set<String>> maskedHeaders = projectId -> projects.find(projectId).flatMap(p -> orgs.find(p.orgId()))
+        .map(o -> Set.copyOf(o.maskedHeaders())).orElse(Set.of());
+    history.maskHeaders(maskedHeaders);
     projects.assignOrphans(orgs.ensureDefault().id());
     orgs.findAll().forEach(o -> teams.ensureDefault(o.id()));
     projects.assignTeams(orgId -> teams.ensureDefault(orgId).id());
     RequestLogService requestLog = new RequestLogService(gateway, projects);
+    requestLog.maskHeaders(maskedHeaders);
     StateScope stateScope = new StateScope();
     StateRepository stateRepository = new StateRepository(dataStore, () -> projects.findAll().stream().map(Project::id).toList(), config.maxRecords);
     CalloutLog calloutLog = new HistoryCalloutLog(history);

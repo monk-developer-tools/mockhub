@@ -165,4 +165,47 @@ class HistoryIntegrationTest {
     assertThat(result.status()).isEqualTo(400);
     assertThat(result.body()).contains("404, 4xx or 400-499");
   }
+
+  @Test
+  void maskedHeadersAreHiddenInEveryViewAndNeverWrittenToDisk() throws Exception {
+    // Given
+    api.send("GET", "/pay/status", null, null, Map.of("Authorization", "Bearer before-secret", "X-Trace", "kept-1"));
+    waitFor("?q=status", 1);
+    String orgId = api.get(API + "/projects/" + projectId).json().get("orgId").asText();
+    ApiClient.Result saved = api.put(API + "/orgs/" + orgId, "{\"maskedHeaders\": [\"Authorization\", \"x-api-key\", \" \"]}");
+    api.send("POST", "/pay/payments", "{}", "application/json", Map.of("X-API-Key", "after-secret", "X-Trace", "kept-2"));
+    waitFor("?q=payments", 1);
+    Thread.sleep(300);
+
+    // When
+    JsonNode items = history("").get("items");
+    String full = items.toString();
+    StringBuilder details = new StringBuilder();
+    for (JsonNode item : items) details.append(api.get(API + "/projects/" + projectId + "/history/" + item.get("id").asText()).body());
+    JsonNode bySecret = history("?q=after-secret");
+    String har = api.get(API + "/projects/" + projectId + "/history-export").body();
+    String log = api.get(API + "/projects/" + projectId + "/requests").body();
+    String onDisk;
+    try (var files = java.nio.file.Files.walk(data)) {
+      onDisk = files.filter(java.nio.file.Files::isRegularFile).filter(f -> f.toString().contains("history"))
+          .map(f -> {
+            try {
+              return java.nio.file.Files.readString(f);
+            } catch (Exception e) {
+              return "";
+            }
+          }).reduce("", String::concat);
+    }
+    ApiClient.Result bad = api.put(API + "/orgs/" + orgId, "{\"maskedHeaders\": [\"not a header\"]}");
+
+    // Then
+    assertThat(saved.json().get("maskedHeaders").toString()).isEqualTo("[\"authorization\",\"x-api-key\"]");
+    assertThat(details.toString()).doesNotContain("before-secret").doesNotContain("after-secret").contains("••••••").contains("kept-1").contains("kept-2");
+    assertThat(full).doesNotContain("secret");
+    assertThat(bySecret.get("total").asInt()).isZero();
+    assertThat(har).doesNotContain("before-secret").doesNotContain("after-secret");
+    assertThat(log).doesNotContain("before-secret").doesNotContain("after-secret").contains("••••••");
+    assertThat(onDisk).doesNotContain("after-secret").contains("kept-2");
+    assertThat(bad.status()).isEqualTo(400);
+  }
 }
