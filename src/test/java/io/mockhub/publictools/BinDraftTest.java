@@ -39,7 +39,7 @@ class BinDraftTest {
     tool = new BinTool(bins, new PublicLimits(new RateLimiter(clock)), new BinResponder(null, null, null, null, null, bound -> 0, System::currentTimeMillis),
         new BinDrafter(() -> true, (system, user) -> {
           asked.append(user);
-          return system.equals(BinDrafter.FIX) ? "Here you go:\n```handlebars\n{\"id\": \"{{jsonPath request.body '$.id'}}\" }\n```" : reply;
+          return system.startsWith("You fix Handlebars") ? "Here you go:\n```handlebars\n{\"id\": \"{{jsonPath request.body '$.id'}}\" }\n```" : reply;
         }), name -> Optional.empty(),
         header -> "Bearer signed-in".equals(header) ? Optional.of(alex) : Optional.empty(), System::currentTimeMillis, null);
   }

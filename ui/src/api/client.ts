@@ -352,6 +352,8 @@ export const api = {
   stubUsage: (projectId: string) => request<Record<string, StubUsage>>(`${API}/projects/${projectId}/usage`),
   generateBody: (projectId: string, body: { description: string; format: string; method: string; path: string; status: number; current: string }) =>
     request<{ body: string }>(`${API}/projects/${projectId}/ai/body`, { method: 'POST', body: json(body) }),
+  fixTemplate: (projectId: string, body: { template: string; error: string; request: string }) =>
+    request<{ template: string }>(`${API}/projects/${projectId}/ai/template/fix`, { method: 'POST', body: json(body) }),
   sendPlayground: (body: PlaygroundRequest) => request<PlaygroundEntry>(`${API}/playground/send`, { method: 'POST', body: json(body) }),
   playgroundHistory: () => request<PlaygroundEntry[]>(`${API}/playground/history`),
   deletePlaygroundEntry: (id: string) => request<void>(`${API}/playground/history/${id}`, { method: 'DELETE' }),

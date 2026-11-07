@@ -185,4 +185,30 @@ class AiAssistantIntegrationTest {
         .withRequestBody(com.github.tomakehurst.wiremock.client.WireMock.containing("GET /orders/orders/1")));
     assertThat(asViewer.status()).isEqualTo(403);
   }
+
+  @Test
+  void fixesABrokenTemplateForEditorsOnly() {
+    // Given
+    llm.stubFor(post(urlPathEqualTo("/v1/chat/completions")).willReturn(aResponse().withHeader("Content-Type", "application/json")
+        .withBody("{\"choices\":[{\"message\":{\"role\":\"assistant\",\"content\":\"```handlebars\\n{\\\"id\\\": \\\"{{jsonPath request.body '$.id'}}\\\" }\\n```\"}}]}")));
+    String body = Jsons.object().put("template", "{\"id\": {{jsonPath request.body '$.id'}}}").put("error", "found: '}}}', expected: '}}'")
+        .put("request", "POST /orders\n{\"id\": 7}").toString();
+    String path = API + "/projects/" + projectId + "/ai/template/fix";
+
+    // When
+    ApiClient.Result fixed = admin.post(path, body);
+    ApiClient.Result asViewer = server.api().login("qa", "pw").post(path, body);
+    ApiClient.Result empty = admin.post(path, "{\"template\": \" \"}");
+    admin.put(API + "/ai/settings", "{\"enabled\":false}");
+    ApiClient.Result off = admin.post(path, body);
+
+    // Then
+    assertThat(fixed.status()).as(fixed.body()).isEqualTo(200);
+    assertThat(fixed.json().get("template").asText()).isEqualTo("{\"id\": \"{{jsonPath request.body '$.id'}}\" }");
+    llm.verify(postRequestedFor(urlPathEqualTo("/v1/chat/completions"))
+        .withRequestBody(com.github.tomakehurst.wiremock.client.WireMock.containing("found: '}}}'")));
+    assertThat(asViewer.status()).isEqualTo(403);
+    assertThat(empty.status()).isEqualTo(400);
+    assertThat(off.status()).isEqualTo(409);
+  }
 }

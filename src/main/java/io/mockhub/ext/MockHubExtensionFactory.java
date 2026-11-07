@@ -10,6 +10,7 @@ import io.mockhub.ai.AiSettingsStore;
 import io.mockhub.ai.AssistantJobs;
 import io.mockhub.ai.AssistantService;
 import io.mockhub.ai.BodyGenerator;
+import io.mockhub.ai.TemplateFixer;
 import io.mockhub.chaos.ErrorRateTransformer;
 import io.mockhub.controller.RuntimeController;
 import io.mockhub.runtime.CorsForRequest;
@@ -361,6 +362,12 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     AiSettingsStore aiSettings = new AiSettingsStore(dataDir, config.aiApiKey);
     AiProviders aiProviders = AiProviders.defaults();
     ChatCompletions chat = new ChatCompletions(new JdkLlmTransport(), aiProviders, config.publicUrl);
+    BinDrafter.Llm publicLlm = (system, user) -> {
+      ArrayNode messages = Jsons.MAPPER.createArrayNode();
+      messages.addObject().put("role", "system").put("content", system);
+      messages.addObject().put("role", "user").put("content", user);
+      return chat.complete(aiSettings.get(), messages, null).message().path("content").asText("");
+    };
     RateLimiter rateLimiter = new RateLimiter(clock);
     DefaultResponseStubs defaultResponses = new DefaultResponseStubs(stubs);
     RuntimeService runtimeService = new RuntimeService(projects, defaultResponses, rateLimiter);
@@ -413,7 +420,8 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
         new ImportExportController(projects, stubs, exporters, importers, urls, new WireMockArchiveImporter(bodyFiles), drift),
         new ContractController(projects, drift, new ContractPatcher(aiSettings, chat, history::get)),
         new OpenApiLinkController(specFetcher, importers),
-        new AiController(aiSettings, aiProviders, chat, assistant, assistantJobs, projects, urls, new BodyGenerator(aiSettings, chat)),
+        new AiController(aiSettings, aiProviders, chat, assistant, assistantJobs, projects, urls, new BodyGenerator(aiSettings, chat),
+            new TemplateFixer(publicLlm::complete, TemplateFixer.PROJECT_HELPERS, TemplateFixer.MAX_PROJECT_TEMPLATE)),
         new BackupController(new BackupService(orgs, teams, projects, gateway, dataStore, bodyFiles, datasets, connections, grpc, clock)),
         new DataController(projects, stubs, dataStore, crud),
         new StateController(projects, stateRepository, clock),
@@ -440,12 +448,6 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     Function<String, Optional<Principal>> publicUser =
         header -> Optional.ofNullable(authRef.get()).filter(AuthService::enabled).flatMap(a -> a.principal(header)).filter(p -> !p.anonymous());
     BooleanSupplier publicAiOn = () -> aiSettings.get().enabled();
-    BinDrafter.Llm publicLlm = (system, user) -> {
-      ArrayNode messages = Jsons.MAPPER.createArrayNode();
-      messages.addObject().put("role", "system").put("content", system);
-      messages.addObject().put("role", "user").put("content", user);
-      return chat.complete(aiSettings.get(), messages, null).message().path("content").asText("");
-    };
     BinProject binProject = BinProject.around(bins, projects, stubs, crud, teamChoice, defaultResponses);
     PublicToolsFilter publicTools = new PublicToolsFilter(config.publicTools, publicLimits, List.of(
         new EchoTool(),

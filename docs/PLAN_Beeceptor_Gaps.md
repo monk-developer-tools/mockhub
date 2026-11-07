@@ -200,7 +200,7 @@ Split out of T1. Three things block it on the public demo: MockHub reads only co
 | Beeceptor | Ours | Status | Phase |
 |---|---|---|---|
 | Template helpers `dateAdd`, `dateDiff`, `coalesce`, `objectMerge`, `switch`, `repeat`, `someOf`, sort by key, `reverse`, `isInteger`, `isDate`, `base64Decode`, `urlDecode`, `padStart`/`padEnd`, `concat` | All of them, with Beeceptor's names and argument order, plus `oneOf`, `jsonParse`, `dateParse`, `lowercase`, `uppercase` | ✅ | P1 |
-| **Fix template with AI** | — | ❌ | P2 |
+| **Fix template with AI** | Try it shows template errors with **Fix with AI** (`POST /projects/{id}/ai/template/fix`) | 🟡 built and tested, not yet deployed or browser-checked | P2 |
 | **OpenTelemetry (OTLP) export** of traffic, logs and metrics | — | ❌ | P3 |
 | **Workspaces** (group projects inside an organisation) | — | ❌ | P4 |
 | **Header masking** in request history | ❔ | ❔ | P5 |

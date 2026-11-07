@@ -1,6 +1,7 @@
 package io.mockhub.publictools;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import io.mockhub.ai.TemplateFixer;
 import io.mockhub.api.Jsons;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,17 +37,6 @@ public final class BinDrafter {
       method "ANY", no conditions and no answers; it answers list, get, create, replace, patch and delete with stored records.
       Never put real secrets in a rule; use placeholders such as YOUR_TOKEN.
       """;
-  static final String FIX = """
-      You fix Handlebars templates for a mock HTTP answer (WireMock response templating with MockHub helpers).
-      Reply with the corrected template only, inside one ``` block, and nothing else. Keep everything that already works,
-      change as little as possible, and keep it valid for the same content type. Helpers you can use include
-      {{jsonPath request.body '$.id'}}, {{request.path}}, {{request.query.name}}, {{request.headers.Name}}, {{pathParams.id}},
-      {{now}}, {{now offset='1 days' format='yyyy-MM-dd'}}, {{randomValue type='UUID'}}, {{randomInt lower=1 upper=9}},
-      {{fake 'Name.fullName'}}, {{#if x}}…{{else}}…{{/if}}, {{#each list}}…{{/each}}, {{#eq a b}}…{{/eq}},
-      {{counter 'name'}}, {{saveValue 'k' 'v'}}, {{savedValue 'k' default=''}}, {{addToList 'name' 'v'}}, {{savedList 'name'}}.
-      Three closing braces }}} end a triple-stash; put a space between }} and a following } in JSON.
-      """;
-
   public interface Llm {
     String complete(String system, String user);
   }
@@ -81,16 +71,7 @@ public final class BinDrafter {
 
   String fix(String template, String error, String sample) {
     if (!available()) throw new Unavailable("This server has no AI provider set up.");
-    if (template == null || template.isBlank()) throw new IllegalArgumentException("Send the template to fix");
-    if (template.length() > MAX_TEMPLATE) throw new IllegalArgumentException("Keep the template under 16 KB");
-    String why = error == null ? "" : error.strip();
-    String user = "Template:\n" + template + "\n\nError:\n" + (why.isEmpty() ? "(none given; it doesn't do what was meant)" : cut(why, 2000))
-        + (sample == null || sample.isBlank() ? "" : "\n\nA request it answers:\n" + cut(sample, 4000));
-    String reply = llm.complete(FIX, user);
-    String fixed = LlmJson.unfence(reply);
-    if (fixed.isBlank()) throw new IllegalArgumentException("The AI didn't return a template. Try again.");
-    if (fixed.length() > MAX_TEMPLATE) throw new IllegalArgumentException("The AI's template was over 16 KB");
-    return fixed;
+    return new TemplateFixer(llm::complete, TemplateFixer.BIN_HELPERS, MAX_TEMPLATE).fix(template, error, sample);
   }
 
   static Drafted rules(JsonNode node) {
@@ -112,9 +93,5 @@ public final class BinDrafter {
 
   static JsonNode parse(String reply) {
     return LlmJson.parse(reply, "The AI didn't return a rule. Try describing it differently.");
-  }
-
-  private static String cut(String text, int max) {
-    return text.length() <= max ? text : text.substring(0, max);
   }
 }

@@ -1,9 +1,11 @@
-import { Play } from '@phosphor-icons/react';
+import { Play, Sparkle } from '@phosphor-icons/react';
 import { useEffect, useState } from 'react';
+import { api } from '../../api/client';
 import type { Project } from '../../api/types';
 import { CodeEditor } from '../../components/CodeEditor';
 import { sampleRequest } from '../../model/sampleRequest';
 import { METHODS, type StubForm } from '../../model/stubForm';
+import { describeRequest, templateError } from '../../model/templateError';
 
 interface TryResult {
   status: number;
@@ -13,7 +15,12 @@ interface TryResult {
   body: string;
 }
 
-export function TryIt({ project, form }: { project: Project; form: StubForm }) {
+export interface TemplateFix {
+  template: string;
+  onFixed: (template: string) => void;
+}
+
+export function TryIt({ project, form, fix }: { project: Project; form: StubForm; fix?: TemplateFix }) {
   const [method, setMethod] = useState('GET');
   const [path, setPath] = useState('/');
   const [headers, setHeaders] = useState('');
@@ -21,6 +28,8 @@ export function TryIt({ project, form }: { project: Project; form: StubForm }) {
   const [result, setResult] = useState<TryResult | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [fixing, setFixing] = useState(false);
+  const [fixNote, setFixNote] = useState('');
 
   const reset = () => {
     const sample = sampleRequest(form, project.apiKey);
@@ -30,6 +39,7 @@ export function TryIt({ project, form }: { project: Project; form: StubForm }) {
     setBody(sample.body);
     setResult(null);
     setError('');
+    setFixNote('');
   };
 
   useEffect(reset, [form.urlMatch, form.url, form.method, form.kind]);
@@ -38,6 +48,7 @@ export function TryIt({ project, form }: { project: Project; form: StubForm }) {
     setBusy(true);
     setError('');
     setResult(null);
+    setFixNote('');
     const requestHeaders = new Headers();
     headers
       .split('\n')
@@ -66,6 +77,23 @@ export function TryIt({ project, form }: { project: Project; form: StubForm }) {
       setError('The connection failed. That is expected for fault stubs (connection reset, empty or garbage responses).');
     } finally {
       setBusy(false);
+    }
+  };
+
+  const broken = result ? templateError(result.status, result.body) : null;
+
+  const fixWithAi = async () => {
+    if (!fix || !broken) return;
+    setFixing(true);
+    setFixNote('');
+    try {
+      const { template } = await api.fixTemplate(project.id, { template: fix.template, error: broken, request: describeRequest(method, project.basePath + path, headers, body) });
+      fix.onFixed(template);
+      setFixNote('Fixed by AI and put in the body. Check it, save the stub, then send again.');
+    } catch (e) {
+      setFixNote((e as Error).message);
+    } finally {
+      setFixing(false);
     }
   };
 
@@ -120,7 +148,22 @@ export function TryIt({ project, form }: { project: Project; form: StubForm }) {
                 </tbody>
               </table>
             </details>
-            <pre className="block">{result.body || '(empty body)'}</pre>
+            {broken ? (
+              <div className="callout warn" data-template-error>
+                <strong>The response template doesn't render.</strong>
+                <pre className="block">{broken}</pre>
+                {fix && (
+                  <div className="row-actions">
+                    <button className="btn" onClick={fixWithAi} disabled={fixing}>
+                      <Sparkle size={14} /> {fixing ? 'Fixing…' : 'Fix with AI'}
+                    </button>
+                  </div>
+                )}
+                {fixNote && <p className="muted small" data-template-fix-note>{fixNote}</p>}
+              </div>
+            ) : (
+              <pre className="block">{result.body || '(empty body)'}</pre>
+            )}
           </div>
         )}
       </div>

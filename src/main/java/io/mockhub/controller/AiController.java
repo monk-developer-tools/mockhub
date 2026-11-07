@@ -12,6 +12,7 @@ import io.mockhub.ai.AiSettingsStore;
 import io.mockhub.ai.AssistantJobs;
 import io.mockhub.ai.AssistantService;
 import io.mockhub.ai.BodyGenerator;
+import io.mockhub.ai.TemplateFixer;
 import io.mockhub.ai.ChatCompletions;
 import io.mockhub.ai.ProposedChange;
 import io.mockhub.api.ApiException;
@@ -32,9 +33,10 @@ public final class AiController implements ApiController {
   private final ProjectService projects;
   private final BaseUrls urls;
   private final BodyGenerator bodies;
+  private final TemplateFixer fixer;
 
   public AiController(AiSettingsStore store, AiProviders providers, ChatCompletions chat, AssistantService assistant,
-      AssistantJobs jobs, ProjectService projects, BaseUrls urls, BodyGenerator bodies) {
+      AssistantJobs jobs, ProjectService projects, BaseUrls urls, BodyGenerator bodies, TemplateFixer fixer) {
     this.store = store;
     this.providers = providers;
     this.chat = chat;
@@ -43,6 +45,7 @@ public final class AiController implements ApiController {
     this.projects = projects;
     this.urls = urls;
     this.bodies = bodies;
+    this.fixer = fixer;
   }
 
   @Override
@@ -104,6 +107,18 @@ public final class AiController implements ApiController {
           body.path("method").asText("GET"), path.isEmpty() ? "" : project.basePath() + path, body.path("status").asInt(0), body.path("current").asText(""));
       try {
         return Jsons.object().put("body", bodies.generate(request));
+      } catch (AiException e) {
+        throw new ApiException(502, e.getMessage());
+      }
+    });
+    r.post("/projects/{id}/ai/template/fix", ctx -> {
+      projects.get(ctx.path("id"));
+      if (!store.get().enabled()) throw new ApiException(409, "The AI assistant is turned off. An admin can turn it on under AI assistant.");
+      JsonNode body = ctx.json();
+      try {
+        return Jsons.object().put("template", fixer.fix(body.path("template").asText(""), body.path("error").asText(""), body.path("request").asText("")));
+      } catch (IllegalArgumentException e) {
+        throw ApiException.badRequest(e.getMessage());
       } catch (AiException e) {
         throw new ApiException(502, e.getMessage());
       }

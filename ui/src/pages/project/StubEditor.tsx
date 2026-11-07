@@ -936,7 +936,15 @@ export function StubEditor({ project, moveTargets, stub, isNew, canEdit, onSaved
         <GraphQlConsole project={project} form={form} canEdit={canEdit} onCreate={createOperationStub} />
       )}
       {!isNew && grpc && <GrpcCall project={project} form={mode === 'form' ? form : fromStub(preview).form} />}
-      {!isNew && !grpc && !(form.kind === 'graphql' && mode === 'form') && <TryIt project={project} form={mode === 'form' ? form : fromStub(preview).form} />}
+      {!isNew && !grpc && !(form.kind === 'graphql' && mode === 'form') && (
+        <TryIt
+          project={project}
+          form={mode === 'form' ? form : fromStub(preview).form}
+          fix={aiEnabled && !readOnly && mode === 'form' && form.templating && ['json', 'xml', 'text'].includes(form.bodyType)
+            ? { template: form.responseBody, onFixed: (responseBody) => update({ responseBody }) }
+            : undefined}
+        />
+      )}
       {!isNew && !grpc && (
         <div className="section">
           <h3>Call it from your code</h3>
