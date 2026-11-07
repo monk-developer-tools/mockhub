@@ -181,4 +181,34 @@ class TemplateHelpersIntegrationTest {
     assertThat(results.stream().filter(r -> r.status() == 200).map(ApiClient.Result::body).distinct().toList()).containsExactly("ok 42");
     assertThat(results.stream().filter(r -> r.status() == 503).map(ApiClient.Result::body).distinct().toList()).containsExactly("busy");
   }
+
+  @Test
+  void stubsUseTheBeeceptorStyleHelpersAgainstTheRequest() {
+    // Given
+    stub("POST", "/orders", 200, """
+        {"light": "{{#switch (jsonPath request.body '$.color')}}{{#case 'green'}}Go{{/case}}{{#default}}Stop{{/default}}{{/switch}}",
+         "due": "{{dateAdd (jsonPath request.body '$.placed') '{days:3}' 'short'}}",
+         "late": {{dateDiff (jsonPath request.body '$.placed') '2026-03-10T00:00:00Z' 'days'}},
+         "code": "{{padStart (jsonPath request.body '$.n') 5 '0'}}",
+         "lines": [{{#repeat 3}}{{@index}}{{/repeat}}],
+         "first": "{{coalesce request.query.nickname 'guest'}}",
+         "kept": "[{{coalesce (jsonPath request.body '$.nickname') 'guest'}}]",
+         "number": {{isInteger (jsonPath request.body '$.n')}} }""");
+
+    // When
+    ApiClient.Result answer = api.send("POST", "/auth/orders", "{\"color\": \"green\", \"placed\": \"2026-02-25T05:15:05Z\", \"n\": 42}",
+        "application/json", Map.of());
+
+    // Then
+    assertThat(answer.status()).as(answer.body()).isEqualTo(200);
+    JsonNode json = answer.json();
+    assertThat(json.get("light").asText()).isEqualTo("Go");
+    assertThat(json.get("due").asText()).isEqualTo("2026-02-28");
+    assertThat(json.get("late").asInt()).isEqualTo(12);
+    assertThat(json.get("code").asText()).isEqualTo("00042");
+    assertThat(json.get("lines").toString()).isEqualTo("[0,1,2]");
+    assertThat(json.get("first").asText()).isEqualTo("guest");
+    assertThat(json.get("kept").asText()).isEqualTo("[]");
+    assertThat(json.get("number").asBoolean()).isTrue();
+  }
 }

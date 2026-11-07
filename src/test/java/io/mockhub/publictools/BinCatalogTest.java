@@ -9,12 +9,14 @@ import io.mockhub.fake.FakeHelpers;
 import io.mockhub.template.JwtHelpers;
 import io.mockhub.template.JwtKeys;
 import io.mockhub.template.ValidationHelpers;
+import io.mockhub.template.PortableHelpers;
 import io.mockhub.template.ValueHelpers;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -39,8 +41,8 @@ class BinCatalogTest {
   @Test
   void everyValueTheBinOffersRendersInABin() throws Exception {
     // Given
-    TemplatePlayground templates = new TemplatePlayground(List.of(new FakeHelpers(new FakeData("en")), new ValueHelpers(), new ValidationHelpers(),
-        new JwtHelpers(new JwtKeys(keys), Clock.systemUTC())), workers, 2000);
+    TemplatePlayground templates = new TemplatePlayground(Stream.concat(Stream.of(new FakeHelpers(new FakeData("en")), new ValueHelpers(), new ValidationHelpers(),
+        new JwtHelpers(new JwtKeys(keys), Clock.systemUTC())), PortableHelpers.providers().stream()).toList(), workers, 2000);
     JsonNode catalog = Jsons.MAPPER.readTree(Files.readString(Path.of("ui/src/model/dynamicValues.json")));
     BinState state = new BinState();
 

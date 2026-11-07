@@ -131,6 +131,21 @@
         {
           "label": "Value or default",
           "expression": "{{val $R.query.page default='1'}}"
+        },
+        {
+          "label": "Switch on a value",
+          "expression": "{{#switch $R.query.code}}{{#case 'abc'}}first{{/case}}{{#case 'def'}}second{{/case}}{{#default}}other{{/default}}{{/switch}}",
+          "hint": "The first case that matches wins; default when none do"
+        },
+        {
+          "label": "Repeat a block",
+          "expression": "[{{#repeat 3}}{\"n\": {{@index}} }{{/repeat}}]",
+          "hint": "Commas go between copies; comma=false leaves them out. @index and @total; up to 1,000"
+        },
+        {
+          "label": "Repeat a random number of times",
+          "expression": "[{{#repeat 1 4}}\"item\"{{/repeat}}]",
+          "hint": "Between the two counts, picked on each request"
         }
       ]
     },
@@ -211,6 +226,29 @@
           "label": "Value or a fallback",
           "expression": "{{default $R.query.page '1'}}",
           "hint": "Uses the fallback when the value is missing or blank"
+        },
+        {
+          "label": "First value that is set",
+          "expression": "{{coalesce $R.query.user $R.headers.X-User 'guest'}}",
+          "hint": "Skips missing values only; 0, false and empty text count as set"
+        },
+        {
+          "label": "Merge objects",
+          "expression": "{{{json (objectMerge (parseJson $R.body) (object status='ACTIVE'))}}}",
+          "hint": "Later objects win on the same field"
+        },
+        {
+          "label": "Read a field from JSON text",
+          "expression": "{{jsonParse $R.body 'customer.n'}}",
+          "hint": "Dots for nested fields, numbers for list positions, like items.0.id"
+        },
+        {
+          "label": "Base64 decode (short form)",
+          "expression": "{{base64Decode 'aGVsbG8gd29ybGQ='}}"
+        },
+        {
+          "label": "URL decode",
+          "expression": "{{urlDecode 'hello%20world'}}"
         }
       ]
     },
@@ -372,6 +410,14 @@
         {
           "label": "Matches regex",
           "expression": "{{#if (matches $R.path '.*/v2/.*')}}…{{/if}}"
+        },
+        {
+          "label": "Is a whole number",
+          "expression": "{{#if (isInteger $R.query.page)}}page {{$R.query.page}}{{/if}}"
+        },
+        {
+          "label": "Is a date",
+          "expression": "{{#if (isDate '2026-12-25')}}valid{{else}}invalid{{/if}}"
         }
       ]
     },
@@ -410,6 +456,20 @@
         {
           "label": "Default if empty",
           "expression": "{{defaultIfEmpty $R.query.lang 'en'}}"
+        },
+        {
+          "label": "Pad at the start",
+          "expression": "{{padStart (jsonPath $R.body '$.id') 8 '0'}}",
+          "hint": "Up to the length, with a space when no character is given"
+        },
+        {
+          "label": "Pad at the end",
+          "expression": "{{padEnd $R.query.code 6 '.'}}"
+        },
+        {
+          "label": "Join text",
+          "expression": "{{concat (jsonPath $R.body '$.name') ' <' (jsonPath $R.body '$.email') '>'}}",
+          "hint": "Missing values are skipped; lists are joined into one list"
         }
       ]
     },
@@ -467,6 +527,21 @@
         {
           "label": "Start of the month",
           "expression": "{{date (truncateDate (now) 'first day of month') format='yyyy-MM-dd'}}"
+        },
+        {
+          "label": "Add to a date",
+          "expression": "{{dateAdd '2026-02-25T05:15:05Z' '{days:3, hours:2}' 'iso'}}",
+          "hint": "Units from milliseconds to years; formats iso, utc, short, long, unix, timestamp, us, eu or a pattern like YYYYMMDD"
+        },
+        {
+          "label": "Time between two dates",
+          "expression": "{{dateDiff '2026-02-25T05:15:05Z' '2026-03-04T05:15:05Z' 'days'}}",
+          "hint": "Whole units; negative when the second date is earlier"
+        },
+        {
+          "label": "Read a date in your format",
+          "expression": "{{dateAdd (dateParse '25-02-2026' 'DD-MM-YYYY') '{days:0}' 'short'}}",
+          "hint": "dateParse also takes 'unix' and 'timestamp'"
         }
       ]
     },
@@ -497,6 +572,24 @@
         {
           "label": "Range of numbers",
           "expression": "{{toJson (range 1 5)}}"
+        },
+        {
+          "label": "Pick one of",
+          "expression": "{{oneOf 'NEW' 'PAID' 'SHIPPED'}}"
+        },
+        {
+          "label": "Pick some at random",
+          "expression": "{{{someOf (array 'red' 'green' 'blue') 1 2 true}}}",
+          "hint": "Between the two counts; true returns a JSON list, otherwise text joined by commas"
+        },
+        {
+          "label": "Sort a list",
+          "expression": "{{{json (sort (array 'lion' 'zebra' 'alligator'))}}}",
+          "hint": "Add a field for lists of objects and 'desc' to reverse, like (sort items 'price' 'desc')"
+        },
+        {
+          "label": "Reverse a list",
+          "expression": "{{{json (reverse (array 1 2 3))}}}"
         }
       ]
     },

@@ -58,7 +58,13 @@ final class RenderBudget {
     checkTime();
   }
 
-  void content(long chars) {
+  void loop(int times) {
+    iterations += times;
+    if (iterations > MAX_ITERATIONS) throw new Exceeded("Loops in the public playground run up to " + MAX_ITERATIONS + " times in total.");
+    checkTime();
+  }
+
+    void content(long chars) {
     content += chars;
     if (content > MAX_CONTENT) throw new Exceeded("The template produces too much text.");
     checkTime();

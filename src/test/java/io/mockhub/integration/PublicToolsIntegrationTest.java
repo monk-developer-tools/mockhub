@@ -955,6 +955,26 @@ class PublicToolsIntegrationTest {
   }
 
   @Test
+  void thePublicSandboxRunsTheNewHelpersAndCountsRepeatAgainstItsLoopBudget() {
+    // Given
+    server = MockHubServer.start(data, ON);
+    ApiClient api = server.api();
+    String ok = "{{#switch request.query.c}}{{#case 'a'}}A{{/case}}{{#default}}D{{/default}}{{/switch}}|{{sort (array 3 1 2)}}|"
+        + "{{dateAdd '2026-01-31T00:00:00Z' '{days:1}' 'short'}}|{{#repeat 2 comma=false}}x{{/repeat}}";
+
+    // When
+    ApiClient.Result rendered = api.post("/__public/render", Jsons.object().put("template", ok).set("request",
+        Jsons.object().put("method", "GET").put("url", "/x?c=a")).toString());
+    ApiClient.Result tooMany = api.post("/__public/render", Jsons.object().put("template",
+        "{{#repeat 1000}}{{#repeat 1000}}.{{/repeat}}{{/repeat}}").set("request", Jsons.object().put("method", "GET").put("url", "/")).toString());
+
+    // Then
+    assertThat(rendered.status()).as(rendered.body()).isEqualTo(200);
+    assertThat(rendered.json().get("output").asText()).isEqualTo("A|[1,2,3]|2026-02-01|xx");
+    assertThat(tooMany.body()).contains("Loops in the public playground run up to");
+  }
+
+  @Test
   void refusesStartersThatCantRunAndCapsStoredRecords() {
     // Given
     server = MockHubServer.start(data, ON);

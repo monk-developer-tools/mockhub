@@ -2,6 +2,7 @@ package io.mockhub.template;
 
 import com.github.jknack.handlebars.Helper;
 import com.github.jknack.handlebars.Options;
+import com.github.jknack.handlebars.TagType;
 import com.github.tomakehurst.wiremock.extension.TemplateHelperProviderExtension;
 import java.lang.reflect.Array;
 import java.math.BigDecimal;
@@ -23,7 +24,8 @@ public final class ValueHelpers implements TemplateHelperProviderExtension {
         "object", (Helper<Object>) (value, options) -> object(options),
         "json", (Helper<Object>) (value, options) -> JsonValue.stringify(value, Boolean.TRUE.equals(options.hash("pretty"))),
         "toNumber", (Helper<Object>) (value, options) -> number(value, options.hash("default")),
-        "default", (Helper<Object>) (value, options) -> empty(value) && options.params.length > 0 ? options.param(0) : value);
+        "default", (Helper<Object>) (value, options) -> options.tagType == TagType.SECTION ? FlowHelpers.defaultBlock(options)
+            : empty(value) && options.params.length > 0 ? options.param(0) : value);
   }
 
   static int length(Object value) {
@@ -51,6 +53,14 @@ public final class ValueHelpers implements TemplateHelperProviderExtension {
     } catch (NumberFormatException | ArithmeticException e) {
       return fallback;
     }
+  }
+
+  static Long whole(Object value) {
+    Object n = value instanceof Number given ? given : number(value, null);
+    if (!(n instanceof Number num)) return null;
+    double d = num.doubleValue();
+    if (Double.isNaN(d) || Double.isInfinite(d) || d != Math.rint(d) || Math.abs(d) > 9.0e15) return null;
+    return num.longValue();
   }
 
   static boolean empty(Object value) {

@@ -189,6 +189,9 @@ Chosen with the user: build sandboxes only from published, openly licensed specs
 ### T6 — Traffic monitor and local tunnel pages ✅ done
 Two tool pages over the webhook bin. `/tools/traffic-monitor/` takes a public API (with an optional base path), creates a bin and sets it to forward there, and shows the watching URL, where an example call goes, a cURL line and a link to the live log. `/tools/local-tunnel/` takes a port or local address, creates a bin in tunnel mode, shows the `java -jar mockhub.jar tunnel` command with the bin's own key, and polls until the tunnel is connected. Both add the bin to **My bins**. Checked end to end with a real tunnel client reaching a local server.
 
+### P1 — Template helpers ✅ done
+Checked against Beeceptor's template docs (control flow, array, date, string, comparison and miscellaneous pages) and the live render endpoint. Already present: `eq`/`gt`/…, `contains`, `split`, `replace`, `trim`, `base64`, `urlEncode`, `slugify`, `stripTags`, `len`, `object`, `json`, `jsonMerge`, `isNumber`. Added, with Beeceptor's names, argument order and documented outputs as the tests: `switch`/`case`/`default` (the existing `default` value helper becomes the switch default when used as a block), `repeat`, `sort`, `reverse`, `oneOf`, `someOf`, `concat`, `objectMerge`, `coalesce`, `jsonParse`, `padStart`, `padEnd`, `urlDecode`, `base64Decode`, `lowercase`, `uppercase`, `isInteger`, `isDate`, `dateParse`, `dateAdd`, `dateDiff` (UTC, with Beeceptor's format shorthands and day.js patterns). They run in stubs, bins and the public playground, where `repeat` counts against the loop budget and `padStart`/`padEnd` against the size cap, and they are in the Insert dynamic value catalogue.
+
 ### T7 — gRPC mocks without login
 Split out of T1. Three things block it on the public demo: MockHub reads only compiled descriptor sets (no `.proto` text parser); gRPC routes by service name, so two visitors uploading the same service would collide on a shared server; and the demo's nginx has no HTTP/2 or `grpc_pass`. Needs a `.proto` parser, a per-mock service namespace, and HTTP/2 gRPC in MockHub's own nginx site file.
 
@@ -196,7 +199,7 @@ Split out of T1. Three things block it on the public demo: MockHub reads only co
 
 | Beeceptor | Ours | Status | Phase |
 |---|---|---|---|
-| Template helpers `dateAdd`, `dateDiff`, `coalesce`, `objectMerge`, `switch`, `repeat`, `someOf`, sort by key, `reverse`, `isInteger`, `isDate`, `base64Decode`, `urlDecode`, `padStart`/`padEnd`, `concat` | Some exist under other names (`jsonMerge`, `ljust`/`rjust`, `join`, `pickRandom`) | 🟡 ❔ | P1 |
+| Template helpers `dateAdd`, `dateDiff`, `coalesce`, `objectMerge`, `switch`, `repeat`, `someOf`, sort by key, `reverse`, `isInteger`, `isDate`, `base64Decode`, `urlDecode`, `padStart`/`padEnd`, `concat` | All of them, with Beeceptor's names and argument order, plus `oneOf`, `jsonParse`, `dateParse`, `lowercase`, `uppercase` | ✅ | P1 |
 | **Fix template with AI** | — | ❌ | P2 |
 | **OpenTelemetry (OTLP) export** of traffic, logs and metrics | — | ❌ | P3 |
 | **Workspaces** (group projects inside an organisation) | — | ❌ | P4 |
@@ -265,7 +268,7 @@ W4 status page: a public `/status/` page and a footer badge. The badge reads the
 | 16 | T5 Virtual sandboxes catalog ✅ first three | L | Content heavy |
 | 17 | T6 Traffic monitoring and tunnel pages ✅ | S | Pages |
 | 17b | T7 gRPC mocks without login | L | Split out of T1: needs a .proto parser, per-mock service names and HTTP/2 on the demo |
-| 18 | P1 Template helpers | S | Verify, then add the missing ones |
+| 18 | P1 Template helpers ✅ | S | Verify, then add the missing ones |
 | 19 | P2 Fix template with AI | S | |
 | 20 | P3 OpenTelemetry export | M | |
 | 21 | P4 Workspaces | M | |

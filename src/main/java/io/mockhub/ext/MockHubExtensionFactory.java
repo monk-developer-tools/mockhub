@@ -87,6 +87,7 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.function.BooleanSupplier;
+import java.util.stream.Stream;
 import java.util.function.Function;
 import java.util.Optional;
 import com.github.tomakehurst.wiremock.http.Request;
@@ -144,6 +145,8 @@ import io.mockhub.template.JwtKeys;
 import io.mockhub.template.ValidationHelpers;
 import io.mockhub.template.ValidationTransformer;
 import io.mockhub.template.DatasetHelpers;
+import com.github.tomakehurst.wiremock.extension.TemplateHelperProviderExtension;
+import io.mockhub.template.PortableHelpers;
 import io.mockhub.template.ValueHelpers;
 import io.mockhub.template.WeightedTransformer;
 import io.mockhub.auth.ProjectScope;
@@ -375,6 +378,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     FakeData fakeData = new FakeData(config.fakeLocale);
     FakeHelpers fakeHelpers = new FakeHelpers(fakeData);
     ValueHelpers valueHelpers = new ValueHelpers();
+    List<TemplateHelperProviderExtension> portableHelpers = PortableHelpers.providers();
     DatasetHelpers datasetHelpers = new DatasetHelpers(datasets, () -> stateScope.current().flatMap(projects::find).map(Project::orgId));
     ValidationHelpers validationHelpers = new ValidationHelpers();
     JwtHelpers jwtHelpers = new JwtHelpers(new JwtKeys(dataDir), clock);
@@ -430,7 +434,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     McpServer mcpServer = new McpServer(mcpTools, Main.VERSION);
 
     PublicLimits publicLimits = new PublicLimits(rateLimiter);
-    TemplatePlayground templatePlayground = new TemplatePlayground(List.of(fakeHelpers, valueHelpers, validationHelpers, jwtHelpers), renderWorkers(), 2000);
+    TemplatePlayground templatePlayground = new TemplatePlayground(Stream.concat(Stream.of(fakeHelpers, valueHelpers, validationHelpers, jwtHelpers), portableHelpers.stream()).toList(), renderWorkers(), 2000);
     if (config.publicTools) orgs.ensureInstant();
     InstantMocks instantMocks = new InstantMocks(dataDir, projects, stubs, crud, () -> teams.ensureDefault(Organization.INSTANT_ID).id(), clock);
     Function<String, Optional<Principal>> publicUser =
@@ -489,6 +493,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
         jwtHelpers,
         new AuthFilter(auth, policy),
         new MockHubAdminExtension(api, new McpTask(mcpServer, principals))));
+    extensions.addAll(portableHelpers);
     extensions.addAll(new StateExtension(new ProjectStateStore(stateRepository, stateScope, clock)).create(services));
     return extensions;
   }

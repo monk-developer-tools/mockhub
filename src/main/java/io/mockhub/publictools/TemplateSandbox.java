@@ -12,6 +12,7 @@ import com.github.jknack.handlebars.helper.StringHelpers;
 import com.github.tomakehurst.wiremock.common.RequestCache;
 import com.github.tomakehurst.wiremock.extension.TemplateHelperProviderExtension;
 import com.github.tomakehurst.wiremock.extension.responsetemplating.helpers.WireMockHelpers;
+import io.mockhub.template.FlowHelpers;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.ArrayList;
@@ -23,7 +24,7 @@ import java.util.Set;
 final class TemplateSandbox {
   static final Set<String> TURNED_OFF = Set.of(
       "systemValue", "hostname", "file", "assign", "log", "partial", "block", "inline", "embedded", "precompile", "i18n", "i18nJs");
-  private static final Set<String> SIZED = Set.of("range", "randomValue", "ljust", "rjust", "center", "pickRandom");
+  private static final Set<String> SIZED = Set.of("range", "randomValue", "ljust", "rjust", "center", "pickRandom", "padStart", "padEnd", "repeat");
 
   private final Handlebars handlebars;
   private final ValueResolver[] resolvers;
@@ -87,6 +88,7 @@ final class TemplateSandbox {
         for (Object param : options.params) budget.sizesIn(param);
       }
       if (loop) budget.iterate(context);
+      if (name.equals("repeat")) budget.loop(FlowHelpers.count(options.params.length > 0 ? options.param(0) : context));
       Object result = inner.apply(context, options);
       if (result instanceof CharSequence text) budget.content(text.length());
       else if (result instanceof Collection<?> items) budget.items(items);
