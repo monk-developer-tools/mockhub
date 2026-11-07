@@ -1,0 +1,60 @@
+<div class="tool-grid">
+  <div class="tool-card">
+    <div class="tool-head">
+      <h3>Secret or link</h3>
+      <span class="tool-actions"><button type="button" class="btn ghost small" data-totp-new>New test secret</button></span>
+    </div>
+    <label class="tool-label" for="totp-input">Base32 secret or otpauth:// link</label>
+    <textarea id="totp-input" class="tool-input totp-input" rows="3" spellcheck="false" autocomplete="off" placeholder="JBSWY3DPEHPK3PXP or otpauth://totp/Shop:ada?secret=…" data-totp-input>JBSWY3DPEHPK3PXP</textarea>
+    <label class="tool-label" for="totp-qr">Or read a QR code</label>
+    <input id="totp-qr" class="tool-input" type="file" accept="image/*" data-totp-qr>
+    <p class="tool-hint">Choose a screenshot of the QR code, or paste one with Ctrl or Cmd + V anywhere on this page. It is read in your browser.</p>
+    <p class="tool-error" data-totp-error hidden></p>
+    <p class="tool-hint" data-totp-label hidden></p>
+    <div class="tool-row">
+      <div>
+        <label class="tool-label" for="totp-digits">Digits</label>
+        <select id="totp-digits" class="tool-input" data-totp-digits><option>6</option><option>7</option><option>8</option></select>
+      </div>
+      <div>
+        <label class="tool-label" for="totp-period">Period (s)</label>
+        <input id="totp-period" class="tool-input" type="number" min="10" max="300" value="30" data-totp-period>
+      </div>
+      <div>
+        <label class="tool-label" for="totp-algorithm">Algorithm</label>
+        <select id="totp-algorithm" class="tool-input" data-totp-algorithm><option>SHA1</option><option>SHA256</option><option>SHA512</option></select>
+      </div>
+    </div>
+    <p class="tool-hint">Most apps use 6 digits, 30 seconds and SHA1. A link sets these for you.</p>
+  </div>
+
+  <div class="tool-card totp-current">
+    <div class="tool-head">
+      <h3>Current code</h3>
+      <span class="tool-actions"><button type="button" class="btn secondary small" data-copy="[data-totp-code]">Copy</button></span>
+    </div>
+    <output class="totp-code" data-totp-code aria-live="polite">------</output>
+    <div class="totp-bar" role="progressbar" aria-label="Time left for this code" aria-valuemin="0" data-totp-bar><span data-totp-fill></span></div>
+    <p class="tool-hint" data-totp-remaining></p>
+    <dl class="totp-neighbours">
+      <dt>Previous</dt><dd data-totp-previous>------</dd>
+      <dt>Next</dt><dd data-totp-next>------</dd>
+    </dl>
+    <p class="tool-hint">Servers usually accept the previous and next code too, to allow for clock drift.</p>
+    <div class="tool-head"><h4 class="tool-sub">otpauth:// link</h4><span class="tool-actions"><button type="button" class="btn secondary small" data-copy="[data-totp-link]">Copy</button></span></div>
+    <pre class="tool-out tool-wrap" data-totp-link></pre>
+  </div>
+</div>
+
+<div class="tool-card">
+  <div class="tool-head"><h3>Use it in tests</h3></div>
+  <p class="tool-hint">Log in to a test account with 2FA from a script. The API runs on the MockHub demo server, so the secret is sent to it: use it only for test accounts. Codes on this page are made in your browser.</p>
+  <div class="tabs tabs-small" role="tablist" aria-label="Get a code from">
+    <button type="button" role="tab" id="totp-tab-curl" aria-controls="totp-code-curl" aria-selected="true">cURL</button>
+    <button type="button" role="tab" id="totp-tab-json" aria-controls="totp-code-json" aria-selected="false" tabindex="-1">JSON</button>
+    <button type="button" role="tab" id="totp-tab-python" aria-controls="totp-code-python" aria-selected="false" tabindex="-1">Python</button>
+  </div>
+  <div class="bin-code" id="totp-code-curl" role="tabpanel" aria-labelledby="totp-tab-curl"><pre class="tool-out" data-totp-snippet="curl"></pre><button type="button" class="btn secondary small" data-copy="[data-totp-snippet='curl']">Copy</button></div>
+  <div class="bin-code" id="totp-code-json" role="tabpanel" aria-labelledby="totp-tab-json" hidden><pre class="tool-out" data-totp-snippet="json"></pre><button type="button" class="btn secondary small" data-copy="[data-totp-snippet='json']">Copy</button></div>
+  <div class="bin-code" id="totp-code-python" role="tabpanel" aria-labelledby="totp-tab-python" hidden><pre class="tool-out" data-totp-snippet="python"></pre><button type="button" class="btn secondary small" data-copy="[data-totp-snippet='python']">Copy</button><p class="tool-hint">Runs locally with <code>pip install pyotp</code>; nothing is sent anywhere.</p></div>
+</div>

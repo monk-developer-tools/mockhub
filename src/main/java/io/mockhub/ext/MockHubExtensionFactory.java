@@ -117,6 +117,7 @@ import io.mockhub.playground.PlaygroundHistory;
 import io.mockhub.playground.PlaygroundService;
 import io.mockhub.playground.TargetGuard;
 import io.mockhub.publictools.BinProject;
+import io.mockhub.publictools.TotpTool;
 import io.mockhub.publictools.BinTool;
 import io.mockhub.publictools.BinTunnelKeys;
 import io.mockhub.publictools.Bins;
@@ -433,6 +434,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     BinProject binProject = BinProject.around(bins, projects, stubs, crud, teamChoice, defaultResponses);
     PublicToolsFilter publicTools = new PublicToolsFilter(config.publicTools, publicLimits, List.of(
         new EchoTool(),
+        new TotpTool(clock::millis),
         BinTool.create(bins, publicLimits, templatePlayground, new TargetGuard(config.binAllowPrivate, InetAddress::getAllByName, "MOCKHUB_BIN_ALLOW_PRIVATE"), tunnels, tunnels::isOnline,
             header -> Optional.ofNullable(authRef.get()).filter(AuthService::enabled).flatMap(a -> a.principal(header)).filter(p -> !p.anonymous()),
             () -> aiSettings.get().enabled(), (system, user) -> {

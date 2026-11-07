@@ -888,6 +888,31 @@ class PublicToolsIntegrationTest {
   }
 
   @Test
+  void generatesTwoFactorCodesFromASecretOrAnOtpauthLink() {
+    // Given
+    server = MockHubServer.start(data, ON);
+    ApiClient api = server.api();
+    String secret = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ";
+
+    // When
+    ApiClient.Result text = api.get("/__public/totp?secret=" + secret + "&digits=8&time=59&format=text");
+    ApiClient.Result now = api.get("/__public/totp?secret=" + secret);
+    ApiClient.Result linked = api.post("/__public/totp",
+        "{\"uri\": \"otpauth://totp/Shop:ada?secret=" + secret + "&issuer=Shop&digits=8\", \"time\": 1234567890}");
+    ApiClient.Result bad = api.get("/__public/totp?secret=not-base32!");
+
+    // Then
+    assertThat(text.status()).isEqualTo(200);
+    assertThat(text.body()).isEqualTo("94287082");
+    assertThat(now.json().get("code").asText()).matches("\\d{6}");
+    assertThat(now.json().get("secondsRemaining").asInt()).isBetween(1, 30);
+    assertThat(linked.json().get("code").asText()).isEqualTo("89005924");
+    assertThat(linked.json().get("issuer").asText()).isEqualTo("Shop");
+    assertThat(bad.status()).isEqualTo(400);
+    assertThat(bad.body()).contains("Base32");
+  }
+
+  @Test
   void refusesStartersThatCantRunAndCapsStoredRecords() {
     // Given
     server = MockHubServer.start(data, ON);

@@ -305,6 +305,7 @@ function examplesGrid(examples, icon) {
 
 const SCRIPTS = {
   jwt: 'jwt-page.js',
+  totp: 'totp-page.js',
   'curl-to-stub': 'curl-page.js',
   'stub-checker': 'stubcheck-page.js',
   'http-echo': 'echo-page.js',

@@ -162,7 +162,7 @@ The bin page now adds a **Get started** card for a new owner: catch a request (t
 | **gRPC mock from .proto, no login** | Signed-in only, from protoc descriptor sets | ❌ | T7 |
 | JSON/XML server: paste a payload, get a live API | ❔ instant mock starts from stubs or records | 🟡 | T3 |
 | CSV to REST API (upload, preview, read/add/update/delete) | Instant mock from CSV records | 🟡 needs its own page and CRUD check | T3 |
-| **2FA code generator** (QR screenshot or secret to TOTP codes, plus an API) | — | ❌ | T2 |
+| **2FA code generator** (QR screenshot or secret to TOTP codes, plus an API) | `/tools/totp/` and `GET|POST /__public/totp` | ✅ | T2 |
 | Test data generator: Handlebars templates, a sample JSON to imitate, AI picks the locale | Fields and locale picker | 🟡 | T4 |
 | **Virtual sandboxes**: ready mock copies of DHL, FedEx, UPS, AWS S3, GitHub, Amadeus and others | 10 MockHub examples | 🟡 | T5 |
 | HTTP traffic monitoring page (wrap a domain, inspect traffic) | Bin forward does it, no page | 🟡 | T6 |
@@ -173,6 +173,9 @@ The bin page now adds a **Get started** card for a new owner: catch a request (t
 
 ### T1 — GraphQL and spec URLs without login ✅ done
 `POST /__public/mocks` takes `{"from": "graphql", "text": "..."}` (SDL or an introspection result, up to 500 KB) and `"url"` in place of `text` for OpenAPI, WSDL and GraphQL; URLs are fetched with the same private-address guard as the signed-in "mock from a URL" (`MOCKHUB_PLAYGROUND_ALLOW_PRIVATE`), capped at 500 KB, after the create limit is taken. Instant mocks now allow the `mockhub-graphql` transformer on its own, with the schema checked and outside the 64 KB stub budget. `GET /__public/mocks/{slug}/graphql` lists example operations with ready queries and variables. The instant mock page has a URL field on the spec tab, a GraphQL tab and a GraphQL explorer; there is a new `/graphql-mock-server/` page. While testing, a site-wide bug where example code blocks made feature pages scroll sideways on phones was fixed.
+
+### T2 — 2FA code generator ✅ done
+`/tools/totp/` turns a Base32 secret, an `otpauth://totp/` link or a QR screenshot (chosen, or pasted with Ctrl/Cmd+V) into the current code with a countdown and the previous and next codes, all in the browser with Web Crypto. QR codes are read with the browser's BarcodeDetector where it has one, else with vendored jsQR 1.4.0 (Apache-2.0), loaded only when needed. **New test secret** makes a random one. `GET|POST /__public/totp` gives the same codes to scripts, with `format=text`, `time` and the previous and next codes; tested against the RFC 6238 vectors for SHA1, SHA256 and SHA512.
 
 ### T7 — gRPC mocks without login
 Split out of T1. Three things block it on the public demo: MockHub reads only compiled descriptor sets (no `.proto` text parser); gRPC routes by service name, so two visitors uploading the same service would collide on a shared server; and the demo's nginx has no HTTP/2 or `grpc_pass`. Needs a `.proto` parser, a per-mock service namespace, and HTTP/2 gRPC in MockHub's own nginx site file.
@@ -244,7 +247,7 @@ W4 status page: a public `/status/` page and a footer badge. The badge reads the
 | 10 | B10 Save to my MockHub | M | Joins the bin to the app |
 | 11 | B11 Onboarding | S | Polish |
 | 12 | T1 GraphQL and spec URLs without login ✅ | M | Importers exist, free path missing |
-| 13 | T2 2FA code generator | M | New tool |
+| 13 | T2 2FA code generator ✅ | M | New tool |
 | 14 | T3 Paste a payload, CSV to API page | S | Mostly pages over existing features |
 | 15 | T4 Test data generator extras | M | |
 | 16 | T5 Virtual sandboxes catalog | L | Content heavy |
