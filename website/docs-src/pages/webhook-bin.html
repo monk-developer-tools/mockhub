@@ -129,7 +129,7 @@ curl '…/__public/inspect/{id}/export?format=har' -H 'X-Bin-Token: {token}'</co
 <p>The line beside the bin URL lists what is on, for example <em>default answer (needs X-Api-Key · 10 a minute · +200 ms)</em>. From a script, <code>PUT /__public/inspect/{id}/options</code> with <code>{"cors": true, "latencyMs": 200, "rateLimit": {"requests": 10, "per": "minute"}, "requiredHeader": {"name": "X-Api-Key", "value": "…"}}</code> replaces them all; leave a setting out or set it to <code>null</code> to turn it off.</p>
 
 <h3 id="bin-routing">Routing</h3>
-<p>Routing decides what answers a request no rule matched.</p>
+<p>Routing decides what answers a request no rule matched. The <a href="/tools/traffic-monitor/">traffic monitor</a> and <a href="/tools/local-tunnel/">local tunnel</a> pages make a bin with forwarding or a tunnel already set up.</p>
 <ul>
   <li><strong>Default answer</strong>: the bin's reply, 200 <code>{"ok":true}</code> unless you change it.</li>
   <li><strong>Forward</strong>: the request goes on to a target plus an optional path prefix plus the path under the bin, with its query, headers and body, and the target's answer goes back to the sender. You can add headers to every request and every answer, and skip TLS certificate checks. Only public addresses are allowed; the target has 15 seconds and 1 MB.</li>

@@ -1,0 +1,23 @@
+<div class="tool-card" data-wrap-live hidden>
+  <div class="tool-head">
+    <h3 data-wrap-title>Your URL</h3>
+    <span class="tool-actions">
+      <span class="tool-badge" data-wrap-state></span>
+      <button type="button" class="btn secondary small" data-copy="[data-wrap-url]">Copy URL</button>
+    </span>
+  </div>
+  <pre class="tool-out tool-url" data-wrap-url></pre>
+  <p class="tool-hint" data-wrap-explain></p>
+  <div data-wrap-command-box hidden>
+    <div class="tool-head"><h4 class="tool-sub">Run this on your machine</h4><span class="tool-actions"><button type="button" class="btn secondary small" data-copy="[data-wrap-command]">Copy</button></span></div>
+    <pre class="tool-out tool-wrap" data-wrap-command></pre>
+    <p class="tool-hint">It needs Java 17 or newer and the <a href="/docs/tunnel/">MockHub jar</a>. The key in it opens only this tunnel; keep it to yourself.</p>
+  </div>
+  <div class="tool-head"><h4 class="tool-sub">Try it</h4><span class="tool-actions"><button type="button" class="btn secondary small" data-copy="[data-wrap-curl]">Copy</button></span></div>
+  <pre class="tool-out tool-wrap" data-wrap-curl></pre>
+  <div class="tool-actions-row">
+    <a class="btn primary" data-wrap-log href="/tools/webhook-bin/">Open the live log</a>
+    <button type="button" class="btn ghost small" data-wrap-again>Start over</button>
+  </div>
+  <p class="tool-hint">The live log shows every request beside its answer, with search, cURL copies and HAR export. The URL stays under <strong>My bins</strong> there, and it is deleted 24 hours after its last request.</p>
+</div>

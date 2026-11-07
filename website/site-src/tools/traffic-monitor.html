@@ -1,0 +1,13 @@
+<div class="tool-card tool-start" data-wrap-start data-wrap-tool="forward">
+  <h3>Watch the traffic to an API</h3>
+  <p>You get a URL that passes every request on to the API and records it with the answer that came back. Point your app or a webhook sender at it instead of the API.</p>
+  <label class="tool-label" for="wrap-target">API to watch</label>
+  <input id="wrap-target" class="tool-input" type="url" spellcheck="false" autocomplete="off" value="https://mockhub.devops-monk.com/__public/echo" data-wrap-input>
+  <p class="tool-hint">A public http or https address, with an optional base path such as <code>/v1</code>. Requests to the new URL keep their path, query, headers and body.</p>
+  <div class="tool-actions-row">
+    <button type="button" class="btn primary" data-wrap-create>Start watching</button>
+  </div>
+  <p class="tool-error" data-wrap-error hidden></p>
+</div>
+
+<!-- wrap-result -->

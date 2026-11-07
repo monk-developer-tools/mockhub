@@ -165,8 +165,8 @@ The bin page now adds a **Get started** card for a new owner: catch a request (t
 | **2FA code generator** (QR screenshot or secret to TOTP codes, plus an API) | `/tools/totp/` and `GET|POST /__public/totp` | ✅ | T2 |
 | Test data generator: Handlebars templates, a sample JSON to imitate, AI picks the locale | Fields, Template, Sample and AI tabs | ✅ | T4 |
 | **Virtual sandboxes**: ready mock copies of DHL, FedEx, UPS, AWS S3, GitHub, Amadeus and others | GitHub, Stripe and Twilio sandboxes from their published OpenAPI specs | 🟡 the carriers, Amadeus and S3 aren't done | T5 |
-| HTTP traffic monitoring page (wrap a domain, inspect traffic) | Bin forward does it, no page | 🟡 | T6 |
-| Local tunnel page | Tunnel docs; bin tunnel | 🟡 | T6 |
+| HTTP traffic monitoring page (wrap a domain, inspect traffic) | `/tools/traffic-monitor/`, a bin set to forward | ✅ | T6 |
+| Local tunnel page | `/tools/local-tunnel/`, a bin set to tunnel, with the command and a connected badge | ✅ | T6 |
 | HTTP echo | ✅ | ✅ | — |
 
 ---
@@ -185,6 +185,9 @@ The fake data tool has four tabs. **Fields** as before. **Template** renders a H
 
 ### T5 — Vendor sandboxes ✅ first three
 Chosen with the user: build sandboxes only from published, openly licensed specs, so their paths and answers match the real APIs, instead of writing them from memory. `scripts/sandbox-specs.mjs` downloads GitHub's `rest-api-description`, Stripe's `openapi` and Twilio's `twilio-oai` (all MIT), keeps 12, 11 and 5 operations and the components they reference, and writes `sandbox-*.json` with the source, copyright and licence in `info`. Each becomes an example (`sandbox-github`, `sandbox-stripe`, `sandbox-twilio`) that the demo installs on deploy and instant mocks can start from. GitHub and Twilio answer with their own examples; Stripe's spec has none, so its answers follow the schemas with generated values. Fixed on the way: the OpenAPI importer served `{"$ref": ...}` as the body for named examples that point at `#/components/examples` (GitHub's spec does this everywhere). Not stateful: MockHub's CRUD routes are single-segment with a bare list, which matches neither GitHub's nested issue paths nor Stripe's list envelope. DHL, FedEx, UPS and Amadeus keep their specs behind sign-ups and AWS publishes Smithy models rather than OpenAPI, so they are left for later.
+
+### T6 — Traffic monitor and local tunnel pages ✅ done
+Two tool pages over the webhook bin. `/tools/traffic-monitor/` takes a public API (with an optional base path), creates a bin and sets it to forward there, and shows the watching URL, where an example call goes, a cURL line and a link to the live log. `/tools/local-tunnel/` takes a port or local address, creates a bin in tunnel mode, shows the `java -jar mockhub.jar tunnel` command with the bin's own key, and polls until the tunnel is connected. Both add the bin to **My bins**. Checked end to end with a real tunnel client reaching a local server.
 
 ### T7 — gRPC mocks without login
 Split out of T1. Three things block it on the public demo: MockHub reads only compiled descriptor sets (no `.proto` text parser); gRPC routes by service name, so two visitors uploading the same service would collide on a shared server; and the demo's nginx has no HTTP/2 or `grpc_pass`. Needs a `.proto` parser, a per-mock service namespace, and HTTP/2 gRPC in MockHub's own nginx site file.
@@ -260,7 +263,7 @@ W4 status page: a public `/status/` page and a footer badge. The badge reads the
 | 14 | T3 Paste a payload, CSV to API page ✅ | S | Mostly pages over existing features |
 | 15 | T4 Test data generator extras ✅ | M | |
 | 16 | T5 Virtual sandboxes catalog ✅ first three | L | Content heavy |
-| 17 | T6 Traffic monitoring and tunnel pages | S | Pages |
+| 17 | T6 Traffic monitoring and tunnel pages ✅ | S | Pages |
 | 17b | T7 gRPC mocks without login | L | Split out of T1: needs a .proto parser, per-mock service names and HTTP/2 on the demo |
 | 18 | P1 Template helpers | S | Verify, then add the missing ones |
 | 19 | P2 Fix template with AI | S | |

@@ -1,0 +1,13 @@
+<div class="tool-card tool-start" data-wrap-start data-wrap-tool="tunnel">
+  <h3>Give a service on your machine a public URL</h3>
+  <p>Webhook senders and phones can't reach <code>localhost</code>. Run one command and requests to a public URL reach your service, and each one is recorded with its answer.</p>
+  <label class="tool-label" for="wrap-local">Local service</label>
+  <input id="wrap-local" class="tool-input" type="text" spellcheck="false" autocomplete="off" value="http://localhost:3000" data-wrap-input>
+  <p class="tool-hint">A port such as <code>3000</code> or an address such as <code>http://localhost:8080</code>. The tunnel runs from your machine, so nothing on it is opened to the internet.</p>
+  <div class="tool-actions-row">
+    <button type="button" class="btn primary" data-wrap-create>Create a tunnel</button>
+  </div>
+  <p class="tool-error" data-wrap-error hidden></p>
+</div>
+
+<!-- wrap-result -->
