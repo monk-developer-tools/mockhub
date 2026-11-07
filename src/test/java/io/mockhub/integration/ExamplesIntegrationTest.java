@@ -42,7 +42,33 @@ class ExamplesIntegrationTest {
 
   @Test
   void listsExamples() {
-    assertThat(api.get(API + "/examples").json()).hasSize(13);
+    assertThat(api.get(API + "/examples").json()).hasSize(16);
+  }
+
+  @Test
+  void vendorSandboxesAnswerWithThePublishedSpecsOwnExamples() {
+    // When
+    List<Integer> installed = List.of("sandbox-github", "sandbox-stripe", "sandbox-twilio").stream()
+        .map(id -> api.post(API + "/examples/" + id + "/install", "").status()).toList();
+    JsonNode repo = api.get("/sandbox-github/repos/octocat/Hello-World").json();
+    JsonNode user = api.get("/sandbox-github/users/octocat").json();
+    ApiClient.Result issue = api.post("/sandbox-github/repos/octocat/Hello-World/issues", "{\"title\": \"Found a bug\"}");
+    JsonNode customer = api.get("/sandbox-stripe/v1/customers/cus_123").json();
+    ApiClient.Result deleted = api.send("DELETE", "/sandbox-stripe/v1/customers/cus_123", null, null, Map.of());
+    ApiClient.Result message = api.send("POST", "/sandbox-twilio/2010-04-01/Accounts/AC123/Messages.json", "To=%2B15558675310&Body=Hello",
+        "application/x-www-form-urlencoded", Map.of());
+
+    // Then
+    assertThat(installed).containsOnly(201);
+    assertThat(repo.get("full_name").asText()).isEqualTo("octocat/Hello-World");
+    assertThat(repo.has("$ref")).isFalse();
+    assertThat(user.get("login").asText()).isEqualTo("octocat");
+    assertThat(issue.status()).isEqualTo(201);
+    assertThat(issue.json().has("number")).isTrue();
+    assertThat(customer.get("object").asText()).isEqualTo("customer");
+    assertThat(deleted.json().get("deleted").asBoolean()).isTrue();
+    assertThat(message.status()).isEqualTo(201);
+    assertThat(message.json().get("account_sid").asText()).startsWith("AC");
   }
 
   @Test

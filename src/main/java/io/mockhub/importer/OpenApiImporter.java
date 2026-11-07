@@ -112,7 +112,7 @@ public final class OpenApiImporter implements StubImporter {
           }
           JsonNode media = content.get(contentType);
           if (media.has("example")) body = media.get("example");
-          if (body == null) body = firstExample(media.path("examples"));
+          if (body == null) body = namedExample(spec, media.path("examples"));
           if (body == null && media.has("schema")) body = sample(spec, media.get("schema"), 0, new ArrayDeque<>());
         }
       }
@@ -198,6 +198,19 @@ public final class OpenApiImporter implements StubImporter {
 
   private static String singular(String name) {
     return name.endsWith("ies") ? name.substring(0, name.length() - 3) + "y" : name.endsWith("s") ? name.substring(0, name.length() - 1) : name;
+  }
+
+  private static JsonNode namedExample(JsonNode spec, JsonNode examples) {
+    if (examples == null || !examples.isObject() || examples.isEmpty()) return null;
+    JsonNode node = examples.elements().next();
+    for (int guard = 0; node != null && guard < 10; guard++) {
+      node = deref(spec, node);
+      if (node == null || !node.has("value")) return node;
+      JsonNode value = node.get("value");
+      if (!value.isObject() || !value.has("$ref") || value.size() != 1) return value;
+      node = value;
+    }
+    return node;
   }
 
   private static JsonNode firstExample(JsonNode examples) {

@@ -156,5 +156,41 @@
       "Streaming"
     ],
     "file": "grpc-inventory.json"
+  },
+  {
+    "id": "sandbox-github",
+    "name": "GitHub REST API — sandbox (unofficial)",
+    "slug": "sandbox-github",
+    "description": "Users, repositories, issues, comments, pull requests and commits from GitHub's published OpenAPI description (github/rest-api-description, MIT), answered with GitHub's own examples. Point a client at it instead of api.github.com.",
+    "tags": [
+      "REST",
+      "Sandbox",
+      "OpenAPI"
+    ],
+    "file": "sandbox-github-example.json"
+  },
+  {
+    "id": "sandbox-stripe",
+    "name": "Stripe API — sandbox (unofficial)",
+    "slug": "sandbox-stripe",
+    "description": "Customers, payment intents, charges, refunds and balance from Stripe's published OpenAPI spec (stripe/openapi, MIT). Answers follow Stripe's schemas, filled with generated values. Point a client at it instead of api.stripe.com.",
+    "tags": [
+      "REST",
+      "Sandbox",
+      "OpenAPI"
+    ],
+    "file": "sandbox-stripe-example.json"
+  },
+  {
+    "id": "sandbox-twilio",
+    "name": "Twilio Messaging and Voice API — sandbox (unofficial)",
+    "slug": "sandbox-twilio",
+    "description": "Send and read SMS messages and calls from Twilio's published OpenAPI spec (twilio/twilio-oai, MIT), answered with Twilio's own examples. Point a client at it instead of api.twilio.com.",
+    "tags": [
+      "REST",
+      "Sandbox",
+      "OpenAPI"
+    ],
+    "file": "sandbox-twilio-example.json"
   }
 ]

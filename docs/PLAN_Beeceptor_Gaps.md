@@ -164,7 +164,7 @@ The bin page now adds a **Get started** card for a new owner: catch a request (t
 | CSV to REST API (upload, preview, read/add/update/delete) | `/tools/csv-to-api/` with a preview and a records table | ✅ | T3 |
 | **2FA code generator** (QR screenshot or secret to TOTP codes, plus an API) | `/tools/totp/` and `GET|POST /__public/totp` | ✅ | T2 |
 | Test data generator: Handlebars templates, a sample JSON to imitate, AI picks the locale | Fields, Template, Sample and AI tabs | ✅ | T4 |
-| **Virtual sandboxes**: ready mock copies of DHL, FedEx, UPS, AWS S3, GitHub, Amadeus and others | 10 MockHub examples | 🟡 | T5 |
+| **Virtual sandboxes**: ready mock copies of DHL, FedEx, UPS, AWS S3, GitHub, Amadeus and others | GitHub, Stripe and Twilio sandboxes from their published OpenAPI specs | 🟡 the carriers, Amadeus and S3 aren't done | T5 |
 | HTTP traffic monitoring page (wrap a domain, inspect traffic) | Bin forward does it, no page | 🟡 | T6 |
 | Local tunnel page | Tunnel docs; bin tunnel | 🟡 | T6 |
 | HTTP echo | ✅ | ✅ | — |
@@ -182,6 +182,9 @@ The bin page now adds a **Get started** card for a new owner: catch a request (t
 
 ### T4 — Test data generator extras ✅ done
 The fake data tool has four tabs. **Fields** as before. **Template** renders a Handlebars template once per record in one call to the public render sandbox (`{{#each (range 1 N)}}` with a record separator), so every helper and `locale=` on `fake` work, and each record must be JSON. **Sample** turns a pasted record into fields from its key names and value shapes (e-mails, URLs, UUIDs, dates, timestamps, numbers, booleans, nested objects). **AI**, for signed-in users on a server with an AI provider, sends a description to `POST /__public/fake/draft`, which returns fields, a count and a locale; every field is generated once before it is offered. While building it, the per-locale Faker cache, which any public caller could grow without limit by sending new locale tags, was capped at 32.
+
+### T5 — Vendor sandboxes ✅ first three
+Chosen with the user: build sandboxes only from published, openly licensed specs, so their paths and answers match the real APIs, instead of writing them from memory. `scripts/sandbox-specs.mjs` downloads GitHub's `rest-api-description`, Stripe's `openapi` and Twilio's `twilio-oai` (all MIT), keeps 12, 11 and 5 operations and the components they reference, and writes `sandbox-*.json` with the source, copyright and licence in `info`. Each becomes an example (`sandbox-github`, `sandbox-stripe`, `sandbox-twilio`) that the demo installs on deploy and instant mocks can start from. GitHub and Twilio answer with their own examples; Stripe's spec has none, so its answers follow the schemas with generated values. Fixed on the way: the OpenAPI importer served `{"$ref": ...}` as the body for named examples that point at `#/components/examples` (GitHub's spec does this everywhere). Not stateful: MockHub's CRUD routes are single-segment with a bare list, which matches neither GitHub's nested issue paths nor Stripe's list envelope. DHL, FedEx, UPS and Amadeus keep their specs behind sign-ups and AWS publishes Smithy models rather than OpenAPI, so they are left for later.
 
 ### T7 — gRPC mocks without login
 Split out of T1. Three things block it on the public demo: MockHub reads only compiled descriptor sets (no `.proto` text parser); gRPC routes by service name, so two visitors uploading the same service would collide on a shared server; and the demo's nginx has no HTTP/2 or `grpc_pass`. Needs a `.proto` parser, a per-mock service namespace, and HTTP/2 gRPC in MockHub's own nginx site file.
@@ -218,7 +221,7 @@ Every page under Beeceptor's three header menus was read, plus the footer.
 | **gRPC mock server page** | — | ❌ | W2 (with T7) |
 | CRUD REST APIs | `/crud-api/` | ✅ | — |
 | JSON/XML server | `/mock-api/` | ✅ page, 🟡 paste flow (T3) | T3 |
-| Ready-to-use mock servers | `/examples/` | 🟡 smaller catalog (T5) | T5 |
+| Ready-to-use mock servers | `/examples/`, 16 projects including 3 vendor sandboxes | 🟡 | T5 |
 | **CSV to REST API page** | — | ❌ | T3 |
 | **2FA code generator page** | — | ❌ | T2 |
 | HTTP echo, webhook testing, generate test data | ✅ | ✅ | — |
@@ -256,7 +259,7 @@ W4 status page: a public `/status/` page and a footer badge. The badge reads the
 | 13 | T2 2FA code generator ✅ | M | New tool |
 | 14 | T3 Paste a payload, CSV to API page ✅ | S | Mostly pages over existing features |
 | 15 | T4 Test data generator extras ✅ | M | |
-| 16 | T5 Virtual sandboxes catalog | L | Content heavy |
+| 16 | T5 Virtual sandboxes catalog ✅ first three | L | Content heavy |
 | 17 | T6 Traffic monitoring and tunnel pages | S | Pages |
 | 17b | T7 gRPC mocks without login | L | Split out of T1: needs a .proto parser, per-mock service names and HTTP/2 on the demo |
 | 18 | P1 Template helpers | S | Verify, then add the missing ones |

@@ -145,4 +145,86 @@ class OpenApiImporterTest {
     for (JsonNode child : node) count += nodes(child);
     return count;
   }
+
+  @Test
+  void resolvesNamedExamplesThatPointAtComponents() {
+    // Given
+    String spec = """
+        {
+         "openapi": "3.0.3",
+         "info": {
+          "title": "t",
+          "version": "1"
+         },
+         "paths": {
+          "/user": {
+           "get": {
+            "responses": {
+             "200": {
+              "description": "ok",
+              "content": {
+               "application/json": {
+                "schema": {
+                 "type": "object"
+                },
+                "examples": {
+                 "default": {
+                  "$ref": "#/components/examples/user"
+                 }
+                }
+               }
+              }
+             }
+            }
+           }
+          },
+          "/issue": {
+           "get": {
+            "responses": {
+             "200": {
+              "description": "ok",
+              "content": {
+               "application/json": {
+                "examples": {
+                 "default": {
+                  "summary": "Issue",
+                  "value": {
+                   "$ref": "#/components/examples/issue"
+                  }
+                 }
+                }
+               }
+              }
+             }
+            }
+           }
+          }
+         },
+         "components": {
+          "examples": {
+           "user": {
+            "value": {
+             "login": "octocat",
+             "id": 1
+            }
+           },
+           "issue": {
+            "value": {
+             "number": 1347
+            }
+           }
+          }
+         }
+        }
+        """;
+
+    // When
+    StubImporter.Result result = importer.parse(new StubImporter.Request(project("gh"), spec, Map.of()));
+
+    // Then
+    assertThat(result.stubs()).hasSize(2);
+    assertThat(result.stubs()).anySatisfy(s -> assertThat(s.at("/response/jsonBody/login").asText()).isEqualTo("octocat"));
+    assertThat(result.stubs()).anySatisfy(s -> assertThat(s.at("/response/jsonBody/number").asInt()).isEqualTo(1347));
+    assertThat(result.stubs()).noneSatisfy(s -> assertThat(s.at("/response/jsonBody").has("$ref")).isTrue());
+  }
 }

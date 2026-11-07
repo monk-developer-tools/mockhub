@@ -340,11 +340,16 @@ function exampleProjects() {
   return JSON.parse(readFileSync(join(dir, 'index.json'), 'utf8')).map((e) => {
     const content = JSON.parse(readFileSync(join(dir, e.file), 'utf8'));
     const grpc = Boolean(content.descriptors?.length);
-    const stubs = (content.stubs ?? []).map((stub) => ({
+    const imported = (content.imports ?? []).filter((i) => i.format === 'openapi' && i.file.endsWith('.json')).flatMap((i) => {
+      const spec = JSON.parse(readFileSync(join(dir, i.file), 'utf8'));
+      return Object.entries(spec.paths ?? {}).flatMap(([path, item]) => ['get', 'post', 'put', 'patch', 'delete'].filter((m) => item[m])
+        .map((m) => ({ method: m.toUpperCase(), path, plain: !path.includes('{') })));
+    });
+    const stubs = [...imported, ...(content.stubs ?? []).map((stub) => ({
       method: stub.request?.method ?? 'ANY',
       path: stub.request?.urlPath ?? stub.request?.url ?? stub.request?.urlPathTemplate ?? stub.request?.urlPathPattern ?? stub.request?.urlPattern ?? '/',
       plain: Boolean(stub.request?.urlPath ?? stub.request?.url) && stub.response?.status !== undefined,
-    })).filter((stub, i, all) => stub.path !== '/.*' && all.findIndex((o) => o.method === stub.method && o.path === stub.path) === i);
+    }))].filter((stub, i, all) => stub.path !== '/.*' && all.findIndex((o) => o.method === stub.method && o.path === stub.path) === i);
     const call = stubs.find((stub) => stub.method === 'GET' && stub.plain && !stub.path.includes('{'));
     return { ...e, grpc, stubs, call: call?.path };
   });

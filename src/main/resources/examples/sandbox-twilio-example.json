@@ -1,0 +1,10 @@
+{
+  "imports": [
+    {
+      "format": "openapi",
+      "file": "sandbox-twilio.json",
+      "options": {}
+    }
+  ],
+  "stubs": []
+}

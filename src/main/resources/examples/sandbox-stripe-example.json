@@ -1,0 +1,10 @@
+{
+  "imports": [
+    {
+      "format": "openapi",
+      "file": "sandbox-stripe.json",
+      "options": {}
+    }
+  ],
+  "stubs": []
+}
