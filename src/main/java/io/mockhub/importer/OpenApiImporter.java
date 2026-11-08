@@ -142,13 +142,13 @@ public final class OpenApiImporter implements StubImporter {
   }
 
   private JsonNode sample(JsonNode spec, JsonNode schema, int depth, Deque<String> refs, String name, SampleValues values, Budget budget) {
-    if (schema == null || depth > MAX_DEPTH || !budget.take()) return Jsons.MAPPER.nullNode();
+    if (schema == null || !budget.take()) return Jsons.MAPPER.nullNode();
     if (schema.has("$ref")) {
       String ref = schema.get("$ref").asText();
       if (refs.contains(ref)) return Jsons.MAPPER.nullNode();
       refs.push(ref);
       try {
-        return sample(spec, resolveRef(spec, ref), depth + 1, refs, name, values, budget);
+        return sample(spec, resolveRef(spec, ref), depth, refs, name, values, budget);
       } finally {
         refs.pop();
       }
@@ -173,6 +173,7 @@ public final class OpenApiImporter implements StubImporter {
     switch (type) {
       case "object": {
         ObjectNode obj = Jsons.object();
+        if (depth > MAX_DEPTH) return obj;
         for (Iterator<Map.Entry<String, JsonNode>> it = schema.path("properties").fields(); it.hasNext(); ) {
           var p = it.next();
           obj.set(p.getKey(), sample(spec, p.getValue(), depth + 1, refs, p.getKey(), values, budget));
@@ -181,8 +182,12 @@ public final class OpenApiImporter implements StubImporter {
       }
       case "array": {
         ArrayNode arr = Jsons.MAPPER.createArrayNode();
+        if (depth > MAX_DEPTH) return arr;
         int items = depth == 0 ? SampleValues.ARRAY_ITEMS : 1;
-        for (int i = 0; i < items; i++) arr.add(sample(spec, schema.path("items"), depth + 1, refs, singular(name), values, budget));
+        for (int i = 0; i < items; i++) {
+          JsonNode item = sample(spec, schema.path("items"), depth + 1, refs, singular(name), values, budget);
+          if (!item.isNull()) arr.add(item);
+        }
         return arr;
       }
       case "integer":

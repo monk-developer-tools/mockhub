@@ -164,7 +164,7 @@ The bin page now adds a **Get started** card for a new owner: catch a request (t
 | CSV to REST API (upload, preview, read/add/update/delete) | `/tools/csv-to-api/` with a preview and a records table | ✅ | T3 |
 | **2FA code generator** (QR screenshot or secret to TOTP codes, plus an API) | `/tools/totp/` and `GET|POST /__public/totp` | ✅ | T2 |
 | Test data generator: Handlebars templates, a sample JSON to imitate, AI picks the locale | Fields, Template, Sample and AI tabs | ✅ | T4 |
-| **Virtual sandboxes**: ready mock copies of DHL, FedEx, UPS, AWS S3, GitHub, Amadeus and others | GitHub, Stripe and Twilio sandboxes from their published OpenAPI specs | 🟡 the carriers, Amadeus and S3 aren't done | T5 |
+| **Virtual sandboxes**: ready mock copies of DHL, FedEx, UPS, AWS S3, GitHub, Amadeus and others | GitHub, Stripe, Twilio, UPS and Amadeus sandboxes from their published specs (all MIT) | 🟡 DHL and FedEx publish no openly licensed spec, and AWS S3 has no OpenAPI description (only Smithy models), so they aren't done | T5 |
 | HTTP traffic monitoring page (wrap a domain, inspect traffic) | `/tools/traffic-monitor/`, a bin set to forward | ✅ | T6 |
 | Local tunnel page | `/tools/local-tunnel/`, a bin set to tunnel, with the command and a connected badge | ✅ | T6 |
 | HTTP echo | ✅ | ✅ | — |
@@ -258,7 +258,7 @@ Every page under Beeceptor's three header menus was read, plus the footer.
 | **gRPC mock server page** | `/grpc-mock-server/` | ✅ | W2 ✅ |
 | CRUD REST APIs | `/crud-api/` | ✅ | — |
 | JSON/XML server | `/mock-api/`, `/tools/json-server/` | ✅ | T3 ✅ |
-| Ready-to-use mock servers | `/examples/`, 16 projects including 3 vendor sandboxes | 🟡 | T5 |
+| Ready-to-use mock servers | `/examples/`, 18 projects including 5 vendor sandboxes | 🟡 | T5 |
 | **CSV to REST API page** | `/tools/csv-to-api/` | ✅ | T3 ✅ |
 | **2FA code generator page** | `/tools/totp/` | ✅ | T2 ✅ |
 | HTTP echo, webhook testing, generate test data | ✅ | ✅ | — |
@@ -298,7 +298,7 @@ W4 status page (original plan): a public `/status/` page and a footer badge. The
 | 13 | T2 2FA code generator ✅ | M | New tool |
 | 14 | T3 Paste a payload, CSV to API page ✅ | S | Mostly pages over existing features |
 | 15 | T4 Test data generator extras ✅ | M | |
-| 16 | T5 Virtual sandboxes catalog ✅ first three | L | Content heavy |
+| 16 | T5 Virtual sandboxes catalog ✅ five (GitHub, Stripe, Twilio, UPS, Amadeus) | L | Content heavy |
 | 17 | T6 Traffic monitoring and tunnel pages ✅ | S | Pages |
 | 17b | T7 gRPC mocks without login ✅ | L | Split out of T1: needs a .proto parser, per-mock service names and HTTP/2 on the demo |
 | 18 | P1 Template helpers ✅ | S | Verify, then add the missing ones |

@@ -42,7 +42,7 @@ class ExamplesIntegrationTest {
 
   @Test
   void listsExamples() {
-    assertThat(api.get(API + "/examples").json()).hasSize(16);
+    assertThat(api.get(API + "/examples").json()).hasSize(18);
   }
 
   @Test
@@ -69,6 +69,37 @@ class ExamplesIntegrationTest {
     assertThat(deleted.json().get("deleted").asBoolean()).isTrue();
     assertThat(message.status()).isEqualTo(201);
     assertThat(message.json().get("account_sid").asText()).startsWith("AC");
+  }
+
+  @Test
+  void upsAndAmadeusSandboxesAnswerEveryOperationFromTheirPublishedSpecs() {
+    // When
+    List<Integer> installed = List.of("sandbox-ups", "sandbox-amadeus").stream()
+        .map(id -> api.post(API + "/examples/" + id + "/install", "").status()).toList();
+    ApiClient.Result track = api.get("/sandbox-ups/track/v1/details/1Z12345E0205271688");
+    ApiClient.Result rate = api.send("POST", "/sandbox-ups/rating/v2409/Rate", "{\"RateRequest\":{}}", "application/json", Map.of());
+    ApiClient.Result address = api.send("POST", "/sandbox-ups/addressvalidation/v2/1", "{\"XAVRequest\":{}}", "application/json", Map.of());
+    ApiClient.Result transit = api.send("POST", "/sandbox-ups/shipments/v1/transittimes", "{}", "application/json", Map.of());
+    ApiClient.Result cities = api.get("/sandbox-amadeus/v1/reference-data/locations?subType=CITY&keyword=MUC");
+    ApiClient.Result offers = api.get("/sandbox-amadeus/v2/shopping/flight-offers?originLocationCode=SYD&destinationLocationCode=BKK&departureDate=2026-12-01&adults=1");
+    ApiClient.Result priced = api.send("POST", "/sandbox-amadeus/v1/shopping/flight-offers/pricing", "{}", "application/json", Map.of());
+    ApiClient.Result order = api.send("POST", "/sandbox-amadeus/v1/booking/flight-orders", "{}", "application/json", Map.of());
+    ApiClient.Result cancelled = api.send("DELETE", "/sandbox-amadeus/v1/booking/flight-orders/eJzTd9f3NjIJdzUGAAp", null, null, Map.of());
+
+    // Then
+    assertThat(installed).containsOnly(201);
+    for (ApiClient.Result r : List.of(track, rate, address, transit)) {
+      assertThat(r.status()).as(r.body()).isEqualTo(200);
+      assertThat(r.body()).doesNotContain(": null").doesNotContain("\"$ref\"");
+    }
+    assertThat(track.json().at("/trackResponse/shipment/0/package/0").isObject()).isTrue();
+    assertThat(rate.json().has("RateResponse")).isTrue();
+    assertThat(cities.json().at("/data/0/type").asText()).isEqualTo("location");
+    assertThat(offers.json().at("/data/0/type").asText()).isEqualTo("flight-offer");
+    assertThat(priced.json().at("/data/type").asText()).isEqualTo("flight-offers-pricing");
+    assertThat(order.status()).isEqualTo(201);
+    assertThat(order.json().at("/data/type").asText()).isEqualTo("flight-order");
+    assertThat(cancelled.status()).isEqualTo(204);
   }
 
   @Test

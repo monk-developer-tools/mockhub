@@ -163,7 +163,7 @@ jobs:
         uses: docker/scout-action@v1.27.0
         with:
           command: attestation-add
-          image: registry://${{ env.IMAGE }}@${{ steps.push.outputs.digest }}
+          image: ${{ env.IMAGE }}@${{ steps.push.outputs.digest }}
           file: ${{ runner.temp }}/mockhub.vex.json
           predicate-type: https://openvex.dev/ns/v0.2.0
 

@@ -4,6 +4,8 @@ What changed in MockHub, newest first. Every change ships to the Docker image `a
 
 ## 2026-11-08
 
+- UPS (tracking, rating, address validation, transit times) and Amadeus (airport search, flight offers, pricing, orders) sandboxes built from their published specs.
+- Fixed: OpenAPI imports left deeply nested fields empty (null); every field now gets a sample value.
 - gRPC mocks from a `.proto` file without an account, on the public demo over TLS; projects accept `.proto` uploads too.
 - Fixed: HTTPS through the forward proxy didn't work in the Docker image, because WireMock can't create certificates on Java 21. The image now runs on Java 17.
 - gRPC server reflection is off when the public tools are on, so instant mock ids can't be listed.

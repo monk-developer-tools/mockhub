@@ -192,5 +192,29 @@
       "OpenAPI"
     ],
     "file": "sandbox-twilio-example.json"
+  },
+  {
+    "id": "sandbox-ups",
+    "name": "UPS Tracking, Rating and Address API — sandbox (unofficial)",
+    "slug": "sandbox-ups",
+    "description": "Track a package, rate a shipment, validate an address and get transit times from UPS's published OpenAPI specs (UPS-API/api-documentation, MIT). Answers follow UPS's schemas, with its examples where it has them and generated values elsewhere. Point a client at it instead of onlinetools.ups.com/api.",
+    "tags": [
+      "REST",
+      "Sandbox",
+      "OpenAPI"
+    ],
+    "file": "sandbox-ups-example.json"
+  },
+  {
+    "id": "sandbox-amadeus",
+    "name": "Amadeus flight booking API — sandbox (unofficial)",
+    "slug": "sandbox-amadeus",
+    "description": "Search airports and cities, search and price flight offers, and create, read and cancel a flight order from Amadeus's published Self-Service specs (amadeus4dev/amadeus-open-api-specification, MIT), answered with Amadeus's own examples. Point a client at it instead of test.api.amadeus.com.",
+    "tags": [
+      "REST",
+      "Sandbox",
+      "Swagger"
+    ],
+    "file": "sandbox-amadeus-example.json"
   }
 ]

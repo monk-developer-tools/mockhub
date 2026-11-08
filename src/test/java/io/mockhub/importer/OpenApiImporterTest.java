@@ -140,6 +140,29 @@ class OpenApiImporterTest {
     assertThat(System.nanoTime() - started).isLessThan(5_000_000_000L);
   }
 
+  @Test
+  void fillsDeeplyReferencedSchemasWithoutNullsAndLeavesNoNullArrayItems() {
+    // Given
+    String spec = """
+        {"openapi": "3.0.0", "info": {"title": "Deep", "version": "1"},
+         "paths": {"/track": {"get": {"responses": {"200": {"content": {"application/json":
+           {"schema": {"$ref": "#/components/schemas/Api"}}}}}}}},
+         "components": {"schemas": {
+           "Api": {"type": "object", "properties": {"response": {"$ref": "#/components/schemas/Response"}}},
+           "Response": {"type": "object", "properties": {"shipment": {"type": "array", "items": {"$ref": "#/components/schemas/Shipment"}}}},
+           "Shipment": {"type": "object", "properties": {"package": {"type": "array", "items": {"$ref": "#/components/schemas/Package"}}}},
+           "Package": {"type": "object", "properties": {"alert": {"type": "array", "items": {"$ref": "#/components/schemas/Alert"}}}},
+           "Alert": {"type": "object", "properties": {"code": {"type": "string", "maximum": 1, "maxLength": 10}}}}}}
+        """;
+
+    // When
+    JsonNode body = importer.parse(new StubImporter.Request(project("pay"), spec, Map.of())).stubs().get(0).at("/response/jsonBody");
+
+    // Then
+    assertThat(body.at("/response/shipment/0/package/0/alert/0/code").isTextual()).as(body.toString()).isTrue();
+    assertThat(body.toString()).doesNotContain("null");
+  }
+
   private static int nodes(JsonNode node) {
     int count = 1;
     for (JsonNode child : node) count += nodes(child);

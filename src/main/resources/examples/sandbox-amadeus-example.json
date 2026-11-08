@@ -1,0 +1,10 @@
+{
+ "imports": [
+  {
+   "format": "openapi",
+   "file": "sandbox-amadeus.json",
+   "options": {}
+  }
+ ],
+ "stubs": []
+}
