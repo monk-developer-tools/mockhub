@@ -130,7 +130,8 @@ jobs:
             org.opencontainers.image.documentation=https://mockhub.devops-monk.com/docs/
             org.opencontainers.image.vendor=monk-developer-tools
 
-      - uses: docker/build-push-action@v6
+      - id: push
+        uses: docker/build-push-action@v6
         with:
           context: .
           platforms: linux/amd64,linux/arm64
@@ -142,6 +143,25 @@ jobs:
           cache-to: type=gha,mode=max
           provenance: true
           sbom: true
+
+      - name: Point the VEX statements at the pushed image
+        if: github.ref == 'refs/heads/main'
+        env:
+          DIGEST: ${{ steps.push.outputs.digest }}
+        run: |
+          jq -s --arg product "pkg:docker/${IMAGE}@${DIGEST}" \
+            '.[0] + {statements: ([.[].statements[]] | map(.products = [{"@id": $product}]))}' \
+            .vex/*.vex.json > "$RUNNER_TEMP/mockhub.vex.json"
+          jq -e '.statements | length > 0' "$RUNNER_TEMP/mockhub.vex.json"
+
+      - name: Attach the VEX statements to the image
+        if: github.ref == 'refs/heads/main'
+        uses: docker/scout-action@v1.27.0
+        with:
+          command: attestation-add
+          image: registry://${{ env.IMAGE }}@${{ steps.push.outputs.digest }}
+          file: ${{ runner.temp }}/mockhub.vex.json
+          predicate-type: https://openvex.dev/ns/v0.2.0
 
       - name: Update Docker Hub description
         if: github.ref == 'refs/heads/main'
