@@ -415,6 +415,111 @@ curl -x http://localhost:8080 --cacert mockhub-proxy-ca.pem https://api.example.
     definition: 'A forward proxy sits between a client and the services it calls. A mocking forward proxy answers some calls itself and passes the rest on, so you can change one dependency without changing the client\'s configuration or code.',
   },
   {
+    slug: 'development-bottlenecks',
+    menu: 'virtualization',
+    icon: 'Hourglass',
+    nav: ['Development bottlenecks', 'Stop waiting on other teams\' APIs.'],
+    title: 'Stop waiting on APIs that aren\'t ready — MockHub',
+    description: 'Unblock development when the API you need isn\'t built yet, its sandbox is limited, or the shared test environment is busy. Mock it from its contract in minutes and keep building.',
+    h1: 'Stop waiting on APIs that aren\'t ready, shared or reachable',
+    lede: 'Most delays in API work are waits: for another team to finish an endpoint, for a partner sandbox to allow another call, for a shared staging server to be free. Mock the API from its contract or from real traffic and keep building while the real one catches up.',
+    hero: { shot: shot('openapi', 'Stubs generated from an OpenAPI file, grouped by tag') },
+    docs: '/docs/use-cases/',
+    steps: [
+      ['Start from what exists', 'An OpenAPI or WSDL file, a GraphQL schema, a Postman collection, or calls recorded through a proxy.'],
+      ['Share one mock', 'Everyone on the team calls the same project URL, and the UI shows who changed what.'],
+      ['Switch to the real API', 'Change one base URL when the real service is ready. Keep the mock for tests and demos.'],
+    ],
+    problem: {
+      title: 'Where development time goes',
+      items: [
+        ['The API isn\'t built yet', 'The frontend, the mobile app and the partner integration all wait for the same backend.'],
+        ['The sandbox is limited', 'Third-party sandboxes cap calls, reset data, need accounts and don\'t show the error cases you need.'],
+        ['Staging is shared', 'One team\'s deploy or test data breaks everyone else\'s afternoon.'],
+      ],
+    },
+    benefits: {
+      title: 'Ways MockHub removes the wait',
+      items: [
+        ['FileArrowUp', 'Mock from the contract', 'Import OpenAPI, WSDL, GraphQL or a Postman collection and get answering stubs.', '/contract-first/'],
+        ['Link', 'Mock an OpenAPI URL', 'Paste the address of a spec and get a project with one stub per operation.', '/docs/import/#mock-these-apis'],
+        ['ArrowsLeftRight', 'Record real calls', 'Put MockHub in front as a forward proxy and turn real answers into stubs.', '/forward-proxy/'],
+        ['Sparkle', 'Draft with AI', 'Describe an endpoint and review the stub before saving it.', '/ai/'],
+        ['Books', 'Vendor sandboxes', 'GitHub, Stripe and Twilio mocks built from their published OpenAPI specs.', '/examples/'],
+        ['UsersThree', 'A copy per team', 'Projects per team and environment, with roles and snapshots.', '/test-environments/'],
+      ],
+    },
+    example: {
+      title: 'From a contract to a working mock',
+      text: 'Load the contract before you start, then point the app at the project\'s URL.',
+      code: `ID=$(curl -s $HUB/__admin/mockhub/api/projects -d '{"name":"Orders","slug":"orders"}' | jq -r .id)
+curl -X POST $HUB/__admin/mockhub/api/projects/$ID/import/openapi --data-binary @openapi.yaml
+curl $HUB/orders/orders/42`,
+    },
+    faq: [
+      ['What if there is no contract yet?', 'Write stubs in the editor, draft them with AI, or agree an OpenAPI file with the other team first and import it. MockHub can check later traffic against that file.'],
+      ['How do we keep the mock in step with the real API?', 'Attach the OpenAPI document as the project\'s contract: MockHub compares every recorded call with it and lists where they disagree.'],
+      ['Can it record a real API instead?', 'Yes. A proxy stub or the forward proxy passes calls to the real service, and any recorded call becomes a stub in one click.'],
+      ['Does it cost anything?', 'No. MockHub is free and open source (Apache-2.0) and runs on your own server.'],
+    ],
+    related: ['contract-first', 'service-virtualization', 'test-environments'],
+    definition: 'A development bottleneck is any wait on a dependency outside your control. Mocking that dependency lets teams work in parallel instead of in sequence.',
+  },
+  {
+    slug: 'api-testing-in-ci',
+    menu: 'virtualization',
+    icon: 'CheckCircle',
+    nav: ['API tests in CI', 'No flaky sandboxes, failures on demand.'],
+    title: 'Reliable API tests in CI without flaky dependencies — MockHub',
+    description: 'Run integration tests in CI against a mock that answers the same way every time: start MockHub in a container, load stubs over the API, inject failures and rate limits, and list every call that found no stub.',
+    h1: 'API tests in CI that fail only when your code is wrong',
+    lede: 'Tests that call real sandboxes fail when the sandbox is slow, down or out of quota, and they can never show how your code handles a 503 or a timeout. Start MockHub next to the tests, load the stubs over its API, and make the failures happen on purpose.',
+    hero: { shot: shot('faults', 'Realistic latency, a failure rate and a rate limit set on one stub') },
+    docs: '/docs/api/',
+    steps: [
+      ['Start it with the tests', 'Run the Docker image as a service in the pipeline, with data in a throwaway volume.'],
+      ['Load the stubs', 'Import an OpenAPI file or WireMock mappings over the API before the tests run.'],
+      ['Check what happened', 'Ask the history API which calls found no stub, and download the failed ones as HAR.'],
+    ],
+    problem: {
+      title: 'Why API tests get flaky',
+      items: [
+        ['Sandboxes misbehave', 'Shared sandboxes are slow, rate-limited or down at the moment the pipeline runs.'],
+        ['Errors can\'t be triggered', 'A real API won\'t return a 503, a slow answer or a dropped connection when a test asks for one.'],
+        ['Data drifts', 'Records created by yesterday\'s run change what today\'s run sees.'],
+      ],
+    },
+    benefits: {
+      title: 'What makes the tests dependable',
+      items: [
+        ['TerminalWindow', 'Everything over HTTP', 'Projects, stubs, imports, history and exports have an API, with tokens for CI.', '/docs/api/'],
+        ['Pulse', 'Failures on demand', 'Fixed or realistic latency, a failure rate, connection resets and malformed answers.', '/docs/faults/'],
+        ['Gauge', 'Rate limits', '429 with Retry-After and X-RateLimit headers, per project or per stub.', '/docs/rate-limits/'],
+        ['FlowArrow', 'Stateful flows', 'Scenarios move through states, so retries and multi-step flows can be tested.', '/docs/scenarios/'],
+        ['ListMagnifyingGlass', 'Unmatched calls', 'Query the history for calls that found no stub, or export failures as HAR.', '/docs/api/'],
+        ['CheckCircle', 'Contract checks', 'Compare recorded calls with the OpenAPI document and see where they differ.', '/docs/contract-drift/'],
+      ],
+    },
+    example: {
+      title: 'A pipeline step',
+      text: 'Start MockHub, wait for it, load the contract, run the tests, then list any call that found no stub.',
+      code: `docker run -d --name mocks -p 8080:8080 -e MOCKHUB_USERS='ci:ci-pass-1:admin' abhaypratap/mockhub
+until curl -sf localhost:8080/__admin/health; do sleep 1; done
+ID=$(curl -su ci:ci-pass-1 localhost:8080/__admin/mockhub/api/projects -d '{"name":"Orders","slug":"orders"}' | jq -r .id)
+curl -u ci:ci-pass-1 -X POST localhost:8080/__admin/mockhub/api/projects/$ID/import/openapi --data-binary @openapi.yaml
+npm test
+curl -u ci:ci-pass-1 "localhost:8080/__admin/mockhub/api/projects/$ID/history?matched=false"`,
+    },
+    faq: [
+      ['Does every test run start clean?', 'Run the container without a named volume and each run starts empty; load the stubs it needs at the start. Or keep a project in a snapshot file and restore it.'],
+      ['Can one stub fail only sometimes?', 'Yes. Set a failure rate such as 10% with an error status or a network fault; the rest of the calls answer normally. Weighted responses pick between several answers.'],
+      ['How do I see why a test got a 404?', 'The history lists every call with the stub it matched or none, and the request log shows the closest stubs for a call that matched nothing.'],
+      ['Is it fast enough for big suites?', 'On 2 CPUs it answered about 12,000 to 14,000 small requests a second in our benchmark, with the published numbers and the script to repeat them.'],
+    ],
+    related: ['performance-testing', 'service-virtualization', 'contract-first'],
+    definition: 'API virtualization for CI replaces the services a test suite calls with a mock that answers the same way every run, so failures point at the code under test rather than at a sandbox.',
+  },
+  {
     slug: 'ai',
     menu: 'virtualization',
     icon: 'Sparkle',

@@ -1,7 +1,7 @@
 <p>Set MockHub as the proxy of a browser, an app, a phone or a test run. Calls that match a stub in the chosen project get the mock answer. Every other call goes on to the real service, and all of them are recorded in that project, so you can turn any real answer into a stub with one click. HTTPS works too: MockHub reads it with its own certificate authority (CA), which you trust on the client.</p>
 
 <h3 id="proxy-on">Turn it on</h3>
-<pre><code>docker run -p 8080:8080 -e MOCKHUB_PROXY=true -v mockhub-data:/data mockhub/mockhub</code></pre>
+<pre><code>docker run -p 8080:8080 -e MOCKHUB_PROXY=true -v mockhub-data:/data abhaypratap/mockhub</code></pre>
 <p>The proxy uses the main port, so the client's proxy is <code>http://&lt;mockhub-host&gt;:8080</code>. Then, as an admin, open <strong>Server</strong>, find <strong>Forward proxy</strong> and choose the project for proxied traffic. Until you do, proxied calls get <code>503</code>.</p>
 <table>
   <thead><tr><th>Rule</th><th>Why</th></tr></thead>
