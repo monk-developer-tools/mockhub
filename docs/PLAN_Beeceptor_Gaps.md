@@ -249,8 +249,8 @@ Every page under Beeceptor's three header menus was read, plus the footer.
 | AI for API Virtualization | `/ai/` | ✅ | — |
 | Service Virtualization | `/service-virtualization/` | ✅ | — |
 | Performance Testing | `/performance-testing/` | ✅ | — |
-| Development Bottlenecks (why mock servers) | `/contract-first/`, `/test-environments/` cover parts | 🟡 | W1 |
-| Testing Limitations (API virtualization for CI, flaky tests, failure simulation) | Spread over pages | 🟡 | W1 |
+| Development Bottlenecks (why mock servers) | `/development-bottlenecks/` | ✅ | W1 ✅ |
+| Testing Limitations (API virtualization for CI, flaky tests, failure simulation) | `/api-testing-in-ci/` | ✅ | W1 ✅ |
 | OpenAPI, SOAP mock server pages | ✅ | ✅ | — |
 | **GraphQL mock server page** | `/graphql-mock-server/` | ✅ | T1 |
 | **gRPC mock server page** | — | ❌ | W2 (with T7) |
@@ -309,7 +309,7 @@ W4 status page (original plan): a public `/status/` page and a footer badge. The
 | 25 | P8 Postman collection import ✅ | S | |
 | 26 | W4 Status page and footer badge ✅ | S | Asked for; cheap trust signal |
 | 27 | W2 gRPC and forward-proxy pages (forward proxy ✅) | S | The GraphQL page shipped with T1; the gRPC page waits for T7 |
-| 28 | W1 Development bottlenecks and testing limitations pages | S | Content |
+| 28 | W1 Development bottlenecks and testing limitations pages ✅ | S | Content. Running the CI example found that imports dropped a path's first segment when it equalled the project's base path; fixed in `StubService.createAll` |
 | 29 | W3 More compare pages | S | Content, facts checked |
 | 30 | W5 Changelog, trust centre, FAQ, about | S | Content |
 

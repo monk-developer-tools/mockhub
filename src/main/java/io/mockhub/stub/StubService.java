@@ -182,13 +182,8 @@ public final class StubService implements ProjectListener {
   }
 
   public List<ObjectNode> createAll(String projectId, List<? extends JsonNode> stubs) {
-    Project p = projects.get().get(projectId);
     List<ObjectNode> created = new ArrayList<>();
-    for (JsonNode stub : stubs) {
-      ObjectNode node = stub.deepCopy();
-      StubPaths.toRelative(node, p.basePath());
-      created.add(create(projectId, node));
-    }
+    for (JsonNode stub : stubs) created.add(create(projectId, stub.deepCopy()));
     return created;
   }
 

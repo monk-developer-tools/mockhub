@@ -173,4 +173,22 @@ class ImportExportIntegrationTest {
     assertThat(created.json().get("id").asInt()).isEqualTo(8);
     assertThat(health.status()).isEqualTo(200);
   }
+
+  @Test
+  void anImportedPathThatStartsWithTheProjectsOwnBasePathKeepsItsFirstSegment() {
+    // Given
+    String spec = "openapi: 3.0.3\ninfo: {title: Calc, version: '1'}\npaths:\n  /calc/{id}:\n    get:\n"
+        + "      parameters: [{name: id, in: path, required: true, schema: {type: integer}}]\n"
+        + "      responses: {'200': {description: ok, content: {application/json: {example: {id: 42}}}}}\n";
+
+    // When
+    ApiClient.Result imported = api.send("POST", API + "/projects/" + projectId + "/import/openapi", spec, "application/yaml", java.util.Map.of());
+    ApiClient.Result nested = api.get("/calc/calc/42");
+    ApiClient.Result shortened = api.get("/calc/42");
+
+    // Then
+    assertThat(imported.status()).as(imported.body()).isEqualTo(200);
+    assertThat(nested.status()).isEqualTo(200);
+    assertThat(shortened.status()).isEqualTo(404);
+  }
 }

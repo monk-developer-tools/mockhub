@@ -167,12 +167,12 @@ class StubServiceTest {
   }
 
   @Test
-  void createAllAcceptsUrlsAlreadyUnderTheBasePath() {
+  void createAllTreatsEveryPathAsRelativeEvenWhenItStartsWithTheBasePath() {
     // When
     stubs.createAll(orders.id(), List.of(json("{'request':{'url':'/orders/a'}}"), json("{'request':{'url':'/b'}}")));
 
     // Then
-    assertThat(gateway.findAll()).extracting(s -> s.getRequest().getUrl()).containsExactlyInAnyOrder("/orders/a", "/orders/b");
+    assertThat(gateway.findAll()).extracting(s -> s.getRequest().getUrl()).containsExactlyInAnyOrder("/orders/orders/a", "/orders/b");
   }
 
   @Test
