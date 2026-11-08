@@ -1545,3 +1545,18 @@ PAGES.push(
     definition: 'MockHub is a self-hosted, open-source mock server for REST and SOAP, with matching rules, state, recording and Postman export.',
   },
 );
+
+PAGES.push({
+  slug: 'status',
+  kind: 'status',
+  hidden: true,
+  icon: 'Pulse',
+  script: 'status-page.mjs',
+  nav: ['Status', 'Is the demo up right now?'],
+  title: 'MockHub status — live demo, website and free tools',
+  description: 'Live status of the MockHub demo server, website and free tools, checked every 5 minutes, with uptime for the last 24 hours and 7 days.',
+  h1: 'MockHub status',
+  lede: 'Whether the public demo, this website and the free tools are answering, checked every 5 minutes.',
+  docs: '/docs/',
+  related: [],
+});

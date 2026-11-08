@@ -3973,9 +3973,136 @@ footer a {
   color: var(--muted);
 }
 
-.demo-status[data-state='down'] .try-dot {
+.demo-status[data-state='degraded'] .try-dot,
+.status-banner[data-state='degraded'] .try-dot,
+.status-card[data-state='degraded'] .try-dot {
   background: var(--warn);
   box-shadow: none;
+}
+
+.demo-status[data-state='down'] .try-dot,
+.status-banner[data-state='down'] .try-dot,
+.status-card[data-state='down'] .try-dot {
+  background: var(--m-delete);
+  box-shadow: none;
+}
+
+.demo-status[data-state='unknown'] .try-dot,
+.status-banner[data-state='unknown'] .try-dot,
+.status-card[data-state='unknown'] .try-dot {
+  background: var(--line);
+  box-shadow: none;
+}
+
+.status-page .wrap {
+  max-width: 860px;
+}
+
+.status-page h1 {
+  margin: 8px 0 8px;
+}
+
+.status-banner {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin: 28px 0 20px;
+  padding: 16px 18px;
+  border: 1px solid var(--hair);
+  border-radius: var(--radius-m);
+  background: var(--bg-alt);
+  font-size: 17px;
+}
+
+.status-checked {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.status-checks {
+  display: grid;
+  gap: 14px;
+}
+
+.status-card {
+  padding: 16px 18px;
+  border: 1px solid var(--hair);
+  border-radius: var(--radius-m);
+  background: var(--tile);
+}
+
+.status-card-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+}
+
+.status-card-head h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.status-now {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.status-facts {
+  margin: 8px 0 12px;
+  color: var(--muted);
+  font-size: 13.5px;
+}
+
+.status-bars {
+  display: grid;
+  grid-template-columns: repeat(24, minmax(0, 1fr));
+  gap: 3px;
+}
+
+.status-bars span {
+  height: 28px;
+  border-radius: 3px;
+  background: var(--line);
+}
+
+.status-bars span[data-state='up'] {
+  background: var(--ok);
+}
+
+.status-bars span[data-state='degraded'] {
+  background: var(--warn);
+}
+
+.status-bars span[data-state='down'] {
+  background: var(--m-delete);
+}
+
+.status-bars span:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.status-scale {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.status-how-title {
+  margin: 36px 0 10px;
+  font-size: 20px;
+}
+
+.status-how {
+  color: var(--muted);
+  font-size: 14.5px;
+  line-height: 1.6;
 }
 
 @media (max-width: 960px) {

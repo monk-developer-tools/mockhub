@@ -194,14 +194,16 @@
 
   const status = document.querySelector('[data-demo-status]');
   if (status && 'fetch' in window) {
-    const host = location.hostname === 'mockhub.devops-monk.com' ? '' : 'https://mockhub.devops-monk.com';
-    fetch(`${host}/__admin/health`, { cache: 'no-store' })
-      .then((res) => {
-        status.dataset.state = res.ok ? 'up' : 'down';
-        status.querySelector('a').textContent = res.ok ? 'Live demo is up' : 'Live demo is not answering';
+    const data = location.hostname === 'mockhub.devops-monk.com' ? '/status/data' : 'https://mockhub.devops-monk.com/status/data';
+    const latest = fetch(`${data}/status.json`, { cache: 'no-store' }).then((res) => (res.ok ? res.json() : null)).catch(() => null);
+    Promise.all([import('/assets/js/status-model.mjs'), latest])
+      .then(([model, result]) => {
+        const state = model.overall(result, Date.now());
+        status.dataset.state = state;
+        status.querySelector('a').textContent = model.STATES[state];
       })
       .catch(() => {
-        status.dataset.state = 'down';
+        status.dataset.state = 'unknown';
       });
   }
 

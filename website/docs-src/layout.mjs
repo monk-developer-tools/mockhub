@@ -95,7 +95,7 @@ export function footer(icon) {
       </div>
       <div class="footer-bottom">
         <p class="legal">MockHub is built on WireMock and is not affiliated with WireMock Inc.</p>
-        <p class="demo-status" data-demo-status><span class="try-dot" aria-hidden="true"></span><a href="${DEMO}">Live demo</a></p>
+        <p class="demo-status" data-demo-status data-state="unknown"><span class="try-dot" aria-hidden="true"></span><a href="/status/">Status</a></p>
       </div>
     </div>
   </footer>`;

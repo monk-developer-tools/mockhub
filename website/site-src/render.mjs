@@ -416,7 +416,33 @@ function structured(page) {
   return blocks.map((b) => `  <script type="application/ld+json">${json(b)}</script>\n`).join('');
 }
 
+function statusPage(page, icon) {
+  return `<section class="fp-section status-page">
+      <div class="wrap">
+        <p class="eyebrow">${icon(page.icon, 16)}Status</p>
+        <h1>${esc(page.h1)}</h1>
+        <p class="lede">${esc(page.lede)}</p>
+        <div class="status-banner" data-status-overall data-state="unknown" role="status">
+          <span class="try-dot" aria-hidden="true"></span>
+          <strong data-status-text>Checking…</strong>
+          <span class="status-checked" data-status-checked></span>
+        </div>
+        <div class="status-checks" data-status-checks>
+          <noscript><p>This page needs JavaScript to show the results. The raw data is in <a href="/status/data/status.json">status.json</a> and <a href="/status/data/history.csv">history.csv</a>.</p></noscript>
+        </div>
+        <h2 class="status-how-title">How it is checked</h2>
+        <ul class="status-how">
+          <li>Every 5 minutes a checker on the same server calls three public addresses through the site's normal HTTPS address: <code>/__admin/health</code> must answer <em>healthy</em>, the home page must load, and the echo tool <code>/__public/echo</code> must answer.</li>
+          <li>A check fails if the answer is wrong or takes more than 15 seconds. Each bar is one hour (UTC); hover or tap it for the number of checks.</li>
+          <li>The checker runs on the same server, so if the whole server or its network goes down, there is no fresh result. After 15 minutes without one, this page says <em>Status unknown</em> rather than guess.</li>
+          <li>Seven days of results are kept. The raw data is in <a href="/status/data/status.json">status.json</a> and <a href="/status/data/history.csv">history.csv</a>.</li>
+        </ul>
+      </div>
+    </section>`;
+}
+
 const LAYOUTS = {
+  status: (page, ctx) => [statusPage(page, ctx.icon)],
   examples: (page, ctx) => [hero(page, ctx.icon), examplesGrid(ctx.examples, ctx.icon), related(page, ctx.icon), closing(page)],
   'tools-index': (page, ctx) => [toolHero(page, ctx.icon), toolsIndex(page, ctx.icon), related(page, ctx.icon), closing(page)],
   tool: (page, ctx) => [toolHero(page, ctx.icon), toolBody(page, ctx), toolSteps(page), faq(page), related(page, ctx.icon), closing(page)],
@@ -427,7 +453,8 @@ const LAYOUTS = {
 export function renderFeature(page, ctx) {
   const { header, footer } = ctx;
   const sections = LAYOUTS[page.kind ?? 'feature'](page, ctx);
-  const script = page.tool ? `\n  <script type="module" src="/assets/js/tools/${SCRIPTS[page.tool]}"></script>` : '';
+  const script = page.tool ? `\n  <script type="module" src="/assets/js/tools/${SCRIPTS[page.tool]}"></script>`
+    : page.script ? `\n  <script type="module" src="/assets/js/${page.script}"></script>` : '';
   return `${head({ title: page.title, description: page.description, path: `/${page.slug}/`, extra: structured(page) })}
 <body>
   ${header}

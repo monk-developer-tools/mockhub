@@ -393,7 +393,7 @@ for (const file of siteFiles) {
     if (!/^(\/|#|https?:\/\/|mailto:)/.test(href)) broken.push(`${where(file)}: ${href || '(empty)'}`);
   }
   for (const [, path, hash] of content.matchAll(/href="(\/(?!\/)[^"#?]*)(?:\?[^"#]*)?(?:#([^"]*))?"/g)) {
-    if (path.startsWith('/__admin/')) continue;
+    if (path.startsWith('/__admin/') || path.startsWith('/status/data/')) continue;
     const target = join(website, path, path.endsWith('/') ? 'index.html' : '');
     if (!existsSync(target)) broken.push(`${where(file)}: ${path}`);
     else if (hash && path === '/docs/') {
