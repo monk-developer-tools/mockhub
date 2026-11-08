@@ -8,7 +8,7 @@ export function renderWithShell(ui: ReactElement, path = '/') {
   return render(
     <IconDefaults>
       <ToastProvider>
-        <MemoryRouter initialEntries={[path]} future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>{ui}</MemoryRouter>
+        <MemoryRouter initialEntries={[path]}>{ui}</MemoryRouter>
       </ToastProvider>
     </IconDefaults>,
   );

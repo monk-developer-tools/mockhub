@@ -77,14 +77,14 @@ const router = createBrowserRouter(
       ],
     },
   ],
-  { basename: '/__admin/mockhub/ui', future: { v7_relativeSplatPath: true } },
+  { basename: '/__admin/mockhub/ui' },
 );
 
 function Gate() {
   const { needsLogin, session } = useApp();
   if (needsLogin) return <LoginPage />;
   if (!session) return <Loading label="Connecting to MockHub…" />;
-  return <RouterProvider router={router} future={{ v7_startTransition: true }} />;
+  return <RouterProvider router={router} />;
 }
 
 export function App() {
