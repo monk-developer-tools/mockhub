@@ -6245,3 +6245,74 @@ select.tool-select-small {
 .api-record.tool-code {
   min-height: 120px;
 }
+
+.prose-page .wrap {
+  max-width: 820px;
+}
+
+.prose-page h1 {
+  margin: 8px 0 8px;
+}
+
+.prose-toc ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 24px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.prose-toc a {
+  display: inline-block;
+  padding: 6px 12px;
+  border: 1px solid var(--hair);
+  border-radius: 999px;
+  font-size: 13.5px;
+}
+
+.prose-section {
+  margin-top: 36px;
+  scroll-margin-top: calc(var(--nav-h) + 16px);
+}
+
+.prose-section h2 {
+  margin: 0 0 12px;
+  font-size: 22px;
+}
+
+.prose-section ul {
+  padding-left: 20px;
+  line-height: 1.65;
+}
+
+.prose-section li + li {
+  margin-top: 6px;
+}
+
+.prose-section code {
+  font-family: var(--mono);
+  font-size: 0.9em;
+  overflow-wrap: anywhere;
+}
+
+.prose-faq {
+  border-bottom: 1px solid var(--hair);
+  padding: 12px 0;
+}
+
+.prose-faq summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.prose-faq p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.prose-more {
+  margin-top: 14px;
+  font-size: 14px;
+}

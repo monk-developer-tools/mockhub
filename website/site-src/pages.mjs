@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { changelogSections, faqSections } from './prose.mjs';
+
 export const DEMO = '/__admin/mockhub/ui/';
 
 export const MENUS = [
@@ -1980,4 +1983,76 @@ PAGES.push({
   lede: 'Whether the public demo, this website and the free tools are answering, checked every 5 minutes.',
   docs: '/docs/',
   related: [],
+});
+
+const REPO = 'https://github.com/monk-developer-tools/mockhub';
+
+PAGES.push(
+  {
+    slug: 'changelog',
+    kind: 'prose',
+    hidden: true,
+    icon: 'ClockCounterClockwise',
+    eyebrow: 'Changelog',
+    nav: ['Changelog', 'What changed, newest first.'],
+    title: 'MockHub changelog — MockHub',
+    description: 'What changed in MockHub, newest first: features, fixes and the website.',
+    h1: 'Changelog',
+    lede: 'What changed in MockHub, newest first. Every change ships to the Docker image and the public demo the same day.',
+    sections: changelogSections(readFileSync(new URL('../../CHANGELOG.md', import.meta.url), 'utf8')),
+    after: `<p class="prose-more">The same list is in <a href="${REPO}/blob/main/CHANGELOG.md">CHANGELOG.md</a>, and every commit is on <a href="${REPO}/commits/main">GitHub</a>.</p>`,
+  },
+  {
+    slug: 'trust',
+    kind: 'prose',
+    hidden: true,
+    icon: 'ShieldCheck',
+    eyebrow: 'Trust centre',
+    nav: ['Trust centre', 'Security, privacy and how to report a problem.'],
+    title: 'Trust centre: security and privacy — MockHub',
+    description: 'How MockHub protects your data: it runs on your server, stores passwords and tokens as hashes, encrypts secrets, logs changes and has no telemetry. How to report a vulnerability.',
+    h1: 'Trust centre',
+    lede: 'MockHub runs on your own server, so your mocks, traffic and users stay in your infrastructure. This page lists what the software does to protect them, what it doesn\'t do, and how to report a problem.',
+    sections: [
+      { id: 'report', title: 'Report a vulnerability', html: `<p>Please report security problems privately through <a href="${REPO}/security/advisories/new">GitHub's private vulnerability reporting</a>, not in a public issue. You'll get an answer on the report. The policy is in <a href="${REPO}/blob/main/SECURITY.md">SECURITY.md</a>.</p>` },
+      { id: 'data', title: 'Your data stays with you', html: '<ul><li>MockHub is self-hosted. Stubs, request history, users and settings are files in its data folder on your server.</li><li>It sends no telemetry and does not check for updates.</li><li>It connects out only for features you set up: an AI provider, single sign-on, OpenTelemetry export, callouts, proxy stubs, the playground, tunnels and importing a spec from a URL.</li></ul>' },
+      { id: 'secrets', title: 'Passwords, tokens and secrets', html: '<ul><li>Passwords are stored as PBKDF2-HMAC-SHA256 hashes with 210,000 iterations.</li><li>Personal access tokens and the private tokens of webhook bins and instant mocks are stored only as SHA-256 hashes.</li><li>Connection secrets (OAuth2 client secrets, API keys) are encrypted with AES-GCM, with a key from <code>MOCKHUB_SECRET_KEY</code> or a generated key file.</li><li>Headers your organisation marks as masked, such as <code>Authorization</code>, are hidden in every request view and never written to disk.</li></ul>' },
+      { id: 'access', title: 'Who can do what', html: '<ul><li>Organisations, teams and roles (viewer, editor, manager, admin); teams can be restricted to their members.</li><li>Microsoft Entra ID single sign-on and personal access tokens for scripts.</li><li>An audit log of every change, kept for 90 days by default.</li><li>Per project: an API key, an IP allow list and mutual TLS.</li></ul>' },
+      { id: 'image', title: 'The Docker image', html: '<ul><li>Built on a distroless base without a shell or OpenSSL, with a trimmed Java runtime.</li><li>Runs as a non-root user.</li><li>Dependabot security updates and secret scanning are on for the repository.</li></ul>' },
+      { id: 'demo', title: 'The public demo', html: '<ul><li>The demo and its free tools are for trying MockHub. Don\'t send real secrets or personal data to it.</li><li>Free-tool templates run in a sandbox with limits on time, size and loops, and server-side requests can\'t reach private addresses.</li><li>Instant mocks are deleted 7 days after their last change. <a href="/status/">Live status</a>.</li></ul>' },
+      { id: 'compliance', title: 'Certifications', html: '<p>MockHub is open-source software, not a hosted service, so it has no SOC 2, ISO 27001 or similar certification. When you run it, it is part of your own infrastructure and your controls apply. The source is open to review under the Apache-2.0 licence.</p>' },
+    ],
+  },
+  {
+    slug: 'about',
+    kind: 'prose',
+    hidden: true,
+    icon: 'Info',
+    eyebrow: 'About',
+    nav: ['About and contact', 'Who makes MockHub and how to reach us.'],
+    title: 'About MockHub and how to get in touch — MockHub',
+    description: 'MockHub is a free, open-source mock server for teams, built on WireMock and maintained on GitHub. How to ask a question, report a bug or contribute.',
+    h1: 'About MockHub',
+    lede: 'MockHub is a free, open-source mock server for teams, built on WireMock. It adds a web UI, projects, teams, history, imports and AI on top of the WireMock engine, and runs from one Docker image.',
+    sections: [
+      { id: 'who', title: 'Who makes it', html: '<p>MockHub is maintained by <a href="https://github.com/abhay-prataps">abhay-prataps</a> in the <a href="https://github.com/monk-developer-tools">monk-developer-tools</a> organisation on GitHub. It is not affiliated with WireMock Inc. or any company named on this site.</p>' },
+      { id: 'contact', title: 'Get in touch', html: `<ul><li>Questions and bugs: <a href="${REPO}/issues">GitHub issues</a>.</li><li>Security problems: privately, through the <a href="/trust/#report">trust centre</a>.</li><li>Contributions: pull requests on <a href="${REPO}">GitHub</a>.</li></ul>` },
+      { id: 'licence', title: 'Licence', html: `<p>Apache-2.0. Use it, change it and run it for your team or your customers. See <a href="${REPO}/blob/main/LICENSE">LICENSE</a>.</p>` },
+      { id: 'more', title: 'More', html: '<ul><li><a href="/changelog/">Changelog</a></li><li><a href="/status/">Status of the public demo</a></li><li><a href="/docs/performance/">Performance</a></li><li><a href="/faq/">Frequently asked questions</a></li></ul>' },
+    ],
+  },
+);
+
+PAGES.push({
+  slug: 'faq',
+  kind: 'prose',
+  hidden: true,
+  icon: 'Question',
+  eyebrow: 'FAQ',
+  nav: ['FAQ', 'Every question answered on this site.'],
+  title: 'MockHub FAQ: frequently asked questions — MockHub',
+  description: 'Answers to common questions about MockHub, its free tools and how it compares, gathered from every page of the site.',
+  h1: 'Frequently asked questions',
+  lede: 'Every question answered across this site, in one place, grouped by page.',
+  sections: faqSections(PAGES),
 });

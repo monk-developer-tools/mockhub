@@ -441,7 +441,27 @@ function statusPage(page, icon) {
     </section>`;
 }
 
+function prosePage(page, icon) {
+  const toc = page.sections.length > 3
+    ? `<nav class="prose-toc" aria-label="On this page"><ul>${page.sections.map((s) => `<li><a href="#${s.id}">${esc(s.title)}</a></li>`).join('')}</ul></nav>`
+    : '';
+  return `<section class="fp-section prose-page">
+      <div class="wrap">
+        <p class="eyebrow">${icon(page.icon, 16)}${esc(page.eyebrow)}</p>
+        <h1>${esc(page.h1)}</h1>
+        <p class="lede">${esc(page.lede)}</p>
+        ${toc}
+        ${page.sections.map((s) => `<section class="prose-section" id="${s.id}">
+          <h2>${esc(s.title)}</h2>
+          ${s.html}
+        </section>`).join('\n        ')}
+        ${page.after ?? ''}
+      </div>
+    </section>`;
+}
+
 const LAYOUTS = {
+  prose: (page, ctx) => [prosePage(page, ctx.icon)],
   status: (page, ctx) => [statusPage(page, ctx.icon)],
   examples: (page, ctx) => [hero(page, ctx.icon), examplesGrid(ctx.examples, ctx.icon), related(page, ctx.icon), closing(page)],
   'tools-index': (page, ctx) => [toolHero(page, ctx.icon), toolsIndex(page, ctx.icon), related(page, ctx.icon), closing(page)],

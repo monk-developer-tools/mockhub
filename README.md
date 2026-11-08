@@ -704,3 +704,8 @@ multi-arch (amd64 and arm64). The pipeline needs two repository secrets: `DOCKER
 
 MockHub is open source under the [Apache License 2.0](LICENSE). It is built on [WireMock](https://wiremock.org), which
 uses the same licence, and is not affiliated with WireMock Inc.
+
+## Changelog and security
+
+What changed is in [CHANGELOG.md](CHANGELOG.md). Report security problems privately as described in
+[SECURITY.md](SECURITY.md).
