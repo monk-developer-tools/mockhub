@@ -216,5 +216,17 @@
       "Swagger"
     ],
     "file": "sandbox-amadeus-example.json"
+  },
+  {
+    "id": "sandbox-dhl",
+    "name": "DHL Shipment Tracking API — sandbox (unofficial)",
+    "slug": "sandbox-dhl",
+    "description": "GET /track/shipments as described in DHL's public documentation of the Shipment Tracking - Unified API: a delivered parcel, DHL's demo number 7777777770 in transit, a label-created shipment, any other number in transit, and the 401, 400 and 404 errors as problem+json. Written by hand; DHL publishes no openly licensed spec. Point a client at it instead of api-eu.dhl.com.",
+    "tags": [
+      "REST",
+      "Sandbox",
+      "Tracking"
+    ],
+    "file": "sandbox-dhl.json"
   }
 ]

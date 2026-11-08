@@ -42,7 +42,7 @@ class ExamplesIntegrationTest {
 
   @Test
   void listsExamples() {
-    assertThat(api.get(API + "/examples").json()).hasSize(18);
+    assertThat(api.get(API + "/examples").json()).hasSize(19);
   }
 
   @Test
@@ -100,6 +100,36 @@ class ExamplesIntegrationTest {
     assertThat(order.status()).isEqualTo(201);
     assertThat(order.json().at("/data/type").asText()).isEqualTo("flight-order");
     assertThat(cancelled.status()).isEqualTo(204);
+  }
+
+  @Test
+  void dhlSandboxTracksShipmentsAndAnswersErrorsLikeTheDocumentedApi() {
+    // Given
+    ApiClient.Result installed = api.post(API + "/examples/sandbox-dhl/install", "");
+    Map<String, String> key = Map.of("DHL-API-Key", "demo-key");
+
+    // When
+    ApiClient.Result noKey = api.get("/sandbox-dhl/track/shipments?trackingNumber=7777777770");
+    ApiClient.Result noNumber = api.send("GET", "/sandbox-dhl/track/shipments", null, null, key);
+    ApiClient.Result missing = api.send("GET", "/sandbox-dhl/track/shipments?trackingNumber=0000000000", null, null, key);
+    ApiClient.Result delivered = api.send("GET", "/sandbox-dhl/track/shipments?trackingNumber=00340434292135100186", null, null, key);
+    ApiClient.Result express = api.send("GET", "/sandbox-dhl/track/shipments?trackingNumber=7777777770", null, null, key);
+    ApiClient.Result other = api.send("GET", "/sandbox-dhl/track/shipments?trackingNumber=JD9999&service=parcel-uk", null, null, key);
+
+    // Then
+    assertThat(installed.status()).as(installed.body()).isEqualTo(201);
+    assertThat(noKey.status()).isEqualTo(401);
+    assertThat(noKey.header("Content-Type")).startsWith("application/problem+json");
+    assertThat(noNumber.status()).isEqualTo(400);
+    assertThat(missing.status()).isEqualTo(404);
+    assertThat(missing.json().get("title").asText()).isEqualTo("No result found");
+    assertThat(delivered.json().at("/shipments/0/status/statusCode").asText()).isEqualTo("delivered");
+    assertThat(delivered.json().at("/shipments/0/events")).hasSize(4);
+    assertThat(delivered.json().at("/shipments/0/status/timestamp").asText()).matches("\\d{4}-\\d{2}-\\d{2}T.*");
+    assertThat(express.json().at("/shipments/0/status/statusCode").asText()).isEqualTo("transit");
+    assertThat(express.json().at("/shipments/0/estimatedTimeOfDelivery").asText()).isNotBlank();
+    assertThat(other.json().at("/shipments/0/id").asText()).isEqualTo("JD9999");
+    assertThat(other.json().at("/shipments/0/service").asText()).isEqualTo("parcel-uk");
   }
 
   @Test

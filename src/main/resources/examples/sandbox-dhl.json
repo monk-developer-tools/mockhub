@@ -1,0 +1,239 @@
+{
+ "stubs": [
+  {
+   "name": "Missing API key → 401",
+   "priority": 1,
+   "request": {
+    "method": "GET",
+    "urlPath": "/track/shipments",
+    "headers": {
+     "DHL-API-Key": {
+      "absent": true
+     }
+    }
+   },
+   "response": {
+    "status": 401,
+    "headers": {
+     "Content-Type": "application/problem+json"
+    },
+    "jsonBody": {
+     "type": "about:blank",
+     "title": "Unauthorized",
+     "status": 401,
+     "detail": "Unauthorized for given resource. Send your key in the DHL-API-Key header.",
+     "instance": "/track/shipments"
+    }
+   },
+   "metadata": {
+    "mockhub": {
+     "description": "Every call needs the DHL-API-Key header, as on the real API. Any non-empty value works here."
+    }
+   }
+  },
+  {
+   "name": "Missing tracking number → 400",
+   "priority": 2,
+   "request": {
+    "method": "GET",
+    "urlPath": "/track/shipments",
+    "headers": {
+     "DHL-API-Key": {
+      "matches": ".+"
+     }
+    },
+    "queryParameters": {
+     "trackingNumber": {
+      "absent": true
+     }
+    }
+   },
+   "response": {
+    "status": 400,
+    "headers": {
+     "Content-Type": "application/problem+json"
+    },
+    "jsonBody": {
+     "type": "about:blank",
+     "title": "Bad Request",
+     "status": 400,
+     "detail": "The trackingNumber query parameter is required.",
+     "instance": "/track/shipments"
+    }
+   },
+   "metadata": {
+    "mockhub": {
+     "description": "A call without trackingNumber is refused."
+    }
+   }
+  },
+  {
+   "name": "Not found → 404",
+   "priority": 2,
+   "request": {
+    "method": "GET",
+    "urlPath": "/track/shipments",
+    "headers": {
+     "DHL-API-Key": {
+      "matches": ".+"
+     }
+    },
+    "queryParameters": {
+     "trackingNumber": {
+      "equalTo": "0000000000"
+     }
+    }
+   },
+   "response": {
+    "status": 404,
+    "headers": {
+     "Content-Type": "application/problem+json"
+    },
+    "jsonBody": {
+     "type": "about:blank",
+     "title": "No result found",
+     "status": 404,
+     "detail": "No shipment with given tracking number found.",
+     "instance": "/track/shipments"
+    }
+   },
+   "metadata": {
+    "mockhub": {
+     "description": "Use tracking number 0000000000 to test the not-found path."
+    }
+   }
+  },
+  {
+   "name": "Delivered (Parcel DE)",
+   "priority": 2,
+   "request": {
+    "method": "GET",
+    "urlPath": "/track/shipments",
+    "headers": {
+     "DHL-API-Key": {
+      "matches": ".+"
+     }
+    },
+    "queryParameters": {
+     "trackingNumber": {
+      "equalTo": "00340434292135100186"
+     }
+    }
+   },
+   "response": {
+    "status": 200,
+    "headers": {
+     "Content-Type": "application/json"
+    },
+    "body": "{\n  \"shipments\": [\n    {\n      \"id\": \"00340434292135100186\",\n      \"service\": \"parcel-de\",\n      \"origin\": {\n        \"address\": {\n          \"addressLocality\": \"Hamburg\",\n          \"countryCode\": \"DE\",\n          \"postalCode\": \"20095\"\n        }\n      },\n      \"destination\": {\n        \"address\": {\n          \"addressLocality\": \"Bonn\",\n          \"countryCode\": \"DE\",\n          \"postalCode\": \"53113\"\n        }\n      },\n      \"status\": {\n        \"timestamp\": \"{{now offset='-1 days'}}\",\n        \"location\": {\n          \"address\": {\n            \"addressLocality\": \"Bonn\",\n            \"countryCode\": \"DE\"\n          }\n        },\n        \"statusCode\": \"delivered\",\n        \"status\": \"Delivered\",\n        \"description\": \"The shipment has been delivered to the recipient.\"\n      },\n      \"details\": {\n        \"product\": {\n          \"productName\": \"DHL Parcel\"\n        },\n        \"totalNumberOfPieces\": 1,\n        \"pieceIds\": [\n          \"00340434292135100186\"\n        ],\n        \"proofOfDelivery\": {\n          \"timestamp\": \"{{now offset='-1 days'}}\",\n          \"documentUrl\": \"https://example.com/proof-of-delivery/00340434292135100186\"\n        },\n        \"proofOfDeliverySignedAvailable\": true\n      },\n      \"events\": [\n        {\n          \"timestamp\": \"{{now offset='-1 days'}}\",\n          \"location\": {\n            \"address\": {\n              \"addressLocality\": \"Bonn\",\n              \"countryCode\": \"DE\"\n            }\n          },\n          \"statusCode\": \"delivered\",\n          \"status\": \"Delivered\",\n          \"description\": \"The shipment has been delivered to the recipient.\"\n        },\n        {\n          \"timestamp\": \"{{now offset='-1 days'}}\",\n          \"location\": {\n            \"address\": {\n              \"addressLocality\": \"Bonn\",\n              \"countryCode\": \"DE\"\n            }\n          },\n          \"statusCode\": \"transit\",\n          \"status\": \"Out for delivery\",\n          \"description\": \"The shipment has been loaded onto the delivery vehicle.\"\n        },\n        {\n          \"timestamp\": \"{{now offset='-2 days'}}\",\n          \"location\": {\n            \"address\": {\n              \"addressLocality\": \"K\\u00f6ln\",\n              \"countryCode\": \"DE\"\n            }\n          },\n          \"statusCode\": \"transit\",\n          \"status\": \"Processed\",\n          \"description\": \"The shipment has been processed in the parcel center.\"\n        },\n        {\n          \"timestamp\": \"{{now offset='-3 days'}}\",\n          \"location\": {\n            \"address\": {\n              \"addressLocality\": \"Hamburg\",\n              \"countryCode\": \"DE\"\n            }\n          },\n          \"statusCode\": \"pre-transit\",\n          \"status\": \"Data received\",\n          \"description\": \"The shipment data has been received electronically.\"\n        }\n      ]\n    }\n  ],\n  \"possibleAdditionalShipmentsUrl\": []\n}",
+    "transformers": [
+     "response-template"
+    ]
+   },
+   "metadata": {
+    "mockhub": {
+     "description": "A delivered parcel with its full event history and proof of delivery."
+    }
+   }
+  },
+  {
+   "name": "In transit (Express)",
+   "priority": 2,
+   "request": {
+    "method": "GET",
+    "urlPath": "/track/shipments",
+    "headers": {
+     "DHL-API-Key": {
+      "matches": ".+"
+     }
+    },
+    "queryParameters": {
+     "trackingNumber": {
+      "equalTo": "7777777770"
+     }
+    }
+   },
+   "response": {
+    "status": 200,
+    "headers": {
+     "Content-Type": "application/json"
+    },
+    "body": "{\n  \"shipments\": [\n    {\n      \"id\": \"7777777770\",\n      \"service\": \"express\",\n      \"origin\": {\n        \"address\": {\n          \"addressLocality\": \"LONDON - UK\",\n          \"countryCode\": \"GB\",\n          \"postalCode\": \"EC1A 1BB\"\n        }\n      },\n      \"destination\": {\n        \"address\": {\n          \"addressLocality\": \"MUNICH - GERMANY\",\n          \"countryCode\": \"DE\",\n          \"postalCode\": \"80331\"\n        }\n      },\n      \"status\": {\n        \"timestamp\": \"{{now offset='-6 hours'}}\",\n        \"location\": {\n          \"address\": {\n            \"addressLocality\": \"LEIPZIG - GERMANY\",\n            \"countryCode\": \"DE\"\n          }\n        },\n        \"statusCode\": \"transit\",\n        \"status\": \"Departed facility\",\n        \"description\": \"Shipment has departed from a DHL facility.\"\n      },\n      \"details\": {\n        \"product\": {\n          \"productName\": \"EXPRESS WORLDWIDE\"\n        },\n        \"totalNumberOfPieces\": 1,\n        \"pieceIds\": [\n          \"JD014600006281230704\"\n        ]\n      },\n      \"events\": [\n        {\n          \"timestamp\": \"{{now offset='-6 hours'}}\",\n          \"location\": {\n            \"address\": {\n              \"addressLocality\": \"LEIPZIG - GERMANY\",\n              \"countryCode\": \"DE\"\n            }\n          },\n          \"statusCode\": \"transit\",\n          \"status\": \"Departed facility\",\n          \"description\": \"Shipment has departed from a DHL facility.\"\n        },\n        {\n          \"timestamp\": \"{{now offset='-14 hours'}}\",\n          \"location\": {\n            \"address\": {\n              \"addressLocality\": \"LEIPZIG - GERMANY\",\n              \"countryCode\": \"DE\"\n            }\n          },\n          \"statusCode\": \"transit\",\n          \"status\": \"Arrived at facility\",\n          \"description\": \"Arrived at DHL Sort Facility.\"\n        },\n        {\n          \"timestamp\": \"{{now offset='-1 days'}}\",\n          \"location\": {\n            \"address\": {\n              \"addressLocality\": \"HEATHROW - UK\",\n              \"countryCode\": \"GB\"\n            }\n          },\n          \"statusCode\": \"transit\",\n          \"status\": \"Processed\",\n          \"description\": \"Processed at LONDON-HEATHROW - UK.\"\n        },\n        {\n          \"timestamp\": \"{{now offset='-2 days'}}\",\n          \"location\": {\n            \"address\": {\n              \"addressLocality\": \"LONDON - UK\",\n              \"countryCode\": \"GB\"\n            }\n          },\n          \"statusCode\": \"pre-transit\",\n          \"status\": \"Picked up\",\n          \"description\": \"Shipment picked up.\"\n        }\n      ],\n      \"estimatedTimeOfDelivery\": \"{{now offset='2 days'}}\"\n    }\n  ],\n  \"possibleAdditionalShipmentsUrl\": []\n}",
+    "transformers": [
+     "response-template"
+    ]
+   },
+   "metadata": {
+    "mockhub": {
+     "description": "DHL's documented demo tracking number, in transit between London and Munich."
+    }
+   }
+  },
+  {
+   "name": "Label created (pre-transit)",
+   "priority": 2,
+   "request": {
+    "method": "GET",
+    "urlPath": "/track/shipments",
+    "headers": {
+     "DHL-API-Key": {
+      "matches": ".+"
+     }
+    },
+    "queryParameters": {
+     "trackingNumber": {
+      "equalTo": "1234567890"
+     }
+    }
+   },
+   "response": {
+    "status": 200,
+    "headers": {
+     "Content-Type": "application/json"
+    },
+    "body": "{\n  \"shipments\": [\n    {\n      \"id\": \"1234567890\",\n      \"service\": \"express\",\n      \"origin\": {\n        \"address\": {\n          \"addressLocality\": \"AMSTERDAM - NETHERLANDS\",\n          \"countryCode\": \"NL\",\n          \"postalCode\": \"1011\"\n        }\n      },\n      \"destination\": {\n        \"address\": {\n          \"addressLocality\": \"PARIS - FRANCE\",\n          \"countryCode\": \"FR\",\n          \"postalCode\": \"75001\"\n        }\n      },\n      \"status\": {\n        \"timestamp\": \"{{now offset='-3 hours'}}\",\n        \"location\": {\n          \"address\": {\n            \"addressLocality\": \"AMSTERDAM - NETHERLANDS\",\n            \"countryCode\": \"NL\"\n          }\n        },\n        \"statusCode\": \"pre-transit\",\n        \"status\": \"Shipment information received\",\n        \"description\": \"The shipper has created a label; DHL has not received the shipment yet.\"\n      },\n      \"details\": {\n        \"product\": {\n          \"productName\": \"EXPRESS WORLDWIDE\"\n        },\n        \"totalNumberOfPieces\": 1,\n        \"pieceIds\": [\n          \"JD014600006281230705\"\n        ]\n      },\n      \"events\": [\n        {\n          \"timestamp\": \"{{now offset='-3 hours'}}\",\n          \"location\": {\n            \"address\": {\n              \"addressLocality\": \"AMSTERDAM - NETHERLANDS\",\n              \"countryCode\": \"NL\"\n            }\n          },\n          \"statusCode\": \"pre-transit\",\n          \"status\": \"Shipment information received\",\n          \"description\": \"The shipper has created a label; DHL has not received the shipment yet.\"\n        }\n      ],\n      \"estimatedTimeOfDelivery\": \"{{now offset='2 days'}}\"\n    }\n  ],\n  \"possibleAdditionalShipmentsUrl\": []\n}",
+    "transformers": [
+     "response-template"
+    ]
+   },
+   "metadata": {
+    "mockhub": {
+     "description": "The shipper has made a label but DHL has not received the shipment."
+    }
+   }
+  },
+  {
+   "name": "Any other tracking number",
+   "priority": 10,
+   "request": {
+    "method": "GET",
+    "urlPath": "/track/shipments",
+    "headers": {
+     "DHL-API-Key": {
+      "matches": ".+"
+     }
+    },
+    "queryParameters": {
+     "trackingNumber": {
+      "matches": ".+"
+     }
+    }
+   },
+   "response": {
+    "status": 200,
+    "headers": {
+     "Content-Type": "application/json"
+    },
+    "body": "{\n  \"shipments\": [\n    {\n      \"id\": \"{{request.query.trackingNumber}}\",\n      \"service\": \"{{#if request.query.service}}{{request.query.service}}{{else}}express{{/if}}\",\n      \"origin\": {\n        \"address\": {\n          \"addressLocality\": \"MANCHESTER - UK\",\n          \"countryCode\": \"GB\",\n          \"postalCode\": \"M1 1AE\"\n        }\n      },\n      \"destination\": {\n        \"address\": {\n          \"addressLocality\": \"DUBLIN - IRELAND\",\n          \"countryCode\": \"IE\",\n          \"postalCode\": \"D01\"\n        }\n      },\n      \"status\": {\n        \"timestamp\": \"{{now offset='-5 hours'}}\",\n        \"location\": {\n          \"address\": {\n            \"addressLocality\": \"EAST MIDLANDS - UK\",\n            \"countryCode\": \"GB\"\n          }\n        },\n        \"statusCode\": \"transit\",\n        \"status\": \"Arrived at facility\",\n        \"description\": \"Arrived at DHL Sort Facility.\"\n      },\n      \"details\": {\n        \"product\": {\n          \"productName\": \"EXPRESS WORLDWIDE\"\n        },\n        \"totalNumberOfPieces\": 1,\n        \"pieceIds\": [\n          \"{{request.query.trackingNumber}}\"\n        ]\n      },\n      \"events\": [\n        {\n          \"timestamp\": \"{{now offset='-5 hours'}}\",\n          \"location\": {\n            \"address\": {\n              \"addressLocality\": \"EAST MIDLANDS - UK\",\n              \"countryCode\": \"GB\"\n            }\n          },\n          \"statusCode\": \"transit\",\n          \"status\": \"Arrived at facility\",\n          \"description\": \"Arrived at DHL Sort Facility.\"\n        },\n        {\n          \"timestamp\": \"{{now offset='-1 days'}}\",\n          \"location\": {\n            \"address\": {\n              \"addressLocality\": \"MANCHESTER - UK\",\n              \"countryCode\": \"GB\"\n            }\n          },\n          \"statusCode\": \"pre-transit\",\n          \"status\": \"Picked up\",\n          \"description\": \"Shipment picked up.\"\n        }\n      ],\n      \"estimatedTimeOfDelivery\": \"{{now offset='2 days'}}\"\n    }\n  ],\n  \"possibleAdditionalShipmentsUrl\": []\n}",
+    "transformers": [
+     "response-template"
+    ]
+   },
+   "metadata": {
+    "mockhub": {
+     "description": "Every other number answers in transit, echoing the number and the service you asked for."
+    }
+   }
+  }
+ ]
+}

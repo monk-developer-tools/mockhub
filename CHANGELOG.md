@@ -4,6 +4,7 @@ What changed in MockHub, newest first. Every change ships to the Docker image `a
 
 ## 2026-11-08
 
+- A DHL Shipment Tracking sandbox, written from DHL's public documentation: delivered, in-transit and label-created shipments, any other number in transit, and the 401, 400 and 404 errors.
 - UPS (tracking, rating, address validation, transit times) and Amadeus (airport search, flight offers, pricing, orders) sandboxes built from their published specs.
 - Fixed: OpenAPI imports left deeply nested fields empty (null); every field now gets a sample value.
 - gRPC mocks from a `.proto` file without an account, on the public demo over TLS; projects accept `.proto` uploads too.
