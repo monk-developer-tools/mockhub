@@ -7,19 +7,39 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Map;
 import java.util.function.Predicate;
 
 public final class InstantGrpcRouter implements Filter {
-  private final Predicate<String> serviceExists;
+  static final String REFLECTION = "/grpc.reflection.";
+  static final String REFLECTION_OFF = "Server reflection is off on this server, so mock ids can't be listed. Pass your .proto file to the client instead";
 
-  public InstantGrpcRouter(Predicate<String> serviceExists) {
+  private final Predicate<String> serviceExists;
+  private final boolean hideReflection;
+
+  public InstantGrpcRouter(Predicate<String> serviceExists, boolean hideReflection) {
     this.serviceExists = serviceExists;
+    this.hideReflection = hideReflection;
   }
 
   @Override
   public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
+    if (request instanceof HttpServletRequest http && response instanceof HttpServletResponse out && refusesReflection(http)) {
+      out.setStatus(200);
+      out.setContentType("application/grpc");
+      out.setTrailerFields(() -> Map.of("grpc-status", "7", "grpc-message", REFLECTION_OFF));
+      out.flushBuffer();
+      return;
+    }
     chain.doFilter(request instanceof HttpServletRequest http ? route(http) : request, response);
+  }
+
+  boolean refusesReflection(HttpServletRequest request) {
+    String contentType = request.getContentType();
+    String path = request.getRequestURI();
+    return hideReflection && contentType != null && contentType.startsWith("application/grpc") && path != null && path.startsWith(REFLECTION);
   }
 
   HttpServletRequest route(HttpServletRequest request) {

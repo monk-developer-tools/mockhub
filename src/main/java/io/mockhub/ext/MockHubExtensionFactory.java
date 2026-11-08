@@ -305,7 +305,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     ProxyService proxy = new ProxyService(config.proxyEnabled, IpAllowList.ofText(config.proxyAllow), config.proxyCaKeystore(),
         id -> projectsRef.get().find(id));
     MockHubServerFactory server = new MockHubServerFactory(services.getStores().getBlobStore("grpc"), grpc::fileDescriptors, tls::attach,
-        host -> projectsRef.get().findForHost(host).map(Project::basePath), proxy, tunnelServlet, name -> grpc.ownerOf(name).isPresent());
+        host -> projectsRef.get().findForHost(host).map(Project::basePath), proxy, tunnelServlet, name -> grpc.ownerOf(name).isPresent(), config.publicTools);
     grpc.onChange(server::loadFileDescriptors);
     ContractStore contracts = new ContractStore(dataDir);
     ProjectService projects = new ProjectService(new FileProjectRepository(dataDir),

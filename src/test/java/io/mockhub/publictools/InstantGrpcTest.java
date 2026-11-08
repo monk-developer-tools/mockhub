@@ -28,7 +28,7 @@ class InstantGrpcTest {
   @Test
   void routesACallWithTheMockHeaderToThatMocksOwnCopyOfTheService() {
     // Given
-    InstantGrpcRouter router = new InstantGrpcRouter(Set.of(NAMESPACE + ".helloworld.Greeter")::contains);
+    InstantGrpcRouter router = new InstantGrpcRouter(Set.of(NAMESPACE + ".helloworld.Greeter")::contains, true);
     Map<String, String> header = Map.of(InstantGrpc.HEADER, SLUG);
 
     // When

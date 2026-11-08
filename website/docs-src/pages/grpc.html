@@ -54,7 +54,7 @@
 </table>
 
 <h3 id="grpc-calling">Calling the mock</h3>
-<p>gRPC runs over HTTP/2. MockHub serves it in plaintext (h2c) on its own port, next to the HTTP mocks. Server reflection is on, so <a href="https://github.com/fullstorydev/grpcurl">grpcurl</a> and tools like Postman can find the services without the <code>.proto</code> files:</p>
+<p>gRPC runs over HTTP/2. MockHub serves it in plaintext (h2c) on its own port, next to the HTTP mocks. Server reflection is on, so <a href="https://github.com/fullstorydev/grpcurl">grpcurl</a> and tools like Postman can find the services without the <code>.proto</code> files. It's off when <a href="#public-tools">public tools</a> are on, as on the public demo, so visitors' mock ids can't be listed; pass the <code>.proto</code> file to the client there:</p>
 <pre><code>grpcurl -plaintext localhost:8080 list
 grpcurl -plaintext -d '{"id": "7"}' localhost:8080 library.v1.BookService/GetBook</code></pre>
 <p>A gRPC stub's editor shows this command, with its example request, where other stubs have <strong>Try it</strong>. Point your app's gRPC channel at the same host and port with TLS turned off. Calls appear in the project's history like other requests.</p>
@@ -65,4 +65,4 @@ grpcurl -plaintext -d '{"id": "7"}' localhost:8080 library.v1.BookService/GetBoo
 <p>Many visitors upload the same services, such as <code>helloworld.Greeter</code>, so each instant mock keeps its own copy under its id. Send the header <code>x-mockhub-mock</code> with the mock's id and use your service's own name:</p>
 <pre><code>grpcurl -proto greeter.proto -H 'x-mockhub-mock: m-abcde23456' -d '{"name": "Ada"}' \
   mockhub.devops-monk.com:443 helloworld.Greeter/SayHello</code></pre>
-<p>A client that can't send metadata can call the namespaced name instead, such as <code>m_abcde23456.helloworld.Greeter/SayHello</code>. Instant mocks have the usual limits: 20 stubs, 1,000 calls a day and 64 KB per request, and they're deleted 7 days after their last change. When the daily calls run out, a call gets <code>RESOURCE_EXHAUSTED</code>.</p>
+<p>Server reflection is off on the demo, so give grpcurl the <code>.proto</code> file with <code>-proto</code>. A client that can't send metadata can call the namespaced name instead, such as <code>m_abcde23456.helloworld.Greeter/SayHello</code>. Instant mocks have the usual limits: 20 stubs, 1,000 calls a day and 64 KB per request, and they're deleted 7 days after their last change. When the daily calls run out, a call gets <code>RESOURCE_EXHAUSTED</code>.</p>

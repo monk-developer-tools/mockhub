@@ -36,12 +36,14 @@ public final class MockHubServerFactory extends Jetty12GrpcHttpServerFactory {
   private final ProxyService proxy;
   private final TunnelServlet tunnels;
   private final Predicate<String> grpcServiceExists;
+  private final boolean hideGrpcReflection;
 
   public MockHubServerFactory(BlobStore unused, Supplier<List<FileDescriptor>> descriptors, Consumer<TlsTarget> httpsReady,
       Function<String, Optional<String>> basePathForHost, ProxyService proxy,
-      TunnelServlet tunnels, Predicate<String> grpcServiceExists) {
+      TunnelServlet tunnels, Predicate<String> grpcServiceExists, boolean hideGrpcReflection) {
     super(unused);
     this.grpcServiceExists = grpcServiceExists;
+    this.hideGrpcReflection = hideGrpcReflection;
     this.descriptors = descriptors;
     this.httpsReady = httpsReady;
     this.basePathForHost = basePathForHost;
@@ -69,7 +71,7 @@ public final class MockHubServerFactory extends Jetty12GrpcHttpServerFactory {
         context.addFilter(new FilterHolder(new ProxyCaptureFilter(proxy)), "/*", EnumSet.of(DispatcherType.REQUEST));
         context.addFilter(new FilterHolder(new CustomDomainFilter(basePathForHost)), "/*", EnumSet.of(DispatcherType.REQUEST));
         context.addFilter(new FilterHolder(new ClientCertFilter()), "/*", EnumSet.of(DispatcherType.REQUEST));
-        context.addFilter(new FilterHolder(new InstantGrpcRouter(grpcServiceExists)), "/*", EnumSet.of(DispatcherType.REQUEST));
+        context.addFilter(new FilterHolder(new InstantGrpcRouter(grpcServiceExists, hideGrpcReflection)), "/*", EnumSet.of(DispatcherType.REQUEST));
         context.addFilter(new FilterHolder(grpcFilter), "/*", EnumSet.of(DispatcherType.REQUEST));
       }
 

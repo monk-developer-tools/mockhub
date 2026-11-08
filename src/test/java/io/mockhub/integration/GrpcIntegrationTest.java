@@ -102,6 +102,18 @@ class GrpcIntegrationTest {
   }
 
   @Test
+  void keepsServerReflectionOnWhenPublicToolsAreOff() throws InterruptedException {
+    // Given
+    upload(projectId, "library.dsc", LIBRARY);
+
+    // When
+    String reflected = InstantGrpcIntegrationTest.reflect(server.port());
+
+    // Then
+    assertThat(reflected).startsWith("services ").contains(SERVICE);
+  }
+
+  @Test
   void answersUnaryCallsFromStubsMatchedOnTheRequestMessage() {
     // Given
     upload(projectId, "library.dsc", LIBRARY);

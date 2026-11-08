@@ -128,4 +128,47 @@ class InstantGrpcIntegrationTest {
     assertThat(empty.status()).isEqualTo(400);
     assertThat(empty.body()).contains("defines no service");
   }
+  static String reflect(int port) throws InterruptedException {
+    io.grpc.ManagedChannel channel = io.grpc.netty.NettyChannelBuilder.forAddress("localhost", port).usePlaintext().build();
+    try {
+      java.util.concurrent.CompletableFuture<String> result = new java.util.concurrent.CompletableFuture<>();
+      io.grpc.stub.StreamObserver<io.grpc.reflection.v1.ServerReflectionRequest> requests = io.grpc.reflection.v1.ServerReflectionGrpc.newStub(channel)
+          .serverReflectionInfo(new io.grpc.stub.StreamObserver<>() {
+            @Override
+            public void onNext(io.grpc.reflection.v1.ServerReflectionResponse value) {
+              result.complete("services " + value.getListServicesResponse().getServiceList().stream().map(s -> s.getName()).toList());
+            }
+
+            @Override
+            public void onError(Throwable t) {
+              io.grpc.Status status = io.grpc.Status.fromThrowable(t);
+              result.complete(status.getCode() + ": " + status.getDescription());
+            }
+
+            @Override
+            public void onCompleted() {
+              result.complete("completed");
+            }
+          });
+      requests.onNext(io.grpc.reflection.v1.ServerReflectionRequest.newBuilder().setListServices("*").build());
+      requests.onCompleted();
+      return result.get(10, java.util.concurrent.TimeUnit.SECONDS);
+    } catch (java.util.concurrent.ExecutionException | java.util.concurrent.TimeoutException e) {
+      throw new IllegalStateException(e);
+    } finally {
+      channel.shutdownNow().awaitTermination(5, java.util.concurrent.TimeUnit.SECONDS);
+    }
+  }
+
+  @Test
+  void hidesServerReflectionOnAServerWithPublicToolsSoMockIdsCantBeListed() throws InterruptedException {
+    // Given
+    create(GREETER);
+
+    // When
+    String reflected = reflect(server.port());
+
+    // Then
+    assertThat(reflected).startsWith("PERMISSION_DENIED: Server reflection is off on this server");
+  }
 }
