@@ -1,3 +1,7 @@
+import java.nio.file.FileSystems
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
+
 plugins {
     java
     id("com.gradleup.shadow") version "8.3.6"
@@ -139,6 +143,11 @@ tasks.jar {
     }
 }
 
+configurations.runtimeClasspath {
+    exclude(group = "io.grpc", module = "grpc-netty")
+    exclude(group = "io.netty")
+}
+
 tasks.shadowJar {
     archiveFileName.set("mockhub.jar")
     mergeServiceFiles()
@@ -150,6 +159,20 @@ tasks.shadowJar {
             "Multi-Release" to "true",
             "Add-Exports" to "java.base/sun.security.x509",
         )
+    }
+}
+
+tasks.shadowJar {
+    doLast {
+        val guava = project.configurations.getByName("runtimeClasspath").first { file -> file.name.matches(Regex("guava-[0-9.]+-jre\\.jar")) }
+        FileSystems.newFileSystem(archiveFile.get().asFile.toPath()).use { jar ->
+            FileSystems.newFileSystem(guava.toPath()).use { source ->
+                for (name in listOf("pom.properties", "pom.xml")) {
+                    val path = "META-INF/maven/com.google.guava/guava/$name"
+                    Files.copy(source.getPath(path), jar.getPath(path), StandardCopyOption.REPLACE_EXISTING)
+                }
+            }
+        }
     }
 }
 

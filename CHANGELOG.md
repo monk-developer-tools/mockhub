@@ -4,6 +4,7 @@ What changed in MockHub, newest first. Every change ships to the Docker image `a
 
 ## 2026-11-08
 
+- Security: the image no longer ships Netty (4.2.0.RC3 came in through the gRPC extension and was never used), and it reports its real Guava 33.7.2 instead of the copy graphql-java bundles.
 - A DHL Shipment Tracking sandbox, written from DHL's public documentation: delivered, in-transit and label-created shipments, any other number in transit, and the 401, 400 and 404 errors.
 - UPS (tracking, rating, address validation, transit times) and Amadeus (airport search, flight offers, pricing, orders) sandboxes built from their published specs.
 - Fixed: OpenAPI imports left deeply nested fields empty (null); every field now gets a sample value.
