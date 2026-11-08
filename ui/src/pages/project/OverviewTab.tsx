@@ -11,6 +11,7 @@ import { emptyForm, toStub } from '../../model/stubForm';
 import { timeAgo } from '../../model/time';
 import { useApp } from '../../state/AppContext';
 import { useProject } from './ProjectPage';
+import { ReadyPanel } from './ReadyPanel';
 
 const SHARED_KEY = 'mockhub.shared.';
 
@@ -94,6 +95,7 @@ export function OverviewTab() {
 
   return (
     <div>
+      <ReadyPanel project={project} />
       <div className="stats">
         <StatTile
           label="Stubs"

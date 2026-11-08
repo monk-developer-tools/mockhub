@@ -7,12 +7,13 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { CopyButton } from '../components/CopyButton';
 import { useApp } from '../state/AppContext';
-import { ExampleGrid } from './ExamplesPage';
+import { START_GROUPS } from '../model/starts';
+import { StartGrid } from './NewMockPage';
 import { ProjectDialog } from './ProjectDialog';
 import { PageHeader } from '../components/ui/PageHeader';
 
 export function DashboardPage() {
-  const { orgProjects: allProjects, currentOrg, canManage, info, refreshProjects, teamsIn } = useApp();
+  const { orgProjects: allProjects, currentOrg, canManage, canEdit, info, refreshProjects, teamsIn } = useApp();
   const teams = teamsIn(currentOrg?.id);
   const [teamFilter, setTeamFilter] = useState('all');
   const projects = teamFilter === 'all' ? allProjects : allProjects.filter((p) => p.teamId === teamFilter);
@@ -54,24 +55,27 @@ export function DashboardPage() {
       />
 
       {allProjects.length === 0 ? (
-        <div className="panel">
-          <div className="empty">
+        <div className="stack">
+          <div className="welcome">
             <EmptyArt kind="projects" />
-            <h2>Create your first mock project</h2>
-            <p>
-              Start empty, import an OpenAPI spec, WSDL or WireMock mappings, or install an example below to see how REST, SOAP,
-              templating and stateful mocks look.
-            </p>
-            {canManage && (
-              <button className="btn primary" onClick={() => setCreating(true)}>
-                <Plus size={16} /> New project
-              </button>
-            )}
+            <div>
+              <h2>Make your first mock</h2>
+              <p className="muted">Pick what you have: a spec, a schema, a sample answer, a description for AI, or a ready-made example. You get a working URL straight away.</p>
+            </div>
           </div>
-          <ExampleGrid compact />
+          <StartGrid />
         </div>
       ) : (
         <div className="stack">
+          {canEdit && (
+            <div className="start-strip">
+              <span className="muted small">Start something new</span>
+              {START_GROUPS[0].cards.filter((c) => c.kind).slice(0, 6).map((c) => (
+                <Link key={c.id} className="chip" to={c.to ?? '/new'}>{c.title}</Link>
+              ))}
+              <Link className="chip strong" to="/new">All ways to start</Link>
+            </div>
+          )}
           <div className="stats">
             <StatTile label="Projects" value={projects.length} detail={`in ${currentOrg?.name ?? 'this organisation'}`} icon={<SquaresFour size={18} weight="duotone" />} />
             <StatTile label="Stubs" value={totals.stubs} detail={`${totals.stubs - totals.soap} REST, ${totals.soap} SOAP`} icon={<BracketsCurly size={18} weight="duotone" />} />

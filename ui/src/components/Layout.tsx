@@ -1,4 +1,4 @@
-import { Archive, BookOpenText, CloudArrowDown, CaretRight, ClockCounterClockwise, Buildings, CircleHalf, Eye, GearSix, HardDrives, Key, MagnifyingGlass, Moon, PaperPlaneTilt, Plug, Plus, SidebarSimple, Sparkle, SquaresFour, Sun, Table, UsersThree } from '@phosphor-icons/react';
+import { Archive, BookOpenText, CaretRight, ClockCounterClockwise, Buildings, CircleHalf, Eye, GearSix, HardDrives, Key, MagnifyingGlass, Moon, PaperPlaneTilt, Plug, Plus, SidebarSimple, Sparkle, SquaresFour, Sun, Table, UsersThree } from '@phosphor-icons/react';
 import { useCallback, useMemo } from 'react';
 import { MOD_LABEL, useHotkeys } from '../state/hotkeys';
 import { CommandPalette } from './CommandPalette';
@@ -93,6 +93,11 @@ export function Layout() {
         </div>
         <div className="sidebar-top">
           <OrgSwitcher onNewOrg={() => setCreatingOrg(true)} />
+          {canEdit && (
+            <NavLink to="/new" className="btn primary new-mock" title={collapsed ? 'New mock' : undefined}>
+              <Plus size={16} /> <span className="nav-label">New mock</span>
+            </NavLink>
+          )}
           <button className="palette-trigger" onClick={() => setPalette(true)} title={collapsed ? 'Search' : undefined}>
             <MagnifyingGlass size={14} />
             <span className="palette-label">Search…</span>
@@ -107,11 +112,6 @@ export function Layout() {
             {canEdit && (
               <NavLink to="/playground" title={collapsed ? 'Playground' : undefined}>
                 <PaperPlaneTilt size={17} /> <span className="nav-label">Playground</span>
-              </NavLink>
-            )}
-            {canEdit && (
-              <NavLink to="/mock-these-apis" title={collapsed ? 'Mock an OpenAPI URL' : undefined}>
-                <CloudArrowDown size={17} /> <span className="nav-label">Mock an OpenAPI URL</span>
               </NavLink>
             )}
             <NavLink to="/examples" title={collapsed ? 'Examples' : undefined}>

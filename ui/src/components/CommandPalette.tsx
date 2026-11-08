@@ -1,3 +1,4 @@
+import { START_GROUPS } from '../model/starts';
 import { ArrowElbowDownLeft, BookOpenText, CloudArrowDown, CircleHalf, FileCode, FolderOpen, HardDrives, Keyboard, MagnifyingGlass, PaperPlaneTilt, Plus, SquaresFour } from '@phosphor-icons/react';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -9,7 +10,7 @@ import { MethodJack } from './StubRoute';
 
 export interface Command {
   id: string;
-  group: 'Go to' | 'Projects' | 'Stubs' | 'Actions';
+  group: 'Create' | 'Go to' | 'Projects' | 'Stubs' | 'Actions';
   title: string;
   hint?: string;
   icon?: ReactNode;
@@ -26,7 +27,7 @@ interface Props {
   onShowShortcuts: () => void;
 }
 
-const GROUP_ORDER: Command['group'][] = ['Actions', 'Go to', 'Projects', 'Stubs'];
+const GROUP_ORDER: Command['group'][] = ['Actions', 'Create', 'Go to', 'Projects', 'Stubs'];
 
 export function CommandPalette({ projects, canEdit, onClose, onNewProject, onToggleTheme, onShowShortcuts }: Props) {
   const navigate = useNavigate();
@@ -54,6 +55,8 @@ export function CommandPalette({ projects, canEdit, onClose, onNewProject, onTog
     const result: Command[] = [
       { id: 'go-projects', group: 'Go to', title: 'Projects', icon: <SquaresFour size={15} />, run: go('/') },
       { id: 'go-examples', group: 'Go to', title: 'Examples', icon: <BookOpenText size={15} />, run: go('/examples') },
+      { id: 'go-new', group: 'Create', title: 'New mock…', icon: <Plus size={15} />, run: go('/new') },
+      ...START_GROUPS.flatMap((g) => g.cards).filter((c) => c.kind && c.to).map((c) => ({ id: `new-${c.id}`, group: 'Create' as const, title: `New mock: ${c.title}`, icon: <Plus size={15} />, run: go(c.to ?? '/new') })),
       { id: 'go-mock-openapi', group: 'Go to', title: 'Mock an OpenAPI URL', icon: <CloudArrowDown size={15} />, run: go('/mock-these-apis') },
       { id: 'go-server', group: 'Go to', title: 'Server settings', icon: <HardDrives size={15} />, run: go('/server') },
       { id: 'go-playground', group: 'Go to', title: 'Playground', icon: <PaperPlaneTilt size={15} />, run: go('/playground') },

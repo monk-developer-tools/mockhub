@@ -8,6 +8,8 @@ import { ExamplesPage } from './pages/ExamplesPage';
 import { LoginPage } from './pages/LoginPage';
 import { ContractTab } from './pages/project/ContractTab';
 import { ImportExportTab } from './pages/project/ImportExportTab';
+import { NewMockPage } from './pages/NewMockPage';
+import { NewMockFlowPage } from './pages/NewMockFlowPage';
 import { SnapshotsTab } from './pages/project/snapshots/SnapshotsTab';
 import { OverviewTab } from './pages/project/OverviewTab';
 import { ProjectPage } from './pages/project/ProjectPage';
@@ -40,6 +42,8 @@ const router = createBrowserRouter(
       element: <Layout />,
       children: [
         { index: true, element: <DashboardPage /> },
+        { path: 'new', element: <NewMockPage /> },
+        { path: 'new/:kind', element: <NewMockFlowPage /> },
         { path: 'examples', element: <ExamplesPage /> },
         { path: 'mock-these-apis', element: <MockTheseApisPage /> },
         { path: 'playground', element: <PlaygroundPage /> },

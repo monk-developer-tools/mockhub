@@ -8,6 +8,7 @@ export const GROUPS = [
       { slug: 'quick-start', title: 'Quick start', icon: 'Lightning', description: 'Run MockHub with Docker, install an example and call your first mock.' },
       { slug: 'concepts', title: 'Concepts', icon: 'Cube', description: 'Projects, stubs, base paths, teams and roles in one table.' },
       { slug: 'use-cases', title: 'Use cases', icon: 'Signpost', description: 'Which feature to reach for: test environments, contract-first work, demos and load tests.' },
+      { slug: 'start-a-mock', title: 'Start a mock', icon: 'RocketLaunch', description: 'Every way to make a mock after signing in: a spec, a schema, a .proto, records, an answer, webhooks, a proxy or AI.' },
       { slug: 'first-stub', title: 'Your first stub', icon: 'PlusSquare', description: 'Match a request, write a response and try it from the editor.' },
     ],
   },

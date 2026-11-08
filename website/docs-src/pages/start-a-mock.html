@@ -1,0 +1,31 @@
+<p>After signing in, select <strong>New mock</strong> at the top of the sidebar, or a card on the dashboard. The page has a card for every way to start, in the same three groups as this website's menus: <strong>Mock servers</strong>, <strong>Tools</strong> and <strong>Service virtualization</strong>. Each card opens one screen: give it what you have, choose where it goes, and select <strong>Create mock</strong>. You land on the project with a <strong>Your mock is ready</strong> panel showing its address and commands that call it.</p>
+
+<h3 id="start-cards">What each card makes</h3>
+<table>
+  <thead><tr><th>Card</th><th>You give it</th><th>You get</th></tr></thead>
+  <tbody>
+    <tr><td>OpenAPI or Swagger</td><td>A file, its URL or pasted text</td><td>One stub per operation with example answers. Optionally strip a prefix and keep the spec as the <a href="#contract-drift">contract</a>.</td></tr>
+    <tr><td>SOAP from WSDL</td><td>A WSDL 1.1 file or text</td><td>A stub per operation, the <code>?wsdl</code> endpoint and a fault for any other operation. See <a href="#soap">SOAP &amp; WSDL</a>.</td></tr>
+    <tr><td>GraphQL</td><td>SDL or an introspection result</td><td>A <code>/graphql</code> endpoint that answers every query and mutation. See <a href="#graphql">GraphQL</a>.</td></tr>
+    <tr><td>gRPC</td><td>A <code>.proto</code> file</td><td>The services, with a starter stub per method. See <a href="#grpc">gRPC</a>.</td></tr>
+    <tr><td>CRUD REST API, CSV to REST API</td><td>A resource name and records as JSON or CSV, or none</td><td>A REST resource that saves records. See <a href="#crud">CRUD resources</a>.</td></tr>
+    <tr><td>JSON or XML answer</td><td>The answer, method, path, status and content type</td><td>One stub that sends that answer.</td></tr>
+    <tr><td>Webhook testing</td><td><em>Receive</em>: a path. <em>Answer, then call back</em>: a path, your URL and a delay.</td><td>A receiver that answers 200 and records every webhook in Requests, or a stub that calls your service back. See <a href="#webhooks">Webhooks</a>.</td></tr>
+    <tr><td>HTTP traffic monitoring, Local tunnel</td><td>The service's address, or a tunnel name for a service on your machine</td><td>A project that forwards every call and records it. Add stubs later to replace one answer at a time. See <a href="#proxy">Proxy</a> and <a href="#tunnel">Local tunnel</a>.</td></tr>
+    <tr><td>HTTP echo</td><td>A path</td><td>An endpoint that answers with the request it received. See <a href="#echo">Echo</a>.</td></tr>
+    <tr><td>Postman collection</td><td>A v2.0 or v2.1 file</td><td>One stub per saved example. See <a href="#postman">Postman collections</a>.</td></tr>
+    <tr><td>Describe it to AI</td><td>A sentence or two about the API</td><td>A chat with the <a href="#ai">assistant</a>, which drafts the stubs for you to review. Shown when AI is set up.</td></tr>
+  </tbody>
+</table>
+<p>The other cards open what already exists: the ready-made examples and vendor sandboxes, an empty project, the test data and 2FA tools, Teams &amp; people, and the docs on contract checks and API tests in CI. Every card with a file has <strong>Use a sample</strong>, so you can try it in one click.</p>
+
+<h3 id="start-where">Where it goes</h3>
+<table>
+  <thead><tr><th>Your role</th><th>What you can do</th></tr></thead>
+  <tbody>
+    <tr><td>Manager or admin</td><td>Create a new project, named from the file or the service, in one of your teams, or add to a project you edit.</td></tr>
+    <tr><td>Editor</td><td>Add to a project you edit. Creating projects needs the manager role in a team.</td></tr>
+    <tr><td>Viewer</td><td>Look at projects. The page says to ask a manager of your team for the editor role.</td></tr>
+  </tbody>
+</table>
+<p>Mistakes, such as a broken spec or invalid JSON, are shown on the screen before anything is created. If a new project can't be filled, for example because the spec fails to import, it is removed again, so no empty project is left behind. The command palette (<kbd>⌘ K</kbd> or <kbd>Ctrl K</kbd>) has <em>New mock: …</em> for every card.</p>
