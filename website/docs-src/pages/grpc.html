@@ -1,16 +1,16 @@
-<p>MockHub answers gRPC calls from stubs. Upload a protobuf descriptor set for your services and write each answer as JSON. MockHub converts it to the protobuf message the client expects.</p>
+<p>MockHub answers gRPC calls from stubs. Upload your <code>.proto</code> file or a protobuf descriptor set and write each answer as JSON. MockHub converts it to the protobuf message the client expects.</p>
 <p>To see it working first, install the <em>Inventory — gRPC from a descriptor set</em> example (<strong>Examples</strong> in the sidebar). It serves <code>inventory.v1.StockService</code> with a unary, a server-streaming and a client-streaming method, a templated answer, gRPC statuses and a stub that matches metadata. Try it with <code>grpcurl -plaintext -d '{"sku":"sku-7"}' localhost:8080 inventory.v1.StockService/GetItem</code>. Because a service belongs to one project, the example can be installed once per server.</p>
 
-<h3 id="grpc-descriptors">Upload a descriptor set</h3>
-<p>gRPC messages are binary, so MockHub needs your service definitions. Build a descriptor set from your <code>.proto</code> files with <code>protoc</code>:</p>
+<h3 id="grpc-descriptors">Upload a .proto file or a descriptor set</h3>
+<p>gRPC messages are binary, so MockHub needs your service definitions. For one file, upload the <code>.proto</code> itself: MockHub reads proto3 and proto2 text, including nested messages, maps, <code>oneof</code>, <code>optional</code> and streaming methods, and ignores options such as <code>google.api.http</code>. It can import only Google's well-known types (<code>google/protobuf/*.proto</code>); a type from any other import must be defined in the same file. For files that import each other, build a descriptor set with <code>protoc</code>:</p>
 <pre><code>protoc --include_imports --descriptor_set_out=library.dsc library.proto</code></pre>
 <p><code>--include_imports</code> puts every imported file in the set. Google's well-known types, such as <code>Timestamp</code>, <code>Duration</code> and the wrappers, work even without it. Buf users can run <code>buf build -o library.dsc</code>.</p>
-<p>In a project's <strong>Import / export</strong> tab, drop the file on <strong>gRPC services</strong>. MockHub lists each service with its methods and starts answering them right away. No restart is needed. <strong>Create stubs</strong> adds one stub per method, each answering with an example message built from the response type.</p>
+<p>In a project's <strong>Import / export</strong> tab, drop the <code>.proto</code> file or descriptor set on <strong>gRPC services</strong>. A mistake in a <code>.proto</code> file is shown with its line number. MockHub lists each service with its methods and starts answering them right away. No restart is needed. <strong>Create stubs</strong> adds one stub per method, each answering with an example message built from the response type.</p>
 <table>
   <thead><tr><th>Rule</th><th>Why</th></tr></thead>
   <tbody>
     <tr><td>A service belongs to one project</td><td>gRPC paths are <code>/package.Service/Method</code> and clients can't add a prefix, so two projects can't both serve <code>library.v1.BookService</code>. The second upload is refused and the message names the project that serves it.</td></tr>
-    <tr><td>Files are <code>.dsc</code>, <code>.desc</code>, <code>.pb</code>, <code>.protoset</code> or <code>.bin</code>, up to 4 MB</td><td>Up to 20 per project. Uploading a file with the same name replaces it.</td></tr>
+    <tr><td>Files are <code>.proto</code> (up to 256 KB) or <code>.dsc</code>, <code>.desc</code>, <code>.pb</code>, <code>.protoset</code> or <code>.bin</code> (up to 4 MB)</td><td>Up to 20 per project. Uploading a file with the same name replaces it.</td></tr>
     <tr><td>Removing a descriptor stops its services</td><td>Calls then get <code>UNIMPLEMENTED</code>. The stubs stay in the project for when you upload it again.</td></tr>
   </tbody>
 </table>
@@ -59,3 +59,10 @@
 grpcurl -plaintext -d '{"id": "7"}' localhost:8080 library.v1.BookService/GetBook</code></pre>
 <p>A gRPC stub's editor shows this command, with its example request, where other stubs have <strong>Try it</strong>. Point your app's gRPC channel at the same host and port with TLS turned off. Calls appear in the project's history like other requests.</p>
 <p>A reverse proxy in front of MockHub must forward HTTP/2 for gRPC to work, for example with nginx's <code>grpc_pass</code>. A proxy that only speaks HTTP/1.1 to MockHub breaks gRPC calls, while the UI and HTTP mocks keep working.</p>
+
+<h3 id="grpc-instant">gRPC mocks without an account</h3>
+<p>On the public demo, the <a href="/tools/instant-mock/">instant mock</a> tool makes a gRPC mock from a <code>.proto</code> file without signing in. Each method gets a stub that answers with an example message; change the answers in the stub editor there. Calls go to <code>mockhub.devops-monk.com:443</code> over TLS.</p>
+<p>Many visitors upload the same services, such as <code>helloworld.Greeter</code>, so each instant mock keeps its own copy under its id. Send the header <code>x-mockhub-mock</code> with the mock's id and use your service's own name:</p>
+<pre><code>grpcurl -proto greeter.proto -H 'x-mockhub-mock: m-abcde23456' -d '{"name": "Ada"}' \
+  mockhub.devops-monk.com:443 helloworld.Greeter/SayHello</code></pre>
+<p>A client that can't send metadata can call the namespaced name instead, such as <code>m_abcde23456.helloworld.Greeter/SayHello</code>. Instant mocks have the usual limits: 20 stubs, 1,000 calls a day and 64 KB per request, and they're deleted 7 days after their last change. When the daily calls run out, a call gets <code>RESOURCE_EXHAUSTED</code>.</p>

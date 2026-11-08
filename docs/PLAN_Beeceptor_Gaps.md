@@ -159,7 +159,7 @@ The bin page now adds a **Get started** card for a new owner: catch a request (t
 | OpenAPI mock server, no login, from a file **or a URL** | Instant mock from a file, paste or public URL | ✅ | T1 |
 | SOAP mock from WSDL file or URL | Instant mock from a WSDL file, paste or public URL | ✅ | T1 |
 | **GraphQL mock from SDL, no login**, with a query explorer | Instant mock from SDL, introspection or a URL, with an explorer of example queries | ✅ | T1 |
-| **gRPC mock from .proto, no login** | Signed-in only, from protoc descriptor sets | ❌ | T7 |
+| **gRPC mock from .proto, no login** | Instant mocks from a `.proto` file on the demo over TLS (`x-mockhub-mock` header or namespaced name); projects take `.proto` uploads too | ✅ | T7 ✅ |
 | JSON/XML server: paste a payload, get a live API | `/tools/json-server/`: each key a route, lists of objects as CRUD | ✅ JSON; XML via the instant mock editor | T3 |
 | CSV to REST API (upload, preview, read/add/update/delete) | `/tools/csv-to-api/` with a preview and a records table | ✅ | T3 |
 | **2FA code generator** (QR screenshot or secret to TOTP codes, plus an API) | `/tools/totp/` and `GET|POST /__public/totp` | ✅ | T2 |
@@ -221,8 +221,10 @@ The runs found four real problems, all fixed:
 
 Final run: 0 errors in every scenario; 10-minute steady run at 13,672 requests/s with memory flat at about 350 MB. Raw results are in `docs/benchmark/2026-11-08-m1pro-docker/`.
 
-### T7 — gRPC mocks without login
-Split out of T1. Three things block it on the public demo: MockHub reads only compiled descriptor sets (no `.proto` text parser); gRPC routes by service name, so two visitors uploading the same service would collide on a shared server; and the demo's nginx has no HTTP/2 or `grpc_pass`. Needs a `.proto` parser, a per-mock service namespace, and HTTP/2 gRPC in MockHub's own nginx site file.
+### T7 — gRPC mocks without login ✅ done
+`ProtoParser` (pure Java, no protoc) reads proto2/proto3 text into a `FileDescriptorProto` and matches `protoc` 29.3 field for field on the fixtures, including a rich one with maps, oneofs, proto3 optional, aliases, nested types and option blocks. Projects accept `.proto` uploads. Instant mocks take `from: grpc`: the file is compiled under the package prefix `m_<id>`, one starter stub per method, stubs in that namespace tagged gRPC (nothing else can be). `InstantGrpcRouter` (servlet filter before the gRPC filter) maps `x-mockhub-mock: m-<id>` plus `/svc/Method` to the namespaced service; the instant daily limit answers gRPC with `RESOURCE_EXHAUSTED`. nginx: `http2 on` (per server since 1.25.1) and gRPC content types to `@grpc` with `grpc_pass` to the container.
+
+Original plan: split out of T1. Three things block it on the public demo: MockHub reads only compiled descriptor sets (no `.proto` text parser); gRPC routes by service name, so two visitors uploading the same service would collide on a shared server; and the demo's nginx has no HTTP/2 or `grpc_pass`. Needs a `.proto` parser, a per-mock service namespace, and HTTP/2 gRPC in MockHub's own nginx site file.
 
 ## 4. Signed-in platform gaps
 
@@ -253,7 +255,7 @@ Every page under Beeceptor's three header menus was read, plus the footer.
 | Testing Limitations (API virtualization for CI, flaky tests, failure simulation) | `/api-testing-in-ci/` | ✅ | W1 ✅ |
 | OpenAPI, SOAP mock server pages | ✅ | ✅ | — |
 | **GraphQL mock server page** | `/graphql-mock-server/` | ✅ | T1 |
-| **gRPC mock server page** | — | ❌ | W2 (with T7) |
+| **gRPC mock server page** | `/grpc-mock-server/` | ✅ | W2 ✅ |
 | CRUD REST APIs | `/crud-api/` | ✅ | — |
 | JSON/XML server | `/mock-api/`, `/tools/json-server/` | ✅ | T3 ✅ |
 | Ready-to-use mock servers | `/examples/`, 16 projects including 3 vendor sandboxes | 🟡 | T5 |
@@ -298,7 +300,7 @@ W4 status page (original plan): a public `/status/` page and a footer badge. The
 | 15 | T4 Test data generator extras ✅ | M | |
 | 16 | T5 Virtual sandboxes catalog ✅ first three | L | Content heavy |
 | 17 | T6 Traffic monitoring and tunnel pages ✅ | S | Pages |
-| 17b | T7 gRPC mocks without login | L | Split out of T1: needs a .proto parser, per-mock service names and HTTP/2 on the demo |
+| 17b | T7 gRPC mocks without login ✅ | L | Split out of T1: needs a .proto parser, per-mock service names and HTTP/2 on the demo |
 | 18 | P1 Template helpers ✅ | S | Verify, then add the missing ones |
 | 19 | P2 Fix template with AI ✅ | S | |
 | 20 | P3 OpenTelemetry export ✅ | M | |
@@ -308,7 +310,7 @@ W4 status page (original plan): a public `/status/` page and a footer badge. The
 | 24 | P7 Benchmark report ✅ | M | |
 | 25 | P8 Postman collection import ✅ | S | |
 | 26 | W4 Status page and footer badge ✅ | S | Asked for; cheap trust signal |
-| 27 | W2 gRPC and forward-proxy pages (forward proxy ✅) | S | The GraphQL page shipped with T1; the gRPC page waits for T7 |
+| 27 | W2 gRPC and forward-proxy pages ✅ | S | The GraphQL page shipped with T1; the gRPC page waits for T7 |
 | 28 | W1 Development bottlenecks and testing limitations pages ✅ | S | Content. Running the CI example found that imports dropped a path's first segment when it equalled the project's base path; fixed in `StubService.createAll` |
 | 29 | W3 More compare pages ✅ | S | Content, facts checked |
 | 30 | W5 Changelog, trust centre, FAQ, about ✅ | S | Content |

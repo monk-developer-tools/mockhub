@@ -762,6 +762,63 @@ curl -u ci:ci-pass-1 "localhost:8080/__admin/mockhub/api/projects/$ID/history?ma
     definition: 'A GraphQL mock server reads a GraphQL schema and answers queries and mutations with data that follows it, so client teams can build and test before the real resolvers exist.',
   },
   {
+    slug: 'grpc-mock-server',
+    menu: 'mock-servers',
+    icon: 'Plugs',
+    nav: ['gRPC mock server', 'Mock services from a .proto file.'],
+    title: 'gRPC mock server from a .proto file, free and no login — MockHub',
+    description: 'Paste or upload a .proto file and get a gRPC mock that answers every method with an example message over HTTP/2 and TLS. Match the request message and metadata, return gRPC statuses, no account needed.',
+    h1: 'A gRPC mock server from your .proto file',
+    lede: 'Give MockHub a .proto file and every method answers right away with a message of the right type. Match on the request message and metadata, return NOT_FOUND or UNAVAILABLE on purpose, and call it with grpcurl, Postman or your own client. Try it without an account.',
+    hero: { shot: shot('grpc', 'A gRPC stub: pick the service and method, then match the request and write the answer as JSON') },
+    docs: '/docs/grpc/',
+    steps: [
+      ['Bring the .proto file', 'Paste or upload it. No protoc needed; for files that import each other, upload a descriptor set.'],
+      ['Call it', 'Every method answers with an example message. Use grpcurl, Postman or your app\'s gRPC client.'],
+      ['Shape the answers', 'Match the request message or metadata, answer with JSON, and return any gRPC status.'],
+    ],
+    problem: {
+      title: 'gRPC services are hard to stand in for',
+      items: [
+        ['Binary and typed', 'You can\'t answer a gRPC call with a JSON file and curl; the client expects protobuf over HTTP/2.'],
+        ['The service isn\'t ready', 'The .proto file is agreed, but the server behind it isn\'t written yet.'],
+        ['Errors are hard to produce', 'A real service rarely returns DEADLINE_EXCEEDED or UNAVAILABLE when a test needs it.'],
+      ],
+    },
+    benefits: {
+      title: 'From .proto to working calls',
+      items: [
+        ['FileArrowUp', '.proto or descriptor set', 'Reads proto3 and proto2 text, or a descriptor set built with protoc or buf.', '/docs/grpc/#grpc-descriptors'],
+        ['BracketsCurly', 'Answers as JSON', 'Write the response message as JSON; MockHub encodes it as protobuf.', '/docs/grpc/#grpc-stubs'],
+        ['Funnel', 'Match message and metadata', 'Body matchers on the request message, header matchers on metadata.', '/docs/grpc/#grpc-stubs'],
+        ['WarningCircle', 'Any gRPC status', 'NOT_FOUND, UNAUTHENTICATED, UNAVAILABLE and the rest, with a message.', '/docs/grpc/#grpc-status'],
+        ['Lightning', 'No login to try', 'The instant mock takes a .proto file and gives you a mock on the demo over TLS.', '/tools/instant-mock/'],
+        ['ArrowsLeftRight', 'Streaming, within limits', 'Server streaming sends one message; client and bidi streams get one answer.', '/docs/grpc/#grpc-streaming'],
+      ],
+    },
+    example: {
+      title: 'Call a mock made from a .proto file',
+      text: 'Create the mock on the instant mock page, then call your service by its own name with the mock\'s id in a header.',
+      code: `grpcurl -proto greeter.proto \\
+  -H 'x-mockhub-mock: m-abcde23456' \\
+  -d '{"name": "Ada"}' \\
+  mockhub.devops-monk.com:443 helloworld.Greeter/SayHello
+
+{
+  "message": "example"
+}`,
+    },
+    faq: [
+      ['Do I need an account?', 'No. The free instant mock on the demo takes a .proto file up to 128 KB and keeps the mock for 7 days after its last change. Run MockHub yourself, or sign in, to keep it in a project.'],
+      ['Why the x-mockhub-mock header?', 'gRPC calls are addressed by service name, and many people mock the same services on the demo. The header picks your copy. Clients that can\'t send metadata can call the namespaced name, such as m_abcde23456.helloworld.Greeter, instead.'],
+      ['Can my .proto file import other files?', 'Only Google\'s well-known types, such as Timestamp and Empty. For files that import each other, upload a descriptor set built with protoc --include_imports to a project.'],
+      ['Are streaming calls supported?', 'Unary calls fully. A server stream sends one message; client and bidirectional streams are answered with one message from the first stub that matches.'],
+      ['Does it work on my own server?', 'Yes. MockHub serves gRPC over HTTP/2 on its own port; put a TLS proxy such as nginx in front with grpc_pass if clients need TLS.'],
+    ],
+    related: ['graphql-mock-server', 'openapi-mock-server', 'tools/instant-mock'],
+    definition: 'A gRPC mock server reads a service\'s protobuf definition and answers its methods with messages of the right type, so clients can be built and tested before the real service exists.',
+  },
+  {
     slug: 'soap-mock-server',
     menu: 'mock-servers',
     icon: 'FileText',

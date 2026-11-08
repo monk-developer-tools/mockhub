@@ -206,3 +206,32 @@ export function graphqlRequest(query, variablesText) {
   if (variables === null || typeof variables !== 'object' || Array.isArray(variables)) throw new Error('The variables must be a JSON object, like {"id": "1"}.');
   return { query: text, variables };
 }
+
+export const GRPC_HEADER = 'x-mockhub-mock';
+export const MAX_PROTO = 128 * 1024;
+
+export const isGrpcMock = (stubs) => (stubs ?? []).some((s) => /^\/m_[a-z0-9]+\./.test(s?.request?.urlPath ?? s?.request?.url ?? ''));
+
+export function grpcStart(text, fileName) {
+  const proto = String(text ?? '');
+  if (!proto.trim()) throw new Error('Upload or paste a .proto file first.');
+  if (proto.length > MAX_PROTO) throw new Error('Keep the .proto file under 128 KB.');
+  const name = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,80}\.proto$/.test(fileName ?? '') ? fileName : 'service.proto';
+  return { from: 'grpc', text: proto, fileName: name };
+}
+
+const shellQuote = (value) => `'${String(value).replace(/'/g, `'\\''`)}'`;
+
+export function grpcTarget(location) {
+  const secure = location.protocol === 'https:';
+  const port = location.port || (secure ? '443' : '80');
+  return { address: `${location.hostname}:${port}`, plaintext: !secure };
+}
+
+export function grpcurlCommand({ target, slug, protoName, service, method, example }) {
+  const parts = ['grpcurl'];
+  if (target.plaintext) parts.push('-plaintext');
+  parts.push('-proto', protoName || 'service.proto', '-H', shellQuote(`${GRPC_HEADER}: ${slug}`));
+  parts.push('-d', shellQuote(JSON.stringify(example ?? {})), target.address, `${service}/${method}`);
+  return parts.join(' ');
+}

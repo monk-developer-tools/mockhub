@@ -9,6 +9,7 @@ import io.mockhub.api.Jsons;
 import io.mockhub.graphql.ExampleOperations;
 import io.mockhub.graphql.GraphQlException;
 import io.mockhub.graphql.GraphQlTransformer;
+import io.mockhub.grpc.GrpcCatalog;
 import io.mockhub.history.HistoryEntry;
 import io.mockhub.history.HistoryQuery;
 import io.mockhub.history.HistoryStore;
@@ -26,7 +27,7 @@ public final class InstantMockTool implements PublicTool {
   public static final int MAX_REQUEST = 256 * 1024;
   public static final int RECENT = 50;
   public static final int MAX_CREATE = 600 * 1024;
-  private static final Pattern MOCK = Pattern.compile("/mocks/(m-[a-z0-9]{10})(/stubs(?:/([A-Za-z0-9-]{1,64}))?|/requests|/graphql)?");
+  private static final Pattern MOCK = Pattern.compile("/mocks/(m-[a-z0-9]{10})(/stubs(?:/([A-Za-z0-9-]{1,64}))?|/requests|/graphql|/grpc)?");
   private static final Set<String> SPECS = Set.of("openapi", "wsdl", "graphql");
 
   private final InstantMocks mocks;
@@ -36,9 +37,10 @@ public final class InstantMockTool implements PublicTool {
   private final InstantExamples examples;
   private final SpecFetcher fetcher;
   private final ExampleOperations operations;
+  private final GrpcCatalog grpc;
 
   public InstantMockTool(InstantMocks mocks, HistoryStore history, PublicLimits limits, ImporterRegistry importers, InstantExamples examples,
-      SpecFetcher fetcher, ExampleOperations operations) {
+      SpecFetcher fetcher, ExampleOperations operations, GrpcCatalog grpc) {
     this.mocks = mocks;
     this.history = history;
     this.limits = limits;
@@ -46,6 +48,7 @@ public final class InstantMockTool implements PublicTool {
     this.examples = examples;
     this.fetcher = fetcher;
     this.operations = operations;
+    this.grpc = grpc;
   }
 
   @Override
@@ -114,7 +117,8 @@ public final class InstantMockTool implements PublicTool {
       case "example" -> examples.source(body.path("id").asText(""));
       case "records" -> InstantSources.records(body.path("resource").asText(null), body.get("records"));
       case "json" -> InstantSources.json(body.get("data"), body.path("resource").asText(null));
-      default -> throw new InstantStubRules.Refused("Start from openapi, wsdl, graphql, json, example or records");
+      case "grpc" -> InstantGrpc.source(grpc, body.path("text").asText(null), body.path("fileName").asText(null));
+      default -> throw new InstantStubRules.Refused("Start from openapi, wsdl, graphql, grpc, json, example or records");
     };
   }
 
@@ -165,6 +169,8 @@ public final class InstantMockTool implements PublicTool {
       return PublicResponses.json(200, recent(entry));
     } else if (part.equals("/graphql") && method.equals("GET")) {
       return graphqlOperations(entry);
+    } else if (part.equals("/grpc") && method.equals("GET")) {
+      return PublicResponses.json(200, InstantGrpc.describe(grpc, entry));
     } else if (stubId == null && method.equals("POST")) {
       return PublicResponses.json(201, mocks.addStub(entry, stubBody(request)));
     } else if (stubId != null && method.equals("PUT")) {
@@ -173,7 +179,7 @@ public final class InstantMockTool implements PublicTool {
       mocks.deleteStub(entry, stubId);
       return PublicResponses.json(200, Jsons.object().put("deleted", true));
     }
-    return PublicResponses.error(405, "Use GET or DELETE on the mock, POST to /stubs, PUT or DELETE on /stubs/{id}, GET /requests or GET /graphql");
+    return PublicResponses.error(405, "Use GET or DELETE on the mock, POST to /stubs, PUT or DELETE on /stubs/{id}, GET /requests, GET /graphql or GET /grpc");
   }
 
   private static JsonNode stubBody(PublicRequest request) {

@@ -13,6 +13,7 @@
 /mock-api/
 /openapi-mock-server/
 /graphql-mock-server/
+/grpc-mock-server/
 /soap-mock-server/
 /crud-api/
 /stateful-mocks/

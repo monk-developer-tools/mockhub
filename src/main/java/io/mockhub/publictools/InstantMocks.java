@@ -87,7 +87,7 @@ public final class InstantMocks {
       InstantSeed seed = source.build(project);
       List<ObjectNode> accepted = accept(seed, skipped);
       seed.records().forEach(r -> crud.seed(project.id(), r.resource(), r.records()));
-      accepted.forEach(stub -> stubs.create(project.id(), stub));
+      accepted.forEach(stub -> stubs.create(project.id(), InstantGrpc.tag(stub, slug)));
     } catch (RuntimeException e) {
       projects.delete(project.id());
       throw e;
@@ -148,13 +148,13 @@ public final class InstantMocks {
 
   public synchronized ObjectNode addStub(Entry entry, JsonNode stub) {
     if (stubs.list(entry.projectId()).size() >= MAX_STUBS) throw new InstantStubRules.Refused("An instant mock holds up to " + MAX_STUBS + " stubs");
-    ObjectNode created = stubs.create(entry.projectId(), InstantStubRules.check(stub));
+    ObjectNode created = stubs.create(entry.projectId(), InstantGrpc.tag(InstantStubRules.check(stub), entry.slug()));
     touch(entry);
     return InstantStubRules.forDisplay(created);
   }
 
   public synchronized ObjectNode updateStub(Entry entry, String stubId, JsonNode stub) {
-    ObjectNode updated = stubs.update(entry.projectId(), stubId, InstantStubRules.check(stub));
+    ObjectNode updated = stubs.update(entry.projectId(), stubId, InstantGrpc.tag(InstantStubRules.check(stub), entry.slug()));
     touch(entry);
     return InstantStubRules.forDisplay(updated);
   }

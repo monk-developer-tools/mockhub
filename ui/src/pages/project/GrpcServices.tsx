@@ -9,12 +9,12 @@ import { starterStub, type GrpcCatalog, type GrpcService } from '../../model/grp
 import { CopyButton } from '../../components/CopyButton';
 
 export const PROTOC_COMMAND = 'protoc --include_imports --descriptor_set_out=library.dsc library.proto';
-const ACCEPT = '.dsc,.desc,.pb,.protoset,.bin';
+const ACCEPT = '.proto,.dsc,.desc,.pb,.protoset,.bin';
 const SAFE_NAME = /[^A-Za-z0-9._-]/g;
 
 export function descriptorName(fileName: string): string {
   const cleaned = fileName.replace(SAFE_NAME, '-').replace(/^[^A-Za-z0-9]+/, '');
-  return /\.(dsc|desc|pb|protoset|bin)$/.test(cleaned) ? cleaned : `${cleaned || 'services'}.dsc`;
+  return /\.(proto|dsc|desc|pb|protoset|bin)$/.test(cleaned) ? cleaned : `${cleaned || 'services'}.dsc`;
 }
 
 export function useGrpcCatalog(projectId: string, enabled = true) {
@@ -82,13 +82,13 @@ export function GrpcServices({ projectId, canEdit, onStubsCreated }: { projectId
       </div>
       <div className="panel-body stack">
         <p className="muted small">
-          Upload a protobuf descriptor set and MockHub answers its services over HTTP/2 on the mock port. Build one from your .proto files:
+          Upload a .proto file and MockHub answers its services over HTTP/2 on the mock port. A .proto file can import only the google/protobuf types; for several files that import each other, upload a descriptor set built with:
         </p>
         <div className="code-line">
           <code className="mono small">{PROTOC_COMMAND}</code>
           <CopyButton text={PROTOC_COMMAND} />
         </div>
-        {canEdit && <FilePicker accept={ACCEPT} label={busy ? 'Uploading…' : 'Drop a .dsc descriptor set here or click to choose'} onFile={upload} />}
+        {canEdit && <FilePicker accept={ACCEPT} label={busy ? 'Uploading…' : 'Drop a .proto file or a descriptor set here, or click to choose'} onFile={upload} />}
         {catalog === null ? (
           <p className="muted small">Loading…</p>
         ) : catalog.descriptors.length === 0 ? (

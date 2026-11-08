@@ -35,6 +35,21 @@ public final class ProtoFiles {
 
   private ProtoFiles() {}
 
+  public static FileDescriptor wellKnown(String name) {
+    return WELL_KNOWN.get(name);
+  }
+
+  public static byte[] compile(String text, String fileName, String packagePrefix) {
+    FileDescriptorProto file = ProtoParser.parse(text, fileName, packagePrefix);
+    byte[] bytes = FileDescriptorSet.newBuilder().addFile(file).build().toByteArray();
+    parse(bytes);
+    return bytes;
+  }
+
+  public static boolean isProtoText(String name) {
+    return name != null && name.toLowerCase(java.util.Locale.ROOT).endsWith(".proto");
+  }
+
   public static List<FileDescriptor> parse(byte[] bytes) {
     if (bytes == null || bytes.length == 0) throw new GrpcException("The descriptor file is empty");
     if (bytes.length > MAX_BYTES) throw new GrpcException("Descriptor files can be at most 4 MB");

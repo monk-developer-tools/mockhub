@@ -68,12 +68,13 @@ public final class GrpcCatalog implements ProjectListener {
     if (!current.containsKey(name) && current.size() >= MAX_DESCRIPTORS_PER_PROJECT) {
       throw new GrpcException("A project can have at most " + MAX_DESCRIPTORS_PER_PROJECT + " descriptor files");
     }
-    DescriptorSet set = new DescriptorSet(projectId, name, ProtoFiles.parse(bytes), bytes);
+    byte[] descriptor = ProtoFiles.isProtoText(name) ? ProtoFiles.compile(new String(bytes, java.nio.charset.StandardCharsets.UTF_8), name, "") : bytes;
+    DescriptorSet set = new DescriptorSet(projectId, name, ProtoFiles.parse(descriptor), descriptor);
     if (set.services().isEmpty()) throw new GrpcException("The descriptor set defines no services");
     List<DescriptorSet> candidate = new ArrayList<>(all().stream().filter(s -> !(s.projectId().equals(projectId) && s.name().equals(name))).toList());
     candidate.add(set);
     merge(candidate);
-    store.save(projectId, name, bytes);
+    store.save(projectId, name, descriptor);
     sets.computeIfAbsent(projectId, k -> new TreeMap<>()).put(name, set);
     publish();
     return set;

@@ -1,10 +1,11 @@
 <div class="tool-card tool-start" data-mock-start>
   <h3>A mock API in one click</h3>
-  <p>You get your own URL on the demo. Start with two sample stubs, your API spec, a GraphQL schema, your own records or one of the examples, then change it and call it from your app or tests.</p>
+  <p>You get your own URL on the demo. Start with two sample stubs, your API spec, a GraphQL schema, a gRPC .proto file, your own records or one of the examples, then change it and call it from your app or tests.</p>
   <div class="tabs tabs-small" role="tablist" aria-label="Start from">
     <button type="button" role="tab" id="start-tab-sample" aria-controls="start-sample" aria-selected="true">Sample stubs</button>
     <button type="button" role="tab" id="start-tab-spec" aria-controls="start-spec" aria-selected="false" tabindex="-1">OpenAPI or WSDL</button>
     <button type="button" role="tab" id="start-tab-graphql" aria-controls="start-graphql" aria-selected="false" tabindex="-1">GraphQL</button>
+    <button type="button" role="tab" id="start-tab-grpc" aria-controls="start-grpc" aria-selected="false" tabindex="-1">gRPC</button>
     <button type="button" role="tab" id="start-tab-records" aria-controls="start-records" aria-selected="false" tabindex="-1">CSV or JSON records</button>
     <button type="button" role="tab" id="start-tab-example" aria-controls="start-example" aria-selected="false" tabindex="-1">Example</button>
   </div>
@@ -48,6 +49,26 @@ type Launch {
     <p class="tool-hint">You get a GraphQL endpoint at <code>/graphql</code> that answers every query and mutation in the schema with realistic generated data, plus an explorer here to try them. Up to 500 KB.</p>
     <div class="tool-actions-row">
       <button type="button" class="btn primary" data-mock-create="graphql">Create from the schema</button>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="start-grpc" role="tabpanel" aria-labelledby="start-tab-grpc" hidden>
+    <label class="tool-label" for="start-grpc-file">.proto file</label>
+    <input id="start-grpc-file" class="tool-input" type="file" accept=".proto,.txt" data-start-file="grpc">
+    <label class="tool-label" for="start-grpc-text">Or paste it</label>
+    <textarea id="start-grpc-text" class="tool-input tool-code" rows="9" spellcheck="false" autocomplete="off" data-start-text="grpc">syntax = "proto3";
+
+package helloworld;
+
+message HelloRequest { string name = 1; }
+message HelloReply { string message = 1; }
+
+service Greeter {
+  rpc SayHello (HelloRequest) returns (HelloReply);
+}</textarea>
+    <p class="tool-hint">One stub per method, answering with an example message. Call it over HTTP/2 with grpcurl, Postman or your own client, adding the header <code>x-mockhub-mock</code> with your mock's id. One file up to 128 KB; it can import only the <code>google/protobuf</code> types.</p>
+    <div class="tool-actions-row">
+      <button type="button" class="btn primary" data-mock-create="grpc">Create from the .proto file</button>
     </div>
   </div>
 
@@ -155,6 +176,15 @@ type Launch {
       </div>
       <p class="tool-error" data-mock-save-error hidden></p>
     </form>
+  </div>
+
+  <div class="tool-card mock-grpc" data-mock-grpc hidden>
+    <div class="tool-head">
+      <h3>Call it over gRPC</h3>
+      <span class="tool-actions"><span class="tool-hint" data-mock-grpc-meta aria-live="polite"></span></span>
+    </div>
+    <p class="tool-hint">Browsers can't make gRPC calls, so call your mock from a terminal or a client. Send the header <code>x-mockhub-mock: <span data-mock-grpc-slug></span></code> with each call and use your service's own name, or call <code data-mock-grpc-namespace></code> without the header. Change what a method answers in its stub above.</p>
+    <ul class="mock-grpc-methods" data-mock-grpc-methods aria-label="gRPC methods"></ul>
   </div>
 
   <div class="tool-card mock-graphql" data-mock-graphql hidden>

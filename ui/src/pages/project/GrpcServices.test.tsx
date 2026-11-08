@@ -92,7 +92,7 @@ describe('GrpcServices', () => {
   it('names descriptors so the server accepts them', () => {
     // Then
     expect(descriptorName('api.pb')).toBe('api.pb');
-    expect(descriptorName('services.proto')).toBe('services.proto.dsc');
+    expect(descriptorName('services.proto')).toBe('services.proto');
     expect(descriptorName('..evil.dsc')).toBe('evil.dsc');
   });
 });

@@ -1,0 +1,77 @@
+// A proto that uses most of the language.
+syntax = "proto3";
+
+package shop.orders.v2;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/wrappers.proto";
+import public "google/protobuf/empty.proto";
+
+option java_package = "com.example.shop";
+option go_package = "example.com/shop;shop";
+
+/* Status of an order */
+enum Status {
+  option allow_alias = true;
+  STATUS_UNSPECIFIED = 0;
+  NEW = 1;
+  CREATED = 1;
+  PAID = 2 [deprecated = true];
+  reserved 9, 10 to 12;
+  reserved "OLD";
+}
+
+message Money {
+  string currency = 1;
+  int64 units = 2;
+  sint32 nanos = 3;
+}
+
+message Order {
+  message Line {
+    string sku = 1;
+    uint32 quantity = 2;
+    Money price = 3;
+    enum Kind { KIND_UNSPECIFIED = 0; GOODS = 1; SERVICE = 2; }
+    Kind kind = 4;
+  }
+
+  reserved 15, 16;
+  reserved "legacy";
+
+  string id = 1 [json_name = "orderId"];
+  Status status = 2;
+  repeated Line lines = 3;
+  repeated int32 codes = 18 [packed = true];
+  map<string, string> labels = 4;
+  map<int32, Line> lines_by_number = 5;
+  optional string note = 6;
+  oneof payment {
+    string card_token = 7;
+    BankTransfer bank = 8;
+  }
+  google.protobuf.Timestamp created_at = 9;
+  google.protobuf.Int64Value points = 10;
+  .shop.orders.v2.Money total = 11;
+  bytes signature = 12;
+  double weight = 13;
+  fixed64 checksum = 14;
+  optional int32 priority = 17;
+}
+
+message BankTransfer {
+  string iban = 1;
+}
+
+message GetOrderRequest { string id = 1; }
+message ListOrdersRequest { Status status = 1; int32 page_size = 2; }
+
+service OrderService {
+  option deprecated = false;
+  rpc GetOrder (GetOrderRequest) returns (Order) {
+    option (google.api.http) = { get: "/v2/orders/{id}" additional_bindings { get: "/v2/o/{id}" } };
+  }
+  rpc ListOrders (ListOrdersRequest) returns (stream Order);
+  rpc Upload (stream Order.Line) returns (google.protobuf.Empty);
+  rpc Chat (stream Order) returns (stream Order) {}
+}

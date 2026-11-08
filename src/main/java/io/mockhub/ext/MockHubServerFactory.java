@@ -9,6 +9,7 @@ import com.github.tomakehurst.wiremock.store.BlobStore;
 import com.google.protobuf.Descriptors.FileDescriptor;
 import io.mockhub.domain.CustomDomainFilter;
 import io.mockhub.proxy.ProxyCaptureFilter;
+import io.mockhub.publictools.InstantGrpcRouter;
 import io.mockhub.proxy.ProxyService;
 import io.mockhub.tunnel.TunnelServlet;
 import io.mockhub.tls.ClientCertFilter;
@@ -19,6 +20,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.eclipse.jetty.ee10.servlet.FilterHolder;
@@ -33,11 +35,13 @@ public final class MockHubServerFactory extends Jetty12GrpcHttpServerFactory {
   private final Function<String, Optional<String>> basePathForHost;
   private final ProxyService proxy;
   private final TunnelServlet tunnels;
+  private final Predicate<String> grpcServiceExists;
 
   public MockHubServerFactory(BlobStore unused, Supplier<List<FileDescriptor>> descriptors, Consumer<TlsTarget> httpsReady,
       Function<String, Optional<String>> basePathForHost, ProxyService proxy,
-      TunnelServlet tunnels) {
+      TunnelServlet tunnels, Predicate<String> grpcServiceExists) {
     super(unused);
+    this.grpcServiceExists = grpcServiceExists;
     this.descriptors = descriptors;
     this.httpsReady = httpsReady;
     this.basePathForHost = basePathForHost;
@@ -65,6 +69,7 @@ public final class MockHubServerFactory extends Jetty12GrpcHttpServerFactory {
         context.addFilter(new FilterHolder(new ProxyCaptureFilter(proxy)), "/*", EnumSet.of(DispatcherType.REQUEST));
         context.addFilter(new FilterHolder(new CustomDomainFilter(basePathForHost)), "/*", EnumSet.of(DispatcherType.REQUEST));
         context.addFilter(new FilterHolder(new ClientCertFilter()), "/*", EnumSet.of(DispatcherType.REQUEST));
+        context.addFilter(new FilterHolder(new InstantGrpcRouter(grpcServiceExists)), "/*", EnumSet.of(DispatcherType.REQUEST));
         context.addFilter(new FilterHolder(grpcFilter), "/*", EnumSet.of(DispatcherType.REQUEST));
       }
 

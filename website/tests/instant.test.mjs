@@ -178,3 +178,36 @@ test('builds a GraphQL request from a query and optional JSON variables', () => 
   assert.equal(isGraphql({ response: { transformers: ['mockhub-graphql'] } }), true);
   assert.equal(isGraphql({ response: { transformers: ['response-template'] } }), false);
 });
+
+test('starts a gRPC mock from a .proto file and spots a gRPC mock by its stub paths', async () => {
+  // Given
+  const { grpcStart, isGrpcMock, MAX_PROTO } = await import('../assets/js/tools/instant.js');
+
+  // When
+  const body = grpcStart('syntax = "proto3";', 'greeter.proto');
+  const renamed = grpcStart('syntax = "proto3";', '../evil name.proto');
+
+  // Then
+  assert.deepEqual(body, { from: 'grpc', text: 'syntax = "proto3";', fileName: 'greeter.proto' });
+  assert.equal(renamed.fileName, 'service.proto');
+  assert.throws(() => grpcStart('  '), /Upload or paste a \.proto file/);
+  assert.throws(() => grpcStart('x'.repeat(MAX_PROTO + 1)), /under 128 KB/);
+  assert.equal(isGrpcMock([{ request: { urlPath: '/m_abc123.helloworld.Greeter/SayHello' } }]), true);
+  assert.equal(isGrpcMock([{ request: { urlPath: '/hello' } }]), false);
+  assert.equal(isGrpcMock(undefined), false);
+});
+
+test('builds a grpcurl command with the mock header, quoting the example safely', async () => {
+  // Given
+  const { grpcTarget, grpcurlCommand } = await import('../assets/js/tools/instant.js');
+  const live = grpcTarget({ protocol: 'https:', hostname: 'mockhub.devops-monk.com', port: '' });
+  const local = grpcTarget({ protocol: 'http:', hostname: 'localhost', port: '8080' });
+
+  // When
+  const command = grpcurlCommand({ target: live, slug: 'm-abc', protoName: 'greeter.proto', service: 'helloworld.Greeter', method: 'SayHello', example: { name: "O'Brien" } });
+  const plain = grpcurlCommand({ target: local, slug: 'm-abc', protoName: '', service: 's.S', method: 'Go', example: {} });
+
+  // Then
+  assert.equal(command, `grpcurl -proto greeter.proto -H 'x-mockhub-mock: m-abc' -d '{"name":"O'\\''Brien"}' mockhub.devops-monk.com:443 helloworld.Greeter/SayHello`);
+  assert.equal(plain, "grpcurl -plaintext -proto service.proto -H 'x-mockhub-mock: m-abc' -d '{}' localhost:8080 s.S/Go");
+});

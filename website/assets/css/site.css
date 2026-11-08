@@ -6316,3 +6316,32 @@ select.tool-select-small {
   margin-top: 14px;
   font-size: 14px;
 }
+
+.mock-grpc-methods {
+  display: grid;
+  gap: 12px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mock-grpc-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  margin-bottom: 6px;
+}
+
+.mock-grpc-head code {
+  overflow-wrap: anywhere;
+}
+
+.mock-grpc-head .btn {
+  margin-left: auto;
+}
+
+.mock-grpc-command {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

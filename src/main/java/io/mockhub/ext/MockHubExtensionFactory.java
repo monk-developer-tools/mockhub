@@ -305,7 +305,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     ProxyService proxy = new ProxyService(config.proxyEnabled, IpAllowList.ofText(config.proxyAllow), config.proxyCaKeystore(),
         id -> projectsRef.get().find(id));
     MockHubServerFactory server = new MockHubServerFactory(services.getStores().getBlobStore("grpc"), grpc::fileDescriptors, tls::attach,
-        host -> projectsRef.get().findForHost(host).map(Project::basePath), proxy, tunnelServlet);
+        host -> projectsRef.get().findForHost(host).map(Project::basePath), proxy, tunnelServlet, name -> grpc.ownerOf(name).isPresent());
     grpc.onChange(server::loadFileDescriptors);
     ContractStore contracts = new ContractStore(dataDir);
     ProjectService projects = new ProjectService(new FileProjectRepository(dataDir),
@@ -477,7 +477,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
             publicUser, publicAiOn, publicLlm, binProject),
         new FakeTool(new DataGenerator(fakeData), publicLimits, publicAiOn, publicLlm, publicUser),
         new RenderTool(templatePlayground, publicLimits),
-        new InstantMockTool(instantMocks, history, publicLimits, importers, new InstantExamples(examples, exampleInstaller), specFetcher, graphQlExamples)));
+        new InstantMockTool(instantMocks, history, publicLimits, importers, new InstantExamples(examples, exampleInstaller), specFetcher, graphQlExamples, grpc)));
     maintenance.scheduleWithFixedDelay(() -> safely(bins::prune), 10, 10, TimeUnit.MINUTES);
     maintenance.scheduleWithFixedDelay(() -> safely(bins::flush), 5, 5, TimeUnit.MINUTES);
     maintenance.scheduleWithFixedDelay(() -> safely(instantMocks::prune), 5, 60, TimeUnit.MINUTES);

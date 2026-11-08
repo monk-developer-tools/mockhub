@@ -79,6 +79,29 @@ class GrpcIntegrationTest {
   }
 
   @Test
+  void servesAServiceFromAnUploadedProtoFileWithoutCompilingIt() {
+    // Given
+    byte[] proto = GrpcTestClient.resource("library.proto");
+    ApiClient.Result uploaded = upload(projectId, "library.proto", proto);
+    stub(grpcStub("GetBook", "{\"id\":\"9\"}", "{\"status\":200,\"jsonBody\":{\"id\":\"9\",\"title\":\"Solaris\"}}"));
+
+    // When
+    GrpcTestClient.Reply reply;
+    try (GrpcTestClient client = new GrpcTestClient(server.port(), LIBRARY)) {
+      reply = client.unary(SERVICE, "GetBook", "{\"id\":\"9\"}");
+    }
+    ApiClient.Result broken = upload(projectId, "broken.proto", "syntax = \"proto3\";\nmessage A { Nope b = 1; }\n".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+    // Then
+    assertThat(uploaded.status()).as(uploaded.body()).isEqualTo(201);
+    assertThat(uploaded.json().at("/descriptors/0/name").asText()).isEqualTo("library.proto");
+    assertThat(reply.status()).isEqualTo("OK");
+    assertThat(read(reply.json()).get("title").asText()).isEqualTo("Solaris");
+    assertThat(broken.status()).isEqualTo(400);
+    assertThat(broken.body()).contains("Line 2: Unknown type Nope");
+  }
+
+  @Test
   void answersUnaryCallsFromStubsMatchedOnTheRequestMessage() {
     // Given
     upload(projectId, "library.dsc", LIBRARY);

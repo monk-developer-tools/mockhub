@@ -1,6 +1,6 @@
 import { $, download, show, wireCopyButtons } from './common.js';
 import { call, toCurl } from './http.js';
-import { displayPath, exportMappings, fitsForm, formToStub, graphqlRequest, isGraphql, keyHash, MAX_RECORDS, parseKey, parseRecords, resourceName, samplePath, specStart, stubToForm } from './instant.js';
+import { displayPath, exportMappings, fitsForm, formToStub, graphqlRequest, grpcStart, grpcTarget, grpcurlCommand, isGraphql, isGrpcMock, keyHash, MAX_RECORDS, parseKey, parseRecords, resourceName, samplePath, specStart, stubToForm } from './instant.js';
 
 const KEY = 'mockhub-instant-mock';
 const POLL_MS = 3000;
@@ -11,6 +11,8 @@ let jsonMode = false;
 let timer = null;
 let graphqlPath = null;
 let graphqlExamples = [];
+let protoName = 'service.proto';
+let grpcLoaded = null;
 
 const store = {
   read() {
@@ -135,6 +137,7 @@ async function refresh() {
   renderMeta();
   renderStubs();
   loadGraphql();
+  loadGrpc();
   return true;
 }
 
@@ -164,6 +167,44 @@ async function loadGraphql() {
   select.replaceChildren(el('option', { value: '' }, graphqlExamples.length ? 'Pick an example…' : 'No examples'),
     ...graphqlExamples.map((op, i) => el('option', { value: String(i) }, `${op.kind} ${op.field}${op.description ? ` — ${op.description}` : ''}`)));
   if (!$('[data-mock-graphql-query]').value.trim() && graphqlExamples.length) pickExample(0);
+}
+
+async function loadGrpc() {
+  const card = $('[data-mock-grpc]');
+  if (!isGrpcMock(mock?.stubs)) {
+    card.hidden = true;
+    grpcLoaded = null;
+    return;
+  }
+  card.hidden = false;
+  if (grpcLoaded === key.slug) return;
+  const result = await call(api('/grpc'), { headers: auth() });
+  if (result.error || !result.json) {
+    $('[data-mock-grpc-meta]').textContent = 'The services are not available right now';
+    return;
+  }
+  grpcLoaded = key.slug;
+  const target = grpcTarget(location);
+  const name = key.protoName ?? protoName;
+  $('[data-mock-grpc-slug]').textContent = key.slug;
+  $('[data-mock-grpc-namespace]').textContent = `${result.json.namespace}.<service>`;
+  $('[data-mock-grpc-meta]').textContent = target.address;
+  const items = [];
+  for (const service of result.json.services ?? []) {
+    for (const method of service.methods ?? []) {
+      const command = grpcurlCommand({ target, slug: key.slug, protoName: name, service: service.original, method: method.name, example: method.requestExample });
+      const pre = el('pre', { class: 'tool-out mock-grpc-command' }, command);
+      const copy = el('button', { type: 'button', class: 'btn secondary small' }, 'Copy');
+      copy.addEventListener('click', () => navigator.clipboard?.writeText(command).then(() => {
+        copy.textContent = 'Copied';
+        setTimeout(() => { copy.textContent = 'Copy'; }, 1500);
+      }));
+      items.push(el('li', {},
+        el('div', { class: 'mock-grpc-head' }, el('code', {}, method.originalPath), el('span', { class: 'tool-hint' }, method.kind.replace('-', ' ')), copy),
+        pre));
+    }
+  }
+  $('[data-mock-grpc-methods]').replaceChildren(...items);
 }
 
 function pickExample(index) {
@@ -284,6 +325,8 @@ function forget(message) {
   mock = null;
   graphqlPath = null;
   graphqlExamples = [];
+  grpcLoaded = null;
+  $('[data-mock-grpc]').hidden = true;
   $('[data-mock-graphql-query]').value = '';
   $('[data-mock-graphql-variables]').value = '';
   $('[data-mock-graphql-out]').textContent = 'Run a query to see the answer.';
@@ -300,6 +343,7 @@ function forget(message) {
 
 function starterBody(kind) {
   if (kind === 'spec' || kind === 'graphql') return specStart(kind, $(`[data-start-text="${kind}"]`).value, $(`[data-start-url="${kind}"]`).value);
+  if (kind === 'grpc') return grpcStart($('[data-start-text="grpc"]').value, protoName);
   if (kind === 'records') {
     const records = parseRecords($('[data-start-text="records"]').value);
     if (records.length > MAX_RECORDS) throw new Error(`Start with up to ${MAX_RECORDS} records. This file has ${records.length}.`);
@@ -340,7 +384,7 @@ async function create(e) {
     show($('[data-mock-create-error]'), result.error ?? 'The mock could not be created.');
     return;
   }
-  await open({ slug: result.json.slug, token: result.json.token });
+  await open(body?.from === 'grpc' ? { slug: result.json.slug, token: result.json.token, protoName: body.fileName } : { slug: result.json.slug, token: result.json.token });
   showSkipped(result.json.skipped);
 }
 
@@ -357,6 +401,7 @@ function readFile(input, kind) {
     const url = $(`[data-start-url="${kind}"]`);
     if (url) url.value = '';
     if (kind === 'records') $('[data-start-resource]').value = resourceName(file.name);
+    if (kind === 'grpc') protoName = file.name;
     show($('[data-mock-create-error]'), '');
   });
 }
@@ -434,6 +479,6 @@ document.addEventListener('visibilitychange', () => {
 
 const fromLink = parseKey(location.hash);
 const saved = store.read();
-if (fromLink) open(fromLink);
+if (fromLink) open(saved?.slug === fromLink.slug && saved.protoName ? { ...fromLink, protoName: saved.protoName } : fromLink);
 else if (saved?.slug && saved?.token) open(saved);
 wireCopyButtons();
