@@ -255,13 +255,13 @@ Every page under Beeceptor's three header menus was read, plus the footer.
 | **GraphQL mock server page** | `/graphql-mock-server/` | ✅ | T1 |
 | **gRPC mock server page** | — | ❌ | W2 (with T7) |
 | CRUD REST APIs | `/crud-api/` | ✅ | — |
-| JSON/XML server | `/mock-api/` | ✅ page, 🟡 paste flow (T3) | T3 |
+| JSON/XML server | `/mock-api/`, `/tools/json-server/` | ✅ | T3 ✅ |
 | Ready-to-use mock servers | `/examples/`, 16 projects including 3 vendor sandboxes | 🟡 | T5 |
-| **CSV to REST API page** | — | ❌ | T3 |
-| **2FA code generator page** | — | ❌ | T2 |
+| **CSV to REST API page** | `/tools/csv-to-api/` | ✅ | T3 ✅ |
+| **2FA code generator page** | `/tools/totp/` | ✅ | T2 ✅ |
 | HTTP echo, webhook testing, generate test data | ✅ | ✅ | — |
-| **Local tunnel page** | Docs only | ❌ | T6 |
-| **HTTP traffic monitoring page** | — | ❌ | T6 |
+| **Local tunnel page** | `/tools/local-tunnel/` | ✅ | T6 ✅ |
+| **HTTP traffic monitoring page** | `/tools/traffic-monitor/` | ✅ | T6 ✅ |
 | Forward proxy page | `/forward-proxy/` | ✅ | W2 ✅ |
 | Compare pages: vs WireMock, vs Postman | ✅ (plus vs Mockoon) | ✅ | — |
 | Compare: vs Broadcom DevTest, vs Mockbin, vs Apidog, **vs Beeceptor** | `/vs-devtest/`, `/vs-mockbin/`, `/vs-apidog/`, `/vs-beeceptor/` (checked 8 November 2026, first-party sources only) | ✅ | W3 ✅ |
@@ -281,17 +281,17 @@ W4 status page (original plan): a public `/status/` page and a footer badge. The
 
 | # | Phase | Size | Why here |
 |---|---|---|---|
-| 1 | B1 Matching parity | M | Most visible gap in the bin editor |
-| 2 | B2 Response editor parity | S | Same editor, small items |
-| 3 | B3 Dynamic values in the bin | M | Shared picker also helps the app |
-| 4 | B4 Request log parity | M | Daily-use features |
-| 5 | B7 Bin settings | S | Small, self-contained |
-| 6 | B5 Callout rules | M | Reuses forward and the app's callout code |
-| 7 | B6 CRUD routes | M | Reuses the app's CRUD engine |
-| 8 | B9 Bin API parity | S | Follows the new rule kinds |
-| 9 | B8 AI parity | M | Needs B5 and B6 to draft every rule kind |
-| 10 | B10 Save to my MockHub | M | Joins the bin to the app |
-| 11 | B11 Onboarding | S | Polish |
+| 1 | B1 Matching parity ✅ | M | Most visible gap in the bin editor |
+| 2 | B2 Response editor parity ✅ | S | Same editor, small items |
+| 3 | B3 Dynamic values in the bin ✅ | M | Shared picker also helps the app |
+| 4 | B4 Request log parity ✅ | M | Daily-use features |
+| 5 | B7 Bin settings ✅ | S | Small, self-contained |
+| 6 | B5 Callout rules ✅ | M | Reuses forward and the app's callout code |
+| 7 | B6 CRUD routes ✅ | M | Reuses the app's CRUD engine |
+| 8 | B9 Bin API parity ✅ | S | Follows the new rule kinds |
+| 9 | B8 AI parity ✅ | M | Needs B5 and B6 to draft every rule kind |
+| 10 | B10 Save to my MockHub ✅ | M | Joins the bin to the app |
+| 11 | B11 Onboarding ✅ | S | Polish |
 | 12 | T1 GraphQL and spec URLs without login ✅ | M | Importers exist, free path missing |
 | 13 | T2 2FA code generator ✅ | M | New tool |
 | 14 | T3 Paste a payload, CSV to API page ✅ | S | Mostly pages over existing features |
