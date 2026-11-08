@@ -5518,9 +5518,17 @@ button.map-node:hover,
 
 .sidebar-top .new-mock {
   box-sizing: border-box;
+  display: flex;
   justify-content: center;
-  width: 100%;
+  width: calc(100% - 20px);
+  margin: 0 10px 8px;
   text-decoration: none;
+}
+
+.shell.collapsed .sidebar-top .new-mock {
+  width: 36px;
+  margin-inline: auto;
+  padding: 0;
 }
 
 .field-row {

@@ -405,6 +405,7 @@
           <h2>The basics</h2>
           <div class="tut-cards">
             <a class="tut-card" href="#no-account"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M13 3L5 13h6l-1 8 8-10h-6z"/></svg></span><strong>Try MockHub without an account</strong><span>A mock URL in your browser, no sign-up.</span><em>3 min</em></a>
+            <a class="tut-card" href="#start-a-mock"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span><strong>Start a mock from what you have</strong><span>A spec, a schema, records or an answer.</span><em>2 min</em></a>
             <a class="tut-card" href="#tour"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M4 5h7v7H4zM13 5h7v7h-7zM4 14h7v5H4zM13 14h7v5h-7z"/></svg></span><strong>Tour of the examples</strong><span>Every feature, ready to try.</span><em>10 min</em></a>
             <a class="tut-card" href="#first-project"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M4 7a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M12 11v5M9.5 13.5h5"/></svg></span><strong>Create your first project</strong><span>One base URL for one service.</span><em>2 min</em></a>
             <a class="tut-card" href="#first-stub"><span class="tut-ico"><svg viewBox="0 0 24 24"><path d="M8 4H7a2 2 0 0 0-2 2v3.5a2 2 0 0 1-2 2 2 2 0 0 1 2 2V17a2 2 0 0 0 2 2h1M16 4h1a2 2 0 0 1 2 2v3.5a2 2 0 0 0 2 2 2 2 0 0 0-2 2V17a2 2 0 0 1-2 2h-1"/></svg></span><strong>Add your first stub</strong><span>Match a request, send a response.</span><em>4 min</em></a>
@@ -637,6 +638,31 @@ curl -X POST $MOCK/example-soap/ws/calculator -H "Content-Type: text/xml" -d \
           <a class="next" href="#first-project">Next: Create your first project</a>
         </article>
 
+        <article class="tut" id="start-a-mock">
+          <p class="tut-meta"><span>The basics</span><span>2 min</span><span>Needs the editor role</span></p>
+          <h2>Start a mock from what you have</h2>
+          <p class="tut-intro">Bring an OpenAPI file, a WSDL, a GraphQL schema, a <code>.proto</code>, some records or just the answer you want, and get a mock you can call straight away. No empty project and no tabs to find first.</p>
+          <ol class="tut-steps">
+            <li>
+              <h3>Select New mock</h3>
+              <p><strong>New mock</strong> is at the top of the sidebar. Its page has a card for every way to start, in three groups: <strong>Mock servers</strong>, <strong>Tools</strong> (webhooks, traffic monitoring, echo, a local tunnel) and <strong>Service virtualization</strong>. Pick the one that matches what you have.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/start-1-cards.webp" alt="The Start a new mock page with cards for OpenAPI, SOAP, GraphQL, gRPC, CRUD, a JSON answer, Postman and the tools" width="1176" height="900" loading="lazy"></figure>
+            </li>
+            <li>
+              <h3>Give it your file and create the mock</h3>
+              <p>Upload the file, paste it, or for OpenAPI give its URL. <strong>Use a sample</strong> fills in one to try. Under <strong>Where it goes</strong>, keep <em>A new project</em> (it is named from your file) or choose a project you already have. Then select <strong>Create mock</strong>. A mistake in the file is shown here, and nothing is created.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/start-2-screen.webp" alt="The OpenAPI screen with the sample spec pasted, the strip prefix field and Where it goes set to a new project" width="1176" height="900" loading="lazy"></figure>
+            </li>
+            <li>
+              <h3>Call it</h3>
+              <p>The project opens with <strong>Your mock is ready</strong>: its address and a command for each endpoint. Copy one into a terminal, or select <strong>Open</strong>. From there, change the answers, watch the requests come in, or add delays and failures.</p>
+              <figure class="tut-shot"><img src="/assets/img/tutorials/start-3-ready.webp" alt="The project overview with the Your mock is ready panel, the base URL and curl commands for two endpoints" width="1176" height="900" loading="lazy"></figure>
+              <pre class="tut-code"><code>curl -i https://mockhub.example.com/orders-api/orders/42</code></pre>
+            </li>
+          </ol>
+          <p class="tip"><strong>Good to know.</strong> Editors can add to a project they already edit; creating a new project needs the manager role. <a href="/docs/start-a-mock/">Start a mock</a> lists every card and what it makes.</p>
+          <a class="next" href="#first-stub">Next: Add your first stub</a>
+        </article>
         <article class="tut" id="first-project">
           <p class="tut-meta"><span>The basics</span><span>2 min</span><span>Needs the editor role</span></p>
           <h2>Create your first project</h2>

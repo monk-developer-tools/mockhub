@@ -114,7 +114,7 @@ answer, add a delay or failure, watch requests, invite the team. It can be close
 | J1 ✅ | Start page and entry points | `/new` with the cards, sidebar button, dashboard start row and empty state, command palette entries |
 | J2 ✅ | Create screens | `/new/:kind` for OpenAPI (file, URL, paste), WSDL, GraphQL, gRPC, CRUD, JSON/XML answer, webhooks (receive and send), traffic monitoring (proxy and record, including tunnels), echo, Postman, AI, with new or existing project |
 | J3 ✅ | Ready panel | The overview's first-run panel with base URL, endpoints, Try it, commands and next steps |
-| J4 ✅ (docs page; a screenshot tutorial is still to do) | Website and docs | A "Start a mock" docs page and tutorial with screenshots; feature pages link to the matching card in the app |
+| J4 ✅ | Website and docs | A "Start a mock" docs page and tutorial with screenshots; feature pages link to the matching card in the app |
 
 Each phase ships with unit, component and browser tests, docs, a deploy and a live check, like the earlier plans.
 
