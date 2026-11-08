@@ -5619,3 +5619,24 @@ fieldset.target legend {
     align-items: flex-start;
   }
 }
+
+.link-button {
+  border: 0;
+  padding: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  cursor: pointer;
+}
+
+.link-button:hover {
+  text-decoration: underline;
+}
+
+.ready-answer {
+  display: block;
+  padding: 6px 10px;
+  border-radius: var(--radius-s);
+  background: var(--surface);
+  overflow-wrap: anywhere;
+}

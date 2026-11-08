@@ -17,6 +17,7 @@ export function ReadyPanel({ project }: { project: Project }) {
   const notes = (params.get('notes') ?? '').split('\n').filter(Boolean);
   const tunnel = params.get('tunnel');
   const [stubs, setStubs] = useState<Stub[] | null>(null);
+  const [tried, setTried] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!kind) return;
@@ -28,6 +29,18 @@ export function ReadyPanel({ project }: { project: Project }) {
   }, [kind, project.id]);
 
   if (!kind) return null;
+  const tryIt = async (url: string) => {
+    setTried((t) => ({ ...t, [url]: 'Sending…' }));
+    try {
+      const started = performance.now();
+      const res = await fetch(url);
+      const text = await res.text();
+      const ms = Math.round(performance.now() - started);
+      setTried((t) => ({ ...t, [url]: `${res.status} in ${ms} ms · ${text.replace(/\s+/g, ' ').slice(0, 160)}${text.length > 160 ? '…' : ''}` }));
+    } catch (e) {
+      setTried((t) => ({ ...t, [url]: e instanceof Error ? e.message : String(e) }));
+    }
+  };
   const calls = stubs ? readyCalls(stubs, project.mockUrl) : [];
   const close = () => navigate(pathname, { replace: true });
   const base = kind === 'grpc' ? new URL(project.mockUrl).host : project.mockUrl;
@@ -58,11 +71,20 @@ export function ReadyPanel({ project }: { project: Project }) {
         <ul className="ready-calls" aria-label="Try it">
           {calls.map((call) => (
             <li key={call.label}>
-              <span className="small"><strong>{call.label}</strong>{call.url && <> · <a href={call.url} target="_blank" rel="noreferrer">Open</a></>}</span>
+              <span className="small">
+                <strong>{call.label}</strong>
+                {call.url && (
+                  <>
+                    {' · '}<button type="button" className="link-button" onClick={() => tryIt(call.url ?? '')}>Try it</button>
+                    {' · '}<a href={call.url} target="_blank" rel="noreferrer">Open</a>
+                  </>
+                )}
+              </span>
               <div className="code-line">
                 <code className="mono small">{call.command}</code>
                 <CopyButton text={call.command} />
               </div>
+              {call.url && tried[call.url] && <output className="ready-answer mono small">{tried[call.url]}</output>}
             </li>
           ))}
         </ul>
@@ -75,6 +97,7 @@ export function ReadyPanel({ project }: { project: Project }) {
         <Link className="btn small" to={`/projects/${project.id}/requests`}>Watch requests</Link>
         <Link className="btn small" to={`/projects/${project.id}/settings`}>Add delays or failures</Link>
         {kind === 'webhook' && <Link className="btn small" to={`/projects/${project.id}/callouts`}>See callbacks</Link>}
+        <Link className="btn small" to="/org">Invite your team</Link>
       </div>
     </section>
   );

@@ -58,13 +58,13 @@ Why this shape:
 ## More suggestions (backlog)
 
 1. **Git sync.** Mirror `/data` to a Git repo so mocks are versioned and reviewable.
-2. **SSO.** Use ALB OIDC auth in front of `/__admin/*` (Okta/Azure AD/Cognito). No code change is needed.
+2. ✅ **SSO.** Built in: Microsoft Entra ID single sign-on (Phase 10). ALB OIDC in front still works too.
 3. **Multiple replicas.** Today run `desiredCount=1`, because WireMock state lives in memory. To scale out,
    add a file watcher or `POST /__admin/mappings/reset`-style reload broadcast, or move to a shared DB store.
 4. **Environments per project.** For example `dev`/`qa` response sets, switched with a scenario state.
-5. **Contract validation.** Reject requests that don't match the imported OpenAPI schema.
-6. **Faker helpers.** Realistic data in templates (WireMock 3 ships `{{randomValue}}`; add datafaker).
-7. **Audit log.** Who changed which stub, and when.
+5. ✅ **Contract validation.** Request and response validation in stubs, and contract drift for traffic.
+6. ✅ **Faker helpers.** Datafaker in templates and imports.
+7. ✅ **Audit log.** Who changed what, and when.
 
 ## Engineering conventions
 
@@ -334,7 +334,7 @@ Checklist:
 
 > Phases 15, 16 and "Not planned" are replaced by [PLAN_Features.md](PLAN_Features.md) (November 2026).
 
-### Phase 15 — Agents, history and access control (recommended)
+### Phase 15 — Agents, history and access control ✅ done
 
 - **MCP server.** Let Claude, Cursor and other agents create, edit and inspect mocks. Expose the assistant's tools
   (`list_stubs`, `create_stub`, `update_stub`, `delete_stub`, `list_requests`, CRUD resources) over MCP (Streamable
@@ -353,14 +353,14 @@ Checklist:
 - **CORS allow list.** Per project origins instead of the server-wide on/off switch.
 
 Checklist:
-- [ ] Personal access tokens
-- [ ] MCP server with staged or direct changes
-- [ ] Request history store, search and HAR export
-- [ ] Live traffic chart
-- [ ] Access key, rate limits, default response, CORS allow list
-- [ ] Tests, docs and tutorials
+- [x] Personal access tokens
+- [x] MCP server with staged or direct changes
+- [x] Request history store, search and HAR export
+- [x] Live traffic chart
+- [x] Access key, rate limits, default response, CORS allow list (plus an IP allow list)
+- [x] Tests, docs and tutorials
 
-### Phase 16 — More protocols and versioning (later)
+### Phase 16 — More protocols and versioning ✅ done
 
 - **GraphQL** mocks from an SDL or introspection: match by operation name and variables. Candidate:
   `io.github.nilwurtz:wiremock-graphql-extension` (0.9.0, built against WireMock 3.9); verify on 3.13.
@@ -370,8 +370,14 @@ Checklist:
 - **Datasets.** Upload CSV or JSON test data once per team and use it from templates in any project.
 - **Mutual TLS and forward proxy** in the Server page instead of raw `WIREMOCK_OPTIONS`.
 
-### Not planned
+All shipped: GraphQL from a schema (MockHub's own engine, not the extension), gRPC from descriptor sets or `.proto`
+files (the WireMock gRPC extension 0.11 on Jetty 12), project snapshots with compare and restore, organisation
+datasets, and mutual TLS and the forward proxy on the Server page.
 
-- Local tunnel to a laptop: use ngrok or cloudflared, which do this well.
-- Contract drift detection and API governance: a separate product.
-- Stored OAuth credentials for outbound calls: revisit if webhooks need authenticated targets.
+### Once not planned, since shipped
+
+These were out of scope at first and were built later:
+
+- Local tunnel to a laptop: `tunnel://` targets and the `mockhub tunnel` command.
+- Contract drift detection against an attached OpenAPI document.
+- Stored OAuth2 and API key credentials for outbound calls: organisation connections.
