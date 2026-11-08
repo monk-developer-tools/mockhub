@@ -33,7 +33,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
           cache: npm
           cache-dependency-path: ui/package-lock.json
 
@@ -42,7 +42,10 @@ jobs:
       - name: Build, unit, integration, system and UI tests
         run: ./gradlew build -PwithUi --no-daemon
 
-      - name: Website tool tests
+      - name: Build the website
+        run: node website/scripts/build-site.mjs
+
+      - name: Website tests
         run: node --test website/tests/*.test.mjs
 
       - name: Upload test reports
