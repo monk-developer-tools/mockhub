@@ -14,7 +14,7 @@ test('every comparison page is dated and cites its sources', () => {
   const missing = pages.filter((p) => !p.compare.checked || p.compare.sources.length === 0 || p.compare.sources.some(([, href]) => !href.startsWith('https://')));
 
   // Then
-  assert.equal(pages.length, 3);
+  assert.equal(pages.length, 7);
   assert.deepEqual(missing.map((p) => p.slug), []);
 });
 

@@ -1473,6 +1473,7 @@ for (const page of PAGES) {
 }
 
 const CHECKED = '4 November 2026';
+const CHECKED_W3 = '8 November 2026';
 
 PAGES.push(
   {
@@ -1699,6 +1700,270 @@ PAGES.push(
     ],
     related: ['vs-wiremock', 'vs-mockoon', 'mock-api'],
     definition: 'MockHub is a self-hosted, open-source mock server for REST and SOAP, with matching rules, state, recording and Postman export.',
+  },
+  {
+    slug: 'vs-beeceptor',
+    menu: 'mock-servers',
+    kind: 'compare',
+    hidden: true,
+    icon: 'Scales',
+    eyebrow: 'Comparison',
+    nav: ['MockHub vs Beeceptor', 'Your server or a hosted service.'],
+    title: 'MockHub vs Beeceptor: an honest comparison — MockHub',
+    description: 'Beeceptor is a hosted mock server priced per endpoint; MockHub is a free, open-source mock server you run yourself. Compare features and limits, checked against Beeceptor\'s pricing page and docs.',
+    h1: 'MockHub vs Beeceptor',
+    lede: 'Beeceptor is a hosted service: you get a mock endpoint in seconds and pay per endpoint as requests and rules grow. MockHub is open source and runs on your own server, with no request or rule limits, and the team features included.',
+    docs: '/docs/quick-start/',
+    compare: {
+      title: 'What each one gives you',
+      checked: CHECKED_W3,
+      columns: ['MockHub', 'Beeceptor'],
+      groups: [
+        ['Limits', [
+          ['Requests', ['yes', 'No limit beyond your server'], ['part', 'Free: 50 a day per endpoint; paid plans 15,000 to 1M+ a month per endpoint']],
+          ['Mock rules', ['yes', 'No limit'], ['part', 'Free: 3; paid plans up to 50, 250 or 500']],
+          ['Private endpoints', ['yes'], ['part', 'Paid plans; free endpoints are public']],
+        ]],
+        ['Building mocks', [
+          ['Matching and templates', ['yes', 'WireMock matching and Handlebars templates'], ['yes', 'Request filters and template operators']],
+          ['OpenAPI, SOAP and GraphQL', ['yes', 'OpenAPI, WSDL and GraphQL schema import'], ['yes', 'OpenAPI, WSDL and GraphQL mock servers']],
+          ['gRPC', ['part', 'Unary and client streaming; server streaming sends one message'], ['yes', 'gRPC mock server']],
+          ['CRUD resources', ['yes', 'Up to 10,000 records each, configurable'], ['part', '50 to 10,000 objects depending on plan']],
+          ['Latency and failures', ['yes', 'Delays, failure rates, faults and rate limits'], ['yes', 'Latency profiles and failures']],
+          ['Callbacks after answering', ['yes', 'Webhooks with a callout log'], ['', 'Not on the docs index']],
+        ]],
+        ['Teams and operations', [
+          ['Team members', ['yes', 'Teams and roles, free'], ['part', 'Unlimited members on the Team plan and above']],
+          ['Audit log', ['yes'], ['part', 'Scale plan']],
+          ['Forward proxy', ['yes'], ['part', 'Scale plan']],
+          ['Contract drift', ['yes', 'Compare traffic with an OpenAPI document'], ['part', 'Scale plan']],
+          ['Single sign-on', ['yes', 'Microsoft Entra ID'], ['part', 'Enterprise plan']],
+          ['Mutual TLS', ['yes'], ['part', 'Team plan and above']],
+        ]],
+        ['How it runs', [
+          ['Where it runs', ['', 'Your server: one Docker image'], ['', 'Beeceptor\'s cloud; your own infrastructure on the Enterprise plan']],
+          ['Licence', ['yes', 'Apache-2.0, open source'], ['no', 'Not open source']],
+          ['Ready to use without a server', ['part', 'Free no-login tools on the public demo'], ['yes', 'A hosted endpoint in seconds']],
+        ]],
+      ],
+      note: 'Beeceptor plans as listed on its pricing page: Free, Individual, Team, Scale and Enterprise. Prices change often, so they are not listed here.',
+      sources: [
+        ['Pricing', 'https://beeceptor.com/pricing/'],
+        ['Docs', 'https://beeceptor.com/docs/'],
+        ['Request matching', 'https://beeceptor.com/docs/request-matching-filters/'],
+        ['gRPC mock server', 'https://beeceptor.com/docs/grpc-mock-server/'],
+        ['Proxy with mocks', 'https://beeceptor.com/docs/forward-proxy-with-mock/'],
+      ],
+    },
+    choose: [
+      ['Beeceptor', [
+        'You want a hosted endpoint now and don\'t want to run a server.',
+        'Your traffic fits the request limits of a plan.',
+        'You need full gRPC streaming mocks.',
+      ]],
+      ['MockHub', [
+        'You want no limits on requests, rules or team members.',
+        'Your mocks must stay inside your network.',
+        'You want audit logs, SSO, a forward proxy and drift checks without a paid plan.',
+      ]],
+    ],
+    faq: [
+      ['Can I try MockHub without installing it?', 'Yes. The public demo and the free tools need no sign-up. For your own mocks, run the Docker image.'],
+      ['Can I move mocks from Beeceptor?', 'If you have the API\'s OpenAPI or WSDL file, import it into a project. Otherwise recreate the rules as stubs; MockHub stubs are WireMock JSON.'],
+      ['Is MockHub affiliated with Beeceptor?', 'No. It is an independent open-source project.'],
+    ],
+    related: ['vs-wiremock', 'vs-mockoon', 'test-environments'],
+    definition: 'MockHub is a self-hosted, open-source mock server for REST, SOAP, GraphQL and gRPC, with teams, history and imports included and no usage limits.',
+  },
+  {
+    slug: 'vs-apidog',
+    menu: 'mock-servers',
+    kind: 'compare',
+    hidden: true,
+    icon: 'Scales',
+    eyebrow: 'Comparison',
+    nav: ['MockHub vs Apidog', 'A mock server or an API platform.'],
+    title: 'MockHub vs Apidog: an honest comparison — MockHub',
+    description: 'Apidog is an API platform for design, testing, docs and mocks; MockHub is a self-hosted mock server. Compare their mocking, checked against Apidog\'s docs.',
+    h1: 'MockHub vs Apidog',
+    lede: 'Apidog is an all-in-one API platform: design, debugging, testing and documentation, with mocks generated from the design. MockHub does one job, mocking, on a server you run, with matching, state and failure simulation built for that.',
+    docs: '/docs/quick-start/',
+    compare: {
+      title: 'Mocking in each one',
+      checked: CHECKED_W3,
+      columns: ['MockHub', 'Apidog'],
+      groups: [
+        ['Building mocks', [
+          ['From the API definition', ['yes', 'Import OpenAPI, WSDL, GraphQL or a Postman collection'], ['yes', 'Smart Mock answers from the endpoints you design']],
+          ['Conditional answers', ['yes', 'WireMock matching on path, query, headers, cookies and body'], ['yes', 'Mock expectations with conditions on query, path, header, cookie and body']],
+          ['Custom logic', ['yes', 'Handlebars templates and helpers'], ['yes', 'Mock scripts, used with Smart Mock']],
+          ['State between calls', ['yes', 'Scenarios, CRUD resources and saved state'], ['', 'Not described in the mock docs']],
+          ['Callbacks, failures and rate limits', ['yes', 'Webhooks, delays, failure rates, faults and 429s'], ['', 'Not described in the mock docs']],
+          ['Request history', ['yes', 'Every call kept and searchable'], ['', 'Not described in the mock docs']],
+        ]],
+        ['Where mocks run', [
+          ['On your machine', ['yes', 'Docker image'], ['yes', 'Local mock in the desktop app']],
+          ['Shared and always on', ['yes', 'Your MockHub server'], ['yes', 'Cloud mock on Apidog\'s servers, off by default']],
+          ['Inside your network', ['yes'], ['yes', 'Self-hosted runner mock, with a runner you deploy']],
+        ]],
+        ['Beyond mocking', [
+          ['API design, docs and test runs', ['no', 'Mocking only; export to Postman or Bruno to test'], ['yes', 'The main product']],
+          ['Team size for free', ['yes', 'No limit'], ['part', 'Free for up to 4 members']],
+          ['Single sign-on', ['yes', 'Microsoft Entra ID'], ['part', 'Enterprise']],
+          ['Run it all yourself', ['yes', 'Open source, Apache-2.0'], ['part', 'On-premises edition for Enterprise; not open source']],
+        ]],
+      ],
+      note: 'Compared with Apidog\'s mock documentation and its public site. Apidog does much more than mocking; this page compares the mock features only. Prices change often, so they are not listed here.',
+      sources: [
+        ['Mock API data', 'https://docs.apidog.com/mock-api-data-in-apidog-617869m0'],
+        ['Custom mock', 'https://docs.apidog.com/custom-mock-618204m0'],
+        ['Mock scripts', 'https://docs.apidog.com/mock-scripts-618209m0'],
+        ['Self-hosted runner mock', 'https://docs.apidog.com/self-hosted-runner-mock-621086m0'],
+        ['On-premises', 'https://self-hosting.apidog.io/'],
+      ],
+    },
+    choose: [
+      ['Apidog', [
+        'You want one tool for designing, testing, documenting and mocking APIs.',
+        'Mocks generated from the design are enough for your front end.',
+        'Your team is small enough for the free plan, or already pays for it.',
+      ]],
+      ['MockHub', [
+        'You need mocks that behave like the real service: state, callbacks, failures and rate limits.',
+        'Mocks must run on your own server, fully open source.',
+        'Many teams share one mock server at no cost per member.',
+      ]],
+    ],
+    faq: [
+      ['Can I use both?', 'Yes. Design the API in Apidog, export the OpenAPI document and import it into a MockHub project when you need richer mock behaviour.'],
+      ['Does MockHub test APIs?', 'No. It mocks them. Export a project as a Postman or Bruno collection to run requests against it.'],
+      ['Is MockHub affiliated with Apidog?', 'No. It is an independent open-source project.'],
+    ],
+    related: ['vs-postman-mock-servers', 'contract-first', 'mock-api'],
+    definition: 'MockHub is a self-hosted, open-source mock server: it does mocking only, with matching, state, callbacks and failure simulation.',
+  },
+  {
+    slug: 'vs-mockbin',
+    menu: 'mock-servers',
+    kind: 'compare',
+    hidden: true,
+    icon: 'Scales',
+    eyebrow: 'Comparison',
+    nav: ['MockHub vs Mockbin', 'A bin or a mock server.'],
+    title: 'MockHub vs Mockbin: an honest comparison — MockHub',
+    description: 'Mockbin by Zuplo gives you a free endpoint with one fixed answer and shows the requests it gets. MockHub is a full mock server you run yourself. Compare them, checked against Mockbin\'s site and source.',
+    h1: 'MockHub vs Mockbin',
+    lede: 'Mockbin by Zuplo, which replaced the original mockbin.org after it shut down, gives you a URL that answers with one fixed response or from an OpenAPI file, and shows every request it gets. No sign-up. MockHub is a mock server with rules, state and teams; its free tools cover the quick cases too.',
+    docs: '/docs/quick-start/',
+    compare: {
+      title: 'What each one gives you',
+      checked: CHECKED_W3,
+      columns: ['MockHub', 'Mockbin'],
+      groups: [
+        ['Quick endpoints', [
+          ['No sign-up', ['yes', 'Instant mocks and the webhook bin on the public demo'], ['yes']],
+          ['Inspect incoming requests', ['yes', 'Webhook bin and request history'], ['yes', 'Live on the bin\'s page']],
+          ['Answer from OpenAPI', ['yes', 'OpenAPI 3 and Swagger 2'], ['yes', 'OpenAPI 3.x']],
+        ]],
+        ['Mock behaviour', [
+          ['Several answers per endpoint', ['yes', 'Any number of stubs with matching rules'], ['no', 'One fixed status, headers and body per bin']],
+          ['Templates and fake data', ['yes'], ['no', 'Not on the site or README']],
+          ['State, CRUD and callbacks', ['yes'], ['no']],
+          ['Delays, failures and rate limits', ['yes'], ['no']],
+        ]],
+        ['How it runs', [
+          ['Accounts and teams', ['yes', 'Users, teams, roles and SSO'], ['no', 'Bins are listed in your browser storage']],
+          ['Licence', ['yes', 'Apache-2.0'], ['yes', 'MIT']],
+          ['Run it yourself', ['yes', 'One Docker image'], ['part', 'Its API is built on Zuplo with Cloudflare R2 storage']],
+        ]],
+      ],
+      note: 'Mockbin as described on mockbin.io and in the zuplo/mockbin repository. Neither lists request limits or how long a bin is kept.',
+      sources: [
+        ['mockbin.io', 'https://mockbin.io/'],
+        ['Source and README', 'https://github.com/zuplo/mockbin'],
+      ],
+    },
+    choose: [
+      ['Mockbin', [
+        'You need one URL with one answer, right now, and nothing else.',
+        'You want to see what a client sends, without setting anything up.',
+      ]],
+      ['MockHub', [
+        'An endpoint needs different answers for different requests.',
+        'You need state, callbacks, failures or a team that shares mocks.',
+        'The mock has to stay up and keep its history.',
+      ]],
+    ],
+    faq: [
+      ['Does MockHub have something as quick?', 'Yes. The free instant mock and webhook bin on the public demo need no account; a mock is deleted 7 days after its last change.'],
+      ['Is this the old mockbin.org?', 'No. mockbin.org was shut down; Mockbin by Zuplo is a separate replacement.'],
+      ['Is MockHub affiliated with Zuplo?', 'No. It is an independent open-source project.'],
+    ],
+    related: ['tools/instant-mock', 'tools/webhook-bin', 'vs-wiremock'],
+    definition: 'MockHub is a self-hosted, open-source mock server with matching rules, state and request history, plus free no-login tools for quick endpoints.',
+  },
+  {
+    slug: 'vs-devtest',
+    menu: 'mock-servers',
+    kind: 'compare',
+    hidden: true,
+    icon: 'Scales',
+    eyebrow: 'Comparison',
+    nav: ['MockHub vs Broadcom DevTest', 'Open source or enterprise suite.'],
+    title: 'MockHub vs Broadcom DevTest Service Virtualization — MockHub',
+    description: 'Broadcom DevTest is a commercial service virtualization suite covering messaging and mainframe protocols. MockHub is a free, open-source mock server for HTTP APIs. Compare them, checked against Broadcom\'s docs.',
+    h1: 'MockHub vs Broadcom DevTest Service Virtualization',
+    lede: 'DevTest is a long-standing enterprise suite that virtualizes HTTP and also messaging, database and mainframe traffic, licensed per user or copy. MockHub covers HTTP APIs (REST, SOAP, GraphQL and gRPC) with a web UI, and is free and open source.',
+    docs: '/docs/quick-start/',
+    compare: {
+      title: 'What each one covers',
+      checked: CHECKED_W3,
+      columns: ['MockHub', 'Broadcom DevTest'],
+      groups: [
+        ['Protocols', [
+          ['HTTP, REST and SOAP', ['yes'], ['yes', 'HTTP/S, including HTTP/2']],
+          ['GraphQL and gRPC', ['yes', 'gRPC unary and client streaming'], ['', 'Not on the transport protocol pages checked']],
+          ['Messaging: JMS, IBM MQ, Kafka, RabbitMQ', ['no'], ['yes']],
+          ['Mainframe and databases: CICS, JDBC', ['no'], ['yes']],
+        ]],
+        ['Building virtual services', [
+          ['Record real traffic', ['yes', 'Proxy stubs and the forward proxy'], ['yes', 'Recording into service images']],
+          ['From a contract', ['yes', 'OpenAPI, WSDL, GraphQL and Postman'], ['yes']],
+          ['Editor', ['', 'Web UI in the browser'], ['', 'DevTest Workstation and Portal']],
+          ['API for CI', ['yes', 'REST API and MCP'], ['yes', 'Service Virtualization API']],
+        ]],
+        ['Cost and running it', [
+          ['Licence', ['yes', 'Apache-2.0, free'], ['part', 'Commercial: power users, copies or transactions a month']],
+          ['Install', ['', 'One Docker image'], ['', 'Enterprise installation with registry, servers and environments']],
+        ]],
+      ],
+      note: 'DevTest 10.8 documentation. Broadcom licenses functional virtual services by power users, performance environments by copies, and a transaction-based option by transactions a month.',
+      sources: [
+        ['Messaging transport protocols', 'https://techdocs.broadcom.com/us/en/ca-enterprise-software/devops/devtest-solutions/10-8/using/using-service-virtualization/using-devtest-workstation-with-service-virtualization/editing-a-vsm/steps-for-messaging-transport-protocols.html'],
+        ['IBM MQ native', 'https://techdocs.broadcom.com/us/en/ca-enterprise-software/devops/devtest-solutions/10-8/using/using-service-virtualization/using-devtest-workstation-with-service-virtualization/creating-service-images/create-a-service-image-by-recording/transport-protocols/ibm-mq-native-transport-protocol.html'],
+        ['HTTP/2', 'https://techdocs.broadcom.com/us/en/ca-enterprise-software/devops/devtest-solutions/10-7/using/using-service-virtualization/using-devtest-workstation-with-service-virtualization/creating-service-images/create-a-service-image-by-recording/transport-protocols/http-2-transport-protocol.html'],
+        ['Service Virtualization API', 'https://techdocs.broadcom.com/us/en/ca-enterprise-software/devops/devtest-solutions/10-8/using/using-the-apis/service-virtualization-api-v3.html'],
+        ['Licensing', 'https://knowledge.broadcom.com/external/article/274974/understanding-the-license-usage-and-limi.html'],
+      ],
+    },
+    choose: [
+      ['Broadcom DevTest', [
+        'You virtualize MQ, JMS, Kafka, databases or mainframe transactions.',
+        'Your organisation already licenses the Broadcom suite.',
+      ]],
+      ['MockHub', [
+        'Your dependencies are HTTP APIs: REST, SOAP, GraphQL or gRPC.',
+        'You want a tool teams can start using today, without licences or an installation project.',
+        'You want to read and change the source.',
+      ]],
+    ],
+    faq: [
+      ['Can MockHub replace DevTest?', 'For HTTP services, often yes. For messaging, database or mainframe traffic, no: MockHub doesn\'t virtualize those.'],
+      ['Can I bring DevTest virtual services over?', 'Not directly. Start from the service\'s OpenAPI or WSDL file, or record it again through a proxy stub.'],
+      ['Is MockHub affiliated with Broadcom?', 'No. It is an independent open-source project.'],
+    ],
+    related: ['service-virtualization', 'vs-wiremock', 'soap-mock-server'],
+    definition: 'MockHub is a self-hosted, open-source service virtualization server for HTTP APIs: REST, SOAP, GraphQL and gRPC.',
   },
 );
 
