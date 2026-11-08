@@ -47,6 +47,12 @@ public final class InternalApi {
   }
 
   public Result call(Request original, Principal principal, RequestMethod method, String pathAndQuery, JsonNode body) {
+    return body == null
+        ? call(original, principal, method, pathAndQuery, null, null)
+        : call(original, principal, method, pathAndQuery, "application/json", Jsons.write(body).getBytes(StandardCharsets.UTF_8));
+  }
+
+  public Result call(Request original, Principal principal, RequestMethod method, String pathAndQuery, String contentType, byte[] body) {
     String path = pathAndQuery.contains("?") ? pathAndQuery.substring(0, pathAndQuery.indexOf('?')) : pathAndQuery;
     AccessPolicy.Decision decision = policy.decide(principal, method, AdminPaths.API_ROOT + path);
     if (!decision.allowed()) return new Result(403, Jsons.write(Jsons.object().put("error", decision.reason())));
@@ -60,8 +66,8 @@ public final class InternalApi {
     }
     request.withHeader("Accept", "application/json");
     if (body != null) {
-      request.withHeader("Content-Type", "application/json");
-      request.withBody(Jsons.write(body).getBytes(StandardCharsets.UTF_8));
+      request.withHeader("Content-Type", contentType);
+      request.withBody(body);
     } else {
       request.withBody(new byte[0]);
     }

@@ -243,4 +243,131 @@ class MockToolsTest {
     });
     assertThat(invalid.has("error")).isTrue();
   }
+
+  private static final class FakeSetup implements ProjectSetup {
+    String fetched;
+    String checkedProto;
+
+    @Override
+    public Parsed parse(String projectId, String format, String content) {
+      if (content.contains("broken")) throw io.mockhub.api.ApiException.badRequest("Can't read the openapi document: line 3");
+      List<com.fasterxml.jackson.databind.node.ObjectNode> stubs = List.of(
+          json("{'name':'List pets','request':{'method':'GET','urlPath':'/pets'},'response':{'status':200}}"),
+          json("{'name':'Add pet','request':{'method':'POST','urlPath':'/pets'},'response':{'status':201}}"));
+      return new Parsed(stubs, "Pet Store");
+    }
+
+    @Override
+    public String fetch(String url) {
+      fetched = url;
+      return "openapi: 3.0.3";
+    }
+
+    @Override
+    public JsonNode contract(String content) {
+      return json("{'openapi':'3.0.3','info':{'title':'Pet Store','version':'1.0'},'paths':{}}");
+    }
+
+    @Override
+    public void attachContract(String projectId, JsonNode spec, String fileName, String by) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public com.fasterxml.jackson.databind.node.ObjectNode checkCrud(String projectId, JsonNode request) {
+      return request.deepCopy();
+    }
+
+    @Override
+    public int createCrud(String projectId, JsonNode request) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void checkProto(String name, String text) {
+      if (!name.endsWith(".proto")) throw io.mockhub.api.ApiException.badRequest("Name the file like library.proto");
+      checkedProto = text;
+    }
+
+    @Override
+    public void addProto(String projectId, String name, String text) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public JsonNode drift(String projectId) {
+      return json("{'attached':true,'open':1}");
+    }
+  }
+
+  @Test
+  void stagesOneChangeForEveryStubOfAnImportedSpecAndItsContract() {
+    // Given
+    FakeSetup setup = new FakeSetup();
+    MockTools tools = new MockTools(stubs, requestLog, clock, callouts, runtime, id -> List.of(), orders.id(), List.of(), setup);
+
+    // When
+    JsonNode result = run(tools, "import_spec", "{'format':'swagger','url':'https://example.com/pets.yaml','keep_contract':true}");
+
+    // Then
+    assertThat(setup.fetched).isEqualTo("https://example.com/pets.yaml");
+    assertThat(result.get("stubs").asInt()).isEqualTo(2);
+    assertThat(tools.changes()).extracting(ProposedChange::action).containsExactly("create", "create", "contract");
+    assertThat(tools.changes()).extracting(ProposedChange::summary)
+        .containsExactly("From Pet Store: GET /pets", "From Pet Store: POST /pets", "Watch traffic against Pet Store");
+    assertThat(tools.changes().get(2).stub().path("fileName").asText()).isEqualTo("https://example.com/pets.yaml");
+    assertThat(stubs.stubsOf(orders.id())).hasSize(1);
+  }
+
+  @Test
+  void explainsWhyAnImportCannotBeStaged() {
+    // Given
+    MockTools tools = new MockTools(stubs, requestLog, clock, callouts, runtime, id -> List.of(), orders.id(), List.of(), new FakeSetup());
+
+    // When
+    JsonNode broken = run(tools, "import_spec", "{'format':'openapi','content':'broken: ['}");
+    JsonNode nothing = run(tools, "import_spec", "{'format':'openapi'}");
+    JsonNode unknown = run(tools, "import_spec", "{'format':'raml','content':'x'}");
+    JsonNode wsdlContract = run(tools, "import_spec", "{'format':'wsdl','content':'<definitions/>','keep_contract':true}");
+
+    // Then
+    assertThat(broken.get("error").asText()).contains("line 3");
+    assertThat(nothing.get("error").asText()).contains("content, or a url");
+    assertThat(unknown.get("error").asText()).contains("openapi");
+    assertThat(wsdlContract.get("error").asText()).contains("Only an OpenAPI document");
+  }
+
+  @Test
+  void stagesAGrpcServiceBeforeItsStubsAndOneCrudResourcePerName() {
+    // Given
+    FakeSetup setup = new FakeSetup();
+    MockTools tools = new MockTools(stubs, requestLog, clock, callouts, runtime, id -> List.of(), orders.id(), List.of(), setup);
+    run(tools, "create_stub", "{'stub':{'request':{'method':'POST','urlPath':'/shop.Cart/Get'},'response':{'status':200}},'summary':'Get cart'}");
+
+    // When
+    JsonNode grpc = run(tools, "add_grpc_service", "{'name':'cart.proto','proto':'service Cart {}'}");
+    JsonNode badName = run(tools, "add_grpc_service", "{'name':'cart.txt','proto':'x'}");
+    JsonNode crud = run(tools, "create_crud_resource", "{'resource':'customers','id_type':'number','seed':[{'name':'Ada'}]}");
+    JsonNode again = run(tools, "create_crud_resource", "{'resource':'customers'}");
+
+    // Then
+    assertThat(grpc.get("staged").asText()).isEqualTo("grpc");
+    assertThat(badName.get("error").asText()).contains("library.proto");
+    assertThat(crud.get("staged").asText()).isEqualTo("crud");
+    assertThat(again.get("error").asText()).contains("already staged");
+    assertThat(tools.changes()).extracting(ProposedChange::action).containsExactly("grpc", "create", "crud");
+    assertThat(tools.changes().get(2).summary()).isEqualTo("Store customers with 1 record");
+    assertThat(tools.changes().get(2).stub().path("idType").asText()).isEqualTo("number");
+  }
+
+  @Test
+  void offersTheSetupToolsToTheModel() {
+    // When
+    JsonNode definitions = MockTools.definitions();
+
+    // Then
+    List<String> names = new java.util.ArrayList<>();
+    definitions.forEach(d -> names.add(d.at("/function/name").asText()));
+    assertThat(names).contains("import_spec", "attach_contract", "get_drift", "add_grpc_service", "create_crud_resource");
+  }
 }

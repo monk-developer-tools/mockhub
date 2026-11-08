@@ -52,13 +52,15 @@ bearer_token_env_var = "MOCKHUB_TOKEN"</pre></div>
 <table>
   <thead><tr><th>Area</th><th>Tools</th></tr></thead>
   <tbody>
-    <tr><td>Projects</td><td><code>list_projects</code>, <code>get_project</code> (with its mock URL and runtime behaviour)</td></tr>
+    <tr><td>Projects</td><td><code>list_projects</code>, <code>get_project</code> (with its mock URL and runtime behaviour), <code>create_project</code>, <code>update_project</code> (name, description, <a href="#custom-domains">custom domains</a>, and the <a href="#api-keys">API key</a> for admins)</td></tr>
+    <tr><td>Whole APIs</td><td><code>import_spec</code>: one stub per operation from OpenAPI or Swagger, WSDL, a GraphQL schema, a Postman collection or WireMock mappings; <code>add_grpc_service</code>: serve a <code>.proto</code></td></tr>
+    <tr><td>Contract</td><td><code>attach_contract</code>, <code>get_drift</code>, <code>check_drift</code>: keep an OpenAPI document and compare traffic with it. See <a href="#contract-drift">contract drift</a></td></tr>
     <tr><td>Stubs</td><td><code>list_stubs</code> (in matching order), <code>get_stub</code>, <code>create_stub</code>, <code>update_stub</code>, <code>delete_stub</code>, <code>set_stub_enabled</code>, <code>reorder_stubs</code></td></tr>
     <tr><td>Reference</td><td><code>get_stub_reference</code>: how to write matching, templating, delays, faults, state, webhooks and SOAP in MockHub, so the agent gets it right first time</td></tr>
     <tr><td>Runtime</td><td><code>get_runtime</code>, <code>set_runtime</code>: delays, failure rates, rate limits, default response, CORS and the other <a href="#faults">project-wide behaviour</a></td></tr>
     <tr><td>Requests</td><td><code>search_requests</code> (text, method, status, unmatched only, stub, header, last N minutes), <code>get_request</code>, <code>clear_requests</code></td></tr>
     <tr><td>Callouts</td><td><code>list_callouts</code>: recent webhooks and forwards with their results</td></tr>
-    <tr><td>Data</td><td><code>create_crud_resource</code>, <code>list_data</code>, <code>list_records</code>, <code>save_record</code>, <code>delete_record</code></td></tr>
+    <tr><td>Data</td><td><code>create_crud_resource</code>, <code>list_data</code>, <code>list_records</code>, <code>save_record</code>, <code>delete_record</code>, <code>list_datasets</code>, <code>save_dataset</code> (<a href="#datasets">datasets</a> shared by the organisation)</td></tr>
     <tr><td>Snapshots</td><td><code>list_snapshots</code>, <code>create_snapshot</code>, <code>compare_snapshots</code>, <code>restore_snapshot</code>, <code>pull_from_project</code>: save a project before a change, see what changed and roll back. See <a href="#snapshots">snapshots</a></td></tr>
     <tr><td>Review</td><td><code>list_staged_changes</code></td></tr>
   </tbody>
@@ -66,7 +68,7 @@ bearer_token_env_var = "MOCKHUB_TOKEN"</pre></div>
 <p>Read-only tools are marked as such, and deleting tools as destructive, so clients that ask before risky calls can do so. Request bodies and callout answers come from outside callers; MockHub tells the agent to treat them as data, not instructions.</p>
 
 <h3 id="mcp-review">Review mode</h3>
-<p>A token set to <em>Stage for review</em> can read everything in its scope, but its stub, runtime, snapshot and restore changes don't go live. They wait in the project's <strong>Assistant</strong> tab under <strong>Changes from agents</strong>, with the token name and time, and an editor applies or discards each one after looking at the JSON or the diff. This works even when the <a href="#ai">AI assistant</a> is off. Other changes, such as clearing requests, saving records or pulling from another project, are refused for review tokens, and so is the REST API. Use review mode for agents you're trying out, or for shared projects where a person should see every change first.</p>
+<p>A token set to <em>Stage for review</em> can read everything in its scope, but its stub, runtime, snapshot, restore, import, gRPC, contract and CRUD resource changes don't go live. They wait in the project's <strong>Assistant</strong> tab under <strong>Changes from agents</strong>, with the token name and time, and an editor applies or discards each one after looking at the JSON or the diff. This works even when the <a href="#ai">AI assistant</a> is off. Other changes, such as creating projects, changing project settings, clearing requests, saving records or datasets, or pulling from another project, are refused for review tokens, and so is the REST API. Use review mode for agents you're trying out, or for shared projects where a person should see every change first.</p>
 <table>
   <thead><tr><th>Endpoint</th><th>Purpose</th></tr></thead>
   <tbody>

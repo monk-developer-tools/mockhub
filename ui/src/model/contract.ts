@@ -1,6 +1,6 @@
 import { diffLines, type DiffLine } from './diff';
 
-export type ContractSource = 'upload' | 'url' | 'import' | 'editor' | 'ai-patch';
+export type ContractSource = 'upload' | 'url' | 'import' | 'editor' | 'ai-patch' | 'ai';
 
 export interface ContractView {
   attached: boolean;
@@ -66,6 +66,7 @@ const SOURCE_LABEL: Record<ContractSource, string> = {
   import: 'kept from an OpenAPI import',
   editor: 'edited',
   'ai-patch': 'patched by the assistant',
+  ai: 'set by the assistant',
 };
 
 export function sourceLabel(source: ContractSource | undefined): string {

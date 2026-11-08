@@ -4,6 +4,8 @@ What changed in MockHub, newest first. Every change ships to the Docker image `a
 
 ## 2026-11-08
 
+- Ask the AI for whole setups: the assistant and MCP agents can mock an OpenAPI, Swagger, WSDL, GraphQL, Postman or WireMock document (pasted or by link), keep it as the drift contract, serve a `.proto` over gRPC and add CRUD resources, all staged for review. Over MCP, agents can also create projects, change a project's name, description, domains and API key, and save datasets.
+- The *Your mock is ready* panel has **Try it**, which calls an endpoint and shows the answer in the page, and **Invite your team**.
 - A clear start after signing in: a **New mock** page with a card for every way to start (OpenAPI, WSDL, GraphQL, gRPC, CRUD, a JSON or XML answer, webhooks, traffic monitoring, echo, Postman, AI and ready-made mocks), one screen each, a new or existing project, and a *Your mock is ready* panel with commands that call it.
 - Webhook bins now last: a bin, its rules and settings are kept until 6 months after its last request (it was 24 hours). Recorded requests are kept for 7 days.
 - Security: the image no longer ships Netty (4.2.0.RC3 came in through the gRPC extension and was never used), and it reports its real Guava 33.7.2 instead of the copy graphql-java bundles.

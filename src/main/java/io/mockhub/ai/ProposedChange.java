@@ -9,4 +9,7 @@ public record ProposedChange(String id, String action, String stubId, JsonNode s
   public static final String RUNTIME = "runtime";
   public static final String SNAPSHOT = "snapshot";
   public static final String RESTORE = "restore";
+  public static final String CONTRACT = "contract";
+  public static final String GRPC = "grpc";
+  public static final String CRUD = "crud";
 }

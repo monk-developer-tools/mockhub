@@ -27,6 +27,9 @@ import java.util.function.Function;
 public final class MockTools {
   private static final String[] URL_KEYS = {"url", "urlPath", "urlPathTemplate", "urlPathPattern", "urlPattern"};
   private static final int MAX_BODY = 600;
+  private static final int MAX_IMPORT_STUBS = 200;
+  private static final int MAX_IMPORT_CHARS = 2 * 1024 * 1024;
+  private static final List<String> FORMATS = List.of("openapi", "wsdl", "graphql", "postman", "wiremock");
 
   private final StubService stubs;
   private final HistoryStore history;
@@ -36,9 +39,16 @@ public final class MockTools {
   private final Function<String, List<Snapshot.Summary>> snapshots;
   private final String projectId;
   private final List<ProposedChange> changes;
+  private final ProjectSetup setup;
 
   public MockTools(StubService stubs, HistoryStore history, Clock clock, CalloutLog callouts, RuntimeService runtime,
       Function<String, List<Snapshot.Summary>> snapshots, String projectId, List<ProposedChange> pending) {
+    this(stubs, history, clock, callouts, runtime, snapshots, projectId, pending, ProjectSetup.NONE);
+  }
+
+  public MockTools(StubService stubs, HistoryStore history, Clock clock, CalloutLog callouts, RuntimeService runtime,
+      Function<String, List<Snapshot.Summary>> snapshots, String projectId, List<ProposedChange> pending, ProjectSetup setup) {
+    this.setup = setup;
     this.stubs = stubs;
     this.history = history;
     this.clock = clock;
@@ -98,6 +108,32 @@ public final class MockTools {
     tools.add(tool("restore_snapshot", "Stage restoring a snapshot: stubs, response files and runtime behaviour go back to how they were. "
         + "MockHub saves the current state as a safety snapshot first. Stored records and the API key are not changed.",
         props(Jsons.object().<ObjectNode>set("id", str("Snapshot id from list_snapshots")).set("summary", str("Why it is restored")), "id", "summary")));
+    ObjectNode importProps = Jsons.object();
+    importProps.set("format", Jsons.object().put("type", "string").put("description", "openapi (also Swagger 2), wsdl, graphql (a schema), postman or wiremock")
+        .set("enum", Jsons.MAPPER.valueToTree(FORMATS)));
+    importProps.set("content", str("The document itself, JSON, YAML, XML or SDL. Leave out when giving a url"));
+    importProps.set("url", str("Where to download the document from, instead of content"));
+    importProps.set("keep_contract", Jsons.object().put("type", "boolean").put("description", "openapi only: also keep the document as the contract and watch recorded traffic for drift"));
+    importProps.set("summary", str("What is mocked and why"));
+    tools.add(tool("import_spec", "Stage stubs generated from an API description: every operation answers with its example or generated data. "
+        + "Each stub is staged as its own change. Use it for a whole API instead of writing stubs one by one.",
+        props(importProps, "format")));
+    tools.add(tool("attach_contract", "Stage keeping an OpenAPI document as the project's contract, so recorded traffic is compared with it and drift shows in the Contract tab.",
+        props(Jsons.object().<ObjectNode>set("content", str("The OpenAPI document. Leave out when giving a url")).<ObjectNode>set("url", str("Where to download it from"))
+            .set("summary", str("Why")))));
+    tools.add(tool("get_drift", "Compare recorded traffic with the project's contract now and list what differs: undocumented calls, wrong statuses, missing fields.", Jsons.object()));
+    tools.add(tool("add_grpc_service", "Stage serving gRPC services from a .proto file. Then stage one stub per method: POST /<package.Service>/<Method> answering JSON, with metadata.mockhub.type grpc.",
+        props(Jsons.object().<ObjectNode>set("name", str("File name ending in .proto, such as library.proto")).<ObjectNode>set("proto", str("The .proto source, proto3"))
+            .set("summary", str("What it serves")), "name", "proto")));
+    ObjectNode crudProps = Jsons.object();
+    crudProps.set("resource", str("Plural name used in the URL, such as customers or v1/orders"));
+    crudProps.set("id_field", str("Field holding the id, default id"));
+    crudProps.set("id_type", Jsons.object().put("type", "string").put("description", "uuid (default), number (1, 2, 3) or short (10 letters and digits)")
+        .set("enum", Jsons.MAPPER.valueToTree(List.of("uuid", "number", "short"))));
+    crudProps.set("seed", Jsons.object().put("type", "array").put("description", "Records to start with").<ObjectNode>set("items", Jsons.object().put("type", "object")));
+    crudProps.set("summary", str("What it stores"));
+    tools.add(tool("create_crud_resource", "Stage a REST resource that stores records: list, get, create, update and delete under /<resource>, optionally seeded. "
+        + "Use it whenever the user wants data that changes when they POST, PUT or DELETE.", props(crudProps, "resource")));
     return tools;
   }
 
@@ -116,6 +152,11 @@ public final class MockTools {
         case "list_snapshots" -> Jsons.MAPPER.<JsonNode>valueToTree(snapshots.apply(projectId));
         case "create_snapshot" -> createSnapshot(text(args, "name"), args.path("purpose").asText(""));
         case "restore_snapshot" -> restoreSnapshot(text(args, "id"), args.path("summary").asText(""));
+        case "import_spec" -> importSpec(args);
+        case "attach_contract" -> attachContract(args);
+        case "get_drift" -> setup.drift(projectId);
+        case "add_grpc_service" -> addGrpc(text(args, "name"), text(args, "proto"), args.path("summary").asText(""));
+        case "create_crud_resource" -> createCrud(args);
         default -> Jsons.object().put("error", "Unknown tool " + name);
       });
     } catch (ApiException | AiException e) {
@@ -276,6 +317,96 @@ public final class MockTools {
         summary.isBlank() ? "Restore snapshot “" + found.name() + "”" : summary);
     changes.add(change);
     return Jsons.object().put("staged", "restore").put("changeId", change.id());
+  }
+
+  private ObjectNode importSpec(JsonNode args) {
+    String format = text(args, "format").toLowerCase(java.util.Locale.ROOT);
+    if (format.equals("swagger")) format = "openapi";
+    if (!FORMATS.contains(format)) throw ApiException.badRequest("format must be one of " + FORMATS);
+    String content = document(args);
+    ProjectSetup.Parsed parsed = setup.parse(projectId, format, content);
+    if (parsed.stubs().isEmpty()) throw ApiException.badRequest("The document has no operations to mock");
+    if (parsed.stubs().size() > MAX_IMPORT_STUBS) {
+      throw ApiException.badRequest("The document makes " + parsed.stubs().size() + " stubs; the assistant stages at most " + MAX_IMPORT_STUBS
+          + ". Use Import on the Stubs tab for documents this big.");
+    }
+    String from = parsed.title().isBlank() ? format : parsed.title();
+    ArrayNode ids = Jsons.MAPPER.createArrayNode();
+    for (ObjectNode stub : parsed.stubs()) {
+      ObjectNode clean = clean(stub);
+      stubs.validate(projectId, clean);
+      ObjectNode row = summary(clean, "");
+      String label = row.path("method").asText() + " " + firstUrl(row);
+      ProposedChange change = new ProposedChange(newId(), ProposedChange.CREATE, null, clean, null, "From " + from + ": " + label.trim());
+      changes.add(change);
+      ids.add(change.id());
+    }
+    ObjectNode out = Jsons.object().put("staged", "create").put("stubs", parsed.stubs().size()).put("title", from);
+    out.set("changeIds", ids);
+    if (args.path("keep_contract").asBoolean(false)) {
+      if (!format.equals("openapi")) throw ApiException.badRequest("Only an OpenAPI document can be kept as the contract");
+      out.put("contract", stageContract(content, args.path("url").asText(null), "Watch traffic against " + from).id());
+    }
+    return out;
+  }
+
+  private ObjectNode attachContract(JsonNode args) {
+    ProposedChange change = stageContract(document(args), args.path("url").asText(null), args.path("summary").asText(""));
+    return Jsons.object().put("staged", "contract").put("changeId", change.id());
+  }
+
+  private ProposedChange stageContract(String content, String url, String summary) {
+    JsonNode spec = setup.contract(content);
+    String title = spec.path("info").path("title").asText("the contract");
+    changes.removeIf(c -> c.action().equals(ProposedChange.CONTRACT));
+    ObjectNode body = Jsons.object().put("title", title).put("version", spec.path("info").path("version").asText(""))
+        .put("fileName", url == null || url.isBlank() ? title : url);
+    body.set("spec", spec);
+    ProposedChange change = new ProposedChange(newId(), ProposedChange.CONTRACT, null, body, null,
+        summary.isBlank() ? "Keep “" + title + "” as the contract" : summary);
+    changes.add(change);
+    return change;
+  }
+
+  private ObjectNode addGrpc(String name, String proto, String summary) {
+    setup.checkProto(name, proto);
+    changes.removeIf(c -> c.action().equals(ProposedChange.GRPC) && name.equals(c.stubId()));
+    ProposedChange change = new ProposedChange(newId(), ProposedChange.GRPC, name, Jsons.object().put("name", name).put("proto", proto), null,
+        summary.isBlank() ? "Serve the gRPC services in " + name : summary);
+    changes.add(0, change);
+    return Jsons.object().put("staged", "grpc").put("changeId", change.id());
+  }
+
+  private ObjectNode createCrud(JsonNode args) {
+    ObjectNode request = Jsons.object().put("resource", text(args, "resource")).put("idField", args.path("id_field").asText("id"))
+        .put("idType", args.path("id_type").asText("uuid"));
+    if (args.has("seed")) request.set("seed", args.get("seed"));
+    ObjectNode clean = setup.checkCrud(projectId, request);
+    String resource = clean.path("resource").asText();
+    if (changes.stream().anyMatch(c -> c.action().equals(ProposedChange.CRUD) && resource.equals(c.stubId()))) {
+      throw ApiException.badRequest("A CRUD resource called " + resource + " is already staged");
+    }
+    int seeded = clean.path("seed").size();
+    ProposedChange change = new ProposedChange(newId(), ProposedChange.CRUD, resource, clean, null,
+        args.path("summary").asText("").isBlank() ? "Store " + resource + (seeded > 0 ? " with " + seeded + (seeded == 1 ? " record" : " records") : "") : args.path("summary").asText());
+    changes.add(change);
+    return Jsons.object().put("staged", "crud").put("changeId", change.id());
+  }
+
+  private String document(JsonNode args) {
+    String content = args.path("content").asText("");
+    String url = args.path("url").asText("");
+    if (content.isBlank() && url.isBlank()) throw ApiException.badRequest("Send the document as content, or a url to download it from");
+    String text = content.isBlank() ? setup.fetch(url) : content;
+    if (text.length() > MAX_IMPORT_CHARS) throw ApiException.badRequest("The assistant reads documents up to 2 MB; use Import on the Stubs tab");
+    return text;
+  }
+
+  private static String firstUrl(JsonNode row) {
+    for (String key : URL_KEYS) {
+      if (row.hasNonNull(key)) return row.get(key).asText();
+    }
+    return "";
   }
 
   static ObjectNode summary(JsonNode stub, String id) {

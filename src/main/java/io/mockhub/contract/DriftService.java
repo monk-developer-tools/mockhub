@@ -50,6 +50,10 @@ public final class DriftService {
   }
 
   public Contract attach(String projectId, JsonNode spec, String source, String fileName, String stripPrefix, Principal by) {
+    return attach(projectId, spec, source, fileName, stripPrefix, by == null ? null : by.username());
+  }
+
+  public Contract attach(String projectId, JsonNode spec, String source, String fileName, String stripPrefix, String author) {
     ContractDocument.check(spec);
     ApiContract.of(spec);
     String prefix = stripPrefix == null || stripPrefix.isBlank() ? null : stripPrefix.trim();
@@ -59,7 +63,7 @@ public final class DriftService {
       Optional<Contract> existing = store.contract(projectId);
       String name = fileName != null && !fileName.isBlank() ? fileName : existing.map(Contract::fileName).orElse(null);
       String kept = stripPrefix != null ? prefix : existing.map(Contract::stripPrefix).orElse(null);
-      Contract contract = new Contract(spec, source, name, now, by == null ? null : by.username(), existing.map(Contract::notifyUrl).orElse(null), kept);
+      Contract contract = new Contract(spec, source, name, now, author, existing.map(Contract::notifyUrl).orElse(null), kept);
       store.save(projectId, contract);
       store.saveDrift(projectId, store.drift(projectId).restarted());
       compiled.remove(projectId);

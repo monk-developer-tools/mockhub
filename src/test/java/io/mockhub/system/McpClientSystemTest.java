@@ -54,15 +54,23 @@ class McpClientSystemTest {
         HttpResponse<String> mock = http.send(HttpRequest.newBuilder(URI.create(hub.baseUrl() + "/orders/orders/42")).build(),
             HttpResponse.BodyHandlers.ofString());
         McpSchema.CallToolResult listed = client.callTool(call("list_stubs", Map.of("project", "Orders")));
+        McpSchema.CallToolResult imported = client.callTool(call("import_spec", Map.of("project", "orders", "format", "openapi",
+            "content", "openapi: 3.0.3\ninfo: {title: Shipping, version: '1'}\npaths:\n  /shipments:\n    get:\n      responses:\n        '200': {description: ok}\n")));
+        HttpResponse<String> shipments = http.send(HttpRequest.newBuilder(URI.create(hub.baseUrl() + "/orders/shipments")).build(),
+            HttpResponse.BodyHandlers.ofString());
 
         // Then
         assertThat(init.serverInfo().name()).isEqualTo("mockhub");
-        assertThat(tools).contains("list_projects", "create_stub", "update_stub", "search_requests", "set_runtime", "reorder_stubs");
+        assertThat(tools).contains("list_projects", "create_stub", "update_stub", "search_requests", "set_runtime", "reorder_stubs",
+            "create_project", "import_spec", "add_grpc_service", "attach_contract", "get_drift", "update_project", "save_dataset");
+        assertThat(imported.isError()).as(text(imported)).isFalse();
+        assertThat(shipments.statusCode()).isEqualTo(200);
         assertThat(created.isError()).as(text(created)).isFalse();
         assertThat(mock.statusCode()).isEqualTo(200);
         assertThat(mock.body()).contains("SHIPPED");
         JsonNode stubs = JSON.readTree(text(listed));
         assertThat(stubs).singleElement().satisfies(s -> assertThat(s.get("name").asText()).isEqualTo("Get order"));
+        assertThat(JSON.readTree(text(imported)).get("imported").asInt()).isEqualTo(1);
       }
     }
   }

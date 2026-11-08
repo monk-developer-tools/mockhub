@@ -31,9 +31,16 @@ public final class AssistantService {
   private final CalloutLog callouts;
   private final RuntimeService runtime;
   private final SnapshotService snapshots;
+  private final ProjectSetup setup;
 
   public AssistantService(AiSettingsStore settings, ChatCompletions chat, StubService stubs, HistoryStore requestHistory, Clock clock,
       CalloutLog callouts, RuntimeService runtime, SnapshotService snapshots) {
+    this(settings, chat, stubs, requestHistory, clock, callouts, runtime, snapshots, ProjectSetup.NONE);
+  }
+
+  public AssistantService(AiSettingsStore settings, ChatCompletions chat, StubService stubs, HistoryStore requestHistory, Clock clock,
+      CalloutLog callouts, RuntimeService runtime, SnapshotService snapshots, ProjectSetup setup) {
+    this.setup = setup;
     this.runtime = runtime;
     this.snapshots = snapshots;
     this.settings = settings;
@@ -73,7 +80,7 @@ public final class AssistantService {
     List<Message> trimmed = prepare(history);
     AiSettings s = settings.get();
 
-    MockTools tools = new MockTools(stubs, requestHistory, clock, callouts, runtime, snapshots::list, project.id(), pending);
+    MockTools tools = tools(project.id(), pending);
     ArrayNode messages = Jsons.MAPPER.createArrayNode();
     messages.addObject().put("role", "system").put("content", SystemPrompt.forProject(project, mockUrl, stubs.stubsOf(project.id()).size()));
     if (!pending.isEmpty()) {
@@ -122,10 +129,15 @@ public final class AssistantService {
         prompt + last.promptTokens(), completion + last.completionTokens());
   }
 
+  public MockTools tools(String projectId, List<ProposedChange> pending) {
+    return new MockTools(stubs, requestHistory, clock, callouts, runtime, snapshots::list, projectId, pending, setup);
+  }
+
   public List<Applied> apply(String projectId, List<ProposedChange> changes, String by) {
     List<Applied> results = new ArrayList<>();
     List<ProposedChange> ordered = new ArrayList<>(changes.stream().filter(c -> ProposedChange.SNAPSHOT.equals(c.action())).toList());
-    changes.stream().filter(c -> !ProposedChange.SNAPSHOT.equals(c.action())).forEach(ordered::add);
+    changes.stream().filter(c -> ProposedChange.GRPC.equals(c.action())).forEach(ordered::add);
+    changes.stream().filter(c -> !ProposedChange.SNAPSHOT.equals(c.action()) && !ProposedChange.GRPC.equals(c.action())).forEach(ordered::add);
     for (ProposedChange c : ordered) {
       try {
         String stubId = switch (c.action()) {
@@ -146,6 +158,18 @@ public final class AssistantService {
           case ProposedChange.RESTORE -> {
             snapshots.restore(projectId, c.stubId(), by);
             yield null;
+          }
+          case ProposedChange.CONTRACT -> {
+            setup.attachContract(projectId, c.stub().path("spec"), c.stub().path("fileName").asText(null), by);
+            yield null;
+          }
+          case ProposedChange.GRPC -> {
+            setup.addProto(projectId, c.stub().path("name").asText(), c.stub().path("proto").asText());
+            yield null;
+          }
+          case ProposedChange.CRUD -> {
+            setup.createCrud(projectId, c.stub());
+            yield c.stubId();
           }
           default -> throw ApiException.badRequest("Unknown change '" + c.action() + "'");
         };
@@ -201,7 +225,9 @@ public final class AssistantService {
     }
     if (args == null) return "";
     return switch (tool) {
-      case "create_stub", "update_stub", "delete_stub", "set_runtime" -> args.path("summary").asText("");
+      case "create_stub", "update_stub", "delete_stub", "set_runtime", "attach_contract", "add_grpc_service" -> args.path("summary").asText("");
+      case "import_spec" -> args.path("url").asText(args.path("format").asText(""));
+      case "create_crud_resource" -> args.path("resource").asText("");
       case "get_stub" -> args.path("id").asText("");
       case "search_requests" -> requestFilters(args);
       default -> "";

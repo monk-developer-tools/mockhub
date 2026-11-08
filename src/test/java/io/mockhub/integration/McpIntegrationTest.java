@@ -159,6 +159,81 @@ class McpIntegrationTest {
     assertThat(admin.get(API + "/projects/" + payId + "/staged").json()).isEmpty();
   }
 
+  private static final String PETS = String.join("\n", "openapi: 3.0.3", "info: {title: Pet Store, version: '1.0'}", "paths:",
+      "  /pets:", "    get:", "      responses:", "        '200':", "          description: ok",
+      "          content: {application/json: {example: [{id: 1, name: Rex}]}}");
+  private static final String CART = String.join("\n", "syntax = \"proto3\";", "package shop;",
+      "message GetCartRequest { string id = 1; }", "message Cart { string id = 1; int32 items = 2; }",
+      "service Carts { rpc GetCart (GetCartRequest) returns (Cart); }");
+
+  @Test
+  void anAgentSetsUpAWholeProjectFromOneConversation() throws Exception {
+    // Given
+    String secret = token("{\"name\":\"Claude Code\",\"role\":\"manager\"}");
+
+    // When
+    JsonNode project = content(tool(secret, "create_project", "{\"name\":\"Pet Store\",\"description\":\"From the spec\"}"));
+    JsonNode imported = content(tool(secret, "import_spec", Jsons.write(Jsons.object().put("project", "pet-store").put("format", "openapi")
+        .put("content", PETS).put("keep_contract", true))));
+    int pets = server.api().get("/pet-store/pets").status();
+    JsonNode grpc = tool(secret, "add_grpc_service", Jsons.write(Jsons.object().put("project", "pet-store").put("name", "cart.proto").put("proto", CART)));
+    JsonNode crud = tool(secret, "create_crud_resource", "{\"project\":\"pet-store\",\"resource\":\"owners\",\"seed\":[{\"name\":\"Ada\"}]}");
+    JsonNode renamed = content(tool(secret, "update_project", "{\"project\":\"pet-store\",\"name\":\"Pets\",\"description\":\"Mocked by an agent\"}"));
+    JsonNode dataset = tool(secret, "save_dataset", "{\"project\":\"pet-store\",\"key\":\"breeds\",\"records\":[{\"id\":\"b1\",\"name\":\"Collie\"}]}");
+    JsonNode datasets = content(tool(secret, "list_datasets", "{\"project\":\"pet-store\"}"));
+    JsonNode drift = content(tool(secret, "get_drift", "{\"project\":\"pet-store\"}"));
+    JsonNode apiKey = tool(secret, "update_project", "{\"project\":\"pet-store\",\"api_key\":\"s3cret\"}");
+
+    // Then
+    assertThat(project.get("slug").asText()).isEqualTo("pet-store");
+    assertThat(imported.get("imported").asInt()).isEqualTo(1);
+    assertThat(imported.get("contract").asBoolean()).isTrue();
+    assertThat(pets).isEqualTo(200);
+    assertThat(grpc.get("isError").asBoolean()).as(grpc.toString()).isFalse();
+    assertThat(admin.get(API + "/projects/" + project.get("id").asText() + "/grpc").body()).contains("shop.Carts");
+    assertThat(crud.get("isError").asBoolean()).as(crud.toString()).isFalse();
+    assertThat(server.api().get("/pet-store/owners").body()).contains("Ada");
+    assertThat(renamed.get("name").asText()).isEqualTo("Pets");
+    assertThat(renamed.get("description").asText()).isEqualTo("Mocked by an agent");
+    assertThat(dataset.get("isError").asBoolean()).as(dataset.toString()).isFalse();
+    assertThat(datasets.toString()).contains("breeds");
+    assertThat(drift.get("attached").asBoolean()).isTrue();
+    assertThat(apiKey.get("isError").asBoolean()).isTrue();
+    assertThat(apiKey.at("/content/0/text").asText()).contains("Only admins");
+  }
+
+  @Test
+  void aReviewTokenStagesAWholeImportAndAGrpcServiceForApproval() throws Exception {
+    // Given
+    String secret = token("{\"name\":\"Cursor\",\"role\":\"editor\",\"mode\":\"review\"}");
+
+    // When
+    JsonNode staged = tool(secret, "import_spec", Jsons.write(Jsons.object().put("project", "pay").put("format", "openapi").put("content", PETS)
+        .put("keep_contract", true)));
+    JsonNode proto = tool(secret, "add_grpc_service", Jsons.write(Jsons.object().put("project", "pay").put("name", "cart.proto").put("proto", CART)));
+    JsonNode badProto = tool(secret, "add_grpc_service", "{\"project\":\"pay\",\"name\":\"cart.proto\",\"proto\":\"service {\"}");
+    JsonNode project = tool(secret, "create_project", "{\"name\":\"Nope\"}");
+    int beforeApply = server.api().get("/pay/pets").status();
+    JsonNode pending = admin.get(API + "/projects/" + payId + "/staged").json();
+    List<String> ids = new ArrayList<>();
+    pending.forEach(p -> ids.add("\"" + p.at("/change/id").asText() + "\""));
+    JsonNode applied = admin.post(API + "/projects/" + payId + "/staged/apply", "{\"ids\":" + ids + "}").json();
+
+    // Then
+    assertThat(staged.get("isError").asBoolean()).as(staged.toString()).isFalse();
+    assertThat(proto.get("isError").asBoolean()).as(proto.toString()).isFalse();
+    assertThat(badProto.get("isError").asBoolean()).isTrue();
+    assertThat(project.at("/content/0/text").asText()).contains("stages changes for review");
+    assertThat(beforeApply).isEqualTo(404);
+    List<String> actions = new ArrayList<>();
+    pending.forEach(p -> actions.add(p.at("/change/action").asText()));
+    assertThat(actions).containsExactlyInAnyOrder("create", "contract", "grpc");
+    assertThat(applied.get("applied").asInt()).as(applied.toString()).isEqualTo(3);
+    assertThat(server.api().get("/pay/pets").status()).isEqualTo(200);
+    assertThat(admin.get(API + "/projects/" + payId + "/contract").json().get("attached").asBoolean()).isTrue();
+    assertThat(admin.get(API + "/projects/" + payId + "/grpc").body()).contains("shop.Carts");
+  }
+
   @Test
   void anAgentTakesASnapshotAndRollsBackAfterABadChange() throws Exception {
     // Given

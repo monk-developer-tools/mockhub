@@ -9,6 +9,7 @@ import io.mockhub.ai.AiProviders;
 import io.mockhub.ai.AiSettingsStore;
 import io.mockhub.ai.AssistantJobs;
 import io.mockhub.ai.AssistantService;
+import io.mockhub.ai.ServerProjectSetup;
 import io.mockhub.ai.BodyGenerator;
 import io.mockhub.ai.TemplateFixer;
 import io.mockhub.chaos.ErrorRateTransformer;
@@ -73,7 +74,6 @@ import io.mockhub.ai.JdkLlmTransport;
 import io.mockhub.controller.AiController;
 import io.mockhub.backup.BackupService;
 import io.mockhub.auth.AccessPolicy;
-import io.mockhub.ai.MockTools;
 import io.mockhub.ai.StagedChanges;
 import io.mockhub.api.Jsons;
 import io.mockhub.api.ApiRouter;
@@ -393,7 +393,8 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     DefaultResponseStubs defaultResponses = new DefaultResponseStubs(stubs);
     RuntimeService runtimeService = new RuntimeService(projects, defaultResponses, rateLimiter);
     SnapshotService snapshots = new SnapshotService(snapshotStore, projects, stubs, runtimeService, bodyFiles, clock);
-    AssistantService assistant = new AssistantService(aiSettings, chat, stubs, history, clock, calloutLog, runtimeService, snapshots);
+    AssistantService assistant = new AssistantService(aiSettings, chat, stubs, history, clock, calloutLog, runtimeService, snapshots,
+        new ServerProjectSetup(projects, stubs, importers, specFetcher, crud, grpc, drift));
     AssistantJobs assistantJobs = new AssistantJobs(assistant, Executors.newCachedThreadPool(r -> {
       Thread t = new Thread(r, "mockhub-assistant");
       t.setDaemon(true);
@@ -458,7 +459,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
         new SnapshotController(snapshots, projects));
     controllers.forEach(c -> c.register(api));
     McpTools mcpTools = new McpTools(new InternalApi(api.task(), policy),
-        new ReviewStager(staged, (projectId, pending) -> new MockTools(stubs, history, clock, calloutLog, runtimeService, snapshots::list, projectId, pending), policy),
+        new ReviewStager(staged, assistant::tools, policy),
         resource("/mcp/reference.md"), clock);
     McpServer mcpServer = new McpServer(mcpTools, Main.VERSION);
 

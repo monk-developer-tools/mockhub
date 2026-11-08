@@ -173,6 +173,7 @@ public final class McpTools {
               .put("idField", Optional.ofNullable(call.optional("id_field")).orElse("id"))
               .put("idType", Optional.ofNullable(call.optional("id_type")).orElse("uuid"));
           if (call.args().has("seed")) body.set("seed", call.args().get("seed"));
+          if (call.principal().reviewOnly()) return stage(call, projectId(call), "create_crud_resource");
           return direct(call, "creating CRUD resources", RequestMethod.POST, "/projects/" + projectId(call) + "/crud", body);
         });
     add("list_records", "List records", "List the records stored for one resource.",
@@ -232,8 +233,141 @@ public final class McpTools {
           return direct(call, "pulling from another project", RequestMethod.POST, "/projects/" + target + "/pull", body);
         });
 
+    add("import_spec", "Mock a whole API from its description",
+        "Create one stub per operation from an OpenAPI or Swagger, WSDL, GraphQL schema, Postman collection or WireMock mappings document, "
+            + "answering with its examples or generated data. Send the document as content; an OpenAPI document can also be given as url. "
+            + "keep_contract (OpenAPI) also keeps it as the contract to watch traffic for drift.",
+        schema(project(), req("format", "string", "openapi, wsdl, graphql, postman or wiremock"), prop("content", "string", "The document"),
+            prop("url", "string", "OpenAPI only: where to download the document"), prop("keep_contract", "boolean", "OpenAPI only: also keep it as the contract"),
+            summaryProp()), false, false, this::importSpec);
+    add("attach_contract", "Keep an OpenAPI contract",
+        "Keep an OpenAPI document as the project's contract, so recorded traffic is compared with it. Send content or url.",
+        schema(project(), prop("content", "string", "The OpenAPI document"), prop("url", "string", "Where to download it"), summaryProp()), false, false,
+        this::attachContract);
+    add("get_drift", "Get contract drift", "List where recorded traffic differs from the project's contract: undocumented calls, statuses and fields.",
+        schema(project()), true, false, call -> get(call, "/projects/" + projectId(call) + "/drift"));
+    add("check_drift", "Check drift now", "Compare the newest recorded traffic with the contract now and return the findings.",
+        schema(project()), false, false, call -> direct(call, "checking drift", RequestMethod.POST, "/projects/" + projectId(call) + "/drift/check", Jsons.object()));
+    add("add_grpc_service", "Serve gRPC from a .proto",
+        "Serve the services in a proto3 .proto file on the project. Then create one stub per method: POST /<package.Service>/<Method> with metadata.mockhub.type grpc (see get_stub_reference).",
+        schema(project(), req("name", "string", "File name ending in .proto"), req("proto", "string", "The .proto source"), summaryProp()), false, false,
+        this::addGrpc);
+
+    add("create_project", "Create a project",
+        "Create a project with its own mock URL. Give a team id when the user can write to more than one team; otherwise the first writable team is used.",
+        schema(req("name", "string", "Project name"), prop("slug", "string", "URL path, lowercase letters, digits and dashes; made from the name when left out"),
+            prop("description", "string", "What it mocks"), prop("team_id", "string", "Team to put it in")), false, false, call -> {
+          ObjectNode body = Jsons.object().put("name", call.text("name"));
+          body.put("slug", Optional.ofNullable(call.optional("slug")).orElse(slug(call.text("name"))));
+          if (call.optional("description") != null) body.put("description", call.optional("description"));
+          if (call.optional("team_id") != null) body.put("teamId", call.optional("team_id"));
+          return direct(call, "creating projects", RequestMethod.POST, "/projects", body);
+        });
+    add("update_project", "Change project settings",
+        "Change a project's name, description, custom domains or API key. Only fields you send change. Setting the API key needs an admin.",
+        schema(project(), prop("name", "string", "New name"), prop("description", "string", "New description"),
+            stringsProp("domains", "Host names that answer at the root, replacing the current list"),
+            prop("api_key", "string", "Value callers must send; empty to remove the key"), prop("api_key_header", "string", "Header carrying it, default X-API-Key")),
+        false, false, this::updateProject);
+    add("list_datasets", "List datasets", "List the organisation's datasets: shared CSV or JSON test data that stubs read with dataset helpers.",
+        schema(project()), true, false, call -> get(call, "/orgs/" + orgOf(call) + "/datasets"));
+    add("save_dataset", "Save a dataset",
+        "Create a dataset in the project's organisation, or replace its records. Stubs read it with {{dataset 'key' ...}} helpers.",
+        schema(project(), req("key", "string", "Lowercase key used by helpers, such as customers"), prop("name", "string", "Display name"),
+            req("records", "array", "The records"), prop("identity", "array", "Fields that identify a record, such as id")), false, false, this::saveDataset);
+
     add("list_staged_changes", "List staged changes", "List changes waiting for review in the project's Assistant tab.",
         schema(project()), true, false, call -> get(call, "/projects/" + projectId(call) + "/staged"));
+  }
+
+  private Object importSpec(Call call) {
+    String id = projectId(call);
+    String format = call.text("format").toLowerCase(Locale.ROOT).replace("swagger", "openapi");
+    if (call.principal().reviewOnly()) return stage(call, id, "import_spec");
+    String content = call.optional("content");
+    if (content == null) {
+      if (!format.equals("openapi")) throw new ToolError("Send the document as content; only OpenAPI can be downloaded from a url");
+      content = fetched(call);
+    }
+    boolean keep = call.args().path("keep_contract").asBoolean(false);
+    return raw(call, RequestMethod.POST, "/projects/" + id + "/import/" + enc(format) + (keep ? "?contract=true" : ""), "text/plain", content);
+  }
+
+  private Object attachContract(Call call) {
+    String id = projectId(call);
+    if (call.principal().reviewOnly()) return stage(call, id, "attach_contract");
+    String content = call.optional("content");
+    ObjectNode body = Jsons.object().put("content", content == null ? fetched(call) : content).put("source", content == null ? "url" : "upload");
+    if (call.optional("url") != null) body.put("fileName", call.optional("url"));
+    return send(call, RequestMethod.PUT, "/projects/" + id + "/contract", body);
+  }
+
+  private Object addGrpc(Call call) {
+    String id = projectId(call);
+    if (call.principal().reviewOnly()) return stage(call, id, "add_grpc_service");
+    return raw(call, RequestMethod.POST, "/projects/" + id + "/grpc/descriptors?name=" + enc(call.text("name")), "text/plain", call.text("proto"));
+  }
+
+  private Object updateProject(Call call) {
+    String id = projectId(call);
+    ObjectNode body = Jsons.object();
+    if (call.optional("name") != null) body.put("name", call.optional("name"));
+    if (call.args().has("description")) body.put("description", call.args().path("description").asText(""));
+    if (call.args().has("domains")) body.set("domains", call.args().get("domains"));
+    if (call.args().has("api_key")) {
+      body.putObject("apiKey").put("value", call.args().path("api_key").asText("")).put("header", Optional.ofNullable(call.optional("api_key_header")).orElse(""));
+    }
+    if (body.isEmpty()) throw new ToolError("Send at least one of name, description, domains or api_key");
+    return direct(call, "changing project settings", RequestMethod.PUT, "/projects/" + id, body);
+  }
+
+  private Object saveDataset(Call call) {
+    String org = orgOf(call);
+    String key = call.text("key");
+    JsonNode records = call.args().path("records");
+    if (!records.isArray()) throw new ToolError("'records' must be a list of objects");
+    boolean exists = false;
+    for (JsonNode d : get(call, "/orgs/" + org + "/datasets")) exists |= d.path("key").asText().equals(key);
+    if (!exists) {
+      ObjectNode body = Jsons.object().put("key", key).put("name", Optional.ofNullable(call.optional("name")).orElse(key));
+      if (call.args().has("identity")) body.set("identity", call.args().get("identity"));
+      direct(call, "saving datasets", RequestMethod.POST, "/orgs/" + org + "/datasets", body);
+    }
+    if (call.principal().reviewOnly()) throw new ToolError("This token stages changes for review, so saving datasets isn't available. Use a token that applies changes directly.");
+    return raw(call, RequestMethod.POST, "/orgs/" + org + "/datasets/" + enc(key) + "/upload?format=json&mode=replace", "application/json", Jsons.write(records));
+  }
+
+  private String orgOf(Call call) {
+    return get(call, "/projects/" + projectId(call)).path("orgId").asText();
+  }
+
+  private String fetched(Call call) {
+    String url = call.optional("url");
+    if (url == null) throw new ToolError("Send the document as content, or a url to download it from");
+    return get(call, RequestMethod.POST, "/openapi/fetch", Jsons.object().put("url", url)).path("content").asText();
+  }
+
+  private JsonNode stage(Call call, String projectId, String tool) {
+    ObjectNode args = call.args().deepCopy();
+    args.remove("project");
+    return stager.stage(call.principal(), projectId, tool, args);
+  }
+
+  private Object raw(Call call, RequestMethod method, String path, String contentType, String body) {
+    InternalApi.Result result = api.call(call.request(), call.principal(), method, path, contentType, body.getBytes(StandardCharsets.UTF_8));
+    if (!result.ok()) throw new ToolError(result.error());
+    return result.json();
+  }
+
+  private JsonNode get(Call call, RequestMethod method, String path, JsonNode body) {
+    InternalApi.Result result = api.call(call.request(), call.principal(), method, path, body);
+    if (!result.ok()) throw new ToolError(result.error());
+    return result.json();
+  }
+
+  private static String slug(String name) {
+    String slug = name.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "-").replaceAll("^-+|-+$", "");
+    return slug.isEmpty() ? "mock" : slug;
   }
 
   private Object listProjects(Call call) {
@@ -406,6 +540,12 @@ public final class McpTools {
   private static Prop req(String name, String type, String description) {
     Prop optional = prop(name, type, description);
     return new Prop(name, optional.schema(), true);
+  }
+
+  private static Prop stringsProp(String name, String description) {
+    ObjectNode schema = Jsons.object().put("type", "array").put("description", description);
+    schema.putObject("items").put("type", "string");
+    return new Prop(name, schema, false);
   }
 
   private static Prop arrayProp(String name, String description) {

@@ -9,6 +9,18 @@
   </tbody>
 </table>
 <p>In a project, open <strong>Assistant</strong> and describe what you need, or paste an OpenAPI spec, a WSDL or curl commands. The assistant reads the stubs, searches the request history, reads recent <a href="#webhooks">callouts</a> and <em>stages</em> changes. It can set up webhooks and wait-for-callout stubs from a sentence, such as <em>“after POST /payments, call the callbackUrl from the request 2 seconds later with status SETTLED”</em>, and it can explain and fix a failing one. You review each one as a diff and apply or discard it, so nothing changes until an editor applies it. Viewers can draft changes but not apply them.</p>
+<h3 id="ai-setup">What you can ask for</h3>
+<table>
+  <thead><tr><th>Ask</th><th>What the assistant stages</th></tr></thead>
+  <tbody>
+    <tr><td>“Mock this API” with an OpenAPI or Swagger, WSDL, GraphQL schema, Postman collection or WireMock mappings, pasted or as a link</td><td>One <strong>New</strong> change per operation, from the document's examples or generated data, up to 200. Bigger documents go through Import on the Stubs tab.</td></tr>
+    <tr><td>“…and tell me when traffic stops matching it”</td><td>A <strong>Contract</strong> change that keeps the OpenAPI document, so the <a href="#contract-drift">Contract tab</a> shows drift. It can also check drift for you.</td></tr>
+    <tr><td>“Serve this .proto”</td><td>A <strong>gRPC</strong> change with the file, applied before the method stubs. A syntax error shows at once, not at apply time.</td></tr>
+    <tr><td>“A customers API I can POST and DELETE”</td><td>A <strong>CRUD</strong> change: list, get, create, update and delete, with the records you describe.</td></tr>
+    <tr><td>Stubs, webhooks, delays, faults, rate limits, CORS, IP allow list, default response, snapshots</td><td><strong>New</strong>, <strong>Change</strong>, <strong>Delete</strong>, <strong>Runtime</strong>, <strong>Snapshot</strong> and <strong>Restore</strong> changes</td></tr>
+  </tbody>
+</table>
+<p>Members, roles, access tokens, single sign-on and connection secrets are never changed by AI.</p>
 <p>In a stub's <strong>Then call</strong> section, <strong>Ask the assistant</strong> takes a description of a webhook for that stub. In the Callouts tab, <strong>Ask the assistant to fix it</strong> sends it a failed callout.</p>
 <p>For a single response, select <strong>Generate with AI</strong> next to a stub's body. Describe it, check the result and select <strong>Use this body</strong>. This needs the editor role.</p>
 <p>When a templated body doesn't render, <strong>Try it</strong> in the stub editor shows the template error in plain words instead of the server's error page, with <strong>Fix with AI</strong>. It sends the template, the error and the request you tried, and puts the corrected template in the body; check it, save, and send again. This also needs the editor role, and works on the form editor's JSON, XML and text bodies. From a script, <code>POST /__admin/mockhub/api/projects/{id}/ai/template/fix</code> with <code>{"template", "error", "request"}</code> returns <code>{"template"}</code>.</p>

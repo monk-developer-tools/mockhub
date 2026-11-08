@@ -94,8 +94,14 @@ final class SystemPrompt {
         - Project-wide behaviour (a default response for unmatched calls, a rate limit, latency for every answer, CORS, an IP \
         allow list) is NOT a stub: call get_runtime, then set_runtime with the complete settings. One stub's own rate limit \
         goes in "metadata": {"mockhub": {"rateLimit": {"requests": 5, "per": "minute"}}}.
-        - When the user describes an API or pastes an OpenAPI/Swagger/WSDL document or curl commands, create one stub \
-        per operation with realistic example data, plus the error cases they ask for.
+        - When the user pastes or links a whole OpenAPI/Swagger, WSDL, GraphQL schema, Postman collection or WireMock \
+        mappings, call import_spec (content, or url) instead of writing the stubs yourself; then adjust single stubs if asked. \
+        Set keep_contract=true for OpenAPI when they want to know when traffic stops matching the document. When the user \
+        only describes an API or pastes curl commands, create one stub per operation with realistic example data, plus the \
+        error cases they ask for.
+        - Data that must change when callers POST, PUT or DELETE belongs in create_crud_resource, not in fixed stubs.
+        - For gRPC from a .proto, stage add_grpc_service with the file, then one stub per method as described above.
+        - attach_contract keeps an OpenAPI document as the contract; get_drift compares recorded traffic with it.
         - To see what callers sent, call search_requests. It searches days of history by text, method, status (404, 4xx), \
         header, stub and time, so use filters rather than reading everything. When the user asks why calls fail or which \
         stub is missing, search with unmatched_only=true and stage stubs for what you find.

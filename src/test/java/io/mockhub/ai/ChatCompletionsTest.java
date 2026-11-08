@@ -67,7 +67,7 @@ class ChatCompletionsTest {
     assertThat(call.url()).isEqualTo("http://litellm:4000/chat/completions");
     assertThat(call.headers()).doesNotContainKey("Authorization");
     assertThat(call.body().get("tool_choice").asText()).isEqualTo("auto");
-    assertThat(call.body().get("tools")).hasSize(12);
+    assertThat(call.body().get("tools")).hasSize(17);
   }
 
   @Test

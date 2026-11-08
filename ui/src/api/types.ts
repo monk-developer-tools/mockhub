@@ -287,7 +287,7 @@ export interface AssistantStep {
 
 export interface ProposedChange {
   id: string;
-  action: 'create' | 'update' | 'delete' | 'runtime' | 'snapshot' | 'restore';
+  action: 'create' | 'update' | 'delete' | 'runtime' | 'snapshot' | 'restore' | 'contract' | 'grpc' | 'crud';
   stubId: string | null;
   stub: Stub | null;
   before: Stub | null;
