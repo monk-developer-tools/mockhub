@@ -11,6 +11,8 @@
     <tr><td><code>MOCKHUB_AI_API_KEY</code></td><td>empty</td><td>AI provider key; overrides the one saved in the UI</td></tr>
     <tr><td><code>MOCKHUB_SSO_CLIENT_SECRET</code></td><td>empty</td><td>Entra client secret; overrides the one saved in the UI</td></tr>
     <tr><td><code>MOCKHUB_JOURNAL_MAX_ENTRIES</code></td><td><code>5000</code></td><td>Requests kept in WireMock's in-memory journal (near misses, WireMock admin API)</td></tr>
+    <tr><td><code>MOCKHUB_JOURNAL_MAX_BODY_KB</code></td><td><code>64</code></td><td>Longer response bodies are cut to this size in that journal, so large responses can't fill the memory. History keeps the same 64 KB.</td></tr>
+    <tr><td><code>MOCKHUB_JOURNAL_MAX_MB</code></td><td><code>64</code></td><td>The journal also drops its oldest requests once their bodies add up to this much, so it stays small when bodies are large.</td></tr>
     <tr><td><code>MOCKHUB_HISTORY_DAYS</code></td><td><code>7</code></td><td>Days each project keeps its <a href="#requests">request and callout history</a> on disk</td></tr>
     <tr><td><code>MOCKHUB_HISTORY_MAX_MB</code></td><td><code>200</code></td><td>Disk cap for one project's history; the oldest hours go first</td></tr>
     <tr><td><code>MOCKHUB_MAX_RECORDS</code></td><td><code>10000</code></td><td>Most records one <a href="#crud">CRUD resource</a> keeps, and most <a href="#state">state contexts</a> one project keeps; past it the oldest go first. <code>0</code> keeps everything</td></tr>

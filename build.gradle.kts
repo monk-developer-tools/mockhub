@@ -19,6 +19,8 @@ repositories {
 
 val jettyVersion = "12.0.40"
 
+val bench by sourceSets.creating
+
 dependencies {
     implementation(platform("com.fasterxml.jackson:jackson-bom:2.22.3"))
     implementation(platform("org.eclipse.jetty:jetty-bom:$jettyVersion"))
@@ -41,6 +43,10 @@ dependencies {
         implementation("org.apache.commons:commons-lang3:3.21.0")
         implementation("com.google.guava:guava:33.7.2-jre")
     }
+
+    "benchImplementation"(platform("com.fasterxml.jackson:jackson-bom:2.22.3"))
+    "benchImplementation"("com.fasterxml.jackson.core:jackson-databind")
+    testImplementation(bench.output)
 
     testImplementation(platform("org.junit:junit-bom:5.11.4"))
     testImplementation("org.junit.jupiter:junit-jupiter")
@@ -145,6 +151,14 @@ tasks.shadowJar {
             "Add-Exports" to "java.base/sun.security.x509",
         )
     }
+}
+
+val benchJar by tasks.registering(Jar::class) {
+    group = "benchmark"
+    description = "Packages the load generator; run it with mockhub.jar on the classpath"
+    archiveFileName.set("mockhub-bench.jar")
+    from(bench.output)
+    manifest { attributes("Main-Class" to "io.mockhub.bench.Benchmark") }
 }
 
 tasks.build {

@@ -29,7 +29,7 @@ public final class Main {
     addDefault(finalArgs, userArgs, "--port", String.valueOf(config.port));
     addDefault(finalArgs, userArgs, "--root-dir", config.dataDir.toString());
     if (config.httpsPort >= 0) addDefault(finalArgs, userArgs, "--https-port", String.valueOf(config.httpsPort));
-    addDefault(finalArgs, userArgs, "--max-request-journal-entries", String.valueOf(config.journalMaxEntries));
+    addDefault(finalArgs, userArgs, "--logged-response-body-size-limit", String.valueOf(config.journalMaxBodyKb * 1024));
     if (config.proxyEnabled) {
       config.proxyCaKeystore().getParent().toFile().mkdirs();
       if (!userArgs.contains("--enable-browser-proxying")) finalArgs.add("--enable-browser-proxying");
@@ -40,7 +40,7 @@ public final class Main {
     }
     finalArgs.addAll(userArgs);
 
-    MockHubOptions options = new MockHubOptions(finalArgs.toArray(String[]::new));
+    MockHubOptions options = new MockHubOptions(config.journalMaxEntries, config.journalMaxMb, finalArgs.toArray(String[]::new));
     if (options.help()) {
       System.out.println(options.helpText());
       return;

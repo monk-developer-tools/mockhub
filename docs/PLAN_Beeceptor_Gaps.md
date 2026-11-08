@@ -210,6 +210,17 @@ Checked against the running server. **QUERY**: a `QUERY` stub matches a `QUERY` 
 ### P8 — Postman collection import ✅ done
 `PostmanImporter` (format `postman`) reads Collection v2.0 and v2.1 and refuses v1 with a hint to export again. Each saved example becomes a stub matched on its own `originalRequest`: method, path (host and `{{baseUrl}}` dropped, `:id` and `{{id}}` as path parameters, optional `stripPrefix`), exact query values (disabled and `{{variable}}` ones skipped) and, for non-GET raw JSON bodies, `equalToJson` ignoring extra fields. It answers with the example's status, headers (hop-by-hop and `Date` dropped) and body. Requests without an example get a 200 stub; folders become stub folders; the request description becomes the stub's. Duplicate requests and anything over 1,000 stubs are left out and listed in the result's `skipped` notes, which the Import tab shows.
 
+### P7 — Published benchmark ✅ done
+Run on a laptop (the user chose this over the shared VPS; no 8-hour soak, a 10-minute steady run instead). `src/bench` is a separate source set (`benchJar`, not in the product jar): a raw HTTP/1.1 keep-alive load generator with exact percentiles, scenarios for concurrency (1–256 connections), body sizes (1 KB–1 MB), templating, JSON body matching and 1,000 stubs. `scripts/benchmark.sh` runs the published Docker image with 2 CPUs and 1 GB beside a load container on the same Docker network and samples `docker stats`. Results are on the docs page `performance`.
+
+The runs found four real problems, all fixed:
+- **Out of memory with large responses.** WireMock's journal kept 5,000 full response bodies; 1 MB responses filled a 768 MB heap in seconds. MockHub now passes `--logged-response-body-size-limit` (`MOCKHUB_JOURNAL_MAX_BODY_KB`, default 64, the same as history).
+- **Every request counted the whole journal.** With `--max-request-journal-entries`, WireMock streams and counts all entries on each request. MockHub now supplies its own `BoundedRequestJournalStore` (through `MockHubOptions.getStores`) that trims itself in O(1) and tells WireMock there is no limit. Small GETs went from about 8,400 to 47,000 requests per second on the same machine.
+- **The history write queue could fill the heap.** Up to 20,000 pending lines of up to 64 KB each; it now holds at most 64 MB and counts what it drops.
+- **History grew far past `MOCKHUB_HISTORY_MAX_MB`.** The cap was checked every 30 minutes and an hour was one file (one run wrote 16 GB; reading it with `readAllLines` would also have exhausted the heap). `NdjsonSegments` now rolls an hour into numbered parts (an eighth of the cap, 256 KB to 8 MB) and `HistoryStore` trims a project while writing, always keeping the newest part.
+
+Final run: 0 errors in every scenario; 10-minute steady run at 13,672 requests/s with memory flat at about 350 MB. Raw results are in `docs/benchmark/2026-11-08-m1pro-docker/`.
+
 ### T7 — gRPC mocks without login
 Split out of T1. Three things block it on the public demo: MockHub reads only compiled descriptor sets (no `.proto` text parser); gRPC routes by service name, so two visitors uploading the same service would collide on a shared server; and the demo's nginx has no HTTP/2 or `grpc_pass`. Needs a `.proto` parser, a per-mock service namespace, and HTTP/2 gRPC in MockHub's own nginx site file.
 
@@ -224,7 +235,7 @@ Split out of T1. Three things block it on the public demo: MockHub reads only co
 | **Header masking** in request history | Per organisation, applied on write and on every read | ✅ | P5 |
 | QUERY method in stubs | Matched end to end; now in the editor and imported from OpenAPI 3.2 `query` operations | ✅ | P6 |
 | gRPC client, server and bidi streaming; GraphQL subscriptions | Unary, server (one message), client and bidi (one answer) verified; subscriptions answered with a clear error | 🟡 multi-message streams and subscriptions not mocked | P6 |
-| Published performance benchmark (load, payload sizes, 8-hour soak) | — | ❌ | P7 |
+| Published performance benchmark (load, payload sizes, 8-hour soak) | — | ✅ (10-minute steady run, no 8-hour soak) | P7 ✅ |
 | **Import a Postman collection** into stubs | Export to Postman only | ✅ | P8 ✅ |
 
 ---
@@ -292,7 +303,7 @@ W4 status page: a public `/status/` page and a footer badge. The badge reads the
 | 21 | P4 Workspaces ✅ | M | |
 | 22 | P5 Header masking ✅ | S | |
 | 23 | P6 Verify QUERY, streaming, subscriptions ✅ | S–M | |
-| 24 | P7 Benchmark report | M | |
+| 24 | P7 Benchmark report ✅ | M | |
 | 25 | P8 Postman collection import ✅ | S | |
 | 26 | W4 Status page and footer badge | S | Asked for; cheap trust signal |
 | 27 | W2 gRPC and forward-proxy pages | S | The GraphQL page shipped with T1; the gRPC page waits for T7 |

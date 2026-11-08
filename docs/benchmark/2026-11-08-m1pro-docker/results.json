@@ -1,0 +1,256 @@
+{
+  "finishedAt" : "2026-11-08T07:01:12.924239712Z",
+  "target" : "http://mockhub-bench-server:8080",
+  "waitedForHealthMillis" : 107,
+  "settings" : {
+    "connections" : 32,
+    "warmupSeconds" : 20,
+    "measureSeconds" : 60,
+    "soakSeconds" : 600
+  },
+  "loadGenerator" : {
+    "java" : "21.0.13",
+    "processors" : 2
+  },
+  "results" : [ {
+    "scenario" : "hello-c1",
+    "title" : "GET, small JSON body",
+    "connections" : 1,
+    "seconds" : 60.0,
+    "requests" : 258673,
+    "errors" : 0,
+    "requestsPerSecond" : 4311.2,
+    "megabytesPerSecond" : 0.2,
+    "latency" : {
+      "count" : 258673,
+      "meanMicros" : 231.6,
+      "p50Micros" : 176.8,
+      "p90Micros" : 306.5,
+      "p99Micros" : 703.3,
+      "p999Micros" : 4599.5,
+      "maxMicros" : 80589.3
+    },
+    "timeline" : [ 4337.5, 4429.2, 4422.1, 4198.1, 4048.8, 4431.6 ],
+    "firstError" : null
+  }, {
+    "scenario" : "hello-c16",
+    "title" : "GET, small JSON body",
+    "connections" : 16,
+    "seconds" : 60.0,
+    "requests" : 679468,
+    "errors" : 0,
+    "requestsPerSecond" : 11324.5,
+    "megabytesPerSecond" : 0.5,
+    "latency" : {
+      "count" : 679468,
+      "meanMicros" : 1412.1,
+      "p50Micros" : 503.3,
+      "p90Micros" : 1953.9,
+      "p99Micros" : 27171.7,
+      "p999Micros" : 63324.6,
+      "maxMicros" : 107528.2
+    },
+    "timeline" : [ 11276.9, 11585.0, 11229.0, 11687.2, 11194.3, 10974.4 ],
+    "firstError" : null
+  }, {
+    "scenario" : "hello-c64",
+    "title" : "GET, small JSON body",
+    "connections" : 64,
+    "seconds" : 60.0,
+    "requests" : 747080,
+    "errors" : 0,
+    "requestsPerSecond" : 12451.3,
+    "megabytesPerSecond" : 0.5,
+    "latency" : {
+      "count" : 747080,
+      "meanMicros" : 5136.7,
+      "p50Micros" : 2413.1,
+      "p90Micros" : 9991.9,
+      "p99Micros" : 46997.9,
+      "p999Micros" : 85752.4,
+      "maxMicros" : 185924.6
+    },
+    "timeline" : [ 12887.3, 12447.3, 12133.3, 12766.0, 12226.7, 12247.4 ],
+    "firstError" : null
+  }, {
+    "scenario" : "hello-c256",
+    "title" : "GET, small JSON body",
+    "connections" : 256,
+    "seconds" : 60.0,
+    "requests" : 780226,
+    "errors" : 0,
+    "requestsPerSecond" : 13003.8,
+    "megabytesPerSecond" : 0.5,
+    "latency" : {
+      "count" : 780226,
+      "meanMicros" : 19672.1,
+      "p50Micros" : 18972.6,
+      "p90Micros" : 47780.3,
+      "p99Micros" : 92137.3,
+      "p999Micros" : 126052.8,
+      "maxMicros" : 211323.9
+    },
+    "timeline" : [ 12742.7, 12571.5, 12897.2, 13490.2, 12922.8, 13398.2 ],
+    "firstError" : null
+  }, {
+    "scenario" : "payload-1kb",
+    "title" : "GET, 1kb JSON body",
+    "connections" : 32,
+    "seconds" : 60.0,
+    "requests" : 731045,
+    "errors" : 0,
+    "requestsPerSecond" : 12184.1,
+    "megabytesPerSecond" : 11.9,
+    "latency" : {
+      "count" : 731045,
+      "meanMicros" : 2623.1,
+      "p50Micros" : 980.9,
+      "p90Micros" : 6111.8,
+      "p99Micros" : 34312.6,
+      "p999Micros" : 80855.3,
+      "maxMicros" : 187017.8
+    },
+    "timeline" : [ 12493.2, 11723.6, 12124.6, 12499.9, 11889.8, 12373.4 ],
+    "firstError" : null
+  }, {
+    "scenario" : "payload-10kb",
+    "title" : "GET, 10kb JSON body",
+    "connections" : 32,
+    "seconds" : 60.0,
+    "requests" : 515109,
+    "errors" : 0,
+    "requestsPerSecond" : 8585.2,
+    "megabytesPerSecond" : 83.8,
+    "latency" : {
+      "count" : 515109,
+      "meanMicros" : 3726.9,
+      "p50Micros" : 1362.4,
+      "p90Micros" : 7590.0,
+      "p99Micros" : 48527.5,
+      "p999Micros" : 98695.1,
+      "maxMicros" : 147160.8
+    },
+    "timeline" : [ 8695.8, 8617.5, 8445.8, 8568.9, 8357.3, 8825.6 ],
+    "firstError" : null
+  }, {
+    "scenario" : "payload-100kb",
+    "title" : "GET, 100kb JSON body",
+    "connections" : 32,
+    "seconds" : 60.0,
+    "requests" : 128432,
+    "errors" : 0,
+    "requestsPerSecond" : 2140.5,
+    "megabytesPerSecond" : 209.0,
+    "latency" : {
+      "count" : 128432,
+      "meanMicros" : 14934.6,
+      "p50Micros" : 6854.6,
+      "p90Micros" : 53641.4,
+      "p99Micros" : 91471.9,
+      "p999Micros" : 120259.5,
+      "maxMicros" : 223670.0
+    },
+    "timeline" : [ 2099.6, 2096.8, 2163.2, 2142.2, 2182.1, 2159.3 ],
+    "firstError" : null
+  }, {
+    "scenario" : "payload-1mb",
+    "title" : "GET, 1mb JSON body",
+    "connections" : 32,
+    "seconds" : 60.0,
+    "requests" : 22896,
+    "errors" : 0,
+    "requestsPerSecond" : 381.6,
+    "megabytesPerSecond" : 381.6,
+    "latency" : {
+      "count" : 22896,
+      "meanMicros" : 83597.1,
+      "p50Micros" : 78916.0,
+      "p90Micros" : 176018.4,
+      "p99Micros" : 253031.4,
+      "p999Micros" : 317166.0,
+      "maxMicros" : 427861.9
+    },
+    "timeline" : [ 374.8, 386.2, 375.0, 392.4, 377.7, 383.5 ],
+    "firstError" : null
+  }, {
+    "scenario" : "template",
+    "title" : "GET, response template (path, random value, date, header)",
+    "connections" : 32,
+    "seconds" : 60.0,
+    "requests" : 749199,
+    "errors" : 0,
+    "requestsPerSecond" : 12486.7,
+    "megabytesPerSecond" : 1.1,
+    "latency" : {
+      "count" : 749199,
+      "meanMicros" : 2562.2,
+      "p50Micros" : 977.5,
+      "p90Micros" : 3680.3,
+      "p99Micros" : 34829.6,
+      "p999Micros" : 77651.9,
+      "maxMicros" : 124015.5
+    },
+    "timeline" : [ 12406.7, 12257.1, 12402.8, 12816.7, 12320.2, 12716.4 ],
+    "firstError" : null
+  }, {
+    "scenario" : "post-json",
+    "title" : "POST, body matched with equalToJson",
+    "connections" : 32,
+    "seconds" : 60.0,
+    "requests" : 845853,
+    "errors" : 0,
+    "requestsPerSecond" : 14097.6,
+    "megabytesPerSecond" : 0.4,
+    "latency" : {
+      "count" : 845853,
+      "meanMicros" : 2268.0,
+      "p50Micros" : 242.9,
+      "p90Micros" : 4262.3,
+      "p99Micros" : 35328.3,
+      "p999Micros" : 81060.3,
+      "maxMicros" : 294601.5
+    },
+    "timeline" : [ 14855.6, 14590.1, 14355.1, 14457.4, 12756.1, 13571.0 ],
+    "firstError" : null
+  }, {
+    "scenario" : "many-stubs",
+    "title" : "GET, one of 1000 stubs at random",
+    "connections" : 32,
+    "seconds" : 60.0,
+    "requests" : 158681,
+    "errors" : 0,
+    "requestsPerSecond" : 2644.7,
+    "megabytesPerSecond" : 0.0,
+    "latency" : {
+      "count" : 158681,
+      "meanMicros" : 12093.5,
+      "p50Micros" : 6659.7,
+      "p90Micros" : 43228.5,
+      "p99Micros" : 72528.2,
+      "p999Micros" : 109438.9,
+      "maxMicros" : 222675.9
+    },
+    "timeline" : [ 2709.5, 2685.5, 2666.4, 2527.2, 2561.3, 2718.2 ],
+    "firstError" : null
+  }, {
+    "scenario" : "steady",
+    "title" : "GET, small JSON body, held for the whole run",
+    "connections" : 32,
+    "seconds" : 600.0,
+    "requests" : 8203271,
+    "errors" : 0,
+    "requestsPerSecond" : 13672.1,
+    "megabytesPerSecond" : 0.5,
+    "latency" : {
+      "count" : 8203271,
+      "meanMicros" : 2340.1,
+      "p50Micros" : 913.2,
+      "p90Micros" : 3485.5,
+      "p99Micros" : 32063.2,
+      "p999Micros" : 74266.4,
+      "maxMicros" : 177907.2
+    },
+    "timeline" : [ 13377.9, 13719.6, 13377.5, 13530.7, 14083.4, 13446.1, 13500.5, 14421.6, 13179.0, 13833.2, 13176.6, 13488.5, 14227.1, 13694.4, 14124.8, 13740.3, 13694.8, 14282.0, 13820.8, 13567.3, 13902.4, 13660.6, 14164.5, 13170.6, 13191.9, 14032.5, 13697.3, 13779.3, 14201.5, 13697.2, 14173.2, 13666.6, 13361.2, 13799.5, 13733.3, 13905.4, 13427.8, 13462.4, 14181.0, 13761.4, 13873.9, 13513.5, 13506.6, 14180.5, 13359.2, 13013.9, 13679.6, 13303.3, 13567.2, 13115.7, 12729.2, 13393.1, 13228.5, 13622.0, 13948.6, 13851.3, 13719.6, 13530.2, 13644.6, 14290.9 ],
+    "firstError" : null
+  } ]
+}

@@ -3,9 +3,11 @@ package io.mockhub.integration;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.common.SingleRootFileSource;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import io.mockhub.Config;
 import io.mockhub.ext.MockHubExtensionFactory;
+import io.mockhub.journal.MockHubStores;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
@@ -42,6 +44,7 @@ final class MockHubServer implements AutoCloseable {
     WireMockConfiguration options = options()
         .dynamicPort()
         .withRootDirectory(dataDir.toString())
+        .withStores(new MockHubStores(new SingleRootFileSource(dataDir.toString()), config.journalMaxEntries, config.journalMaxMb))
         .extensions(factory);
     if (https) options.dynamicHttpsPort();
     if (config.proxyEnabled) {

@@ -9,6 +9,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -48,6 +49,54 @@ class HistoryStoreTest {
     assertThat(page.facets().methods()).containsExactly(Map.entry("GET", 2), Map.entry("POST", 1));
     assertThat(page.facets().unmatched()).isEqualTo(1);
     assertThat(store.get("p1", "b")).hasValueSatisfying(e -> assertThat(e.requestBody()).isEqualTo("{\"id\":\"b\"}"));
+  }
+
+  @Test
+  void dropsAnEntryRatherThanQueueMoreBytesThanItsBudgetWhenTheDiskFallsBehind() {
+    // Given
+    store = new HistoryStore(dir, Clock.fixed(NOW, ZoneOffset.UTC), Duration.ofDays(7), Long.MAX_VALUE, 4_096);
+    long t = NOW.toEpochMilli();
+    HistoryEntry small = entry("small", t, "GET", "/pay/small", 200, true);
+    HistoryEntry big = new HistoryEntry("big", t, "p1", "POST", "/pay/big", "http://localhost/pay/big", "127.0.0.1", List.of(),
+        "x".repeat(10_000), false, 200, List.of(), "", false, true, null, null, 1);
+
+    // When
+    store.record(big);
+    store.record(small);
+    store.flush();
+
+    // Then
+    assertThat(store.dropped()).isEqualTo(1);
+    assertThat(store.get("p1", "small")).isPresent();
+    assertThat(store.get("p1", "big")).isEmpty();
+  }
+
+  @Test
+  void aBusyHourRollsIntoSmallFilesAndStaysUnderTheCapWithoutWaitingForThePrune() throws Exception {
+    // Given
+    long cap = 2L * 1024 * 1024;
+    store = new HistoryStore(dir, Clock.fixed(NOW, ZoneOffset.UTC), Duration.ofDays(7), cap);
+    long t = NOW.toEpochMilli();
+    String body = "y".repeat(8_000);
+
+    // When
+    for (int i = 0; i < 1_500; i++) {
+      store.record(new HistoryEntry("e" + i, t, "p1", "POST", "/pay/" + i, "http://localhost/pay/" + i, "127.0.0.1", List.of(),
+          body, false, 200, List.of(), "", false, true, null, null, 1));
+    }
+    store.flush();
+
+    // Then
+    List<Path> files;
+    try (var s = Files.list(dir.resolve("p1"))) {
+      files = s.toList();
+    }
+    long total = 0;
+    for (Path f : files) total += Files.size(f);
+    assertThat(files.size()).isGreaterThan(1);
+    assertThat(files).allSatisfy(f -> assertThat(f.getFileName().toString()).startsWith("2026110310"));
+    assertThat(total).isLessThanOrEqualTo(cap + HistoryStore.segmentBytes(cap));
+    assertThat(store.search("p1", HistoryQuery.recent(1)).items()).extracting(HistoryEntry::id).containsExactly("e1499");
   }
 
   @Test

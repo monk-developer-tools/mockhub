@@ -13,6 +13,8 @@ public final class Config {
   public final Path dataDir;
   public final String publicUrl;
   public final int journalMaxEntries;
+  public final int journalMaxBodyKb;
+  public final int journalMaxMb;
   public final boolean stubCors;
   public final List<AuthUser> users;
   public final List<String> extraWireMockArgs;
@@ -41,6 +43,8 @@ public final class Config {
     this.dataDir = Path.of(env.getOrDefault("MOCKHUB_DATA_DIR", "./mockhub-data")).toAbsolutePath().normalize();
     this.publicUrl = trimTrailingSlash(env.getOrDefault("MOCKHUB_PUBLIC_URL", ""));
     this.journalMaxEntries = Integer.parseInt(env.getOrDefault("MOCKHUB_JOURNAL_MAX_ENTRIES", "5000"));
+    this.journalMaxBodyKb = Integer.parseInt(env.getOrDefault("MOCKHUB_JOURNAL_MAX_BODY_KB", "64"));
+    this.journalMaxMb = Integer.parseInt(env.getOrDefault("MOCKHUB_JOURNAL_MAX_MB", "64"));
     this.stubCors = Boolean.parseBoolean(env.getOrDefault("MOCKHUB_STUB_CORS", "true"));
     this.users = AuthUser.parseAll(env.getOrDefault("MOCKHUB_USERS", ""));
     this.extraWireMockArgs = splitArgs(env.getOrDefault("WIREMOCK_OPTIONS", ""));

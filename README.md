@@ -162,6 +162,9 @@ screenshots, and the [live demo](https://mockhub.devops-monk.com/__admin/mockhub
   files): files with many stubs, `./` body file paths, folders and templated file names all keep working, and the stub
   that wins a tie stays the same after edits and restarts. See
   [Move a whole mock repository](https://mockhub.devops-monk.com/tutorials/#migrate-repo).
+- **Measured performance.** On 2 CPUs and 1 GB, about 12,000–14,000 small requests per second with a p50 under 1 ms
+  and flat memory over a 10-minute run; `./scripts/benchmark.sh` repeats it on your hardware. See
+  [Performance](https://mockhub.devops-monk.com/docs/performance/).
 - **Export** a Postman v2.1 collection (with a status test per request), a Bruno collection, or WireMock mappings.
   A single `baseUrl` variable switches between the mock and the real service.
 - **Try it.** Send a request to a stub from the editor and see the response. *Call it from your code* gives the
@@ -267,6 +270,8 @@ All configuration is through environment variables.
 | `MOCKHUB_SSO_CLIENT_SECRET` | empty | Entra client secret. Overrides the one saved in the UI, so it can come from a secret store. |
 | `MOCKHUB_LOGIN_NOTE` | empty | Text shown on the sign-in page, e.g. demo credentials |
 | `MOCKHUB_JOURNAL_MAX_ENTRIES` | `5000` | How many requests WireMock's own journal keeps in memory (used for near-miss matching and the WireMock admin API) |
+| `MOCKHUB_JOURNAL_MAX_BODY_KB` | `64` | Response bodies longer than this are cut in that journal, so large responses can't fill the memory |
+| `MOCKHUB_JOURNAL_MAX_MB` | `64` | The journal also drops its oldest requests once their bodies add up to this much |
 | `MOCKHUB_HISTORY_DAYS` | `7` | Days each project keeps its request and callout history on disk, searchable in the Requests tab |
 | `MOCKHUB_HISTORY_MAX_MB` | `200` | Disk cap for one project's history; the oldest hours are dropped first |
 | `MOCKHUB_AUDIT_RETENTION_DAYS` | `90` | Days the audit log keeps changes; older entries are deleted from disk |

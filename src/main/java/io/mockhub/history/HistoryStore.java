@@ -30,6 +30,7 @@ public final class HistoryStore implements ProjectListener, AutoCloseable {
   static final String REQUESTS = "requests";
   static final String CALLOUTS = "callouts";
   static final int QUEUE_SIZE = 20_000;
+  static final long MAX_QUEUED_BYTES = 64L * 1024 * 1024;
   static final int MAX_SCAN = 200_000;
   private static final int BATCH = 2_000;
   private static final System.Logger LOG = System.getLogger(HistoryStore.class.getName());
@@ -44,6 +45,10 @@ public final class HistoryStore implements ProjectListener, AutoCloseable {
   private final NdjsonSegments<CalloutEntry> callouts;
   private final BlockingQueue<Object> queue = new LinkedBlockingQueue<>(QUEUE_SIZE);
   private final AtomicLong dropped = new AtomicLong();
+  private final AtomicLong queuedBytes = new AtomicLong();
+  private final long maxQueuedBytes;
+  private final long segmentBytes;
+  private final Map<String, Long> writtenSinceCheck = new HashMap<>();
   private final Thread writer;
   private volatile boolean running = true;
 
@@ -54,12 +59,18 @@ public final class HistoryStore implements ProjectListener, AutoCloseable {
   private volatile Function<String, Set<String>> masked = projectId -> Set.of();
 
   public HistoryStore(Path root, Clock clock, Duration retention, long maxBytesPerProject) {
+    this(root, clock, retention, maxBytesPerProject, MAX_QUEUED_BYTES);
+  }
+
+  HistoryStore(Path root, Clock clock, Duration retention, long maxBytesPerProject, long maxQueuedBytes) {
+    this.maxQueuedBytes = maxQueuedBytes;
     this.root = root;
     this.clock = clock;
     this.retention = retention;
     this.maxBytesPerProject = maxBytesPerProject;
-    this.requests = new NdjsonSegments<>(root, REQUESTS, HistoryEntry.class);
-    this.callouts = new NdjsonSegments<>(root, CALLOUTS, CalloutEntry.class);
+    this.segmentBytes = segmentBytes(maxBytesPerProject);
+    this.requests = new NdjsonSegments<>(root, REQUESTS, HistoryEntry.class, segmentBytes);
+    this.callouts = new NdjsonSegments<>(root, CALLOUTS, CalloutEntry.class, segmentBytes);
     this.writer = new Thread(this::writeLoop, "mockhub-history");
     this.writer.setDaemon(true);
     this.writer.start();
@@ -178,13 +189,33 @@ public final class HistoryStore implements ProjectListener, AutoCloseable {
         return true;
       });
       long total = files.stream().mapToLong(HistoryStore::size).sum();
-      files.sort(Comparator.comparing((Path f) -> f.getFileName().toString()));
-      for (Path f : files) {
-        if (total <= maxBytesPerProject) break;
-        total -= size(f);
-        NdjsonSegments.deleteQuietly(f);
-      }
+      trim(files, total);
     }
+  }
+
+  static long segmentBytes(long maxBytesPerProject) {
+    return Math.max(256L * 1024, Math.min(8L * 1024 * 1024, maxBytesPerProject / 8));
+  }
+
+  private void trim(List<Path> files, long total) {
+    List<Path> oldestFirst = new ArrayList<>(files);
+    oldestFirst.sort(NdjsonSegments.OLDEST_FIRST);
+    long left = total;
+    for (Path f : oldestFirst.subList(0, Math.max(0, oldestFirst.size() - 1))) {
+      if (left <= maxBytesPerProject) break;
+      left -= size(f);
+      NdjsonSegments.deleteQuietly(f);
+    }
+  }
+
+  private void capWhileWriting(String projectId, long written) {
+    long since = writtenSinceCheck.merge(projectId, written, Long::sum);
+    if (since < segmentBytes) return;
+    writtenSinceCheck.remove(projectId);
+    Path dir = root.resolve(projectId);
+    if (!Files.isDirectory(dir)) return;
+    List<Path> files = segmentFiles(dir);
+    trim(files, files.stream().mapToLong(HistoryStore::size).sum());
   }
 
   public void flush() {
@@ -206,7 +237,11 @@ public final class HistoryStore implements ProjectListener, AutoCloseable {
   }
 
   private void enqueue(Pending pending) {
-    if (!queue.offer(pending)) dropped.incrementAndGet();
+    long size = pending.json().length();
+    if (queuedBytes.addAndGet(size) > maxQueuedBytes || !queue.offer(pending)) {
+      queuedBytes.addAndGet(-size);
+      dropped.incrementAndGet();
+    }
   }
 
   private void writeLoop() {
@@ -221,7 +256,10 @@ public final class HistoryStore implements ProjectListener, AutoCloseable {
       } catch (RuntimeException e) {
         LOG.log(System.Logger.Level.WARNING, "Couldn't write request history: " + e.getMessage());
       } finally {
-        for (Object o : batch) if (o instanceof Flush f) f.done().countDown();
+        for (Object o : batch) {
+          if (o instanceof Flush f) f.done().countDown();
+          else if (o instanceof Pending p) queuedBytes.addAndGet(-p.json().length());
+        }
         batch.clear();
       }
     }
@@ -237,6 +275,8 @@ public final class HistoryStore implements ProjectListener, AutoCloseable {
     }
     requestLines.forEach(requests::append);
     calloutLines.forEach(callouts::append);
+    requestLines.forEach((project, lines) -> capWhileWriting(project, lines.stream().mapToLong(l -> l.json().length() + 1L).sum()));
+    calloutLines.forEach((project, lines) -> capWhileWriting(project, lines.stream().mapToLong(l -> l.json().length() + 1L).sum()));
   }
 
   private List<Path> projectDirs() {

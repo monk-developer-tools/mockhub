@@ -1,0 +1,73 @@
+<p>These numbers come from one run of the published Docker image on a laptop, measured with the load generator that ships with MockHub. Your hardware will give different numbers, so the last section shows how to repeat the run on your own machine.</p>
+
+<h3 id="perf-setup">How it was measured</h3>
+<table>
+  <thead><tr><th>Part</th><th>Setting</th></tr></thead>
+  <tbody>
+    <tr><td>Machine</td><td>MacBook Pro, Apple M1 Pro (10 cores, 16 GB), Docker Desktop 20.10 with 5 CPUs and 4.8 GB for its VM. Other apps were running, so the host was not idle.</td></tr>
+    <tr><td>MockHub</td><td>The Docker image (135 MB), limited to <strong>2 CPUs and 1 GB of memory</strong>, the size of a small cloud server. Default settings, so every request is also written to the request history on disk.</td></tr>
+    <tr><td>Load</td><td>A second container on the same Docker network, with 2 CPUs. Each connection is kept open and sends its next request as soon as the answer arrives. 20 seconds of warm-up, then 60 seconds measured per scenario.</td></tr>
+    <tr><td>Latency</td><td>Measured from sending a request to reading the whole answer, for every request (no sampling).</td></tr>
+  </tbody>
+</table>
+
+<h3 id="perf-results">Results</h3>
+<p>No request failed in any scenario. ms = milliseconds.</p>
+<table>
+  <thead><tr><th>Scenario</th><th>Connections</th><th>Requests per second</th><th>MB per second</th><th>p50 ms</th><th>p99 ms</th><th>p99.9 ms</th></tr></thead>
+  <tbody>
+    <tr><td>Small JSON answer</td><td>1</td><td>4,311</td><td>0.2</td><td>0.18</td><td>0.70</td><td>4.60</td></tr>
+    <tr><td>Small JSON answer</td><td>16</td><td>11,325</td><td>0.5</td><td>0.50</td><td>27.17</td><td>63.32</td></tr>
+    <tr><td>Small JSON answer</td><td>64</td><td>12,451</td><td>0.5</td><td>2.41</td><td>47.00</td><td>85.75</td></tr>
+    <tr><td>Small JSON answer</td><td>256</td><td>13,004</td><td>0.5</td><td>18.97</td><td>92.14</td><td>126.05</td></tr>
+    <tr><td>1 KB body</td><td>32</td><td>12,184</td><td>11.9</td><td>0.98</td><td>34.31</td><td>80.86</td></tr>
+    <tr><td>10 KB body</td><td>32</td><td>8,585</td><td>83.8</td><td>1.36</td><td>48.53</td><td>98.70</td></tr>
+    <tr><td>100 KB body</td><td>32</td><td>2,141</td><td>209.0</td><td>6.85</td><td>91.47</td><td>120.26</td></tr>
+    <tr><td>1 MB body</td><td>32</td><td>382</td><td>381.6</td><td>78.92</td><td>253.03</td><td>317.17</td></tr>
+    <tr><td>Response template (path, random value, date, header)</td><td>32</td><td>12,487</td><td>1.1</td><td>0.98</td><td>34.83</td><td>77.65</td></tr>
+    <tr><td>POST matched with <code>equalToJson</code></td><td>32</td><td>14,098</td><td>0.4</td><td>0.24</td><td>35.33</td><td>81.06</td></tr>
+    <tr><td>One of 1,000 stubs, chosen at random</td><td>32</td><td>2,645</td><td>0.0</td><td>6.66</td><td>72.53</td><td>109.44</td></tr>
+  </tbody>
+</table>
+<p>With two CPUs the server is the limit: it stays at its CPU cap from 64 connections up, so more connections add waiting time, not throughput. Templating and JSON body matching cost little. Many stubs cost more, because WireMock checks stubs one after another until one matches; so give the stubs that get the most traffic a higher priority and they are checked first.</p>
+
+<h3 id="perf-steady">Ten minutes under steady load</h3>
+<p>Small JSON answers on 32 connections for 10 minutes: 8.2 million requests, none failed.</p>
+<table>
+  <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+  <tbody>
+    <tr><td>Throughput</td><td>13,672 requests per second on average. Every 10-second sample was between 12,729 and 14,422.</td></tr>
+    <tr><td>Latency</td><td>p50 0.91 ms, p99 32.06 ms, p99.9 74.27 ms, slowest 177.91 ms.</td></tr>
+    <tr><td>Memory</td><td>Flat at 349 to 384 MB of the 1 GB limit for the whole run, sampled every 5 seconds with <code>docker stats</code>.</td></tr>
+  </tbody>
+</table>
+<p>This is a 10-minute run, not a soak test over many hours.</p>
+
+<h3 id="perf-fixes">What the benchmark fixed</h3>
+<p>The first runs found four problems, which are fixed in this version:</p>
+<ul>
+  <li><strong>Every request counted the whole request journal.</strong> WireMock counts the up to 5,000 requests it keeps in memory each time it serves one, to know when to drop the oldest. MockHub now keeps that journal itself and drops the oldest in constant time. Small answers went from about 8,400 to 47,000 requests per second on the same laptop without Docker.</li>
+  <li><strong>Large responses ran the server out of memory.</strong> The journal kept 5,000 full response bodies, so 1 MB answers filled the heap in seconds. Bodies in the journal are now cut to 64 KB (<code>MOCKHUB_JOURNAL_MAX_BODY_KB</code>), and the journal drops its oldest requests once their bodies reach 64 MB (<code>MOCKHUB_JOURNAL_MAX_MB</code>).</li>
+  <li><strong>History waiting to be written could fill the memory.</strong> When the disk fell behind, up to 20,000 entries waited in memory. The queue now holds at most 64 MB; past that, entries are left out of the history and counted.</li>
+  <li><strong>History could grow far past its size cap.</strong> The 200 MB cap per project (<code>MOCKHUB_HISTORY_MAX_MB</code>) was checked every 30 minutes, and a busy hour went into a single file. One run wrote 16 GB. History now rolls into small files and keeps the cap while it writes: with a 20 MB cap, 4.9 million requests left exactly 20 MB on disk.</li>
+</ul>
+
+<h3 id="perf-repeat">Repeat it on your machine</h3>
+<p>From a checkout of the repository, with Docker running:</p>
+<pre><code>./scripts/benchmark.sh</code></pre>
+<p>It builds the image and the load generator, runs every scenario and the 10-minute steady run, and writes <code>results.md</code>, <code>results.json</code>, <code>server-stats.csv</code> (memory and CPU every 5 seconds) and the server log to <code>build/benchmark/&lt;time&gt;/</code>. It takes about 25 minutes. Settings, as environment variables:</p>
+<table>
+  <thead><tr><th>Variable</th><th>Default</th><th>What it changes</th></tr></thead>
+  <tbody>
+    <tr><td><code>SERVER_CPUS</code>, <code>SERVER_MEMORY</code></td><td><code>2</code>, <code>1g</code></td><td>Limits for the MockHub container</td></tr>
+    <tr><td><code>LOAD_CPUS</code></td><td><code>2</code></td><td>CPUs for the load generator</td></tr>
+    <tr><td><code>CONNECTIONS</code></td><td><code>32</code></td><td>Connections for every scenario except the connection sweep</td></tr>
+    <tr><td><code>WARMUP</code>, <code>DURATION</code>, <code>SOAK</code></td><td><code>20</code>, <code>60</code>, <code>600</code></td><td>Seconds of warm-up and measurement per scenario, and of the steady run (<code>0</code> skips it)</td></tr>
+    <tr><td><code>ONLY</code></td><td>all</td><td>A comma-separated list of scenarios, such as <code>hello-c64,payload-1mb,steady</code></td></tr>
+    <tr><td><code>SKIP_IMAGE_BUILD</code></td><td></td><td><code>true</code> reuses the image from the last run</td></tr>
+  </tbody>
+</table>
+<p>To point the load generator at a server you already run, build it with <code>./gradlew shadowJar benchJar</code> and run:</p>
+<pre><code>java -cp build/libs/mockhub.jar:build/libs/mockhub-bench.jar io.mockhub.bench.Benchmark \
+  --base http://localhost:8080 --user admin --password '…' --duration 60 --soak 0</code></pre>
+<p>It signs in, creates a project called <code>bench</code> (replacing one with that name) and briefly a second one, <code>bench-many</code>. Don't run it against a server other people use.</p>
