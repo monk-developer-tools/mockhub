@@ -262,7 +262,7 @@ Every page under Beeceptor's three header menus was read, plus the footer.
 | HTTP echo, webhook testing, generate test data | ✅ | ✅ | — |
 | **Local tunnel page** | Docs only | ❌ | T6 |
 | **HTTP traffic monitoring page** | — | ❌ | T6 |
-| Forward proxy page | Docs only | 🟡 | W2 |
+| Forward proxy page | `/forward-proxy/` | ✅ | W2 ✅ |
 | Compare pages: vs WireMock, vs Postman | ✅ (plus vs Mockoon) | ✅ | — |
 | Compare: vs Broadcom DevTest, vs Mockbin, vs Apidog, **vs Beeceptor** | — | ❌ | W3 |
 | **Status page** and footer "All systems operational" badge | — | ✅ | W4 ✅ |
@@ -308,7 +308,7 @@ W4 status page (original plan): a public `/status/` page and a footer badge. The
 | 24 | P7 Benchmark report ✅ | M | |
 | 25 | P8 Postman collection import ✅ | S | |
 | 26 | W4 Status page and footer badge ✅ | S | Asked for; cheap trust signal |
-| 27 | W2 gRPC and forward-proxy pages | S | The GraphQL page shipped with T1; the gRPC page waits for T7 |
+| 27 | W2 gRPC and forward-proxy pages (forward proxy ✅) | S | The GraphQL page shipped with T1; the gRPC page waits for T7 |
 | 28 | W1 Development bottlenecks and testing limitations pages | S | Content |
 | 29 | W3 More compare pages | S | Content, facts checked |
 | 30 | W5 Changelog, trust centre, FAQ, about | S | Content |

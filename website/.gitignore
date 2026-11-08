@@ -6,6 +6,7 @@
 /test-environments/
 /contract-first/
 /webhook-mocking/
+/forward-proxy/
 /ai/
 /mock-api/
 /openapi-mock-server/
