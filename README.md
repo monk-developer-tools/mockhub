@@ -14,7 +14,7 @@
   <a href="https://hub.docker.com/r/abhaypratap/mockhub"><img src="https://img.shields.io/docker/pulls/abhaypratap/mockhub?logo=docker&label=pulls" alt="Docker pulls"></a>
   <a href="https://hub.docker.com/r/abhaypratap/mockhub"><img src="https://img.shields.io/docker/image-size/abhaypratap/mockhub/latest?label=image" alt="Image size"></a>
   <img src="https://img.shields.io/badge/WireMock-3-5b7cff" alt="WireMock 3">
-  <img src="https://img.shields.io/badge/Java-21-1fbf9f" alt="Java 21">
+  <img src="https://img.shields.io/badge/Java-17-1fbf9f" alt="Java 17">
 </p>
 
 <p align="center">

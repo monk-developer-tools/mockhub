@@ -7,7 +7,7 @@ RUN npm ci --no-audit --no-fund
 COPY ui/ ./
 RUN npm run build
 
-FROM --platform=$BUILDPLATFORM eclipse-temurin:21-jdk AS jar
+FROM --platform=$BUILDPLATFORM eclipse-temurin:17-jdk AS jar
 WORKDIR /src
 COPY gradlew settings.gradle.kts build.gradle.kts ./
 COPY gradle gradle
@@ -16,10 +16,10 @@ COPY src src
 COPY --from=ui /src/ui/dist ui/dist
 RUN ./gradlew --no-daemon -q shadowJar
 
-FROM eclipse-temurin:21-jdk AS runtime
+FROM eclipse-temurin:17-jdk AS runtime
 RUN jlink \
       --add-modules java.base,java.compiler,java.desktop,java.instrument,java.logging,java.management,java.naming,java.net.http,java.scripting,java.security.jgss,java.sql,java.xml,jdk.crypto.ec,jdk.dynalink,jdk.management,jdk.net,jdk.unsupported,jdk.zipfs \
-      --strip-debug --no-man-pages --no-header-files --compress=zip-6 \
+      --strip-debug --no-man-pages --no-header-files --compress=2 \
       --output /jre \
  && mkdir -p /data
 

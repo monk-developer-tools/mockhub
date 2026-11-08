@@ -29,7 +29,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '17'
 
       - uses: actions/setup-node@v4
         with:
@@ -103,11 +103,12 @@ jobs:
 
       - name: Smoke test the image
         run: |
-          docker run -d --name smoke -p 8080:8080 mockhub:smoke
+          docker run -d --name smoke -p 8080:8080 -e MOCKHUB_PROXY=true mockhub:smoke
           for i in $(seq 1 30); do
             if curl -fsS http://localhost:8080/__admin/mockhub/api/auth/info > /dev/null; then
               curl -fsS -X POST http://localhost:8080/__admin/mockhub/api/examples/rest-basics/install > /dev/null
               curl -fsS http://localhost:8080/example-petstore/pets/42
+              curl -fsS http://localhost:8080/__admin/mockhub/api/proxy/ca.pem | grep -q 'BEGIN CERTIFICATE' || { docker logs smoke; exit 1; }
               exit 0
             fi
             sleep 2

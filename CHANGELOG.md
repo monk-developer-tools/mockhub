@@ -4,6 +4,10 @@ What changed in MockHub, newest first. Every change ships to the Docker image `a
 
 ## 2026-11-08
 
+- gRPC mocks from a `.proto` file without an account, on the public demo over TLS; projects accept `.proto` uploads too.
+- Fixed: HTTPS through the forward proxy didn't work in the Docker image, because WireMock can't create certificates on Java 21. The image now runs on Java 17.
+- gRPC server reflection is off when the public tools are on, so instant mock ids can't be listed.
+- CVE-2026-84243 in glibc is marked not affected, with an OpenVEX statement attached to each image.
 - Fixed: an imported path whose first segment equals the project's base path, such as `/orders/{id}` in project `/orders`, kept that segment again instead of losing it.
 - Fixed: WireMock's request journal was counted on every request; small requests went from about 8,400 to 47,000 a second in our benchmark.
 - Fixed: large responses could fill the memory through the request journal or the history write queue. Both are now capped (`MOCKHUB_JOURNAL_MAX_BODY_KB`, `MOCKHUB_JOURNAL_MAX_MB`).

@@ -152,7 +152,7 @@ need a password; only managing them does.
 
 | | |
 |---|---|
-| Base | `gcr.io/distroless/base-nossl-debian12`, with a trimmed Java 21 runtime and no shell, package manager or OpenSSL |
+| Base | `gcr.io/distroless/base-nossl-debian12`, with a trimmed Java 17 runtime and no shell, package manager or OpenSSL |
 | User | non-root, uid `65532` |
 | Port | `8080` |
 | Volume | `/data` |
