@@ -130,7 +130,9 @@ class TeamsIntegrationTest {
     // Given
     String checkout = team("Checkout");
     String empty = team("Empty");
-    String cart = admin.post(API + "/projects", "{\"name\":\"Cart\",\"teamId\":\"" + checkout + "\"}").json().get("id").asText();
+    ApiClient.Result created = admin.post(API + "/projects", "{\"name\":\"Cart\",\"teamId\":\"" + checkout + "\"}");
+    assertThat(created.status()).as(created.body()).isEqualTo(201);
+    String cart = created.json().get("id").asText();
 
     // When
     ApiClient.Result blocked = admin.delete(API + "/orgs/" + orgId + "/teams/" + checkout);
@@ -138,10 +140,10 @@ class TeamsIntegrationTest {
     ApiClient.Result deleted = admin.delete(API + "/orgs/" + orgId + "/teams/" + checkout);
 
     // Then
-    assertThat(blocked.status()).isEqualTo(409);
+    assertThat(blocked.status()).as(blocked.body()).isEqualTo(409);
     assertThat(blocked.json().get("error").asText()).contains("still has 1 project");
-    assertThat(moved.json().get("teamId").asText()).isEqualTo(empty);
-    assertThat(deleted.status()).isEqualTo(204);
+    assertThat(moved.json().path("teamId").asText()).as(moved.body()).isEqualTo(empty);
+    assertThat(deleted.status()).as(deleted.body()).isEqualTo(204);
   }
 
   @Test

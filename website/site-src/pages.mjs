@@ -63,6 +63,7 @@ const shot = (name, alt) => ({ pair: name, alt });
 export const PAGES = [
   {
     slug: 'service-virtualization',
+    app: 'new',
     menu: 'virtualization',
     icon: 'Cube',
     nav: ['Service virtualization', 'Stand-ins for every service you depend on.'],
@@ -196,6 +197,7 @@ curl https://mockhub.devops-monk.com/example-soap/ws/calculator?wsdl`,
   },
   {
     slug: 'test-environments',
+    app: 'new',
     menu: 'virtualization',
     icon: 'TestTube',
     nav: ['Test environments per team', 'Projects, roles, snapshots and dev-to-qa copies.'],
@@ -251,6 +253,7 @@ payments.base-url: https://mocks.example.com/payments-qa`,
   },
   {
     slug: 'contract-first',
+    app: 'new/openapi',
     menu: 'virtualization',
     icon: 'Browser',
     nav: ['Frontend before backend', 'Build against the contract on day one.'],
@@ -311,6 +314,7 @@ payments.base-url: https://mocks.example.com/payments-qa`,
   },
   {
     slug: 'webhook-mocking',
+    app: 'new/webhook',
     menu: 'virtualization',
     icon: 'ArrowBendUpRight',
     nav: ['Partner APIs and webhooks', 'Callbacks, forwards and wait-for-partner.'],
@@ -368,6 +372,7 @@ payments.base-url: https://mocks.example.com/payments-qa`,
   },
   {
     slug: 'forward-proxy',
+    app: 'new/proxy',
     menu: 'virtualization',
     icon: 'ArrowsLeftRight',
     nav: ['Forward proxy', 'Mock some calls, pass the rest through.'],
@@ -524,6 +529,7 @@ curl -u ci:ci-pass-1 "localhost:8080/__admin/mockhub/api/projects/$ID/history?ma
   },
   {
     slug: 'ai',
+    app: 'new/ai',
     menu: 'virtualization',
     icon: 'Sparkle',
     nav: ['AI assistant and MCP', 'Draft stubs in chat or from your coding agent.'],
@@ -574,6 +580,7 @@ curl -u ci:ci-pass-1 "localhost:8080/__admin/mockhub/api/projects/$ID/history?ma
   },
   {
     slug: 'mock-api',
+    app: 'new/json',
     menu: 'mock-servers',
     icon: 'BracketsCurly',
     nav: ['REST and JSON mock API', 'Match any request, answer anything.'],
@@ -637,6 +644,7 @@ curl -u ci:ci-pass-1 "localhost:8080/__admin/mockhub/api/projects/$ID/history?ma
   },
   {
     slug: 'openapi-mock-server',
+    app: 'new/openapi',
     menu: 'mock-servers',
     icon: 'FileCode',
     nav: ['OpenAPI mock server', 'Working stubs from a spec in one step.'],
@@ -703,6 +711,7 @@ curl -u ci:ci-pass-1 "localhost:8080/__admin/mockhub/api/projects/$ID/history?ma
   },
   {
     slug: 'graphql-mock-server',
+    app: 'new/graphql',
     menu: 'mock-servers',
     icon: 'Graph',
     nav: ['GraphQL mock server', 'A working endpoint from a schema.'],
@@ -763,6 +772,7 @@ curl -u ci:ci-pass-1 "localhost:8080/__admin/mockhub/api/projects/$ID/history?ma
   },
   {
     slug: 'grpc-mock-server',
+    app: 'new/grpc',
     menu: 'mock-servers',
     icon: 'Plugs',
     nav: ['gRPC mock server', 'Mock services from a .proto file.'],
@@ -820,6 +830,7 @@ curl -u ci:ci-pass-1 "localhost:8080/__admin/mockhub/api/projects/$ID/history?ma
   },
   {
     slug: 'soap-mock-server',
+    app: 'new/wsdl',
     menu: 'mock-servers',
     icon: 'FileText',
     nav: ['SOAP mock server', 'Straight from a WSDL.'],
@@ -881,6 +892,7 @@ curl -u ci:ci-pass-1 "localhost:8080/__admin/mockhub/api/projects/$ID/history?ma
   },
   {
     slug: 'crud-api',
+    app: 'new/crud',
     menu: 'mock-servers',
     icon: 'Database',
     nav: ['CRUD API that saves data', 'POST it, then GET it back.'],
@@ -941,6 +953,7 @@ curl https://mocks.example.com/shop/orders/4
   },
   {
     slug: 'stateful-mocks',
+    app: 'new/crud',
     menu: 'mock-servers',
     icon: 'FlowArrow',
     nav: ['Stateful mocks', 'Answer differently as state changes.'],
@@ -1054,6 +1067,7 @@ curl https://mockhub.devops-monk.com/example-cart/cart
   },
   {
     slug: 'wiremock-alternative',
+    app: 'new',
     menu: 'mock-servers',
     icon: 'ArrowSquareIn',
     nav: ['Move from WireMock', 'Your folders, your URLs, unchanged.'],

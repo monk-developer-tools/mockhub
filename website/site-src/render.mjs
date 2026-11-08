@@ -102,7 +102,7 @@ function hero(page, icon) {
           <h1>${esc(page.h1)}</h1>
           <p class="lede">${esc(page.lede)}</p>
           <div class="ctas">
-            <a class="btn primary" href="${DEMO}">Try it in the live demo</a>
+            <a class="btn primary" href="${DEMO}${page.app ?? ''}">${page.app ? 'Start one in the live demo' : 'Try it in the live demo'}</a>
             <a class="btn secondary" href="${page.docs}">Read the docs</a>
           </div>
           <p class="fine">Free and open source (Apache-2.0) · self-hosted · built on WireMock${tutorial ? ` · ${tutorial}` : ''}</p>
@@ -265,7 +265,7 @@ const closing = (page) => `<section class="dark cta-band">
         <h2>Try it now. No install needed.</h2>
         <p>${esc(page.definition)}</p>
         <div class="ctas">
-          <a class="btn primary" href="${DEMO}">Open the live demo</a>
+          <a class="btn primary" href="${DEMO}${page.app ?? ''}">${page.app ? 'Start one in the live demo' : 'Open the live demo'}</a>
           <a class="link-chevron" href="/docs/quick-start/">Run it yourself in a minute</a>
         </div>
       </div>
