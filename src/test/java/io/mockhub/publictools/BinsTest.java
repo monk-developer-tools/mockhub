@@ -200,7 +200,7 @@ class BinsTest {
   }
 
   @Test
-  void deletesBinsAndTheirFilesAfterADayWithoutRequests() {
+  void deletesBinsAndTheirFilesAfterSixMonthsWithoutRequests() {
     // Given
     Bins bins = new Bins(data, clock);
     Bins.Created bin = bins.create().orElseThrow();
@@ -214,6 +214,50 @@ class BinsTest {
     assertThat(bins.size()).isZero();
     assertThat(bins.settingsFor(bin.id())).isEmpty();
     assertThat(data.resolve("mockhub/bins").resolve(bin.id())).doesNotExist();
+  }
+
+  @Test
+  void keepsTheBinForMonthsButDeletesItsRequestsAfterSevenDays() {
+    // Given
+    Bins bins = new Bins(data, clock);
+    Bins.Created bin = bins.create().orElseThrow();
+    send(bins, bin.id(), 3);
+    clock.advance(Duration.ofDays(6));
+    send(bins, bin.id(), 2);
+    clock.advance(Duration.ofDays(2));
+
+    // When
+    bins.prune();
+    Bins.Page afterEightDays = bins.requests(bin.id(), bin.token(), 0, 0, 0).orElseThrow();
+    clock.advance(Duration.ofDays(6));
+    bins.prune();
+    Bins.Page afterFourteenDays = bins.requests(bin.id(), bin.token(), 0, 0, 0).orElseThrow();
+
+    // Then
+    assertThat(afterEightDays.requests()).extracting(Bins.Captured::seq).containsExactly(5L, 4L);
+    assertThat(afterEightDays.oldestKept()).isEqualTo(4L);
+    assertThat(afterFourteenDays.requests()).isEmpty();
+    assertThat(bins.size()).isEqualTo(1);
+    assertThat(bins.settingsFor(bin.id())).isPresent();
+    assertThat(Bins.IDLE).isEqualTo(Duration.ofDays(180));
+  }
+
+  @Test
+  void requestsExpireFromDiskToo() {
+    // Given
+    Bins bins = new Bins(data, clock);
+    Bins.Created bin = bins.create().orElseThrow();
+    send(bins, bin.id(), 4);
+    clock.advance(Duration.ofDays(8));
+    send(bins, bin.id(), 1);
+    bins.flush();
+
+    // When
+    bins.prune();
+    Bins reloaded = new Bins(data, clock);
+
+    // Then
+    assertThat(reloaded.requests(bin.id(), bin.token(), 0, 0, 0).orElseThrow().requests()).extracting(Bins.Captured::seq).containsExactly(5L);
   }
 
   @Test

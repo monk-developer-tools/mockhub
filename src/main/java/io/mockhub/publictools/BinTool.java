@@ -108,13 +108,14 @@ public final class BinTool implements PublicTool {
             .put("token", c.token())
             .put("url", PublicRequest.PREFIX + "/bins/" + c.id())
             .put("tunnel", BinResponder.tunnelName(c.id()))
-            .put("expiresAfterIdleHours", Bins.IDLE.toHours())))
+            .put("expiresAfterIdleHours", Bins.IDLE.toHours())
+            .put("keepRequestsDays", Bins.KEEP_REQUESTS.toDays())))
         .orElseGet(() -> PublicResponses.error(503, "The demo holds as many bins as it can right now. Try again later."));
   }
 
   private ResponseDefinition capture(String id, PublicRequest request) {
     Optional<Bins.Settings> settings = bins.settingsFor(id);
-    if (settings.isEmpty()) return PublicResponses.error(404, "No bin " + id + ". Bins are deleted 24 hours after their last request.");
+    if (settings.isEmpty()) return PublicResponses.error(404, "No bin " + id + ". Bins are deleted 6 months after their last request.");
     BinOptions options = settings.get().options();
     if (options.cors() && request.method().equals("OPTIONS") && request.header("Access-Control-Request-Method") != null) {
       bins.touch(id);

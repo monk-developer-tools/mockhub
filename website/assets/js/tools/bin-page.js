@@ -365,7 +365,7 @@ async function poll() {
   if (!bin || asked !== generation) return;
   polled = true;
   if (result.status === 404) {
-    forget(bin.viewOnly ? 'The shared bin has expired.' : 'That bin expired after 24 hours without a request, so it was removed from My bins.');
+    forget(bin.viewOnly ? 'The shared bin has expired.' : 'That bin expired after 6 months without a request, so it was removed from My bins.');
     return;
   }
   show($('[data-bin-error]'), result.error);
@@ -1419,7 +1419,7 @@ async function describeBin(entry) {
     call(`/__public/inspect/${entry.id}/settings`, { headers }),
     call(`/__public/inspect/${entry.id}?limit=1`, { headers }),
   ]);
-  if (set.status === 404) return { expired: true, text: 'Expired: no request for 24 hours.' };
+  if (set.status === 404) return { expired: true, text: 'Expired: no request for 6 months.' };
   if (!set.json || set.error) return { text: set.error ?? 'Could not load.' };
   const rules = set.json.rules ?? [];
   const active = rules.filter((r) => r.enabled !== false).length;

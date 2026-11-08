@@ -1239,7 +1239,7 @@ PAGES.push(
     description: 'Put a recording URL in front of any public API: every request is passed on and shown with the answer it got, with search, cURL copies and HAR export. No account.',
     h1: 'Watch the HTTP traffic to an API',
     lede: 'Enter an API and get a URL that passes every request on to it. Call that URL from your app, a test or a webhook sender, and watch each request and the API\'s answer arrive in a live log.',
-    privacy: 'Runs on the MockHub demo server. Requests and answers are kept until the URL has had no request for 24 hours. Don\'t send real secrets through it.',
+    privacy: 'Runs on the MockHub demo server. Requests and answers are kept for 7 days, and the URL until 6 months after its last request. Don\'t send real secrets through it.',
     docs: '/docs/webhook-bin/#bin-routing',
     steps: [
       ['Enter the API', 'Any public http or https address, with an optional base path.'],
@@ -1250,7 +1250,7 @@ PAGES.push(
       ['What reaches the API?', 'The method, the path under the URL after any base path you set, the query, headers and body. The API\'s status, headers and body go back to the caller.'],
       ['Can I add or change headers?', 'Yes. Open the live log, then Routing, to add headers to every request and every answer, or to skip TLS checks for a test server.'],
       ['Can it reach a private address?', 'Not on the demo: only public addresses can be forwarded to. For a service on your machine use the local tunnel.'],
-      ['How long is the traffic kept?', 'Until the URL has had no request for 24 hours, up to 50 MB.'],
+      ['How long is the traffic kept?', 'Seven days, up to 50 MB. The URL itself is kept until 6 months after its last request.'],
     ],
     related: ['tools/local-tunnel', 'tools/webhook-bin', 'tools/http-echo'],
     definition: 'An HTTP traffic monitor sits between a client and an API, passes each request through and records it with the response, so you can see exactly what was sent and what came back.',
@@ -1267,7 +1267,7 @@ PAGES.push(
     description: 'Give a service on your machine a public URL for webhooks and phones with one command, and see every request that reaches it with its answer. No account.',
     h1: 'A public URL for a service on your machine',
     lede: 'Enter the port your service listens on, run the command shown, and requests to a public URL reach it. Every request and its answer appear in a live log as they pass through.',
-    privacy: 'Runs on the MockHub demo server. Requests and answers are kept until the URL has had no request for 24 hours. Don\'t send real secrets through it.',
+    privacy: 'Runs on the MockHub demo server. Requests and answers are kept for 7 days, and the URL until 6 months after its last request. Don\'t send real secrets through it.',
     docs: '/docs/tunnel/',
     steps: [
       ['Enter the port', 'Or a full address, like http://localhost:8080.'],
@@ -1278,7 +1278,7 @@ PAGES.push(
       ['What do I need?', 'Java 17 or later and the MockHub jar. The command connects out to the demo, so no port on your machine is opened.'],
       ['Who can use my tunnel?', 'Anyone with the URL can send requests through it while the command runs. The key in the command opens only this tunnel; no other key can use its name.'],
       ['Can I see whether it is connected?', 'Yes. This page and the live log show when the tunnel is connected.'],
-      ['How long does it last?', 'The URL is deleted 24 hours after its last request. Stop the command to close the tunnel at once.'],
+      ['How long does it last?', 'The URL is kept until 6 months after its last request. Stop the command to close the tunnel at once.'],
     ],
     related: ['tools/traffic-monitor', 'tools/webhook-bin', 'webhook-mocking'],
     definition: 'A local tunnel gives a service running on your own machine a public URL, by keeping an outgoing connection open that carries requests in and answers back.',
@@ -1295,7 +1295,7 @@ PAGES.push(
     description: 'Get a URL that captures webhooks and HTTP requests. See each request beside the answer it got, answer with rules and dynamic values, forward to your API or tunnel to localhost.',
     h1: 'Webhook catcher: see every request sent to a URL',
     lede: 'Create a bin, point a webhook at it, and watch each request arrive beside the answer it got. Answer with rules, delays and dynamic values, forward to your own API, or reach a service on your laptop.',
-    privacy: 'Runs on the MockHub demo server. Bins and their requests are deleted 24 hours after the last request. Don\'t send real secrets.',
+    privacy: 'Runs on the MockHub demo server. A bin is kept until 6 months after its last request, and its requests for 7 days. Don\'t send real secrets.',
     docs: '/docs/webhooks/',
     steps: [
       ['Create a bin', 'You get a private URL. Only this browser holds the key to read it.'],
@@ -1303,7 +1303,7 @@ PAGES.push(
       ['Shape the answer', 'Add rules, forward to your API or open a tunnel. Copy any request as cURL.'],
     ],
     faq: [
-      ['How long is a bin kept?', 'Until 24 hours after its last request. There is no request count limit: it keeps every request, with bodies up to 64 KB, until the bin holds 50 MB, then drops the oldest.'],
+      ['How long is a bin kept?', 'The bin, its rules and settings are kept until 6 months after its last request. Each request is kept for 7 days. There is no request count limit: requests with bodies up to 64 KB are kept until the bin holds 50 MB, then the oldest go first.'],
       ['Who can see my requests?', 'Only someone with the bin\'s token, which is kept in this browser, or a view-only link you share. Anyone with the URL can send to the bin, so don\'t share it with real secrets inside.'],
       ['Can I have more than one bin?', 'Yes. New bin keeps your current bin, and My bins lists every bin in this browser with where its requests go, so you can switch, rename or remove them.'],
       ['How do I share a bin with my team?', 'Open Share and copy the view-only link. Whoever opens it sees each request and its answer live, but can\'t change rules or routing, or clear the bin. The private link gives full control, so keep that one to yourself.'],

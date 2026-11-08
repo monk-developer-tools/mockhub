@@ -57,7 +57,8 @@ public final class Bins {
   public static final int MAX_CALLOUT_BODY = 4 * 1024;
   static final int TAIL = 50;
   static final long TAIL_BYTES = 256 * 1024;
-  public static final Duration IDLE = Duration.ofHours(24);
+  public static final Duration IDLE = Duration.ofDays(180);
+  public static final Duration KEEP_REQUESTS = Duration.ofDays(7);
   private static final String CALLOUTS = "callouts.ndjson";
   private static final String ALPHABET = "abcdefghijkmnpqrstuvwxyz23456789";
 
@@ -410,8 +411,57 @@ public final class Bins {
 
   public void prune() {
     Instant cutoff = clock.instant().minus(IDLE);
+    Instant requestCutoff = clock.instant().minus(KEEP_REQUESTS);
     for (Bin bin : List.copyOf(bins.values())) {
       if (bin.lastUsed.isBefore(cutoff)) remove(bin);
+      else expireRequests(bin, requestCutoff);
+    }
+  }
+
+  private void expireRequests(Bin bin, Instant cutoff) {
+    synchronized (bin) {
+      long oldest = bin.oldest;
+      for (Path seg : segments(bin)) {
+        Optional<Instant> first = firstAt(seg);
+        if (first.isEmpty() || !first.get().isBefore(cutoff)) break;
+        List<String> kept = new ArrayList<>();
+        try {
+          for (String line : Files.readAllLines(seg, StandardCharsets.UTF_8)) {
+            if (line.isBlank()) continue;
+            JsonNode n = Jsons.MAPPER.readTree(line);
+            if (Instant.parse(n.path("at").asText()).isBefore(cutoff)) oldest = Math.max(oldest, n.path("seq").asLong() + 1);
+            else kept.add(line);
+          }
+          if (kept.isEmpty()) {
+            delete(seg);
+          } else {
+            Path rewritten = seg.resolveSibling(seg.getFileName() + ".tmp");
+            Files.writeString(rewritten, String.join("\n", kept) + "\n", StandardCharsets.UTF_8);
+            Files.move(rewritten, seg, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            break;
+          }
+        } catch (IOException | RuntimeException e) {
+          break;
+        }
+      }
+      for (Captured c : bin.tail) {
+        if (c.at().isBefore(cutoff)) oldest = Math.max(oldest, c.seq() + 1);
+      }
+      if (oldest == bin.oldest) return;
+      bin.oldest = oldest;
+      trimTail(bin.tail, bin.oldest);
+      bin.callouts.headMap(bin.oldest).clear();
+      bin.deleted.removeIf(seq -> seq < bin.oldest);
+      save(bin);
+    }
+  }
+
+  private static Optional<Instant> firstAt(Path segment) {
+    try (BufferedReader reader = Files.newBufferedReader(segment, StandardCharsets.UTF_8)) {
+      String line = reader.readLine();
+      return line == null ? Optional.empty() : Optional.of(Instant.parse(Jsons.MAPPER.readTree(line).path("at").asText()));
+    } catch (IOException | RuntimeException e) {
+      return Optional.empty();
     }
   }
 

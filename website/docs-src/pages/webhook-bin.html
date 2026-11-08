@@ -30,7 +30,7 @@ curl …/__public/inspect/{id}/requests/{seq} -H 'X-Bin-Token: {token}'
 curl -X DELETE …/__public/inspect/{id}/requests/{seq} -H 'X-Bin-Token: {token}'
 curl …/__public/inspect/{id}/requests/{seq}/share -H 'X-Bin-Token: {token}'
 curl '…/__public/inspect/{id}/export?format=har' -H 'X-Bin-Token: {token}'</code></pre>
-<p>A request's share key, sent as <code>X-Bin-Token</code>, reads only <code>/requests/{seq}</code>. The owner reads the view key from <code>viewKey</code> in <code>GET /__public/inspect/{id}/settings</code> and a viewer sends it as <code>X-Bin-Token</code> to <code>GET /__public/inspect/{id}</code>. Every other call with it gets <code>403</code>. A bin is deleted 24 hours after its last request.</p>
+<p>A request's share key, sent as <code>X-Bin-Token</code>, reads only <code>/requests/{seq}</code>. The owner reads the view key from <code>viewKey</code> in <code>GET /__public/inspect/{id}/settings</code> and a viewer sends it as <code>X-Bin-Token</code> to <code>GET /__public/inspect/{id}</code>. Every other call with it gets <code>403</code>. A bin is kept until 6 months after its last request, and each request for 7 days.</p>
 
 <h3 id="bin-dynamic">Dynamic answers</h3>
 <p>Both the default answer and every rule answer can be built from each request. <strong>Dynamic value</strong> opens a searchable picker with the same groups as the stub editor: request components, control flow, data manipulation, validation, comparison, string, arithmetic, date and array helpers, JWT, random values, Faker and the bin's own state. Picking one inserts it and ticks <strong>Fill in dynamic values</strong>. You can also write <a href="/docs/templating/">template</a> expressions yourself:</p>
@@ -141,7 +141,7 @@ curl '…/__public/inspect/{id}/export?format=har' -H 'X-Bin-Token: {token}'</co
 <p>When forwarding or the tunnel fails, the sender gets <code>502</code> with a JSON error, and the request shows <em>Forward failed</em> or <em>Tunnel failed</em>.</p>
 
 <h3 id="bin-save">Save to MockHub</h3>
-<p><strong>Save to MockHub</strong> in the top bar copies the bin into a MockHub project you own, so it outlives the bin's 24 hours and gains everything a project has: the stub editor, teams, deployment keys and the rest of the docs on this site. It needs a MockHub sign-in; the dialog asks for one if you haven't. Give the project a name or leave it empty to name it after the bin, and each user can save 10 bins an hour. The bin itself keeps running untouched.</p>
+<p><strong>Save to MockHub</strong> in the top bar copies the bin into a MockHub project you own, so it never expires and gains everything a project has: the stub editor, teams, deployment keys and the rest of the docs on this site. It needs a MockHub sign-in; the dialog asks for one if you haven't. Give the project a name or leave it empty to name it after the bin, and each user can save 10 bins an hour. The bin itself keeps running untouched.</p>
 <p>The copy keeps the shape of the bin: each rule becomes a stub named after it, in the same order, in a <em>From webhook bin</em> folder, with its description, and a rule switched off stays off. Stored records come along, a CRUD route keeps its collection, callouts keep their URL, auth and body, and the default answer becomes the project's default response, catching what no rule matches.</p>
 <p>Some things work differently or not at all in a project, and the result lists one line for each:</p>
 <ul>
