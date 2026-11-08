@@ -196,7 +196,7 @@
   if (status && 'fetch' in window) {
     const data = location.hostname === 'mockhub.devops-monk.com' ? '/status/data' : 'https://mockhub.devops-monk.com/status/data';
     const latest = fetch(`${data}/status.json`, { cache: 'no-store' }).then((res) => (res.ok ? res.json() : null)).catch(() => null);
-    Promise.all([import('/assets/js/status-model.mjs'), latest])
+    Promise.all([import('/assets/js/status-model.js'), latest])
       .then(([model, result]) => {
         const state = model.overall(result, Date.now());
         status.dataset.state = state;

@@ -1,4 +1,4 @@
-import { CHECKS, STATES, ago, formatUptime, hourly, overall, parseHistory, uptime } from './status-model.mjs';
+import { CHECKS, STATES, ago, formatUptime, hourly, overall, parseHistory, uptime } from './status-model.js';
 
 const DATA = location.hostname === 'mockhub.devops-monk.com' ? '/status/data' : 'https://mockhub.devops-monk.com/status/data';
 const DAY = 86_400_000;

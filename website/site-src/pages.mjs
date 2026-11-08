@@ -1551,7 +1551,7 @@ PAGES.push({
   kind: 'status',
   hidden: true,
   icon: 'Pulse',
-  script: 'status-page.mjs',
+  script: 'status-page.js',
   nav: ['Status', 'Is the demo up right now?'],
   title: 'MockHub status — live demo, website and free tools',
   description: 'Live status of the MockHub demo server, website and free tools, checked every 5 minutes, with uptime for the last 24 hours and 7 days.',

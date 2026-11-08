@@ -6,7 +6,7 @@ import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import { ago, formatUptime, hourly, overall, parseHistory, stale, uptime } from '../assets/js/status-model.mjs';
+import { ago, formatUptime, hourly, overall, parseHistory, stale, uptime } from '../assets/js/status-model.js';
 
 const NOW = Date.parse('2026-11-08T12:00:00Z');
 const status = (checks, checkedAt = '2026-11-08T11:58:00Z') => ({ checkedAt, intervalSeconds: 300, checks });
