@@ -265,13 +265,15 @@ Every page under Beeceptor's three header menus was read, plus the footer.
 | Forward proxy page | Docs only | 🟡 | W2 |
 | Compare pages: vs WireMock, vs Postman | ✅ (plus vs Mockoon) | ✅ | — |
 | Compare: vs Broadcom DevTest, vs Mockbin, vs Apidog, **vs Beeceptor** | — | ❌ | W3 |
-| **Status page** and footer "All systems operational" badge | — | ❌ | W4 |
+| **Status page** and footer "All systems operational" badge | — | ✅ | W4 ✅ |
 | **Changelog** page | — | ❌ | W5 |
 | **Trust centre** (security and compliance) | — | ❌ | W5 |
 | **FAQ** page | FAQs live on each page | 🟡 | W5 |
 | About and contact | ❔ | ❔ | W5 |
 
-W4 status page: a public `/status/` page and a footer badge. The badge reads the live demo's health (`/__admin/health`), the website, and the public tools (create a bin, echo). It shows "All systems operational", "Degraded" or "Down" with the last check time. It keeps a short uptime history from a small checker that runs on the VPS, writes a JSON file, and is served as a static file. It only claims what it measures.
+W4 done: container `mockhub-status` (`curlimages/curl`, 64 MB, 0.25 CPU) runs `/opt/mockhub/status/check.sh` every 5 minutes against the public HTTPS address (`/__admin/health`, `/`, `/__public/echo`) and writes `status.json` and a 7-day `history.csv` to `/var/www/mockhub/status/data/` (served `no-store`, excluded from the site rsync). `/status/` and the footer badge read them through `status-model.js`; results older than 15 minutes show *Status unknown*. Deploy with `deploy/vps/deploy-status.sh`.
+
+W4 status page (original plan): a public `/status/` page and a footer badge. The badge reads the live demo's health (`/__admin/health`), the website, and the public tools (create a bin, echo). It shows "All systems operational", "Degraded" or "Down" with the last check time. It keeps a short uptime history from a small checker that runs on the VPS, writes a JSON file, and is served as a static file. It only claims what it measures.
 
 ---
 
@@ -305,7 +307,7 @@ W4 status page: a public `/status/` page and a footer badge. The badge reads the
 | 23 | P6 Verify QUERY, streaming, subscriptions ✅ | S–M | |
 | 24 | P7 Benchmark report ✅ | M | |
 | 25 | P8 Postman collection import ✅ | S | |
-| 26 | W4 Status page and footer badge | S | Asked for; cheap trust signal |
+| 26 | W4 Status page and footer badge ✅ | S | Asked for; cheap trust signal |
 | 27 | W2 gRPC and forward-proxy pages | S | The GraphQL page shipped with T1; the gRPC page waits for T7 |
 | 28 | W1 Development bottlenecks and testing limitations pages | S | Content |
 | 29 | W3 More compare pages | S | Content, facts checked |

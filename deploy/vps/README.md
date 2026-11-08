@@ -30,6 +30,7 @@ ssh root@VPS 'certbot --nginx -d mockhub.devops-monk.com --non-interactive --red
 ```bash
 deploy/vps/deploy-site.sh                       # website
 ssh root@VPS 'bash -s' < deploy/vps/deploy-app.sh  # demo app (rebuilds from main)
+deploy/vps/deploy-status.sh                     # status checker: container mockhub-status, every 5 minutes
 ```
 
 The admin password for the demo is in `/opt/mockhub/mockhub.env` on the VPS. Visitors sign in as `demo` / `demo`
