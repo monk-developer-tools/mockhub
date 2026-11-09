@@ -5865,3 +5865,49 @@ fieldset.target legend {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.env-card {
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+}
+
+.env-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.env-name {
+  flex: 1;
+  max-width: 240px;
+}
+
+.env-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) auto;
+  gap: 8px;
+}
+
+.env-switch select {
+  padding: 2px 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--text-s);
+}
+
+.env-only {
+  margin: 12px 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.env-only legend {
+  margin-bottom: 6px;
+  font-weight: 500;
+}

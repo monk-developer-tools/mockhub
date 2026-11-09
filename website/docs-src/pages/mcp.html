@@ -54,6 +54,7 @@ bearer_token_env_var = "MOCKHUB_TOKEN"</pre></div>
   <tbody>
     <tr><td>Projects</td><td><code>list_projects</code>, <code>get_project</code> (with its mock URL and runtime behaviour), <code>create_project</code>, <code>update_project</code> (name, description, <a href="#custom-domains">custom domains</a>, and the <a href="#api-keys">API key</a> for admins)</td></tr>
     <tr><td>Whole APIs</td><td><code>import_spec</code>: one stub per operation from OpenAPI or Swagger, WSDL, a GraphQL schema, a Postman collection or WireMock mappings; <code>add_grpc_service</code>: serve a <code>.proto</code></td></tr>
+    <tr><td>Environments</td><td><code>get_environments</code>, <code>set_environments</code>, <code>switch_environment</code>. See <a href="#environments">environments</a></td></tr>
     <tr><td>Contract</td><td><code>attach_contract</code>, <code>get_drift</code>, <code>check_drift</code>: keep an OpenAPI document and compare traffic with it. See <a href="#contract-drift">contract drift</a></td></tr>
     <tr><td>Stubs</td><td><code>list_stubs</code> (in matching order), <code>get_stub</code>, <code>create_stub</code>, <code>update_stub</code>, <code>delete_stub</code>, <code>set_stub_enabled</code>, <code>reorder_stubs</code></td></tr>
     <tr><td>Reference</td><td><code>get_stub_reference</code>: how to write matching, templating, delays, faults, state, webhooks and SOAP in MockHub, so the agent gets it right first time</td></tr>

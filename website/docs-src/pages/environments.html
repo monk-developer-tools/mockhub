@@ -1,0 +1,34 @@
+<p>Environments let one project answer as <em>dev</em>, <em>qa</em> or <em>staging</em> without copying it. Each environment has its own variables, stubs read them with <code>{{env 'name'}}</code>, and a stub can be limited to some environments. One environment is active; a caller can ask for another with a header.</p>
+
+<h3 id="environments-setup">Set them up</h3>
+<p>Open the project's <strong>Settings</strong> tab and find <strong>Environments</strong>. Select <strong>Add environment</strong> for each one, give it a name of lowercase letters, digits and dashes, and add variables such as <code>baseUrl</code> or <code>tenantId</code>. Pick the active one and select <strong>Save environments</strong>. Once a project has environments, its header shows the active one; editors switch it there. A project can have 10 environments with 100 variables each.</p>
+
+<h3 id="environments-variables">Read variables in answers</h3>
+<p>Turn on templating in the stub and use <code>{{env 'baseUrl'}}</code> for a variable's value, or <code>{{env}}</code> for the environment's name. A variable an environment doesn't have renders as empty.</p>
+<pre><code>{
+  "paymentUrl": "{{env 'baseUrl'}}/payments/{{request.path.id}}",
+  "environment": "{{env}}"
+}</code></pre>
+
+<h3 id="environments-stubs">Different answers per environment</h3>
+<p>In the stub editor, tick environments under <strong>Only in environments</strong>; with none ticked the stub answers in every environment. For example, a stub that declines cards only in qa, with priority 1, wins over the stub that approves everywhere. Behind the checkboxes is a plain WireMock header matcher, so snapshots, Git sync and exports keep it:</p>
+<pre><code>"request": {
+  "method": "POST",
+  "urlPath": "/charges",
+  "headers": { "X-MockHub-Environment": { "matches": "qa|staging" } }
+}</code></pre>
+
+<h3 id="environments-choose">Choose an environment per call</h3>
+<p>Calls answer as the active environment. To ask for another, send the <code>X-MockHub-Environment</code> header, such as <code>X-MockHub-Environment: qa</code>; a name the project doesn't have falls back to the active one. MockHub writes the chosen name into that header before matching, so it shows in the request history and the Inspect tab.</p>
+<pre><code>curl -X POST https://mocks.example.com/pay/charges -H 'X-MockHub-Environment: qa'</code></pre>
+
+<h3 id="environments-api">From scripts and agents</h3>
+<table>
+  <thead><tr><th>Call</th><th>Does</th></tr></thead>
+  <tbody>
+    <tr><td><code>GET /projects/{id}/environments</code></td><td><code>{"active", "environments": [{"name", "variables"}]}</code></td></tr>
+    <tr><td><code>PUT /projects/{id}/environments</code></td><td>replace them all; an empty list removes them</td></tr>
+    <tr><td><code>PUT /projects/{id}/environments/active</code></td><td><code>{"name": "qa"}</code></td></tr>
+  </tbody>
+</table>
+<p>Paths are under <code>/__admin/mockhub/api</code>. Viewers can read environments; changing them needs the editor role. Over <a href="#mcp">MCP</a>, agents use <code>get_environments</code>, <code>set_environments</code> and <code>switch_environment</code>. Environments are not part of snapshots or Git sync yet; the stubs that use them are. They apply to HTTP calls; gRPC calls answer without one.</p>

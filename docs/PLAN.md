@@ -61,7 +61,7 @@ Why this shape:
 2. ✅ **SSO.** Built in: Microsoft Entra ID single sign-on (Phase 10). ALB OIDC in front still works too.
 3. **Multiple replicas.** Today run `desiredCount=1`, because WireMock state lives in memory. To scale out,
    add a file watcher or `POST /__admin/mappings/reset`-style reload broadcast, or move to a shared DB store.
-4. **Environments per project.** For example `dev`/`qa` response sets, switched with a scenario state.
+4. ✅ **Environments per project.** For example `dev`/`qa` response sets, switched with a scenario state.
 5. ✅ **Contract validation.** Request and response validation in stubs, and contract drift for traffic.
 6. ✅ **Faker helpers.** Datafaker in templates and imports.
 7. ✅ **Audit log.** Who changed what, and when.

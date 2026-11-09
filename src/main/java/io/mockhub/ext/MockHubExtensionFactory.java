@@ -9,7 +9,13 @@ import io.mockhub.ai.AiProviders;
 import io.mockhub.ai.AiSettingsStore;
 import io.mockhub.ai.AssistantJobs;
 import io.mockhub.ai.AssistantService;
+import io.mockhub.controller.EnvironmentController;
 import io.mockhub.controller.GitController;
+import io.mockhub.environment.EnvHelpers;
+import io.mockhub.environment.EnvironmentFilter;
+import io.mockhub.environment.EnvironmentScope;
+import io.mockhub.environment.EnvironmentService;
+import io.mockhub.environment.EnvironmentStore;
 import io.mockhub.controller.TemplateController;
 import io.mockhub.git.GitLinkStore;
 import io.mockhub.git.GitSyncService;
@@ -313,9 +319,10 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
         host -> projectsRef.get().findForHost(host).map(Project::basePath), proxy, tunnelServlet, name -> grpc.ownerOf(name).isPresent(), config.publicTools);
     grpc.onChange(server::loadFileDescriptors);
     ContractStore contracts = new ContractStore(dataDir);
+    EnvironmentStore environmentStore = new EnvironmentStore(dataDir);
     ProjectService projects = new ProjectService(new FileProjectRepository(dataDir),
         List.of(stubs, grpc, new ProjectDataCleaner(dataStore, bodyFiles), history, traffic, staged, accessTokens, new SnapshotCleanup(snapshotStore), proxy,
-            contracts), clock);
+            contracts, environmentStore), clock);
     projectsRef.set(projects);
     TeamService teams = new TeamService(new FileTeamRepository(dataDir), List.of(users), clock);
     DatasetService datasets = new DatasetService(new FileDatasetRepository(dataDir), DatasetService.Limits.DEFAULT, clock);
@@ -416,6 +423,8 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     FakeHelpers fakeHelpers = new FakeHelpers(fakeData);
     ValueHelpers valueHelpers = new ValueHelpers();
     List<TemplateHelperProviderExtension> portableHelpers = PortableHelpers.providers();
+    EnvironmentScope environmentScope = new EnvironmentScope();
+    EnvironmentService environments = new EnvironmentService(environmentStore, projects);
     DatasetHelpers datasetHelpers = new DatasetHelpers(datasets, () -> stateScope.current().flatMap(projects::find).map(Project::orgId));
     ValidationHelpers validationHelpers = new ValidationHelpers();
     JwtHelpers jwtHelpers = new JwtHelpers(new JwtKeys(dataDir), clock);
@@ -465,6 +474,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
         new AccessTokenController(accessTokens, auth, projects, clock),
         new StagedController(projects, staged, assistant),
         new SnapshotController(snapshots, projects),
+        new EnvironmentController(environments),
         new GitController(new GitSyncService(new GitLinkStore(dataDir), new JGitRemote(dataDir.resolve("mockhub").resolve("git-work")), snapshots,
             projects, secrets, new TargetGuard(config.gitAllowPrivate, InetAddress::getAllByName, "MOCKHUB_GIT_ALLOW_PRIVATE"),
             config.gitAllowPrivate, clock)));
@@ -519,12 +529,14 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
         new TunnelProxyTransformer(tunnels),
         new RuntimeFilter(projectForPath, corsHeaders, rateLimiter, loadMeter),
         new ApiKeyFilter(projectForPath, corsForRequest::headers),
+        new EnvironmentFilter(projectForPath, environments, environmentScope),
         new RuntimeTransformer(projects::find, rateLimiter, loadMeter),
         new CorsTransformer(corsForRequest),
         new ProjectScopeMatcher(projectForPath),
         fakeHelpers,
         valueHelpers,
         datasetHelpers,
+        new EnvHelpers(environmentScope),
         validationHelpers,
         new ValidationTransformer(),
         new WeightedTransformer(() -> ThreadLocalRandom.current().nextDouble()),

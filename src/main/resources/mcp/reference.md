@@ -66,6 +66,13 @@ stub mappings whose URLs are RELATIVE to the base path: write "/orders/{id}", ne
 - Callouts to private or local addresses are blocked unless an admin allows them. list_callouts shows what was sent and
   why a callout failed.
 
+## Environments
+
+- A project can have environments such as `dev`, `qa` and `staging`, each with variables (`get_environments`, `set_environments`, `switch_environment`).
+- In a templated response, `{{env 'baseUrl'}}` is the variable's value in the current environment and `{{env}}` is its name.
+- The current environment is the `X-MockHub-Environment` request header when it names one, otherwise the active one. MockHub writes the chosen name into that header before matching.
+- To limit a stub to some environments, match the header: `"headers": {"X-MockHub-Environment": {"matches": "qa|staging"}}`. Give it a better priority than the stub for every environment.
+
 ## SOAP
 Match POST on the endpoint path with a SOAPAction header or "matchesXPath" on the operation element, and answer with a
 full SOAP envelope, Content-Type text/xml (SOAP 1.1) or application/soap+xml (SOAP 1.2).

@@ -10,6 +10,7 @@ import { useToast } from '../../components/Toasts';
 import { useApp } from '../../state/AppContext';
 import { ProjectDialog } from '../ProjectDialog';
 import { useProject } from './ProjectPage';
+import { EnvironmentsPanel } from './EnvironmentsPanel';
 import { RuntimePanel } from './RuntimePanel';
 
 export function ProjectSettingsTab() {
@@ -60,6 +61,7 @@ export function ProjectSettingsTab() {
       <RootPanel />
       <DomainsPanel />
       <ApiKeyPanel />
+      <EnvironmentsPanel />
       <RuntimePanel />
       {canManage && (
         <div className="panel">

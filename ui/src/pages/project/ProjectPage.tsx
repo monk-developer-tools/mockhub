@@ -7,6 +7,7 @@ import { CopyButton } from '../../components/CopyButton';
 import { Skeleton } from '../../components/Skeleton';
 import { TeamMark } from '../../components/Avatar';
 import { PageHeader } from '../../components/ui/PageHeader';
+import { EnvironmentSwitch } from './EnvironmentSwitch';
 import { useToast } from '../../components/Toasts';
 import { useApp } from '../../state/AppContext';
 
@@ -100,6 +101,7 @@ export function ProjectPage() {
               <CopyButton text={project.mockUrl} label="Copy mock URL" />
             </span>
             {project.root && <span className="tag" title="This project answers without a path prefix">root</span>}
+            <EnvironmentSwitch project={project} />
             {teamName && (
               <span className="meta-item">
                 <TeamMark name={teamName} seed={project.teamId} size={16} />

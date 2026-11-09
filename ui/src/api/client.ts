@@ -62,7 +62,7 @@ import type {
   PlaygroundEntry,
   PlaygroundRequest,
   GeneratorField,
-  UserRecord, GitLinkInput, GitLinkView, GitPullResult, GitPushResult } from './types';
+  UserRecord, GitLinkInput, GitLinkView, GitPullResult, GitPushResult, ProjectEnvironments } from './types';
 
 const API = '/__admin/mockhub/api';
 const ADMIN = '/__admin';
@@ -278,6 +278,11 @@ export const api = {
     request<void>(`${API}/projects/${projectId}/files?name=${encodeURIComponent(name)}`, { method: 'DELETE' }),
   resetData: (projectId: string) => request<void>(`${API}/projects/${projectId}/data`, { method: 'DELETE' }),
   snapshots: (projectId: string) => request<SnapshotSummary[]>(`${API}/projects/${projectId}/snapshots`),
+  environments: (projectId: string) => request<ProjectEnvironments>(`${API}/projects/${projectId}/environments`),
+  saveEnvironments: (projectId: string, body: ProjectEnvironments) =>
+    request<ProjectEnvironments>(`${API}/projects/${projectId}/environments`, { method: 'PUT', body: json(body) }),
+  switchEnvironment: (projectId: string, name: string) =>
+    request<ProjectEnvironments>(`${API}/projects/${projectId}/environments/active`, { method: 'PUT', body: json({ name }) }),
   gitLink: (projectId: string) => request<GitLinkView>(`${API}/projects/${projectId}/git`),
   saveGitLink: (projectId: string, link: GitLinkInput) => request<GitLinkView>(`${API}/projects/${projectId}/git`, { method: 'PUT', body: json(link) }),
   unlinkGit: (projectId: string) => request<void>(`${API}/projects/${projectId}/git`, { method: 'DELETE' }),

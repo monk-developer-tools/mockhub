@@ -104,6 +104,7 @@ export interface StubForm {
   url: string;
   query: ValueMatcher[];
   headers: ValueMatcher[];
+  environments: string[];
   cookies: ValueMatcher[];
   body: BodyMatcher[];
   scenarioName: string;
@@ -201,6 +202,7 @@ export function emptyForm(kind: StubKind = 'rest'): StubForm {
     url: soap ? '/ws/service' : graphql ? '/graphql' : grpc ? '' : '/',
     query: [],
     headers: [],
+    environments: [],
     cookies: [],
     body: [],
     scenarioName: '',
@@ -354,7 +356,9 @@ export function fromStub(stub: Stub): Conversion {
   form.urlMatch = urlField ?? 'any';
   form.url = urlField ? str(request[urlField]) : '';
   form.query = readValueMatchers(request.queryParameters, unsupported, 'Query parameter');
-  form.headers = readValueMatchers(request.headers, unsupported, 'Header');
+  const split = splitEnvironmentHeader(readValueMatchers(request.headers, unsupported, 'Header'));
+  form.headers = split.headers;
+  form.environments = split.environments;
   form.cookies = readValueMatchers(request.cookies, unsupported, 'Cookie');
   form.body = readBodyMatchers(kind === 'graphql' ? readGraphqlMatch(form, request.bodyPatterns) : request.bodyPatterns, unsupported);
   for (const key of ['basicAuthCredentials', 'formParameters', 'multipartPatterns', 'customMatcher', 'host', 'port', 'scheme', 'pathParameters']) {
@@ -491,7 +495,7 @@ export function toStub(input: StubForm, original: Stub = {}): Stub {
   request.method = form.method;
   if (form.urlMatch !== 'any') request[form.urlMatch] = form.url || '/';
   setIfDefined(request, 'queryParameters', writeValueMatchers(form.query));
-  setIfDefined(request, 'headers', writeValueMatchers(form.headers));
+  setIfDefined(request, 'headers', writeValueMatchers(withEnvironmentHeader(form.headers, form.environments)));
   setIfDefined(request, 'cookies', writeValueMatchers(form.cookies));
   setIfDefined(request, 'bodyPatterns', form.kind === 'graphql' ? withGraphqlMatch(form, writeBodyMatchers(form.body)) : writeBodyMatchers(form.body));
   stub.request = request;
@@ -854,4 +858,18 @@ function isValidRegex(pattern: string) {
   } catch {
     return false;
   }
+}
+
+export const ENVIRONMENT_HEADER = 'X-MockHub-Environment';
+const ENVIRONMENT_LIST = /^[a-z0-9][a-z0-9-]*(\|[a-z0-9][a-z0-9-]*)*$/;
+
+export function splitEnvironmentHeader(headers: ValueMatcher[]): { headers: ValueMatcher[]; environments: string[] } {
+  const found = headers.find((h) => h.key.toLowerCase() === ENVIRONMENT_HEADER.toLowerCase() && (h.operator === 'matches' || h.operator === 'equalTo') && ENVIRONMENT_LIST.test(h.value) && !h.caseInsensitive);
+  if (!found) return { headers, environments: [] };
+  return { headers: headers.filter((h) => h !== found), environments: found.value.split('|') };
+}
+
+export function withEnvironmentHeader(headers: ValueMatcher[], environments: string[]): ValueMatcher[] {
+  if (environments.length === 0) return headers;
+  return [...headers, { key: ENVIRONMENT_HEADER, operator: environments.length === 1 ? 'equalTo' : 'matches', value: environments.join('|'), caseInsensitive: false }];
 }

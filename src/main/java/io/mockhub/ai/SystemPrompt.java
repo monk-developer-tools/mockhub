@@ -102,6 +102,8 @@ final class SystemPrompt {
         - Data that must change when callers POST, PUT or DELETE belongs in create_crud_resource, not in fixed stubs.
         - For gRPC from a .proto, stage add_grpc_service with the file, then one stub per method as described above.
         - attach_contract keeps an OpenAPI document as the contract; get_drift compares recorded traffic with it.
+        - When the project has environments, {{env 'name'}} reads a variable of the current one, and a stub is limited to \
+        some environments with the request header matcher "X-MockHub-Environment": {"matches": "qa|staging"}.
         - To see what callers sent, call search_requests. It searches days of history by text, method, status (404, 4xx), \
         header, stub and time, so use filters rather than reading everything. When the user asks why calls fail or which \
         stub is missing, search with unmatched_only=true and stage stubs for what you find.

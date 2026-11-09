@@ -4,6 +4,7 @@ What changed in MockHub, newest first. Every change ships to the Docker image `a
 
 ## 2026-11-09
 
+- Environments per project: give one project dev, qa or staging variables, read them in answers with `{{env 'name'}}`, limit stubs to some environments, switch the active one from the project header, or pick one per call with the `X-MockHub-Environment` header. Agents can set them up over MCP.
 - Signed in looks like the free tools, with more: webhook, traffic monitor, echo and tunnel projects open on a new **Inspect** tab, with each request beside its answer, Send test, Make a stub from it, Copy as cURL, Replay and links to share one request. A **Tools** page in the sidebar has the template playground (with Use as a stub) and the test data generator (with Save as a CRUD resource or a dataset). JSON answers can turn on templating.
 - Each free tool on the website says what signing in adds and opens the matching screen in the app.
 - Git sync: link a project to a folder in a Git repository, push it as one readable file per stub with a commit, and pull changes back after a preview and a safety snapshot. Pull also reads plain WireMock `mappings/` folders. Agents can use it over MCP (`git_preview`, `git_push`, `git_pull`).

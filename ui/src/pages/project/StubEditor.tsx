@@ -9,6 +9,7 @@ import type { EditorView } from '@codemirror/view';
 import { DataGeneratorDialog } from '../../components/DataGeneratorDialog';
 import { formatSize } from '../../model/files';
 import { UploadButton, useProjectFiles } from './ResponseFiles';
+import { useEnvironments } from '../../state/useEnvironments';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useHotkeys } from '../../state/hotkeys';
 import { api } from '../../api/client';
@@ -115,6 +116,8 @@ export function StubEditor({ project, moveTargets, stub, isNew, canEdit, onSaved
   const [editingTable, setEditingTable] = useState(false);
   const disabled = isDisabled(stub);
   const { files, reload: reloadFiles } = useProjectFiles(project.id);
+  const { environments: projectEnvironments } = useEnvironments(project.id);
+  const projectEnvNames = projectEnvironments?.environments.map((e) => e.name) ?? [];
   const connectionKeys = useConnectionKeys(project.orgId);
   const toast = useToast();
   const initial = useMemo(() => fromStub(stub), [stub]);
@@ -431,6 +434,20 @@ export function StubEditor({ project, moveTargets, stub, isNew, canEdit, onSaved
                   <input type="number" min={1} value={form.priority} placeholder="5" onChange={(e) => update({ priority: e.target.value })} />
                 </label>
               </div>
+              {[...new Set([...projectEnvNames, ...form.environments])].length > 0 && (
+                <fieldset className="field env-only">
+                  <legend>Only in environments <span className="hint">none ticked: every environment</span></legend>
+                  <div className="btn-row">
+                    {[...new Set([...projectEnvNames, ...form.environments])].map((name) => (
+                      <label key={name} className="check">
+                        <input type="checkbox" checked={form.environments.includes(name)} disabled={readOnly}
+                          onChange={(e) => update({ environments: e.target.checked ? [...form.environments, name] : form.environments.filter((n) => n !== name) })} />
+                        {name}
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+              )}
             </div>
           </div>
 

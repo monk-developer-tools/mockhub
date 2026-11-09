@@ -276,6 +276,23 @@ public final class McpTools {
         schema(project(), req("key", "string", "Lowercase key used by helpers, such as customers"), prop("name", "string", "Display name"),
             req("records", "array", "The records"), prop("identity", "array", "Fields that identify a record, such as id")), false, false, this::saveDataset);
 
+    add("get_environments", "Get environments",
+        "Get the project's environments (such as dev and qa), their variables and the active one. Stubs read a variable with {{env 'name'}}.",
+        schema(project()), true, false, call -> get(call, "/projects/" + projectId(call) + "/environments"));
+    add("set_environments", "Set environments",
+        "Replace the project's environments: {active, environments: [{name, variables}]}. Names are lowercase letters, digits and dashes. Send the complete list; an empty list removes them.",
+        schema(project(), req("environments", "array", "Every environment: {name, variables}"), prop("active", "string", "The active one; the first when left out")),
+        false, false, call -> {
+          ObjectNode body = Jsons.object();
+          body.set("environments", call.args().path("environments"));
+          if (call.optional("active") != null) body.put("active", call.optional("active"));
+          return direct(call, "changing environments", RequestMethod.PUT, "/projects/" + projectId(call) + "/environments", body);
+        });
+    add("switch_environment", "Switch environment", "Make another environment the active one for calls without the X-MockHub-Environment header.",
+        schema(project(), req("name", "string", "The environment")), false, false,
+        call -> direct(call, "switching environments", RequestMethod.PUT, "/projects/" + projectId(call) + "/environments/active",
+            Jsons.object().put("name", call.text("name"))));
+
     add("git_preview", "Preview a pull from Git",
         "Compare the project with its linked Git repository: the stubs, files and runtime behaviour a pull would add, remove or change.",
         schema(project()), true, false, call -> get(call, "/projects/" + projectId(call) + "/git/preview"));

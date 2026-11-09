@@ -65,6 +65,7 @@ export const GROUPS = [
     description: 'Latency, failures, limits and access rules for your mocks.',
     pages: [
       { slug: 'faults', title: 'Delays & faults', icon: 'Lightning', description: 'Delays for a stub or a whole project, slower answers under load, dropped connections, failure rates and weighted responses.' },
+      { slug: 'environments', title: 'Environments', icon: 'Stack', description: 'One project answering as dev, qa or staging, with variables per environment and stubs limited to some.' },
       { slug: 'default-response', title: 'Default response', icon: 'ArrowUDownLeft', description: 'Answer calls no stub matches with your own status, headers and body.' },
       { slug: 'rate-limits', title: 'Rate limits', icon: 'Gauge', description: 'Limit calls per second, minute or hour for a project or one stub, with 429 and Retry-After.' },
       { slug: 'api-keys', title: 'API keys', icon: 'Key', description: 'Make a project answer only when a request carries the right key.' },

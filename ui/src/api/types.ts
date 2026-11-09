@@ -751,3 +751,13 @@ export interface GitPullResult {
   files: number;
   safety: SnapshotSummary;
 }
+
+export interface ProjectEnvironment {
+  name: string;
+  variables: Record<string, string>;
+}
+
+export interface ProjectEnvironments {
+  active: string | null;
+  environments: ProjectEnvironment[];
+}

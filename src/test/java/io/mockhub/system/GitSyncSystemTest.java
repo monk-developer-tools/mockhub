@@ -65,6 +65,32 @@ class GitSyncSystemTest {
   }
 
   @Test
+  void environmentsChooseTheAnswerAndSurviveARestart() throws Exception {
+    // Given
+    String id;
+    try (MockHubProcess hub = MockHubProcess.start(first, ENV)) {
+      id = json(send(hub, "POST", API + "/projects", "{\"name\":\"Pay\",\"slug\":\"pay\"}")).get("id").asText();
+      send(hub, "POST", API + "/projects/" + id + "/stubs", "{\"request\":{\"method\":\"GET\",\"urlPath\":\"/bank\"},"
+          + "\"response\":{\"status\":200,\"body\":\"{{env}}:{{env 'bank'}}\",\"transformers\":[\"response-template\"]}}");
+      send(hub, "PUT", API + "/projects/" + id + "/environments", "{\"active\":\"qa\",\"environments\":["
+          + "{\"name\":\"dev\",\"variables\":{\"bank\":\"sandbox\"}},{\"name\":\"qa\",\"variables\":{\"bank\":\"qa-bank\"}}]}");
+    }
+
+    // When
+    HttpResponse<String> active;
+    HttpResponse<String> chosen;
+    try (MockHubProcess hub = MockHubProcess.start(first, ENV)) {
+      active = http.send(HttpRequest.newBuilder(URI.create(hub.baseUrl() + "/pay/bank")).build(), HttpResponse.BodyHandlers.ofString());
+      chosen = http.send(HttpRequest.newBuilder(URI.create(hub.baseUrl() + "/pay/bank")).header("X-MockHub-Environment", "dev").build(),
+          HttpResponse.BodyHandlers.ofString());
+    }
+
+    // Then
+    assertThat(active.body()).isEqualTo("qa:qa-bank");
+    assertThat(chosen.body()).isEqualTo("dev:sandbox");
+  }
+
+  @Test
   void thePackagedJarRendersTemplatesForSignedInPeople() throws Exception {
     // Given
     try (MockHubProcess hub = MockHubProcess.start(first, ENV)) {
