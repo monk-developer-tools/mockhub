@@ -6,6 +6,7 @@ locals {
 
   environment = merge(
     { MOCKHUB_DATA_DIR = "/data" },
+    var.handover_deploys ? { MOCKHUB_HA = "true" } : {},
     var.public_url == null ? {} : { MOCKHUB_PUBLIC_URL = var.public_url },
     var.extra_environment,
   )
@@ -87,8 +88,8 @@ resource "aws_ecs_service" "this" {
   task_definition                    = aws_ecs_task_definition.this.arn
   launch_type                        = "FARGATE"
   desired_count                      = 1
-  deployment_minimum_healthy_percent = 0
-  deployment_maximum_percent         = 100
+  deployment_minimum_healthy_percent = var.handover_deploys ? 100 : 0
+  deployment_maximum_percent         = var.handover_deploys ? 200 : 100
   health_check_grace_period_seconds  = 60
   enable_execute_command             = false
 

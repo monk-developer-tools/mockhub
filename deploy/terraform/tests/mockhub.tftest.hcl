@@ -86,6 +86,29 @@ run "single_writer_deployment_with_efs_per_subnet" {
   }
 }
 
+run "handover_deploys_overlap_two_tasks_and_hand_the_folder_over" {
+  command = plan
+
+  variables {
+    handover_deploys = true
+  }
+
+  assert {
+    condition     = aws_ecs_service.this.desired_count == 1 && aws_ecs_service.this.deployment_maximum_percent == 200 && aws_ecs_service.this.deployment_minimum_healthy_percent == 100
+    error_message = "Handover deploys start the new task before stopping the old one."
+  }
+
+  assert {
+    condition     = contains([for e in jsondecode(aws_ecs_task_definition.this.container_definitions)[0].environment : e.value if e.name == "MOCKHUB_HA"], "true")
+    error_message = "MOCKHUB_HA must be on so only one task writes to the data folder."
+  }
+
+  assert {
+    condition     = aws_lb_target_group.this.health_check[0].interval == 5
+    error_message = "The load balancer must notice the new leader quickly."
+  }
+}
+
 run "rejects_a_single_load_balancer_subnet" {
   command = plan
 

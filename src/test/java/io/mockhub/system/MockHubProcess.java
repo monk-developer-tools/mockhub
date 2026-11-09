@@ -14,7 +14,7 @@ import java.util.Map;
 
 final class MockHubProcess implements AutoCloseable {
 
-  private static final Duration STARTUP_TIMEOUT = Duration.ofSeconds(30);
+  private static final Duration STARTUP_TIMEOUT = Duration.ofSeconds(60);
 
   private final Process process;
   private final int port;
@@ -48,6 +48,14 @@ final class MockHubProcess implements AutoCloseable {
 
   int port() {
     return port;
+  }
+
+  boolean exitsWithin(Duration timeout) throws InterruptedException {
+    return process.waitFor(timeout.toMillis(), java.util.concurrent.TimeUnit.MILLISECONDS);
+  }
+
+  int exitCode() {
+    return process.exitValue();
   }
 
   String baseUrl() {

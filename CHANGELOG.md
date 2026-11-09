@@ -4,6 +4,8 @@ What changed in MockHub, newest first. Every change ships to the Docker image `a
 
 ## 2026-11-09
 
+- Deploys without a gap: with `MOCKHUB_HA=true` a new server takes over the data folder from the running one in under a second instead of waiting for it to stop. The Terraform module turns it on with `handover_deploys = true`.
+- Fixed: since this morning's thread-leak fix, every stop took 10 seconds longer because the request history was closed twice.
 - Environments per project: give one project dev, qa or staging variables, read them in answers with `{{env 'name'}}`, limit stubs to some environments, switch the active one from the project header, or pick one per call with the `X-MockHub-Environment` header. Agents can set them up over MCP.
 - Signed in looks like the free tools, with more: webhook, traffic monitor, echo and tunnel projects open on a new **Inspect** tab, with each request beside its answer, Send test, Make a stub from it, Copy as cURL, Replay and links to share one request. A **Tools** page in the sidebar has the template playground (with Use as a stub) and the test data generator (with Save as a CRUD resource or a dataset). JSON answers can turn on templating.
 - Each free tool on the website says what signing in adds and opens the matching screen in the app.

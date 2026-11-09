@@ -219,7 +219,7 @@ public final class HistoryStore implements ProjectListener, AutoCloseable {
   }
 
   public void flush() {
-    if (Thread.currentThread() == writer) return;
+    if (Thread.currentThread() == writer || !running || !writer.isAlive()) return;
     CountDownLatch done = new CountDownLatch(1);
     try {
       if (!queue.offer(new Flush(done), 5, TimeUnit.SECONDS)) return;
@@ -230,7 +230,8 @@ public final class HistoryStore implements ProjectListener, AutoCloseable {
   }
 
   @Override
-  public void close() {
+  public synchronized void close() {
+    if (!running) return;
     flush();
     running = false;
     writer.interrupt();

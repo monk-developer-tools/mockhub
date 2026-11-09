@@ -269,8 +269,11 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
 
   public void serverStopped() {
     for (AutoCloseable closeable : closeables) {
+      long started = System.currentTimeMillis();
       try {
         closeable.close();
+        long took = System.currentTimeMillis() - started;
+        if (took > 1000) LoggerFactory.getLogger(MockHubExtensionFactory.class).warn("Closing {} took {} ms", closeable, took);
       } catch (Exception e) {
         LoggerFactory.getLogger(MockHubExtensionFactory.class).warn("Couldn't close {}: {}", closeable, e.getMessage());
       }
@@ -360,6 +363,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     });
     closeables.add(maintenance::shutdownNow);
     closeables.add(calloutScheduler::shutdownNow);
+    closeables.add(traffic::save);
     closeables.add(history);
     maintenance.scheduleWithFixedDelay(() -> safely(history::prune), 1, 30, TimeUnit.MINUTES);
     maintenance.scheduleWithFixedDelay(() -> safely(traffic::save), 1, 1, TimeUnit.MINUTES);
@@ -369,10 +373,6 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
         p -> config.publicUrl == null || config.publicUrl.isBlank() ? null
             : config.publicUrl.replaceAll("/+$", "") + "/__admin/mockhub/ui/projects/" + p.id() + "/contract", clock);
     maintenance.scheduleWithFixedDelay(() -> safely(drift::checkAll), 2, 5, TimeUnit.MINUTES);
-    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-      traffic.save();
-      history.close();
-    }, "mockhub-history-shutdown"));
 
     SsoSettingsStore ssoSettings = new SsoSettingsStore(dataDir, config.ssoClientSecret);
     JdkHttpTransport http = new JdkHttpTransport();

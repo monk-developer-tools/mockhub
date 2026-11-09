@@ -3,6 +3,10 @@ package io.mockhub;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.common.FatalStartupException;
 import io.mockhub.ext.MockHubExtensionFactory;
+import io.mockhub.ha.LeaderElection;
+import io.mockhub.ha.LeaderLease;
+import java.nio.file.Path;
+import java.time.Duration;
 import io.mockhub.tunnel.TunnelClient;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -49,6 +53,20 @@ public final class Main {
     options.filesRoot().createIfNecessary();
     options.filesRoot().child("__files").createIfNecessary();
     options.filesRoot().child("mappings").createIfNecessary();
+    LeaderElection election = config.ha ? LeaderElection.inDataDir(Path.of(options.filesRoot().getPath()), System.out::println) : null;
+    LeaderLease lease = null;
+    if (election != null) {
+      try {
+        lease = election.acquire(Duration.ofSeconds(config.haWaitSeconds));
+      } catch (LeaderElection.NotLeader e) {
+        System.out.println("MockHub could not start: " + e.getMessage());
+        System.exit(1);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        return;
+      }
+    }
+    long leaderSince = System.currentTimeMillis();
     MockHubExtensionFactory factory = new MockHubExtensionFactory(config);
     options.getDeclaredExtensions().add(factory);
 
@@ -60,10 +78,17 @@ public final class Main {
       System.out.println("MockHub could not start: " + e.getMessage());
       System.exit(1);
     }
+    LeaderLease held = lease;
     Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+      long stopping = System.currentTimeMillis();
       server.stop();
+      long serverStopped = System.currentTimeMillis();
       factory.serverStopped();
+      if (held != null) held.close();
+      long done = System.currentTimeMillis();
+      System.out.printf("MockHub stopped in %d ms (server %d ms, saving %d ms)%n", done - stopping, serverStopped - stopping, done - serverStopped);
     }, "mockhub-shutdown"));
+    if (election != null) election.watch(leaderSince, () -> new Thread(() -> System.exit(0), "mockhub-step-down").start());
 
     System.out.printf(
         "%nMockHub %s is running%n  UI:      http://localhost:%d/__admin/mockhub/ui/%n  Mocks:   http://localhost:%d/<project>/...%s%s%n  Data:    %s%n  Auth:    %s%n%n",

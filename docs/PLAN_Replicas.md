@@ -1,6 +1,6 @@
 # Options: more than one MockHub server
 
-Status: proposal for a decision. Nothing here is built yet.
+Status: **A chosen and built** (2026-11-09). The rest stays here as the record of the decision.
 
 ## The question
 
@@ -107,14 +107,29 @@ it is the only option where every feature stays correct, and by then the effort 
 Meanwhile, the documented answer for very large load tests is to run a MockHub per load generator, each pulled from
 the same Git folder with Git sync.
 
-## If A is chosen: phases
+## What changed while building A
 
-- **R1 — Lease:** a lock file with a heartbeat on the data folder, a standby state, reload on takeover, health
+ECS only stops the old task once the new one is healthy, so a new task that simply waited for the lock would never
+become healthy and the deploy would stall. A therefore uses a **handover**: the new server asks the leader to step
+down through a `handover.json` file, the leader finishes its writes, releases the lock and exits, and the new server
+takes the lock and starts. Measured in the two-process system test on one machine: the leader stopped in 11 ms, the
+new server held the lock 266 ms after asking, and the pause between the last answer of the old server and the first
+answer of the new one was 752 ms.
+
+On AWS the pause is set by the load balancer noticing the new task, so `handover_deploys = true` also checks health
+every 5 seconds. That has not been tried on a real stack yet; the docs ask for a trial deploy on a test stack first.
+
+Building it also found a regression from earlier the same day: the history store was closed twice on shutdown and the
+second close waited its full 10-second timeout, so every stop took 10 seconds longer. Fixed.
+
+## Phases
+
+- ✅ **R1 — Lease:** a lock file with a heartbeat on the data folder, a standby state, reload on takeover, health
   endpoint reports standby as not ready; unit tests with a fake clock, integration tests with two servers on one
   folder, a system test that kills the leader.
-- **R2 — Deploy:** Terraform `deployment_maximum_percent = 200`, health check on readiness, a deploy drill in CI or on
+- ✅ **R2 — Deploy:** Terraform `deployment_maximum_percent = 200`, health check on readiness, a deploy drill in CI or on
   a test stack; the VPS keeps one container.
-- **R3 — Docs:** high availability in the deployment docs, with what to expect during a deploy and a failover.
+- ✅ **R3 — Docs:** high availability in the deployment docs, with what to expect during a deploy and a failover.
 
 ## Questions for you
 

@@ -13,7 +13,16 @@
 <div class="code"><pre>cd deploy/terraform
 cp terraform.tfvars.example terraform.tfvars
 terraform init &amp;&amp; terraform apply</pre></div>
-<p>Running on a platform you already have, such as ECS with your own Terraform modules? Point the load balancer health check at <code>/__admin/health</code>, give <code>/data</code> a persistent volume (EFS on Fargate), and run <strong>one task</strong>: MockHub keeps its data in files, so scale up rather than out. To attach an APM agent, mount it and add <code>-javaagent:/path/agent.jar</code> to <code>JAVA_TOOL_OPTIONS</code>.</p>
+<p>Running on a platform you already have, such as ECS with your own Terraform modules? Point the load balancer health check at <code>/__admin/health</code>, give <code>/data</code> a persistent volume (EFS on Fargate), and run <strong>one task</strong>: MockHub keeps its data in files, so scale up rather than out. For deploys without a gap, see <a href="#handover">below</a>. To attach an APM agent, mount it and add <code>-javaagent:/path/agent.jar</code> to <code>JAVA_TOOL_OPTIONS</code>.</p>
+<h3 id="handover">Deploys without a gap</h3>
+<p>MockHub keeps one writer for its data folder. With <code>MOCKHUB_HA=true</code> a new server can take over from a running one on the same folder instead of waiting for it to stop: it asks the running server to hand over, that server finishes its writes and exits, and the new one takes the lock and starts. In our two-process test on one machine the pause between the last answer from the old server and the first from the new one was under a second.</p>
+<ul>
+  <li><strong>On AWS with the Terraform module</strong>, set <code>handover_deploys = true</code>. ECS then starts the new task before stopping the old one, passes <code>MOCKHUB_HA</code>, and the load balancer checks health every 5 seconds, so expect a pause of about the time it takes the load balancer to mark the new task healthy (two checks). Turn it on in a deploy after the image already supports it: a running server from an older image can't hand over, and the new task gives up after <code>MOCKHUB_HA_WAIT_SECONDS</code> (120) and the deploy rolls back.</li>
+  <li><strong>Try it on a test stack first</strong> and watch one deploy: the old task should log <em>A new MockHub asked to take over</em> and the new one <em>Took over after … ms</em>.</li>
+  <li><strong>Docker or a VM</strong>: start the new container on the same data folder and another port, switch the proxy to it once it answers <code>/__admin/health</code>, and the old one stops by itself.</li>
+</ul>
+<p>Handover is not more capacity: one server answers at a time. If a server crashes instead of handing over, the lock is freed when its process ends (on EFS, once the file system notices), and the next server that starts takes over.</p>
+
 <h3 id="logs">Logs</h3>
 <p>MockHub writes all of its logs to standard output, one line per event with a UTC timestamp, so the <code>awslogs</code> driver on Fargate sends them to CloudWatch with nothing to set up (the Terraform module already does this). You'll see:</p>
 <ul>

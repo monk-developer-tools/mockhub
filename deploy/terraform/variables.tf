@@ -99,6 +99,12 @@ variable "log_retention_days" {
   default     = 30
 }
 
+variable "handover_deploys" {
+  description = "Start the new task before stopping the old one and hand the data folder over in under a second (MOCKHUB_HA). Turn it on only after a deploy with an image that supports it."
+  type        = bool
+  default     = false
+}
+
 variable "extra_environment" {
   description = "Extra environment variables for the container, e.g. { WIREMOCK_OPTIONS = \"--async-response-enabled true\" }."
   type        = map(string)
