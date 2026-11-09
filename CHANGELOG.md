@@ -4,6 +4,7 @@ What changed in MockHub, newest first. Every change ships to the Docker image `a
 
 ## 2026-11-09
 
+- Environments now travel with snapshots, pulls between projects, Git sync and backups, and show when you compare. Switching the active environment makes no Git commit and a restore doesn't undo it.
 - Deploys without a gap: with `MOCKHUB_HA=true` a new server takes over the data folder from the running one in under a second instead of waiting for it to stop. The Terraform module turns it on with `handover_deploys = true`.
 - Fixed: since this morning's thread-leak fix, every stop took 10 seconds longer because the request history was closed twice.
 - Environments per project: give one project dev, qa or staging variables, read them in answers with `{{env 'name'}}`, limit stubs to some environments, switch the active one from the project header, or pick one per call with the `X-MockHub-Environment` header. Agents can set them up over MCP.

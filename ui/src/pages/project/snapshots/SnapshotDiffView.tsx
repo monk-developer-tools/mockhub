@@ -3,7 +3,7 @@ import { useState } from 'react';
 import type { SnapshotDiff } from '../../../api/types';
 import { StubRoute } from '../../../components/StubRoute';
 import { runtimeSummary } from '../../../model/runtime';
-import { diffHeadline, STATUS_LABEL } from '../../../model/snapshots';
+import { diffHeadline, STATUS_LABEL, environmentChanges } from '../../../model/snapshots';
 import { Diff } from '../ChangeCard';
 
 type StubChange = SnapshotDiff['stubs'][number];
@@ -62,6 +62,14 @@ export function SnapshotDiffView({ diff, basePath }: { diff: SnapshotDiff; baseP
           <h3>Runtime behaviour</h3>
           <p className="small"><span className="muted">{diff.from}:</span> {runtimeBefore}</p>
           <p className="small"><span className="muted">{diff.to}:</span> {runtimeAfter}</p>
+        </div>
+      )}
+      {diff.environments?.changed && (
+        <div>
+          <h3>Environments</h3>
+          <ul className="snap-files">
+            {environmentChanges(diff.environments.before, diff.environments.after).map((line) => <li key={line} className="small mono">{line}</li>)}
+          </ul>
         </div>
       )}
       {diff.apiKeyHeader.changed && (

@@ -115,4 +115,46 @@ class EnvironmentsIntegrationTest {
     assertThat(qa.status()).isEqualTo(402);
     assertThat(dev.body()).isEqualTo("dev sandbox .");
   }
+
+  private static final String DEV_QA = "{\"active\":\"dev\",\"environments\":[{\"name\":\"dev\",\"variables\":{\"bank\":\"sandbox-bank\"}},"
+      + "{\"name\":\"qa\",\"variables\":{\"bank\":\"qa-bank\"}}]}";
+
+  @Test
+  void snapshotsBringVariablesBackAndLeaveTheActiveSwitchAlone() {
+    // Given
+    admin.put(API + "/projects/" + payId + "/environments", DEV_QA);
+    String snapshot = admin.post(API + "/projects/" + payId + "/snapshots", "{\"name\":\"before\"}").json().get("id").asText();
+    admin.put(API + "/projects/" + payId + "/environments", "{\"active\":\"qa\",\"environments\":[{\"name\":\"dev\",\"variables\":{\"bank\":\"changed\"}},{\"name\":\"qa\"}]}");
+
+    // When
+    ApiClient.Result diff = admin.get(API + "/projects/" + payId + "/snapshots/compare?from=current&to=" + snapshot);
+    ApiClient.Result restored = admin.post(API + "/projects/" + payId + "/snapshots/" + snapshot + "/restore", "{}");
+    ApiClient.Result after = admin.get(API + "/projects/" + payId + "/environments");
+
+    // Then
+    assertThat(diff.json().at("/environments/changed").asBoolean()).as(diff.body()).isTrue();
+    assertThat(diff.json().get("identical").asBoolean()).isFalse();
+    assertThat(restored.status()).as(restored.body()).isEqualTo(200);
+    assertThat(after.json().at("/environments/0/variables/bank").asText()).isEqualTo("sandbox-bank");
+    assertThat(after.json().get("active").asText()).isEqualTo("qa");
+    assertThat(charge("dev").body()).isEqualTo("dev sandbox-bank .");
+  }
+
+  @Test
+  void backupsRestoreEnvironmentsWithTheActiveOne() {
+    // Given
+    admin.put(API + "/projects/" + payId + "/environments", DEV_QA);
+    admin.put(API + "/projects/" + payId + "/environments/active", "{\"name\":\"qa\"}");
+    String backup = admin.get(API + "/backup").body();
+    admin.put(API + "/projects/" + payId + "/environments", "{\"environments\":[]}");
+
+    // When
+    ApiClient.Result restored = admin.post(API + "/restore", backup);
+    ApiClient.Result after = admin.get(API + "/projects/" + payId + "/environments");
+
+    // Then
+    assertThat(restored.status()).as(restored.body()).isEqualTo(200);
+    assertThat(after.json().get("environments")).hasSize(2);
+    assertThat(after.json().get("active").asText()).isEqualTo("qa");
+  }
 }

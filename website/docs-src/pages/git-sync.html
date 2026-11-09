@@ -9,7 +9,7 @@
   <li>File names come from the stub name, or its method and path, plus the first 8 characters of its id.</li>
   <li>Push rewrites only <code>mockhub.json</code>, <code>mappings/</code> and <code>__files/</code> in the folder. Everything else in the repository stays, so the folder can live inside a service's own repository.</li>
   <li>Pull also reads a plain WireMock folder without <code>mockhub.json</code>: each file in <code>mappings/</code> can hold one stub or <code>{"mappings": [...]}</code>. Set the folder to the one that holds <code>mappings/</code>, or leave it empty for the repository root.</li>
-  <li>Like snapshots, the repository holds no CRUD records, request history or API key value.</li>
+  <li>Like snapshots, the repository holds no CRUD records, request history or API key value. It does hold <a href="#environments">environments</a> and their variables, so keep real secrets out of them. Which environment is active stays on the server, so switching it makes no commit.</li>
 </ul>
 
 <h3 id="git-link">Link a repository</h3>

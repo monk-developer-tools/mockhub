@@ -31,4 +31,7 @@
     <tr><td><code>PUT /projects/{id}/environments/active</code></td><td><code>{"name": "qa"}</code></td></tr>
   </tbody>
 </table>
-<p>Paths are under <code>/__admin/mockhub/api</code>. Viewers can read environments; changing them needs the editor role. Over <a href="#mcp">MCP</a>, agents use <code>get_environments</code>, <code>set_environments</code> and <code>switch_environment</code>. Environments are not part of snapshots or Git sync yet; the stubs that use them are. They apply to HTTP calls; gRPC calls answer without one.</p>
+<p>Paths are under <code>/__admin/mockhub/api</code>. Viewers can read environments; changing them needs the editor role. Over <a href="#mcp">MCP</a>, agents use <code>get_environments</code>, <code>set_environments</code> and <code>switch_environment</code>. Environments apply to HTTP calls; gRPC calls answer without one.</p>
+
+<h3 id="environments-saved">Snapshots, Git and backups</h3>
+<p><a href="#snapshots">Snapshots</a>, pulls from another project and <a href="#git-sync">Git sync</a> carry the environments and their variables, and show them when you compare. They leave the active environment as it is, unless it no longer exists; then the first one becomes active. Snapshots made before this, and plain WireMock folders, leave a project's environments alone. Full backups keep the active one too. Variables end up in snapshot files and in your repository, so don't put real secrets in them; use <a href="#connections">connections</a> for those.</p>

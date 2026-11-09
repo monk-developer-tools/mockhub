@@ -173,4 +173,28 @@ class GitSyncIntegrationTest {
       assertThat(git.log().call().iterator().next().getAuthorIdent().getName()).contains("Claude Code");
     }
   }
+
+  @Test
+  void environmentsTravelThroughTheRepositoryWithoutTheActiveSwitch() throws Exception {
+    // Given
+    admin.put(API + "/projects/" + shopId + "/git", "{\"url\":\"" + remote + "\"}");
+    admin.put(API + "/projects/" + shopId + "/environments", "{\"active\":\"dev\",\"environments\":[{\"name\":\"dev\",\"variables\":{\"bank\":\"sandbox\"}},{\"name\":\"qa\"}]}");
+    admin.post(API + "/projects/" + shopId + "/git/push", "{}");
+    String manifest = Files.readString(checkout().resolve("mockhub/shop/mockhub.json"));
+
+    // When
+    admin.put(API + "/projects/" + shopId + "/environments/active", "{\"name\":\"qa\"}");
+    JsonNode afterSwitch = admin.post(API + "/projects/" + shopId + "/git/push", "{}").json();
+    admin.put(API + "/projects/" + shopId + "/environments", "{\"active\":\"qa\",\"environments\":[{\"name\":\"qa\"}]}");
+    JsonNode preview = admin.get(API + "/projects/" + shopId + "/git/preview").json();
+    admin.post(API + "/projects/" + shopId + "/git/pull", "{}");
+    JsonNode pulled = admin.get(API + "/projects/" + shopId + "/environments").json();
+
+    // Then
+    assertThat(manifest).contains("sandbox");
+    assertThat(afterSwitch.get("changed").asBoolean()).isFalse();
+    assertThat(preview.at("/environments/changed").asBoolean()).as(preview.toString()).isTrue();
+    assertThat(pulled.get("environments")).hasSize(2);
+    assertThat(pulled.get("active").asText()).isEqualTo("qa");
+  }
 }

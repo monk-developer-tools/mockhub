@@ -14,6 +14,7 @@
           <li><a href="#files">Response files</a></li>
           <li>Runtime behaviour: <a href="#faults">delays and faults</a>, the <a href="#default-response">default response</a>, <a href="#rate-limits">rate limits</a>, <a href="#cors">CORS</a> and the <a href="#ip-allow-list">IP allow list</a></li>
           <li>The <a href="#api-keys">API key</a> header name</li>
+          <li><a href="#environments">Environments</a> and their variables, but not which one is active</li>
         </ul>
       </td>
       <td>
@@ -27,7 +28,7 @@
     </tr>
   </tbody>
 </table>
-<p>Records are left out on purpose: they're test data that changes as tests run, and restoring stubs shouldn't undo a test's writes. Secrets are left out so a snapshot file is safe to share.</p>
+<p>Records are left out on purpose: they're test data that changes as tests run, and restoring stubs shouldn't undo a test's writes. Secrets are left out so a snapshot file is safe to share, which is why environment variables shouldn't hold real secrets: they are included.</p>
 
 <h3 id="snapshot-take">Take and compare</h3>
 <p>Select <strong>Take snapshot</strong>, give it a name such as <em>release 1.4</em> and, if you like, a purpose. The list shows who took each one, when, and what it holds. <strong>Compare with now</strong> lists every stub that was added, changed, removed or moved in the matching order since then, with a before-and-after diff for each, plus changed response files and runtime behaviour. Tick two snapshots and select <strong>Compare selected</strong> to compare them with each other. Viewers can compare and download; taking, restoring, uploading, pulling and deleting need the editor role.</p>

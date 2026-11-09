@@ -16,7 +16,11 @@ public final class SnapshotDiff {
   public static final String CHANGED = "changed";
   public static final String MOVED = "moved";
 
-  public record Side(String label, List<ObjectNode> stubs, JsonNode runtime, String apiKeyHeader, Map<String, String> files) {}
+  public record Side(String label, List<ObjectNode> stubs, JsonNode runtime, String apiKeyHeader, Map<String, String> files, JsonNode environments) {
+    public Side(String label, List<ObjectNode> stubs, JsonNode runtime, String apiKeyHeader, Map<String, String> files) {
+      this(label, stubs, runtime, apiKeyHeader, files, null);
+    }
+  }
 
   private SnapshotDiff() {}
 
@@ -61,6 +65,11 @@ public final class SnapshotDiff {
     apiKey.put("before", from.apiKeyHeader());
     apiKey.put("after", to.apiKeyHeader());
 
+    ObjectNode environments = out.putObject("environments");
+    environments.put("changed", to.environments() != null && !to.environments().equals(from.environments() == null ? Jsons.MAPPER.createArrayNode() : from.environments()));
+    environments.set("before", from.environments());
+    environments.set("after", to.environments());
+
     ObjectNode files = out.putObject("files");
     ArrayNode addedFiles = files.putArray(ADDED);
     ArrayNode removedFiles = files.putArray(REMOVED);
@@ -72,7 +81,7 @@ public final class SnapshotDiff {
     from.files().keySet().stream().sorted().filter(name -> !to.files().containsKey(name)).forEach(removedFiles::add);
 
     boolean same = added + removed + changed == 0 && !runtime.get("changed").asBoolean() && !apiKey.get("changed").asBoolean()
-        && addedFiles.isEmpty() && removedFiles.isEmpty() && changedFiles.isEmpty();
+        && !environments.get("changed").asBoolean() && addedFiles.isEmpty() && removedFiles.isEmpty() && changedFiles.isEmpty();
     out.put("identical", same);
     return out;
   }

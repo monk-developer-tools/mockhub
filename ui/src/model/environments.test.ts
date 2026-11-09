@@ -1,4 +1,5 @@
-import type { Stub } from '../api/types';
+import { environmentChanges } from './snapshots';
+import type { ProjectEnvironment, Stub } from '../api/types';
 import { fromStub, splitEnvironmentHeader, toStub, withEnvironmentHeader } from './stubForm';
 
 describe('environments in the stub form', () => {
@@ -27,5 +28,20 @@ describe('environments in the stub form', () => {
     expect(splitEnvironmentHeader(odd)).toEqual({ headers: odd, environments: [] });
     expect(withEnvironmentHeader([], [])).toEqual([]);
     expect(withEnvironmentHeader([], ['dev', 'qa'])[0]).toMatchObject({ operator: 'matches', value: 'dev|qa' });
+  });
+});
+
+describe('environments when comparing', () => {
+  it('names what was added, removed or changed without showing values', () => {
+    // Given
+    const before: ProjectEnvironment[] = [{ name: 'dev', variables: { bank: 'a', tenant: 't' } }, { name: 'old', variables: {} }];
+    const after: ProjectEnvironment[] = [{ name: 'dev', variables: { bank: 'b', tenant: 't', extra: 'x' } }, { name: 'qa', variables: {} }];
+
+    // When
+    const lines = environmentChanges(before, after);
+
+    // Then
+    expect(lines).toEqual(['dev: bank, extra different', 'qa: added', 'old: removed']);
+    expect(environmentChanges(null, after.slice(1))).toEqual(['qa: added']);
   });
 });

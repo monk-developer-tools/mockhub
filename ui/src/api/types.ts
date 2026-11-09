@@ -694,6 +694,7 @@ export interface SnapshotDiff {
   stubs: { id: string; status: SnapshotStubStatus; name: string; method: string; url: string; before: Stub | null; after: Stub | null }[];
   runtime: { changed: boolean; before: RuntimeSettings | null; after: RuntimeSettings | null };
   apiKeyHeader: { changed: boolean; before: string | null; after: string | null };
+  environments?: { changed: boolean; before: ProjectEnvironment[] | null; after: ProjectEnvironment[] | null };
   files: { added: string[]; removed: string[]; changed: string[] };
 }
 

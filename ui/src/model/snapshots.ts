@@ -1,4 +1,4 @@
-import type { SnapshotDiff, SnapshotStubStatus } from '../api/types';
+import type { SnapshotDiff, SnapshotStubStatus, ProjectEnvironment } from '../api/types';
 
 export const STATUS_LABEL: Record<SnapshotStubStatus, string> = {
   added: 'Added',
@@ -22,7 +22,25 @@ export function diffHeadline(diff: SnapshotDiff): string[] {
   if (files) parts.push(`${plural(files, 'file')} different`);
   if (diff.runtime.changed) parts.push('runtime behaviour different');
   if (diff.apiKeyHeader.changed) parts.push('API key header different');
+  if (diff.environments?.changed) parts.push('environments different');
   return parts;
+}
+
+export function environmentChanges(before: ProjectEnvironment[] | null | undefined, after: ProjectEnvironment[] | null | undefined): string[] {
+  const was = new Map((before ?? []).map((e) => [e.name, e]));
+  const now = new Map((after ?? []).map((e) => [e.name, e]));
+  const lines: string[] = [];
+  for (const [name, e] of now) {
+    const old = was.get(name);
+    if (!old) {
+      lines.push(`${name}: added`);
+      continue;
+    }
+    const keys = [...new Set([...Object.keys(old.variables), ...Object.keys(e.variables)])].filter((k) => old.variables[k] !== e.variables[k]).sort();
+    if (keys.length) lines.push(`${name}: ${keys.join(', ')} different`);
+  }
+  for (const name of was.keys()) if (!now.has(name)) lines.push(`${name}: removed`);
+  return lines;
 }
 
 export function contentsLabel(stubCount: number, fileCount: number, crud: string[]): string {

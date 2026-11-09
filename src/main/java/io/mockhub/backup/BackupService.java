@@ -17,6 +17,8 @@ import io.mockhub.connection.Connection;
 import io.mockhub.connection.ConnectionService;
 import io.mockhub.dataset.DatasetService;
 import io.mockhub.dataset.StoredDataset;
+import io.mockhub.environment.EnvironmentStore;
+import io.mockhub.environment.ProjectEnvironments;
 import io.mockhub.files.BodyFiles;
 import io.mockhub.org.Organization;
 import io.mockhub.org.OrganizationService;
@@ -60,11 +62,13 @@ public final class BackupService {
   private final DatasetService datasets;
   private final ConnectionService connections;
   private final GrpcCatalog grpc;
+  private final EnvironmentStore environments;
   private final Clock clock;
 
   public BackupService(OrganizationService orgs, TeamService teams, ProjectService projects, StubGateway gateway, DataStore data,
-      BodyFiles files, DatasetService datasets, ConnectionService connections, GrpcCatalog grpc, Clock clock) {
+      BodyFiles files, DatasetService datasets, ConnectionService connections, GrpcCatalog grpc, EnvironmentStore environments, Clock clock) {
     this.grpc = grpc;
+    this.environments = environments;
     this.orgs = orgs;
     this.teams = teams;
     this.projects = projects;
@@ -124,7 +128,10 @@ public final class BackupService {
     ObjectNode records = out.putObject("data");
     ObjectNode bodyFiles = out.putObject("files");
     ObjectNode descriptors = out.putObject("grpc");
+    ObjectNode projectEnvironments = out.putObject("environments");
     for (Project p : chosen) {
+      ProjectEnvironments kept = environments.get(p.id());
+      if (!kept.isEmpty()) projectEnvironments.set(p.id(), Jsons.MAPPER.valueToTree(kept));
       Map<String, Map<String, ObjectNode>> snapshot = data.snapshot(p.id());
       if (!snapshot.isEmpty()) records.set(p.id(), Jsons.MAPPER.valueToTree(snapshot));
       Map<String, byte[]> projectFiles = files.snapshot(p.id());
@@ -254,6 +261,7 @@ public final class BackupService {
       projects.restore(List.of(saved));
       file.path("files").path(p.id()).fields().forEachRemaining(e -> files.save(saved.id(), e.getKey(), Base64.getDecoder().decode(e.getValue().asText())));
       file.path("grpc").path(p.id()).fields().forEachRemaining(e -> restoreDescriptor(saved, e.getKey(), e.getValue().asText()));
+      restoreEnvironments(saved, file.path("environments").path(p.id()));
       JsonNode stored = file.path("data").path(p.id());
       if (stored.isObject()) {
         data.restore(saved.id(), Jsons.MAPPER.convertValue(stored, new TypeReference<Map<String, Map<String, ObjectNode>>>() {}));
@@ -274,6 +282,15 @@ public final class BackupService {
     projects.assignOrphans(orgs.ensureDefault().id());
     projects.assignTeams(org -> teams.ensureDefault(org).id());
     return new Result(orgCount, chosen.size(), stubCount, datasetCount, renamed);
+  }
+
+  private void restoreEnvironments(Project project, JsonNode stored) {
+    if (!stored.isObject()) return;
+    try {
+      environments.save(project.id(), ProjectEnvironments.parse(stored));
+    } catch (ApiException e) {
+      LOG.warn("Skipped the environments of project {}: {}", project.name(), e.getMessage());
+    }
   }
 
   private void restoreDescriptor(Project project, String name, String base64) {

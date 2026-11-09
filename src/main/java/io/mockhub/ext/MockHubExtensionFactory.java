@@ -407,7 +407,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
     RateLimiter rateLimiter = new RateLimiter(clock);
     DefaultResponseStubs defaultResponses = new DefaultResponseStubs(stubs);
     RuntimeService runtimeService = new RuntimeService(projects, defaultResponses, rateLimiter);
-    SnapshotService snapshots = new SnapshotService(snapshotStore, projects, stubs, runtimeService, bodyFiles, clock);
+    SnapshotService snapshots = new SnapshotService(snapshotStore, projects, stubs, runtimeService, bodyFiles, environmentStore, clock);
     AssistantService assistant = new AssistantService(aiSettings, chat, stubs, history, clock, calloutLog, runtimeService, snapshots,
         new ServerProjectSetup(projects, stubs, importers, specFetcher, crud, grpc, drift));
     AssistantJobs assistantJobs = new AssistantJobs(assistant, Executors.newCachedThreadPool(r -> {
@@ -461,7 +461,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
         new OpenApiLinkController(specFetcher, importers),
         new AiController(aiSettings, aiProviders, chat, assistant, assistantJobs, projects, urls, new BodyGenerator(aiSettings, chat),
             new TemplateFixer(publicLlm::complete, TemplateFixer.PROJECT_HELPERS, TemplateFixer.MAX_PROJECT_TEMPLATE)),
-        new BackupController(new BackupService(orgs, teams, projects, gateway, dataStore, bodyFiles, datasets, connections, grpc, clock)),
+        new BackupController(new BackupService(orgs, teams, projects, gateway, dataStore, bodyFiles, datasets, connections, grpc, environmentStore, clock)),
         new DataController(projects, stubs, dataStore, crud),
         new StateController(projects, stateRepository, clock),
         new DatasetController(orgs, datasets),

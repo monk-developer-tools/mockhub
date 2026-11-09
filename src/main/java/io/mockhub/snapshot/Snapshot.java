@@ -19,7 +19,8 @@ public record Snapshot(
     JsonNode runtime,
     String apiKeyHeader,
     List<ObjectNode> stubs,
-    Map<String, String> files) {
+    Map<String, String> files,
+    JsonNode environments) {
 
   public record Summary(String id, String name, String purpose, String createdAt, String createdBy, boolean safety,
       String sourceProjectName, int stubCount, int fileCount, List<String> crudResources) {}
@@ -27,6 +28,11 @@ public record Snapshot(
   public Snapshot {
     stubs = stubs == null ? List.of() : List.copyOf(stubs);
     files = files == null ? Map.of() : Map.copyOf(files);
+  }
+
+  public Snapshot(String id, String projectId, String sourceProjectId, String sourceProjectName, String name, String purpose, String createdAt,
+      String createdBy, boolean safety, JsonNode runtime, String apiKeyHeader, List<ObjectNode> stubs, Map<String, String> files) {
+    this(id, projectId, sourceProjectId, sourceProjectName, name, purpose, createdAt, createdBy, safety, runtime, apiKeyHeader, stubs, files, null);
   }
 
   public Summary summary() {
@@ -40,6 +46,6 @@ public record Snapshot(
 
   public Snapshot ownedBy(String newId, String newProjectId, String newName, String newCreatedAt, String newCreatedBy) {
     return new Snapshot(newId, newProjectId, sourceProjectId, sourceProjectName, newName, purpose, newCreatedAt, newCreatedBy,
-        false, runtime, apiKeyHeader, stubs, files);
+        false, runtime, apiKeyHeader, stubs, files, environments);
   }
 }

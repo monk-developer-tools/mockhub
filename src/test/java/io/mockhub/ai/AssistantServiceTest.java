@@ -57,7 +57,7 @@ class AssistantServiceTest {
     settings = new AiSettingsStore(dir, "");
     settings.save(new AiSettings(true, "litellm", "http://llm", "", "gpt-test", 0.2, 3));
     assistant = new AssistantService(settings, new ChatCompletions(transport, AiProviders.defaults(), ""), stubs, new HistoryStore(dir.resolve("history"), Clock.systemUTC(), Duration.ofDays(1), Long.MAX_VALUE), Clock.systemUTC(), new InMemoryCalloutLog(100), runtime,
-        snapshots = new SnapshotService(new FileSnapshotRepository(dir), projects, stubs, runtime, new BodyFiles(dir), Clock.systemUTC()));
+        snapshots = new SnapshotService(new FileSnapshotRepository(dir), projects, stubs, runtime, new BodyFiles(dir), new io.mockhub.environment.EnvironmentStore(dir), Clock.systemUTC()));
   }
 
   private static List<AssistantService.Message> ask(String text) {

@@ -47,6 +47,7 @@ public final class GitLayout {
     ObjectNode settings = manifest.putObject("settings");
     settings.set("runtime", snapshot.runtime());
     settings.put("apiKeyHeader", snapshot.apiKeyHeader());
+    if (snapshot.environments() != null) settings.set("environments", snapshot.environments());
     manifest.set("order", order);
     out.put(MANIFEST, pretty(manifest));
     return out;
@@ -91,7 +92,7 @@ public final class GitLayout {
     JsonNode runtime = settings.path("runtime").isObject() ? settings.get("runtime") : null;
     String header = settings.path("apiKeyHeader").isTextual() ? settings.get("apiKeyHeader").asText() : null;
     return new Snapshot(null, null, project.path("id").asText(""), project.path("name").asText(""), label, "", "", "", false,
-        runtime, header, stubs, bodies);
+        runtime, header, stubs, bodies, settings.path("environments").isArray() ? settings.get("environments") : null);
   }
 
   static String fileName(JsonNode stub, Set<String> used) {

@@ -29,6 +29,7 @@ public final class SnapshotFile {
     ObjectNode settings = out.putObject("settings");
     settings.set("runtime", s.runtime());
     settings.put("apiKeyHeader", s.apiKeyHeader());
+    if (s.environments() != null) settings.set("environments", s.environments());
     out.set("stubs", Jsons.MAPPER.valueToTree(s.stubs()));
     out.set("files", Jsons.MAPPER.valueToTree(s.files()));
     return out;
@@ -69,7 +70,7 @@ public final class SnapshotFile {
     JsonNode runtime = settings.path("runtime").isObject() ? settings.get("runtime") : null;
     return new Snapshot(null, null, project.path("id").asText(""), project.path("name").asText(""),
         text(file, "name", "Uploaded snapshot"), text(file, "purpose", ""), text(file, "createdAt", ""), text(file, "createdBy", ""),
-        false, runtime, header, stubs, files);
+        false, runtime, header, stubs, files, settings.path("environments").isArray() ? settings.get("environments") : null);
   }
 
   private static String text(JsonNode node, String field, String fallback) {

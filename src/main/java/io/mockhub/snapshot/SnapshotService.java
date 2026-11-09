@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.mockhub.api.ApiException;
 import io.mockhub.api.Jsons;
 import io.mockhub.common.Slugs;
+import io.mockhub.environment.EnvironmentStore;
+import io.mockhub.environment.ProjectEnvironments;
 import io.mockhub.files.BodyFiles;
 import io.mockhub.project.Project;
 import io.mockhub.project.ProjectService;
@@ -21,6 +23,7 @@ import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 public final class SnapshotService {
@@ -38,9 +41,11 @@ public final class SnapshotService {
   private final RuntimeService runtime;
   private final BodyFiles files;
   private final Clock clock;
+  private final EnvironmentStore environments;
 
   public SnapshotService(SnapshotRepository repository, ProjectService projects, StubService stubs, RuntimeService runtime,
-      BodyFiles files, Clock clock) {
+      BodyFiles files, EnvironmentStore environments, Clock clock) {
+    this.environments = environments;
     this.repository = repository;
     this.projects = projects;
     this.stubs = stubs;
@@ -120,6 +125,7 @@ public final class SnapshotService {
     Snapshot parsed = SnapshotFile.read(file);
     for (ObjectNode stub : into(parsed, p)) stubs.validate(p.id(), stub);
     if (parsed.runtime() != null) runtime.validate(parsed.runtime());
+    environmentsOf(parsed);
     requireRoom(p.id());
     Snapshot owned = parsed.ownedBy(newId(), p.id(), parsed.name(), now(), by);
     repository.save(owned);
@@ -150,6 +156,7 @@ public final class SnapshotService {
     List<ObjectNode> incoming = into(snapshot, target);
     for (ObjectNode stub : incoming) stubs.validate(target.id(), stub);
     if (snapshot.runtime() != null) runtime.validate(snapshot.runtime());
+    Optional<ProjectEnvironments> incomingEnvironments = environmentsOf(snapshot);
 
     Snapshot safety = capture(target, "Before " + reason, "Saved automatically", by, true);
     repository.save(safety);
@@ -161,7 +168,13 @@ public final class SnapshotService {
     }
     snapshot.files().forEach((name, base64) -> files.save(target.id(), name, Base64.getDecoder().decode(base64)));
     if (snapshot.runtime() != null) runtime.update(target.id(), snapshot.runtime());
+    incomingEnvironments.ifPresent(e -> environments.save(target.id(), new ProjectEnvironments(environments.get(target.id()).active(), e.environments())));
     return new Restored(label, safety.summary(), count, snapshot.files().size());
+  }
+
+  private static Optional<ProjectEnvironments> environmentsOf(Snapshot snapshot) {
+    if (snapshot.environments() == null || snapshot.environments().isNull()) return Optional.empty();
+    return Optional.of(ProjectEnvironments.parse(Jsons.object().set("environments", snapshot.environments())));
   }
 
   private SnapshotDiff.Side side(Project p, String ref) {
@@ -176,7 +189,7 @@ public final class SnapshotService {
       ProjectScopeMatcher.retarget(stub, p.id());
       normalized.add(stub);
     }
-    return new SnapshotDiff.Side(label, normalized, snapshot.runtime(), snapshot.apiKeyHeader(), snapshot.files());
+    return new SnapshotDiff.Side(label, normalized, snapshot.runtime(), snapshot.apiKeyHeader(), snapshot.files(), snapshot.environments());
   }
 
   private Snapshot capture(Project p, String name, String purpose, String by, boolean safety) {
@@ -186,7 +199,8 @@ public final class SnapshotService {
     files.snapshot(p.id()).forEach((file, bytes) -> encoded.put(file, Base64.getEncoder().encodeToString(bytes)));
     JsonNode settings = Jsons.MAPPER.valueToTree(RuntimeSettings.of(p.runtime()));
     String header = p.apiKey() == null ? null : p.apiKey().header();
-    return new Snapshot(newId(), p.id(), p.id(), p.name(), name, purpose, now(), by, safety, settings, header, captured, encoded);
+    return new Snapshot(newId(), p.id(), p.id(), p.name(), name, purpose, now(), by, safety, settings, header, captured, encoded,
+        Jsons.MAPPER.valueToTree(environments.get(p.id()).environments()));
   }
 
   private List<ObjectNode> into(Snapshot snapshot, Project target) {

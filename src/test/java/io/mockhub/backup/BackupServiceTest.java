@@ -78,7 +78,7 @@ class BackupServiceTest {
             throw new IllegalStateException("no token calls in backups");
           }, URI::create), clock);
       orgs = new OrganizationService(new InMemoryOrganizationRepository(), List.of(projects, teams, datasets, connections), clock);
-      backups = new BackupService(orgs, teams, projects, gateway, new InMemoryDataStore(), new BodyFiles(tempDir()), datasets, connections, new io.mockhub.grpc.GrpcCatalog(new io.mockhub.grpc.FileDescriptorStore(tempDir()), id -> null), clock);
+      backups = new BackupService(orgs, teams, projects, gateway, new InMemoryDataStore(), new BodyFiles(tempDir()), datasets, connections, new io.mockhub.grpc.GrpcCatalog(new io.mockhub.grpc.FileDescriptorStore(tempDir()), id -> null), new io.mockhub.environment.EnvironmentStore(tempDir()), clock);
     }
 
     Organization org(String name) {

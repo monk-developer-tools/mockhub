@@ -91,4 +91,20 @@ class GitLayoutTest {
     assertThat(first).isEqualTo("health.json");
     assertThat(second).isEqualTo("health-2.json");
   }
+
+  @Test
+  void carriesEnvironmentsInTheManifestAndLeavesThemOutOfAPlainWireMockFolder() {
+    // Given
+    com.fasterxml.jackson.databind.JsonNode environments = io.mockhub.api.Jsons.MAPPER.createArrayNode().add(json("{'name':'qa','variables':{'bank':'qa-bank'}}"));
+    Snapshot s = new Snapshot("s1", "p1", "p1", "Orders", "Now", "", "", "", false, null, null, List.of(), Map.of(), environments);
+    Map<String, byte[]> plain = Map.of("mappings/a.json", utf8("{\"request\":{\"method\":\"GET\",\"url\":\"/a\"},\"response\":{\"status\":200}}"));
+
+    // When
+    Snapshot back = GitLayout.read(GitLayout.write(s), "main");
+    Snapshot fromWireMock = GitLayout.read(plain, "main");
+
+    // Then
+    assertThat(back.environments()).isEqualTo(environments);
+    assertThat(fromWireMock.environments()).isNull();
+  }
 }

@@ -50,7 +50,7 @@ limited to some environments. One environment is active; a caller can pick anoth
 
 - MCP `get_environments`, `set_environments`, `switch_environment`; the stub reference explains `{{env}}` and the
   header matcher.
-- Not yet: environments in snapshots and Git sync (the stubs that use them already are).
+- Snapshots, pulls, Git sync and backups carry environments. Only backups keep the active one: it is an operational switch, so changing it should not make a commit or be undone by a restore.
 
 ## Phases
 
