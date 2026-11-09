@@ -5640,3 +5640,37 @@ fieldset.target legend {
   background: var(--surface);
   overflow-wrap: anywhere;
 }
+
+.git-panel {
+  margin-bottom: 16px;
+}
+
+.git-panel h2 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.git-empty {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.git-where {
+  overflow-wrap: anywhere;
+}
+
+.git-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.git-actions .grow {
+  flex: 1 1 240px;
+  margin: 0;
+}

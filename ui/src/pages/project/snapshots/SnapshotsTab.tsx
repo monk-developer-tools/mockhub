@@ -9,6 +9,7 @@ import { contentsLabel } from '../../../model/snapshots';
 import { timeAgo } from '../../../model/time';
 import { useApp } from '../../../state/AppContext';
 import { useProject } from '../ProjectPage';
+import { GitPanel } from './GitPanel';
 import { CompareDialog, PullDialog, RestoreDialog, TakeSnapshotDialog, UploadSnapshotDialog } from './SnapshotDialogs';
 
 type Dialog =
@@ -58,6 +59,8 @@ export function SnapshotsTab() {
   };
 
   return (
+    <>
+    <GitPanel project={project} onPulled={changed} />
     <div className="panel">
       <div className="panel-head">
         <div>
@@ -153,5 +156,6 @@ export function SnapshotsTab() {
         />
       )}
     </div>
+    </>
   );
 }

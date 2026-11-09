@@ -1,0 +1,35 @@
+<p>Link a project to a folder in a Git repository to keep its mocks next to your code. <strong>Push</strong> writes the project as one file per stub and makes a commit, so mock changes can be reviewed in pull requests and traced in <code>git log</code>. <strong>Pull</strong> shows what the repository would change and then applies it, after saving a <a href="#snapshots">safety snapshot</a>. Open a project's <strong>Snapshots</strong> tab; the Git panel is at the top.</p>
+
+<h3 id="git-files">What goes in the repository</h3>
+<pre><code>mockhub/orders/                 the folder you choose
+  mockhub.json                  runtime behaviour, API key header and stub order
+  mappings/get-order-7f3a9c21.json   one WireMock stub per file
+  __files/invoice.pdf           response files as they are</code></pre>
+<ul>
+  <li>File names come from the stub name, or its method and path, plus the first 8 characters of its id.</li>
+  <li>Push rewrites only <code>mockhub.json</code>, <code>mappings/</code> and <code>__files/</code> in the folder. Everything else in the repository stays, so the folder can live inside a service's own repository.</li>
+  <li>Pull also reads a plain WireMock folder without <code>mockhub.json</code>: each file in <code>mappings/</code> can hold one stub or <code>{"mappings": [...]}</code>. Set the folder to the one that holds <code>mappings/</code>, or leave it empty for the repository root.</li>
+  <li>Like snapshots, the repository holds no CRUD records, request history or API key value.</li>
+</ul>
+
+<h3 id="git-link">Link a repository</h3>
+<p>Select <strong>Link a repository</strong> and give the HTTPS URL, such as <code>https://github.com/acme/mocks.git</code>, a branch (default <code>main</code>), the folder and an access token that can read and write the repository: a fine-grained GitHub token with <em>Contents: read and write</em>, a GitLab project token with <code>write_repository</code>, or a Bitbucket app password with your username. The token is encrypted with the server's secret key and never shown again. A branch that doesn't exist yet is made on the first push. SSH URLs aren't supported.</p>
+<p>Linking, changing and unlinking need the manager role in the project's team; pushing and pulling need the editor role. Repositories on private or local addresses are refused unless an admin sets <code>MOCKHUB_GIT_ALLOW_PRIVATE=true</code>, which also allows <code>file:</code> URLs.</p>
+
+<h3 id="git-push-pull">Push and pull</h3>
+<p>Type a commit message, or keep the suggested one, and select <strong>Push</strong>. The commit is authored by you, or by the token's name when an agent pushes. When nothing changed, no commit is made. If someone pushed to the branch at the same moment, MockHub asks you to push again.</p>
+<p>Select <strong>Pull</strong> to see every stub the repository would add, change or remove, plus file and runtime changes, then <strong>Pull into this project</strong>. The project's state is saved as a safety snapshot first, so you can restore it from the list below.</p>
+
+<h3 id="git-api">From scripts and agents</h3>
+<table>
+  <thead><tr><th>Call</th><th>Does</th></tr></thead>
+  <tbody>
+    <tr><td><code>GET /projects/{id}/git</code></td><td>the link, without the token, with the last push and pull</td></tr>
+    <tr><td><code>PUT /projects/{id}/git</code></td><td><code>{"url", "branch", "folder", "username", "token"}</code>; leave out the token to keep the saved one</td></tr>
+    <tr><td><code>DELETE /projects/{id}/git</code></td><td>unlink; the repository keeps its files</td></tr>
+    <tr><td><code>POST /projects/{id}/git/push</code></td><td><code>{"message"}</code>; returns the commit and whether anything changed</td></tr>
+    <tr><td><code>GET /projects/{id}/git/preview</code></td><td>what a pull would change, in the snapshot compare format</td></tr>
+    <tr><td><code>POST /projects/{id}/git/pull</code></td><td>applies the repository and returns the safety snapshot</td></tr>
+  </tbody>
+</table>
+<p>Paths are under <code>/__admin/mockhub/api</code>. Over <a href="#mcp">MCP</a>, agents use <code>git_preview</code>, <code>git_push</code> and <code>git_pull</code>. In CI, push from a pipeline after changing mocks, or pull into a fresh MockHub at the start of a test run so it serves exactly what the repository holds.</p>

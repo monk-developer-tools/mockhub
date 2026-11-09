@@ -42,11 +42,14 @@ vi.mock('../../../api/client', () => ({
     previewPull: (...a: unknown[]) => previewPull(...a),
     pull: (...a: unknown[]) => pull(...a),
     downloadSnapshot: () => Promise.resolve(),
+    gitLink: () => Promise.resolve({ linked: false, suggestedFolder: 'mockhub/shop' }),
   },
 }));
 vi.mock('../../../state/AppContext', () => ({
+  atLeast: () => false,
   useApp: () => ({
     canEdit,
+    roleInTeam: () => 'editor',
     projects: [{ id: 'p1', name: 'Shop', basePath: '/shop' }, { id: 'p2', name: 'Shop dev', basePath: '/shop-dev' }],
     refreshProjects: () => Promise.resolve(),
   }),

@@ -46,7 +46,7 @@ export function TakeSnapshotDialog({ project, onDone, onClose }: { project: Proj
   );
 }
 
-function useDiff(load: () => Promise<SnapshotDiff> | null, deps: unknown[]) {
+export function useDiff(load: () => Promise<SnapshotDiff> | null, deps: unknown[]) {
   const toast = useToast();
   const [diff, setDiff] = useState<SnapshotDiff | null>(null);
   useEffect(() => {
@@ -71,7 +71,7 @@ export function CompareDialog({ project, from, to, title, onClose }: {
   );
 }
 
-function restoredNote(r: SnapshotRestoreResult): string {
+export function restoredNote(r: SnapshotRestoreResult): string {
   return `${r.stubs} stub${r.stubs === 1 ? '' : 's'} and ${r.files} file${r.files === 1 ? '' : 's'} in place. The previous state is saved as “${r.safety.name}”.`;
 }
 

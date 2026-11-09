@@ -62,8 +62,7 @@ import type {
   PlaygroundEntry,
   PlaygroundRequest,
   GeneratorField,
-  UserRecord,
-} from './types';
+  UserRecord, GitLinkInput, GitLinkView, GitPullResult, GitPushResult } from './types';
 
 const API = '/__admin/mockhub/api';
 const ADMIN = '/__admin';
@@ -279,6 +278,12 @@ export const api = {
     request<void>(`${API}/projects/${projectId}/files?name=${encodeURIComponent(name)}`, { method: 'DELETE' }),
   resetData: (projectId: string) => request<void>(`${API}/projects/${projectId}/data`, { method: 'DELETE' }),
   snapshots: (projectId: string) => request<SnapshotSummary[]>(`${API}/projects/${projectId}/snapshots`),
+  gitLink: (projectId: string) => request<GitLinkView>(`${API}/projects/${projectId}/git`),
+  saveGitLink: (projectId: string, link: GitLinkInput) => request<GitLinkView>(`${API}/projects/${projectId}/git`, { method: 'PUT', body: json(link) }),
+  unlinkGit: (projectId: string) => request<void>(`${API}/projects/${projectId}/git`, { method: 'DELETE' }),
+  gitPush: (projectId: string, message: string) => request<GitPushResult>(`${API}/projects/${projectId}/git/push`, { method: 'POST', body: json({ message }) }),
+  gitPreview: (projectId: string) => request<SnapshotDiff & { commit: string }>(`${API}/projects/${projectId}/git/preview`),
+  gitPull: (projectId: string) => request<GitPullResult>(`${API}/projects/${projectId}/git/pull`, { method: 'POST', body: '{}' }),
   createSnapshot: (projectId: string, name: string, purpose: string) =>
     request<SnapshotSummary>(`${API}/projects/${projectId}/snapshots`, { method: 'POST', body: json({ name, purpose }) }),
   deleteSnapshot: (projectId: string, snapshotId: string) =>

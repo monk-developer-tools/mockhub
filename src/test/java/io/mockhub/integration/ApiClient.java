@@ -17,7 +17,7 @@ final class ApiClient {
 
   private static final ObjectMapper JSON = new ObjectMapper();
   private static final Duration TIMEOUT = Duration.ofSeconds(60);
-  private final HttpClient http = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).connectTimeout(Duration.ofSeconds(10)).build();
+  private static final HttpClient HTTP = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).connectTimeout(Duration.ofSeconds(10)).build();
   private final String baseUrl;
   private String authorization;
 
@@ -80,7 +80,7 @@ final class ApiClient {
     headers.forEach(b::header);
     if (authorization != null && path.startsWith("/__admin")) b.header("Authorization", authorization);
     try {
-      HttpResponse<byte[]> r = http.send(b.build(), HttpResponse.BodyHandlers.ofByteArray());
+      HttpResponse<byte[]> r = HTTP.send(b.build(), HttpResponse.BodyHandlers.ofByteArray());
       return new Result(r.statusCode(), r.body(), r.headers().firstValue("Content-Type").orElse(""),
           r.headers().firstValue("Content-Disposition").orElse(""), r.headers().firstValue("Location").orElse(""),
           r.headers().firstValue("X-MockHub-Simulated-Error").orElse(""), r.headers());

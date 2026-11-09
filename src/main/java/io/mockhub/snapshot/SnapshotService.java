@@ -102,6 +102,19 @@ public final class SnapshotService {
     return apply(target, incoming, by, "pulling from " + from, label);
   }
 
+  public Snapshot current(String projectId) {
+    return capture(projects.get(projectId), "Now", "", "", false);
+  }
+
+  public ObjectNode compareWith(String projectId, Snapshot incoming) {
+    Project p = projects.get(projectId);
+    return SnapshotDiff.compare(side(p, CURRENT), side(p, incoming, incoming.name()));
+  }
+
+  public Restored replace(String projectId, Snapshot incoming, String by, String reason) {
+    return apply(projects.get(projectId), incoming, by, reason, incoming.name());
+  }
+
   public Snapshot.Summary upload(String projectId, JsonNode file, String by) {
     Project p = projects.get(projectId);
     Snapshot parsed = SnapshotFile.read(file);

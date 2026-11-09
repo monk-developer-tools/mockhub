@@ -2,6 +2,11 @@
 
 What changed in MockHub, newest first. Every change ships to the Docker image `abhaypratap/mockhub:latest` and the public demo the same day.
 
+## 2026-11-09
+
+- Git sync: link a project to a folder in a Git repository, push it as one readable file per stub with a commit, and pull changes back after a preview and a safety snapshot. Pull also reads plain WireMock `mappings/` folders. Agents can use it over MCP (`git_preview`, `git_push`, `git_pull`).
+- Fixed: every MockHub server started in one Java process kept its HTTP clients and history threads after it stopped. Outgoing HTTP clients are now shared, and stopping closes the history writer and background jobs.
+
 ## 2026-11-08
 
 - Feature pages on the website, such as OpenAPI, gRPC, webhooks and CRUD, open the matching start screen in the app instead of the dashboard.

@@ -276,6 +276,16 @@ public final class McpTools {
         schema(project(), req("key", "string", "Lowercase key used by helpers, such as customers"), prop("name", "string", "Display name"),
             req("records", "array", "The records"), prop("identity", "array", "Fields that identify a record, such as id")), false, false, this::saveDataset);
 
+    add("git_preview", "Preview a pull from Git",
+        "Compare the project with its linked Git repository: the stubs, files and runtime behaviour a pull would add, remove or change.",
+        schema(project()), true, false, call -> get(call, "/projects/" + projectId(call) + "/git/preview"));
+    add("git_push", "Push to Git", "Commit the project's stubs, response files and runtime behaviour to its linked Git repository, one file per stub.",
+        schema(project(), prop("message", "string", "Commit message")), false, false, call -> direct(call, "pushing to Git", RequestMethod.POST,
+            "/projects/" + projectId(call) + "/git/push", Jsons.object().put("message", Optional.ofNullable(call.optional("message")).orElse(""))));
+    add("git_pull", "Pull from Git",
+        "Replace the project's stubs, response files and runtime behaviour with its linked Git repository. A safety snapshot is taken first; call git_preview before.",
+        schema(project()), false, true, call -> direct(call, "pulling from Git", RequestMethod.POST, "/projects/" + projectId(call) + "/git/pull", Jsons.object()));
+
     add("list_staged_changes", "List staged changes", "List changes waiting for review in the project's Assistant tab.",
         schema(project()), true, false, call -> get(call, "/projects/" + projectId(call) + "/staged"));
   }

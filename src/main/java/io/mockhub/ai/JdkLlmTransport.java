@@ -13,7 +13,8 @@ import java.util.Map;
 public final class JdkLlmTransport implements LlmTransport {
   private static final Duration CONNECT = Duration.ofSeconds(10);
   private static final Duration READ = Duration.ofSeconds(180);
-  private final HttpClient client = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).connectTimeout(CONNECT).build();
+  private static final HttpClient CLIENT = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).connectTimeout(CONNECT).build();
+  private final HttpClient client = CLIENT;
 
   @Override
   public JsonNode get(String url, Map<String, String> headers) {

@@ -15,7 +15,8 @@ import java.util.stream.Collectors;
 
 public final class JdkHttpTransport implements HttpTransport {
   private static final Duration TIMEOUT = Duration.ofSeconds(10);
-  private final HttpClient client = HttpClient.newBuilder().connectTimeout(TIMEOUT).build();
+  private static final HttpClient CLIENT = HttpClient.newBuilder().connectTimeout(TIMEOUT).build();
+  private final HttpClient client = CLIENT;
 
   @Override
   public JsonNode getJson(String url) {

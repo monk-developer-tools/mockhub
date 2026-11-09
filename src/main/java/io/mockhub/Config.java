@@ -24,6 +24,7 @@ public final class Config {
   public final String aiApiKey;
   public final String fakeLocale;
   public final boolean playgroundAllowPrivate;
+  public final boolean gitAllowPrivate;
   public final boolean calloutAllowPrivate;
   public final boolean binAllowPrivate;
   public final int auditRetentionDays;
@@ -54,6 +55,7 @@ public final class Config {
     this.aiApiKey = env.getOrDefault("MOCKHUB_AI_API_KEY", "");
     this.fakeLocale = env.getOrDefault("MOCKHUB_FAKE_LOCALE", "en");
     this.playgroundAllowPrivate = Boolean.parseBoolean(env.getOrDefault("MOCKHUB_PLAYGROUND_ALLOW_PRIVATE", "false"));
+    this.gitAllowPrivate = Boolean.parseBoolean(env.getOrDefault("MOCKHUB_GIT_ALLOW_PRIVATE", "false"));
     this.calloutAllowPrivate = Boolean.parseBoolean(env.getOrDefault("MOCKHUB_CALLOUT_ALLOW_PRIVATE", "false"));
     this.binAllowPrivate = Boolean.parseBoolean(env.getOrDefault("MOCKHUB_BIN_ALLOW_PRIVATE", "false"));
     this.auditRetentionDays = Math.max(1, Integer.parseInt(env.getOrDefault("MOCKHUB_AUDIT_RETENTION_DAYS", "90")));

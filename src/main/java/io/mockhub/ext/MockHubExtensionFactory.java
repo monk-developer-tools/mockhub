@@ -9,6 +9,10 @@ import io.mockhub.ai.AiProviders;
 import io.mockhub.ai.AiSettingsStore;
 import io.mockhub.ai.AssistantJobs;
 import io.mockhub.ai.AssistantService;
+import io.mockhub.controller.GitController;
+import io.mockhub.git.GitLinkStore;
+import io.mockhub.git.GitSyncService;
+import io.mockhub.git.JGitRemote;
 import io.mockhub.ai.ServerProjectSetup;
 import io.mockhub.ai.BodyGenerator;
 import io.mockhub.ai.TemplateFixer;
@@ -346,6 +350,9 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
       t.setDaemon(true);
       return t;
     });
+    closeables.add(maintenance::shutdownNow);
+    closeables.add(calloutScheduler::shutdownNow);
+    closeables.add(history);
     maintenance.scheduleWithFixedDelay(() -> safely(history::prune), 1, 30, TimeUnit.MINUTES);
     maintenance.scheduleWithFixedDelay(() -> safely(traffic::save), 1, 1, TimeUnit.MINUTES);
     maintenance.scheduleWithFixedDelay(() -> safely(accessTokens::flushUse), 1, 1, TimeUnit.MINUTES);
@@ -456,7 +463,10 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
             playgroundHistory, new DataGenerator(fakeData), config.publicUrl),
         new AccessTokenController(accessTokens, auth, projects, clock),
         new StagedController(projects, staged, assistant),
-        new SnapshotController(snapshots, projects));
+        new SnapshotController(snapshots, projects),
+        new GitController(new GitSyncService(new GitLinkStore(dataDir), new JGitRemote(dataDir.resolve("mockhub").resolve("git-work")), snapshots,
+            projects, secrets, new TargetGuard(config.gitAllowPrivate, InetAddress::getAllByName, "MOCKHUB_GIT_ALLOW_PRIVATE"),
+            config.gitAllowPrivate, clock)));
     controllers.forEach(c -> c.register(api));
     McpTools mcpTools = new McpTools(new InternalApi(api.task(), policy),
         new ReviewStager(staged, assistant::tools, policy),

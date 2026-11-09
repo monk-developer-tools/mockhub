@@ -28,9 +28,18 @@ public final class JdkHttpSender implements HttpSender {
   }
 
   public JdkHttpSender(boolean skipTlsChecks) {
-    HttpClient.Builder builder = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NEVER).connectTimeout(Duration.ofSeconds(10));
-    if (skipTlsChecks) builder.sslContext(trustingEveryone()).sslParameters(withoutHostnameCheck());
-    this.client = builder.build();
+    this.client = skipTlsChecks ? Shared.TRUSTING : Shared.CHECKING;
+  }
+
+  private static final class Shared {
+    static final HttpClient CHECKING = build(false);
+    static final HttpClient TRUSTING = build(true);
+
+    private static HttpClient build(boolean skipTlsChecks) {
+      HttpClient.Builder builder = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NEVER).connectTimeout(Duration.ofSeconds(10));
+      if (skipTlsChecks) builder.sslContext(trustingEveryone()).sslParameters(withoutHostnameCheck());
+      return builder.build();
+    }
   }
 
   private static SSLContext trustingEveryone() {

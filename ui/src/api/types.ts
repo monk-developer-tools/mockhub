@@ -711,3 +711,43 @@ export interface FetchedSpec {
   operations: number;
   content: string;
 }
+
+export interface GitEvent {
+  at: string;
+  by: string;
+  commit: string | null;
+}
+
+export interface GitLinkView {
+  linked: boolean;
+  suggestedFolder?: string;
+  url?: string;
+  branch?: string;
+  folder?: string;
+  username?: string;
+  tokenSet?: boolean;
+  lastPush?: GitEvent;
+  lastPull?: GitEvent;
+}
+
+export interface GitLinkInput {
+  url: string;
+  branch: string;
+  folder: string;
+  username: string;
+  token?: string;
+}
+
+export interface GitPushResult {
+  changed: boolean;
+  commit: string | null;
+  stubs: number;
+  files: number;
+}
+
+export interface GitPullResult {
+  commit: string;
+  stubs: number;
+  files: number;
+  safety: SnapshotSummary;
+}

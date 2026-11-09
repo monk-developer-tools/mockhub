@@ -107,6 +107,7 @@ public final class AccessPolicy {
       if (scope.isEmpty()) return Decision.allow();
       Role role = p.roleInTeam(scope.get().orgId(), scope.get().teamId());
       if (!read && project.group(2) == null) return need(role, Role.MANAGER, "change or delete this project");
+      if (!read && "/git".equals(project.group(2))) return need(role, Role.MANAGER, "link this project to a Git repository");
       boolean askOnly = read || ASK_ONLY.contains(String.valueOf(project.group(2)));
       return need(role, askOnly ? Role.VIEWER : Role.EDITOR, askOnly ? "view this project" : "change this project");
     }

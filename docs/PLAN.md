@@ -57,7 +57,7 @@ Why this shape:
 
 ## More suggestions (backlog)
 
-1. **Git sync.** Mirror `/data` to a Git repo so mocks are versioned and reviewable.
+1. ✅ **Git sync.** Push a project to a Git folder as one file per stub, and pull it back (see `PLAN_Git_Sync.md`).
 2. ✅ **SSO.** Built in: Microsoft Entra ID single sign-on (Phase 10). ALB OIDC in front still works too.
 3. **Multiple replicas.** Today run `desiredCount=1`, because WireMock state lives in memory. To scale out,
    add a file watcher or `POST /__admin/mappings/reset`-style reload broadcast, or move to a shared DB store.

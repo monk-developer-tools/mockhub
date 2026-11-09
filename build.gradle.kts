@@ -37,6 +37,7 @@ dependencies {
     implementation("com.graphql-java:graphql-java:26.1")
     implementation("com.networknt:json-schema-validator:1.5.9")
     implementation("org.wiremock:wiremock-grpc-extension-jetty12:0.11.0")
+    implementation("org.eclipse.jgit:org.eclipse.jgit:7.8.0.202609011348-r")
     testImplementation("com.google.protobuf:protobuf-java-util:3.25.8")
     testImplementation("io.grpc:grpc-netty:1.73.0")
     constraints {
