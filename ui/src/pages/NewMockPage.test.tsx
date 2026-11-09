@@ -77,7 +77,7 @@ describe('Start a new mock', () => {
     expect(screen.getByRole('heading', { name: 'Service virtualization' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /OpenAPI or Swagger/ })).toHaveAttribute('href', '/new/openapi');
     expect(screen.getByRole('link', { name: /Webhook testing/ })).toHaveAttribute('href', '/new/webhook');
-    expect(screen.getByRole('link', { name: /Generate test data/ })).toHaveAttribute('href', 'https://mockhub.devops-monk.com/tools/fake-data/');
+    expect(screen.getByRole('link', { name: /Generate test data/ })).toHaveAttribute('href', '/tools/fake-data');
     expect(screen.getByText(/Needs AI, which an admin turns on/)).toBeInTheDocument();
   });
 
@@ -121,7 +121,7 @@ describe('Start a new mock', () => {
     // Then
     await waitFor(() => expect(createStub).toHaveBeenCalledWith('old', expect.objectContaining({ request: { method: 'ANY', urlPathPattern: '/hooks(/.*)?' } })));
     expect(createProject).not.toHaveBeenCalled();
-    expect(await screen.findByText('at /projects/old/overview?ready=webhook')).toBeInTheDocument();
+    expect(await screen.findByText('at /projects/old/inspect?ready=webhook')).toBeInTheDocument();
   });
 
   it('explains a mistake before creating anything', async () => {

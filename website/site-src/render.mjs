@@ -328,6 +328,7 @@ function toolHero(page, icon) {
         <h1>${esc(page.h1)}</h1>
         <p class="lede">${esc(page.lede)}</p>
         <p class="tool-private">${icon(page.server ? 'CloudCheck' : 'ShieldCheck', 16)}${esc(page.privacy ?? BROWSER_NOTE)}</p>
+        ${page.signedIn ? `<p class="tool-private tool-signed-in">${icon('UserCircle', 16)}<span>Signed in: ${esc(page.signedIn[1])} <a href="${DEMO}${page.signedIn[0]}">Open it in MockHub</a></span></p>` : ''}
       </div>
     </section>`;
 }

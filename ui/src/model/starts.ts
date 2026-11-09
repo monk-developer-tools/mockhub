@@ -49,7 +49,8 @@ export const START_GROUPS: StartGroup[] = [
       { id: 'proxy', kind: 'proxy', to: '/new/proxy', title: 'HTTP traffic monitoring', blurb: 'Put MockHub in front of a service: every call goes through and is recorded.' },
       { id: 'echo', kind: 'echo', to: '/new/echo', title: 'HTTP echo', blurb: 'An endpoint that answers with the request it received.' },
       { id: 'tunnel', kind: 'proxy', to: '/new/proxy?target=tunnel', title: 'Local tunnel', blurb: 'Reach a service on your laptop through MockHub, and record its traffic.' },
-      { id: 'test-data', href: '/tools/fake-data/', title: 'Generate test data', blurb: 'Realistic names, addresses and more as JSON, CSV or SQL.' },
+      { id: 'test-data', to: '/tools/fake-data', title: 'Generate test data', blurb: 'Realistic names, addresses and more. Download them, or save them as a CRUD resource or a dataset.' },
+      { id: 'templates', to: '/tools/template-playground', title: 'Template playground', blurb: 'Try a response template against a sample request, then use it as a stub.' },
       { id: 'totp', href: '/tools/totp/', title: '2FA code generator', blurb: 'TOTP codes from a secret, for tests of login screens.' },
     ],
   },
@@ -108,6 +109,7 @@ export interface PayloadStub {
   status: number;
   contentType: string;
   body: string;
+  templated?: boolean;
 }
 
 export function normalPath(path: string): string {
@@ -127,7 +129,7 @@ export function detectContentType(body: string): string {
 export function payloadStub(input: PayloadStub): Stub {
   const path = normalPath(input.path);
   if (!Number.isInteger(input.status) || input.status < 100 || input.status > 599) throw new Error('The status must be between 100 and 599.');
-  if (input.contentType === 'application/json' && input.body.trim()) {
+  if (input.contentType === 'application/json' && input.body.trim() && !(input.templated && input.body.includes('{{'))) {
     try {
       JSON.parse(input.body);
     } catch {
@@ -137,7 +139,12 @@ export function payloadStub(input: PayloadStub): Stub {
   return {
     name: `${input.method} ${path}`,
     request: { method: input.method, urlPath: path },
-    response: { status: input.status, headers: { 'Content-Type': input.contentType }, body: input.body },
+    response: {
+      status: input.status,
+      headers: { 'Content-Type': input.contentType },
+      body: input.body,
+      ...(input.templated ? { transformers: ['response-template'] } : {}),
+    },
   };
 }
 

@@ -1,4 +1,4 @@
-import { ArrowBendUpRight, ArrowsDownUp, ListChecks, Camera, ClockCounterClockwise, BracketsCurly, Database, FlowArrow, Gauge, GearSix, Pulse, Sparkle, Warning } from '@phosphor-icons/react';
+import { ArrowBendUpRight, ArrowsDownUp, ListChecks, Camera, ClockCounterClockwise, BracketsCurly, Database, FlowArrow, Gauge, GearSix, MagnifyingGlass, Pulse, Sparkle, Warning } from '@phosphor-icons/react';
 import { useCallback, useEffect, useState } from 'react';
 import { NavLink, Outlet, useOutletContext, useParams } from 'react-router-dom';
 import { api } from '../../api/client';
@@ -66,6 +66,7 @@ export function ProjectPage() {
   const teamName = teamsIn(project.orgId).find((t) => t.id === project.teamId)?.name;
   const tabs = [
     { to: 'overview', label: 'Overview', icon: Gauge },
+    { to: 'inspect', label: 'Inspect', icon: MagnifyingGlass },
     { to: 'stubs', label: 'Stubs', icon: BracketsCurly, count: project.stubCount },
     { to: 'data', label: 'Data', icon: Database },
     { to: 'assistant', label: 'Assistant', icon: Sparkle },

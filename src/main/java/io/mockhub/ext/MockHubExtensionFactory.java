@@ -10,6 +10,7 @@ import io.mockhub.ai.AiSettingsStore;
 import io.mockhub.ai.AssistantJobs;
 import io.mockhub.ai.AssistantService;
 import io.mockhub.controller.GitController;
+import io.mockhub.controller.TemplateController;
 import io.mockhub.git.GitLinkStore;
 import io.mockhub.git.GitSyncService;
 import io.mockhub.git.JGitRemote;
@@ -475,6 +476,7 @@ public final class MockHubExtensionFactory implements ExtensionFactory {
 
     PublicLimits publicLimits = new PublicLimits(rateLimiter);
     TemplatePlayground templatePlayground = new TemplatePlayground(Stream.concat(Stream.of(fakeHelpers, valueHelpers, validationHelpers, jwtHelpers), portableHelpers.stream()).toList(), renderWorkers(), 2000);
+    new TemplateController(templatePlayground).register(api);
     if (config.publicTools) orgs.ensureInstant();
     InstantMocks instantMocks = new InstantMocks(dataDir, projects, stubs, crud, () -> teams.ensureDefault(Organization.INSTANT_ID).id(), clock);
     Function<String, Optional<Principal>> publicUser =

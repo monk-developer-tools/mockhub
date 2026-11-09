@@ -28,6 +28,7 @@ const ICONS: Record<string, ReactNode> = {
   tunnel: <Terminal size={20} weight="duotone" />,
   'test-data': <Sparkle size={20} weight="duotone" />,
   totp: <LockKey size={20} weight="duotone" />,
+  templates: <BracketsCurly size={20} weight="duotone" />,
   ai: <Robot size={20} weight="duotone" />,
   chaos: <Lightning size={20} weight="duotone" />,
   teams: <UsersThree size={20} weight="duotone" />,

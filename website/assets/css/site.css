@@ -4214,6 +4214,23 @@ footer a {
   color: var(--ok);
 }
 
+.tool-private.tool-signed-in {
+  display: flex;
+  align-items: flex-start;
+  margin-top: 8px;
+  color: var(--muted);
+}
+
+.tool-signed-in svg {
+  flex: none;
+  margin-top: 2px;
+}
+
+.tool-signed-in a {
+  color: var(--link);
+  white-space: nowrap;
+}
+
 .fp .tool-section {
   padding: 8px 0 72px;
 }

@@ -363,6 +363,8 @@ export const api = {
   playgroundHistory: () => request<PlaygroundEntry[]>(`${API}/playground/history`),
   deletePlaygroundEntry: (id: string) => request<void>(`${API}/playground/history/${id}`, { method: 'DELETE' }),
   clearPlaygroundHistory: () => request<void>(`${API}/playground/history`, { method: 'DELETE' }),
+  renderTemplate: (template: string, sample: { method: string; url: string; headers: Record<string, string>; body: string }) =>
+    request<{ output?: string; status?: number; validationError?: string; error?: string }>(`${API}/templates/render`, { method: 'POST', body: json({ template, request: sample }) }),
   generateData: (body: { fields: GeneratorField[]; count: number; locale?: string }) =>
     request<{ records: unknown[] }>(`${API}/fake/generate`, { method: 'POST', body: json(body) }),
   unassignedStubs: () => request<Stub[]>(`${API}/stubs/unassigned`),

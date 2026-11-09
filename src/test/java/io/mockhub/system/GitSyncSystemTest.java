@@ -64,6 +64,19 @@ class GitSyncSystemTest {
     assertThat(mock.body()).isEqualTo("SHIPPED");
   }
 
+  @Test
+  void thePackagedJarRendersTemplatesForSignedInPeople() throws Exception {
+    // Given
+    try (MockHubProcess hub = MockHubProcess.start(first, ENV)) {
+      // When
+      JsonNode rendered = json(send(hub, "POST", API + "/templates/render",
+          "{\"template\":\"Hello {{request.query.name}}\",\"request\":{\"method\":\"GET\",\"url\":\"/?name=Ada\"}}"));
+
+      // Then
+      assertThat(rendered.get("output").asText()).isEqualTo("Hello Ada");
+    }
+  }
+
   private HttpResponse<String> send(MockHubProcess hub, String method, String path, String body) throws Exception {
     HttpResponse<String> response = http.send(HttpRequest.newBuilder(URI.create(hub.baseUrl() + path))
         .header("Authorization", BASIC).header("Content-Type", "application/json")

@@ -14,6 +14,9 @@
   </tbody>
 </table>
 <p>MockHub adds a few of its own: <code>{{len x}}</code> for the length of text or a list, <code>{{{object id=1 name='Ada'}}}</code> to build a JSON object, <code>{{{json x}}}</code> to write any value as JSON, <code>{{toNumber x}}</code> so a value lands in JSON without quotes, and <code>{{default x 'fallback'}}</code>. There are also helpers to <a href="#jwt">sign and read JWTs</a> and to <a href="#validation">validate requests</a>.</p>
+<h3 id="template-playground">Try templates first</h3>
+<p>Open <strong>Tools → Template playground</strong> to write a template, change a sample request and see the answer as you type, with the same helpers as your stubs. <strong>Use as a stub</strong> opens a JSON answer with templating on, in a new project or one you edit. The <code>POST /__admin/mockhub/api/templates/render</code> call does the same from scripts, with <code>{"template", "request": {"method", "url", "headers", "body"}}</code>.</p>
+
 <h3 id="beeceptor-helpers">Helpers with Beeceptor's names</h3>
 <p>Templates written for Beeceptor mostly work as they are. These helpers take the same arguments in the same order:</p>
 <ul>

@@ -76,3 +76,22 @@ export function wrapRecords(records: unknown[], wrapKey: string): string {
   const key = wrapKey.trim();
   return JSON.stringify(key ? { [key]: records, total: records.length } : records, null, 2);
 }
+
+function flatten(value: unknown, prefix: string, out: Record<string, string>) {
+  if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) flatten(v, prefix ? `${prefix}.${k}` : k, out);
+    return;
+  }
+  out[prefix] = value === null || value === undefined ? '' : typeof value === 'object' ? JSON.stringify(value) : String(value);
+}
+
+export function recordsToCsv(records: unknown[]): string {
+  const rows = records.map((r) => {
+    const out: Record<string, string> = {};
+    flatten(r, '', out);
+    return out;
+  });
+  const columns = [...new Set(rows.flatMap((r) => Object.keys(r)))];
+  const cell = (v: string) => (/[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
+  return [columns.map(cell).join(','), ...rows.map((r) => columns.map((c) => cell(r[c] ?? '')).join(','))].join('\n') + '\n';
+}

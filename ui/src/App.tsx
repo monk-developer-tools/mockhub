@@ -14,6 +14,10 @@ import { SnapshotsTab } from './pages/project/snapshots/SnapshotsTab';
 import { OverviewTab } from './pages/project/OverviewTab';
 import { ProjectPage } from './pages/project/ProjectPage';
 import { ProjectSettingsTab } from './pages/project/ProjectSettingsTab';
+import { FakeDataPage } from './pages/tools/FakeDataPage';
+import { TemplatePlaygroundPage } from './pages/tools/TemplatePlaygroundPage';
+import { ToolsPage } from './pages/tools/ToolsPage';
+import { InspectTab } from './pages/project/InspectTab';
 import { RequestsTab } from './pages/project/RequestsTab';
 import { CalloutsTab } from './pages/project/CalloutsTab';
 import { ScenariosTab } from './pages/project/ScenariosTab';
@@ -47,6 +51,9 @@ const router = createBrowserRouter(
         { path: 'examples', element: <ExamplesPage /> },
         { path: 'mock-these-apis', element: <MockTheseApisPage /> },
         { path: 'playground', element: <PlaygroundPage /> },
+        { path: 'tools', element: <ToolsPage /> },
+        { path: 'tools/template-playground', element: <TemplatePlaygroundPage /> },
+        { path: 'tools/fake-data', element: <FakeDataPage /> },
         { path: 'server', element: <ServerPage /> },
         { path: 'org', element: <OrgPage /> },
         { path: 'org/teams/:teamId', element: <TeamPage /> },
@@ -67,6 +74,7 @@ const router = createBrowserRouter(
             { path: 'stubs/:stubId', element: <StubsTab /> },
             { path: 'data', element: <DataTab /> },
             { path: 'assistant', element: <AssistantTab /> },
+            { path: 'inspect', element: <InspectTab /> },
             { path: 'requests', element: <RequestsTab /> },
             { path: 'callouts', element: <CalloutsTab /> },
             { path: 'scenarios', element: <ScenariosTab /> },

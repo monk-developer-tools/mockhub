@@ -1,6 +1,15 @@
 <p>The <strong>Requests</strong> tab shows every call a project received, newest first, and keeps them on disk so you can search days of traffic, not just the last few minutes. It updates live while <strong>Live</strong> is ticked.</p>
 <figure data-shot="requests">The Requests tab: request rate, search filters and every call with its status and the stub that answered.</figure>
 
+<h3 id="request-inspect">Inspect: each request beside its answer</h3>
+<p>The <strong>Inspect</strong> tab is the view of the free webhook catcher, inside a project. Projects made from the Webhook testing, HTTP traffic monitoring, HTTP echo and Local tunnel cards open on it. On the left, requests arrive live, with search and method and status filters; on the right, <strong>Request and answer</strong> shows the method, path, query, headers and body that came in beside the status, stub, headers and body that went out, and any callouts it sent.</p>
+<ul>
+  <li><strong>Send test</strong> posts a sample event to the project's receiver, so you can see the view work before a real webhook arrives.</li>
+  <li><strong>Make a stub from it</strong> opens the stub editor filled in from the request, to answer it your own way.</li>
+  <li><strong>Copy as cURL</strong>, <strong>Replay</strong> in the Playground, and <strong>Copy link</strong> to share one request with your team.</li>
+</ul>
+<p>Inspect shows the newest 100 requests; the Requests tab below searches all of the history, draws the traffic chart and exports HAR.</p>
+
 <h3 id="request-traffic">Traffic at a glance</h3>
 <p>The chart at the top counts calls over the last 5 minutes, 15 minutes, hour, 6 hours or 24 hours, with unmatched calls in amber. Beside it are the total, the unmatched count, the average and the peak requests per second. Choose <strong>30d</strong> for one bar per day over the last 30 days. Hover a bar to see its exact numbers. <strong>Drag across the chart</strong> to list only the requests in that span; clear the time chip to go back.</p>
 <h3 id="request-search">Search and filter</h3>

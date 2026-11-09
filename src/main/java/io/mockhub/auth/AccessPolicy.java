@@ -100,6 +100,7 @@ public final class AccessPolicy {
     if (path.equals("/playground") || path.startsWith("/playground/")) return need(p.highestRole(), Role.EDITOR, "use the playground");
     if (path.equals("/tunnels") || path.startsWith("/tunnels/")) return Decision.allow();
     if (path.equals("/openapi/fetch")) return need(p.highestRole(), Role.EDITOR, "download API descriptions");
+    if (path.equals("/templates/render")) return need(p.highestRole(), Role.VIEWER, "try templates");
 
     Matcher project = PROJECT.matcher(path);
     if (project.matches()) {

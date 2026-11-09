@@ -1,4 +1,4 @@
-import { Archive, BookOpenText, CaretRight, ClockCounterClockwise, Buildings, CircleHalf, Eye, GearSix, HardDrives, Key, MagnifyingGlass, Moon, PaperPlaneTilt, Plug, Plus, SidebarSimple, Sparkle, SquaresFour, Sun, Table, UsersThree } from '@phosphor-icons/react';
+import { Archive, BookOpenText, CaretRight, ClockCounterClockwise, Buildings, CircleHalf, Eye, GearSix, HardDrives, Key, MagnifyingGlass, Moon, PaperPlaneTilt, Plug, Plus, SidebarSimple, Sparkle, SquaresFour, Sun, Table, UsersThree, Wrench } from '@phosphor-icons/react';
 import { useCallback, useMemo } from 'react';
 import { MOD_LABEL, useHotkeys } from '../state/hotkeys';
 import { CommandPalette } from './CommandPalette';
@@ -114,6 +114,9 @@ export function Layout() {
                 <PaperPlaneTilt size={17} /> <span className="nav-label">Playground</span>
               </NavLink>
             )}
+            <NavLink to="/tools" title={collapsed ? 'Tools' : undefined}>
+              <Wrench size={17} /> <span className="nav-label">Tools</span>
+            </NavLink>
             <NavLink to="/examples" title={collapsed ? 'Examples' : undefined}>
               <BookOpenText size={17} /> <span className="nav-label">Examples</span>
             </NavLink>

@@ -1156,6 +1156,7 @@ PAGES.push(
   },
   {
     slug: 'tools/instant-mock',
+    signedIn: ['new/json', 'stubs in team projects that are kept, with the full stub editor and the AI assistant.'],
     menu: 'tools',
     kind: 'tool',
     tool: 'instant-mock',
@@ -1187,6 +1188,7 @@ PAGES.push(
   },
   {
     slug: 'tools/json-server',
+    signedIn: ['new/crud', 'a REST API in a project that is kept, with a data tab to see and edit records.'],
     menu: 'tools',
     kind: 'tool',
     tool: 'json-server',
@@ -1215,6 +1217,7 @@ PAGES.push(
   },
   {
     slug: 'tools/csv-to-api',
+    signedIn: ['new/crud?from=csv', 'a REST API in a project that is kept, with a data tab to see and edit records.'],
     menu: 'tools',
     kind: 'tool',
     tool: 'csv-to-api',
@@ -1243,6 +1246,7 @@ PAGES.push(
   },
   {
     slug: 'tools/traffic-monitor',
+    signedIn: ['new/proxy', 'the same request view in a project, plus recording calls as stubs, delays and faults, and contract checks.'],
     menu: 'tools',
     kind: 'tool',
     tool: 'traffic-monitor',
@@ -1271,6 +1275,7 @@ PAGES.push(
   },
   {
     slug: 'tools/local-tunnel',
+    signedIn: ['new/proxy?target=tunnel', 'tunnels for any stub or callout, recorded traffic and saved connections.'],
     menu: 'tools',
     kind: 'tool',
     tool: 'local-tunnel',
@@ -1299,6 +1304,7 @@ PAGES.push(
   },
   {
     slug: 'tools/webhook-bin',
+    signedIn: ['new/webhook', 'the same view inside a project: days of searchable history, your team, the stub editor, the AI assistant, callouts, snapshots and Git.'],
     menu: 'tools',
     kind: 'tool',
     tool: 'webhook-bin',
@@ -1332,6 +1338,7 @@ PAGES.push(
   },
   {
     slug: 'tools/http-echo',
+    signedIn: ['new/echo', 'an echo endpoint in a project your team shares, with the same request view and searchable history.'],
     menu: 'tools',
     kind: 'tool',
     tool: 'http-echo',
@@ -1360,6 +1367,7 @@ PAGES.push(
   },
   {
     slug: 'tools/template-playground',
+    signedIn: ['tools/template-playground', 'the same playground, and one click to use a template as a stub in your project.'],
     menu: 'tools',
     kind: 'tool',
     tool: 'template-playground',
@@ -1388,6 +1396,7 @@ PAGES.push(
   },
   {
     slug: 'tools/fake-data',
+    signedIn: ['tools/fake-data', 'the same generator, and saving the records as a REST API or a dataset your stubs answer from.'],
     menu: 'tools',
     kind: 'tool',
     tool: 'fake-data',

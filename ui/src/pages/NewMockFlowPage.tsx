@@ -1,3 +1,4 @@
+import { INSPECT_KINDS } from '../model/inspect';
 import { ArrowLeft, Sparkle } from '@phosphor-icons/react';
 import { useMemo, useState, type FormEvent } from 'react';
 import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
@@ -42,20 +43,22 @@ export function NewMockFlowPage() {
 
 function Flow({ kind }: { kind: StartKind }) {
   const navigate = useNavigate();
-  const { search } = useLocation();
+  const { search, state } = useLocation();
   const query = new URLSearchParams(search);
+  const carried = (state ?? {}) as { text?: string; path?: string; method?: string; templated?: boolean };
   const toast = useToast();
   const { info, currentOrg, orgProjects, projects, writableTeams, roleInTeam, refreshProjects, canEdit, aiStatus } = useApp();
   const card = cardFor(kind);
 
-  const [text, setText] = useState('');
+  const [text, setText] = useState(carried.text ?? '');
   const [fileName, setFileName] = useState('');
   const [sourceTab, setSourceTab] = useState<'file' | 'url' | 'paste'>('file');
   const [url, setUrl] = useState('');
   const [stripPrefix, setStripPrefix] = useState('');
   const [keepContract, setKeepContract] = useState(false);
-  const [method, setMethod] = useState('GET');
-  const [path, setPath] = useState(kind === 'webhook' ? '/hooks' : kind === 'echo' ? '/echo' : '/data');
+  const [method, setMethod] = useState(carried.method ?? 'GET');
+  const [templated, setTemplated] = useState(Boolean(carried.templated));
+  const [path, setPath] = useState(carried.path ?? (kind === 'webhook' ? '/hooks' : kind === 'echo' ? '/echo' : '/data'));
   const [status, setStatus] = useState(kind === 'webhook' ? 202 : 200);
   const [contentType, setContentType] = useState('application/json');
   const [hookMode, setHookMode] = useState<'receive' | 'send'>('receive');
@@ -121,7 +124,7 @@ function Flow({ kind }: { kind: StartKind }) {
       return { kind, text, fileName: fileName || 'service.proto' };
     }
     if (kind === 'crud') return { kind, request: crudRequest(resource, text) };
-    if (kind === 'json') return { kind, stubs: [payloadStub({ method, path, status, contentType, body: text })] };
+    if (kind === 'json') return { kind, stubs: [payloadStub({ method, path, status, contentType, body: text, templated })] };
     if (kind === 'webhook') {
       return { kind, stubs: [hookMode === 'receive' ? receiverStub(path) : callbackStub({ path, status, callbackUrl, delaySeconds: delay })] };
     }
@@ -171,7 +174,7 @@ function Flow({ kind }: { kind: StartKind }) {
       const next = new URLSearchParams({ ready: kind });
       if (created.notes.length) next.set('notes', created.notes.slice(0, 5).join('\n'));
       if (kind === 'proxy' && targetKind === 'tunnel') next.set('tunnel', tunnelName.trim());
-      navigate(`/projects/${created.projectId}/overview?${next.toString()}`);
+      navigate(`/projects/${created.projectId}/${INSPECT_KINDS.has(kind) ? 'inspect' : 'overview'}?${next.toString()}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -269,6 +272,10 @@ function Flow({ kind }: { kind: StartKind }) {
                   </select>
                 </label>
               </div>
+              <label className="check">
+                <input type="checkbox" checked={templated} onChange={(e) => setTemplated(e.target.checked)} />
+                Fill in values from the request (templating), such as {'{{request.path.id}}'}. <Link to="/tools/template-playground">Try templates</Link>
+              </label>
               <div className="btn-row"><button type="button" className="btn small ghost" onClick={() => { takeText(SAMPLES.json.text); setContentType('application/json'); }}>Use a sample</button></div>
             </section>
           )}
@@ -281,7 +288,7 @@ function Flow({ kind }: { kind: StartKind }) {
               </div>
               <p className="muted small">
                 {hookMode === 'receive'
-                  ? 'An endpoint that answers 200 at once and records every webhook sent to it, with its headers and body, in the Requests tab.'
+                  ? 'An endpoint that answers 200 at once and records every webhook sent to it, with its headers and body, in the Inspect tab, beside the answer it got.'
                   : 'A stub that answers at once, then POSTs to your service after a delay. Every callback, its answer and any error show in the Callouts tab.'}
               </p>
               <label className="field">
